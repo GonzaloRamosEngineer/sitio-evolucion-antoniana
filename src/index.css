@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 98%; /* Blanco Fundación: #F8F9F7 */
+    --foreground: 210 10% 23%; /* Marrón Legado Oscuro para texto principal */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 210 10% 23%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 10% 23%;
+    
+    --primary: 208 65% 20%; /* Azul Antoniano: #103754 */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 20% 92%; /* Celeste Complementario muy claro para fondos suaves: #D3E8FF (ajustado) */
+    --secondary-foreground: 208 65% 20%;
+    
+    --muted: 210 20% 92%;
+    --muted-foreground: 210 10% 45%;
+    
+    --accent: 210 20% 85%; /* Celeste Complementario más oscuro para hovers: #D3E8FF (ajustado) */
+    --accent-foreground: 208 65% 20%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 208 65% 35%; /* Azul Antoniano más claro para anillos de foco */
+
+    --radius: 0.5rem;
+
+    /* Colores Institucionales */
+    --azul-antoniano: 208 65% 20%; /* #103754 */
+    --marron-legado: 28 46% 16%; /* #3D2612 */
+    --blanco-fundacion: 220 20% 98%; /* #F8F9F7 */
+    --celeste-complementario: 210 100% 91%; /* #D3E8FF */
+  }
+
+  .dark {
+    /* Ajustar paleta dark si es necesario en el futuro */
+    --background: 208 65% 10%; 
+    --foreground: 220 20% 95%;
+    
+    --card: 208 65% 12%;
+    --card-foreground: 220 20% 95%;
+    
+    --popover: 208 65% 12%;
+    --popover-foreground: 220 20% 95%;
+    
+    --primary: 208 70% 70%; /* Celeste complementario para primario en dark */
+    --primary-foreground: 208 65% 10%;
+    
+    --secondary: 208 65% 20%;
+    --secondary-foreground: 220 20% 95%;
+    
+    --muted: 208 65% 20%;
+    --muted-foreground: 210 10% 65%;
+    
+    --accent: 208 65% 25%;
+    --accent-foreground: 220 20% 95%;
+    
+    --destructive: 0 63% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 208 65% 25%;
+    --input: 208 65% 25%;
+    --ring: 208 70% 60%;
+
+    --azul-antoniano: 208 70% 70%;
+    --marron-legado: 28 30% 70%;
+    --blanco-fundacion: 208 65% 10%;
+    --celeste-complementario: 208 65% 25%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+  h1 { @apply text-4xl lg:text-5xl; }
+  h2 { @apply text-3xl lg:text-4xl; }
+  h3 { @apply text-2xl lg:text-3xl; }
+  h4 { @apply text-xl lg:text-2xl; }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Estilos de componentes adicionales */
+.hero-pattern {
+  background-image: 
+    radial-gradient(circle at 15% 25%, hsl(var(--celeste-complementario) / 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, hsl(var(--azul-antoniano) / 0.15) 0%, transparent 50%);
+}
+
+.card-hover {
+  @apply transition-all duration-300 ease-in-out;
+}
+.card-hover:hover {
+  @apply transform -translate-y-1 shadow-xl; /* Ajuste sutil en el hover */
+}
+
+/* Mejoras de accesibilidad para focus */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Scrollbar personalizada (opcional) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-secondary;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/70 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
+/* Animación de pulso sutil */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
