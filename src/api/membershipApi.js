@@ -1,38 +1,46 @@
 import { supabase } from '@/lib/supabase';
 
 /**
- * Trae TODAS las membresías del usuario.
- * @param {string} userId
- * @param {{ onlyActive?: boolean }} [opts]
- * @returns {Promise<Array>}
+ * NUEVO: trae TODAS las membresías del usuario (opcional: solo activas).
+ * Mantiene el mismo estilo, select('*') y orden desc.
  */
-export async function getUserMemberships(userId, { onlyActive = false } = {}) {
+export const getUserMemberships = async (userId, { onlyActive = false } = {}) => {
   if (!userId) return [];
-
   try {
     let query = supabase
-      .from('memberships') // ajustá si tu tabla se llama distinto
-      .select('id, plan, amount, status, created_at, starts_at, ends_at')
+      .from('memberships')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (onlyActive) query = query.eq('status', 'active');
+    if (onlyActive) {
+      // ajustá si tu columna/valor de estado es distinto
+      query = query.eq('status', 'active');
+    }
 
     const { data, error } = await query;
+
     if (error) throw error;
 
-    return data ?? [];
+    return data || [];
   } catch (err) {
-    console.error('Error fetching user memberships:', err);
+    console.error('Error fetching user memberships from API:', err);
     return [];
   }
-}
+};
 
 /**
- * Compatibilidad: sigue existiendo getUserMembership,
- * pero ahora devuelve la ÚLTIMA (más reciente).
+ * COMPATIBILIDAD: misma función que tenías, pero ahora usa la de arriba
+ * y retorna SOLO la más reciente (índice 0). Así no rompe otros usos.
  */
-export async function getUserMembership(userId, { onlyActive = false } = {}) {
-  const all = await getUserMemberships(userId, { onlyActive });
-  return all[0] ?? null;
-}
+export const getUserMembership = async (userId) => {
+  if (!userId) return null;
+  try {
+    const data = await getUserMemberships(userId);
+    if (!data || data.length === 0) return null;
+    return data[0];
+  } catch (err) {
+    console.error('Error fetching user membership from API:', err);
+    return null;
+  }
+};
