@@ -126,7 +126,7 @@ const Collaborate = () => {
       title: 'Hacé una donación única',
       description: (
         <>
-          <p className="text-celeste-complementario font-semibold text-center -mt-4 mb-4">Campaña Especial · Becá a la Novena</p>
+          <p className="text-base text-marron-legado/90 text-center mb-4 leading-relaxed">Campaña Especial · Becá a la Novena</p>
           <p className="text-base text-marron-legado/90 text-center mb-4 leading-relaxed">Cada aporte suma. Tu aporte se destina a:</p>
           <ul className="list-disc list-inside text-left text-marron-legado/80 space-y-1 text-sm mx-auto max-w-xs">
             <li>Materiales de entrenamiento</li>
@@ -316,7 +316,7 @@ const Collaborate = () => {
                 <img  
                   className="rounded-xl shadow-lg w-full max-w-md object-contain h-auto" 
                   alt="Logo de Mercado Pago Solidario" 
-                  src="https://storage.googleapis.com/hostinger-horizons-assets-prod/c93288dd-3aa0-49f8-b2c6-b145823c3caf/0dd510251a1e68a792030b8508b8ec9e.png" />
+                  src="/img/mercadolibre_solidario.png" />
               </motion.div>
             </div>
           </div>

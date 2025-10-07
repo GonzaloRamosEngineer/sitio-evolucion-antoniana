@@ -69,21 +69,24 @@ const LegalDocuments = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-blanco-fundacion dark:bg-background font-inter py-8 md:py-12"
     >
-      <section className="bg-gradient-to-br from-primary-antoniano to-blue-700 dark:from-primary-antoniano/90 dark:to-blue-800/90 text-white py-16 shadow-lg">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
+      <section className="py-20 md:py-28 text-center bg-gradient-to-b from-celeste-complementario/30 via-blanco-fundacion to-blanco-fundacion hero-pattern">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano mb-6 text-balance"
           >
-            <ShieldCheck className="w-20 h-20 text-celeste-complementario dark:text-celeste-complementario/80 mx-auto mb-6" />
-            <h1 className="text-4xl md:text-5xl font-poppins font-bold mb-4 text-balance">
-              Documentos Legales
-            </h1>
-            <p className="text-lg md:text-xl text-celeste-complementario/90 dark:text-gray-300 max-w-2xl mx-auto text-balance">
-              Accede a nuestra documentación oficial para conocer más sobre nuestra estructura, operaciones y políticas.
-            </p>
-          </motion.div>
+            Documentos Legales
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            className="text-lg md:text-xl text-marron-legado/90 max-w-3xl mx-auto leading-relaxed text-balance"
+          >
+            Accede a nuestra documentación oficial para conocer más sobre nuestra estructura, operaciones y políticas.
+          </motion.p>
         </div>
       </section>
 

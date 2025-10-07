@@ -18,7 +18,6 @@ const Footer = () => {
     {
       title: 'Legal',
       links: [
-        { name: 'Estatuto', href: '/estatuto' },
         { name: 'Política de Privacidad', href: '/privacy' },
         { name: 'Términos de Uso', href: '/terms' },
         { name: 'Documentos Legales', href: '/legal-documents' },
@@ -52,7 +51,7 @@ const Footer = () => {
               className="flex items-center space-x-3 mb-6"
             >
               <div className="w-14 h-14 bg-gradient-to-br from-azul-antoniano to-celeste-complementario rounded-xl flex items-center justify-center shadow-lg">
-                <img src="/img/transparente.png" alt="Logo Fundación" className="w-10 h-10 rounded-md object-cover" />
+                <img src="/img/fondo_blanco_logo.png" alt="Logo Fundación" className="w-10 h-10 rounded-md object-cover" />
               </div>
               <div>
                 <p className="text-2xl font-poppins font-bold leading-tight text-blanco-fundacion">Fundación</p>
