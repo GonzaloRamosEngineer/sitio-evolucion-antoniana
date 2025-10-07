@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserRegistrations } from '@/api/activitiesApi';
-import { getUserMembership } from '@/api/membershipApi';
+import { getUserMemberships } from '@/api/membershipApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +15,22 @@ import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
 
 const Dashboard = () => {
-  const { user, logout, loading: authLoading, isAdmin: userIsAdmin, isAuthenticated, setUser: setAuthUser, refreshUser } = useAuth();
+  const {
+    user,
+    logout,
+    loading: authLoading,
+    isAdmin: userIsAdmin,
+    isAuthenticated,
+    setUser: setAuthUser,
+    refreshUser
+  } = useAuth();
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [currentUser, setCurrentUser] = useState(user);
   const [userRegistrations, setUserRegistrations] = useState([]);
-  const [userMembershipData, setUserMembershipData] = useState(null);
+  const [userMemberships, setUserMemberships] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [metrics, setMetrics] = useState({ total_donado: 0, total_suscripciones_activas: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
@@ -36,26 +45,26 @@ const Dashboard = () => {
       return;
     }
     try {
-      const [registrationsData, membershipDataResult, metricsDataResult] = await Promise.all([
+      const [registrationsData, membershipsResult, metricsDataResult] = await Promise.all([
         getUserRegistrations(userId),
-        getUserMembership(userId),
+        getUserMemberships(userId, { onlyActive: true }), // poné false si querés ver también las inactivas
         supabase.from('fundacion_metrics').select('*').single()
       ]);
 
       setUserRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
-      setUserMembershipData(membershipDataResult);
-      
+      setUserMemberships(Array.isArray(membershipsResult) ? membershipsResult : []);
+
       if (metricsDataResult.data) {
         setMetrics(metricsDataResult.data);
       } else {
         setMetrics({ total_donado: 0, total_suscripciones_activas: 0 });
       }
     } catch (error) {
-      console.error("Error fetching dashboard data:", error.message);
+      console.error('Error fetching dashboard data:', error.message);
       toast({
-        title: "Error al cargar datos",
-        description: "No se pudieron cargar los datos del dashboard.",
-        variant: "destructive",
+        title: 'Error al cargar datos',
+        description: 'No se pudieron cargar los datos del dashboard.',
+        variant: 'destructive'
       });
     } finally {
       setPageLoading(false);
@@ -77,23 +86,26 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await logout();
-    toast({ title: "Sesión Cerrada", description: "Has cerrado sesión exitosamente." });
+    toast({ title: 'Sesión Cerrada', description: 'Has cerrado sesión exitosamente.' });
     navigate('/');
   };
 
   const handleProfileUpdate = async (updatedUserData) => {
     setCurrentUser(updatedUserData);
-    setAuthUser(updatedUserData); 
-    await refreshUser(); 
+    setAuthUser(updatedUserData);
+    await refreshUser();
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
     try {
       return new Date(dateString).toLocaleDateString('es-AR', {
-        year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'
       });
-    } catch (e) {
+    } catch {
       return 'Fecha inválida';
     }
   };
@@ -117,7 +129,9 @@ const Dashboard = () => {
       <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center p-6 bg-blanco-fundacion dark:bg-background">
         <AlertTriangle className="w-20 h-20 text-destructive mb-6" />
         <h2 className="text-3xl font-poppins text-primary-antoniano dark:text-primary mb-3">Acceso Denegado</h2>
-        <p className="text-marron-legado/80 dark:text-muted-foreground mb-8 max-w-md">Debes iniciar sesión para ver tu dashboard.</p>
+        <p className="text-marron-legado/80 dark:text-muted-foreground mb-8 max-w-md">
+          Debes iniciar sesión para ver tu dashboard.
+        </p>
         <Button variant="antoniano" asChild className="text-white dark:text-primary-foreground">
           <Link to="/login">Iniciar Sesión</Link>
         </Button>
@@ -146,11 +160,19 @@ const Dashboard = () => {
           </h1>
           <div className="flex items-center space-x-3">
             {userIsAdmin && (
-              <Button variant="outline" asChild className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario dark:border-primary dark:text-primary dark:hover:bg-accent">
+              <Button
+                variant="outline"
+                asChild
+                className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario dark:border-primary dark:text-primary dark:hover:bg-accent"
+              >
                 <Link to="/admin">Panel Admin</Link>
               </Button>
             )}
-            <Button variant="outline" onClick={handleLogout} className="border-destructive text-destructive hover:bg-red-100 dark:hover:bg-destructive/10">
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-destructive text-destructive hover:bg-red-100 dark:hover:bg-destructive/10"
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión
             </Button>
@@ -158,35 +180,66 @@ const Dashboard = () => {
         </motion.div>
 
         {currentUser && <DashboardHeader user={currentUser} onUpdateSuccess={handleProfileUpdate} />}
-        
+
         <SummaryMetrics metrics={metrics} loading={metricsLoading} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          {/* Columna izquierda */}
           <motion.div
             className="lg:col-span-1 space-y-8"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {/* Mis colaboraciones */}
             <Card className="shadow-xl border-marron-legado/10 dark:border-border dark:bg-card">
               <CardHeader>
                 <CardTitle className="text-xl font-poppins text-primary-antoniano dark:text-primary flex items-center">
                   <Award className="w-6 h-6 mr-3 text-primary-antoniano/80 dark:text-primary/80" />
-                  Mi Colaboración
+                  Mis Colaboraciones
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {userMembershipData ? (
-                  <div className="space-y-3">
-                    <p className="text-marron-legado dark:text-foreground">Plan: <span className="font-semibold text-primary-antoniano dark:text-primary">{userMembershipData.plan}</span></p>
-                    <p className="text-marron-legado dark:text-foreground">Monto: <span className="font-semibold text-primary-antoniano dark:text-primary">${userMembershipData.amount}</span></p>
-                    <p className="text-marron-legado dark:text-foreground">Estado: <Badge variant={userMembershipData.status === 'active' ? 'default' : 'secondary'} className={userMembershipData.status === 'active' ? 'bg-green-500 text-white dark:bg-green-600 dark:text-primary-foreground' : 'bg-gray-400 text-white dark:bg-gray-500 dark:text-primary-foreground'}>{userMembershipData.status}</Badge></p>
-                    <p className="text-sm text-muted-foreground">Desde: {formatDate(userMembershipData.created_at)}</p>
+                {userMemberships && userMemberships.length > 0 ? (
+                  <div className="space-y-4">
+                    {userMemberships.map((m) => (
+                      <div
+                        key={m.id}
+                        className="p-4 rounded-lg border border-celeste-complementario/40 dark:border-accent/40 bg-celeste-complementario/10 dark:bg-accent/20"
+                      >
+                        <p className="text-marron-legado dark:text-foreground">
+                          Plan:{' '}
+                          <span className="font-semibold text-primary-antoniano dark:text-primary">{m.plan}</span>
+                        </p>
+                        <p className="text-marron-legado dark:text-foreground">
+                          Monto:{' '}
+                          <span className="font-semibold text-primary-antoniano dark:text-primary">
+                            ${m.amount}
+                          </span>
+                        </p>
+                        <p className="text-marron-legado dark:text-foreground">
+                          Estado:{' '}
+                          <Badge
+                            variant={m.status === 'active' ? 'default' : 'secondary'}
+                            className={
+                              m.status === 'active'
+                                ? 'bg-green-500 text-white dark:bg-green-600 dark:text-primary-foreground'
+                                : 'bg-gray-400 text-white dark:bg-gray-500 dark:text-primary-foreground'
+                            }
+                          >
+                            {m.status}
+                          </Badge>
+                        </p>
+                        <p className="text-sm text-muted-foreground">Desde: {formatDate(m.created_at)}</p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-4">
                     <Info className="w-10 h-10 text-primary-antoniano/50 dark:text-primary/50 mx-auto mb-3" />
-                    <p className="text-marron-legado/90 dark:text-muted-foreground mb-3">Aún no tienes una colaboración activa.</p>
+                    <p className="text-marron-legado/90 dark:text-muted-foreground mb-3">
+                      Aún no tienes una colaboración activa.
+                    </p>
                     <Button variant="antoniano" asChild className="text-white dark:text-primary-foreground">
                       <Link to="/collaborate">Quiero Colaborar</Link>
                     </Button>
@@ -196,12 +249,14 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
+          {/* Columna derecha */}
           <motion.div
             className="lg:col-span-2 space-y-8"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
+            {/* Inscripciones a actividades */}
             <Card className="shadow-xl border-marron-legado/10 dark:border-border dark:bg-card">
               <CardHeader>
                 <CardTitle className="text-xl font-poppins text-primary-antoniano dark:text-primary flex items-center">
@@ -212,12 +267,20 @@ const Dashboard = () => {
               <CardContent>
                 {userRegistrations && userRegistrations.length > 0 ? (
                   <div className="space-y-6">
-                    {userRegistrations.map((reg) => (
+                    {userRegistrations.map((reg) =>
                       reg.activity ? (
-                        <motion.div key={reg.id} className="p-5 border border-celeste-complementario dark:border-accent rounded-lg bg-celeste-complementario/20 dark:bg-accent/30 hover:shadow-md transition-shadow" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                        <motion.div
+                          key={reg.id}
+                          className="p-5 border border-celeste-complementario dark:border-accent rounded-lg bg-celeste-complementario/20 dark:bg-accent/30 hover:shadow-md transition-shadow"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
                             <Link to={`/activities/${reg.activity.id}`}>
-                              <h4 className="font-semibold text-lg text-primary-antoniano dark:text-primary hover:underline mb-1 sm:mb-0">{reg.activity.title}</h4>
+                              <h4 className="font-semibold text-lg text-primary-antoniano dark:text-primary hover:underline mb-1 sm:mb-0">
+                                {reg.activity.title}
+                              </h4>
                             </Link>
                             <Button
                               variant="outline"
@@ -229,17 +292,35 @@ const Dashboard = () => {
                               Agregar a Calendario
                             </Button>
                           </div>
-                          <p className="text-sm text-marron-legado/80 dark:text-muted-foreground mb-1">Fecha: {formatDate(reg.activity.date)} | Duración: {reg.activity.duration}</p>
-                          <p className="text-sm text-marron-legado/80 dark:text-muted-foreground mb-2">Modalidad: <Badge variant={reg.activity.modality === 'presencial' ? 'default' : 'secondary'} className={`capitalize text-xs ${reg.activity.modality === 'presencial' ? 'bg-primary-antoniano text-white dark:bg-primary dark:text-primary-foreground' : 'bg-green-600 text-white dark:bg-green-700 dark:text-primary-foreground'}`}>{reg.activity.modality}</Badge></p>
-                          <p className="text-xs text-muted-foreground">Inscrito el: {formatDate(reg.registered_at)}</p>
+                          <p className="text-sm text-marron-legado/80 dark:text-muted-foreground mb-1">
+                            Fecha: {formatDate(reg.activity.date)} | Duración: {reg.activity.duration}
+                          </p>
+                          <p className="text-sm text-marron-legado/80 dark:text-muted-foreground mb-2">
+                            Modalidad:{' '}
+                            <Badge
+                              variant={reg.activity.modality === 'presencial' ? 'default' : 'secondary'}
+                              className={`capitalize text-xs ${
+                                reg.activity.modality === 'presencial'
+                                  ? 'bg-primary-antoniano text-white dark:bg-primary dark:text-primary-foreground'
+                                  : 'bg-green-600 text-white dark:bg-green-700 dark:text-primary-foreground'
+                              }`}
+                            >
+                              {reg.activity.modality}
+                            </Badge>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Inscrito el: {formatDate(reg.registered_at)}
+                          </p>
                         </motion.div>
                       ) : null
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-10">
                     <Info className="w-12 h-12 text-primary-antoniano/50 dark:text-primary/50 mx-auto mb-4" />
-                    <p className="text-marron-legado/90 dark:text-muted-foreground mb-4">No estás inscrito en ninguna actividad actualmente.</p>
+                    <p className="text-marron-legado/90 dark:text-muted-foreground mb-4">
+                      No estás inscrito en ninguna actividad actualmente.
+                    </p>
                     <Button variant="antoniano" asChild className="text-white dark:text-primary-foreground">
                       <Link to="/activities">Explorar Actividades</Link>
                     </Button>

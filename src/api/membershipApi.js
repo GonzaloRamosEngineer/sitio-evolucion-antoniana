@@ -1,26 +1,38 @@
 import { supabase } from '@/lib/supabase';
 
-export const getUserMembership = async (userId) => {
-  if (!userId) return null;
+/**
+ * Trae TODAS las membresías del usuario.
+ * @param {string} userId
+ * @param {{ onlyActive?: boolean }} [opts]
+ * @returns {Promise<Array>}
+ */
+export async function getUserMemberships(userId, { onlyActive = false } = {}) {
+  if (!userId) return [];
+
   try {
-    const { data, error } = await supabase
-      .from('memberships')
-      .select('*')
+    let query = supabase
+      .from('memberships') // ajustá si tu tabla se llama distinto
+      .select('id, plan, amount, status, created_at, starts_at, ends_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1); 
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
+    if (onlyActive) query = query.eq('status', 'active');
 
-    if (!data || data.length === 0) {
-      return null;
-    }
+    const { data, error } = await query;
+    if (error) throw error;
 
-    return data[0];
+    return data ?? [];
   } catch (err) {
-    console.error("Error fetching user membership from API:", err);
-    return null;
+    console.error('Error fetching user memberships:', err);
+    return [];
   }
-};
+}
+
+/**
+ * Compatibilidad: sigue existiendo getUserMembership,
+ * pero ahora devuelve la ÚLTIMA (más reciente).
+ */
+export async function getUserMembership(userId, { onlyActive = false } = {}) {
+  const all = await getUserMemberships(userId, { onlyActive });
+  return all[0] ?? null;
+}
