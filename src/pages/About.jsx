@@ -86,7 +86,7 @@ const About = () => {
               <img   
                 className="rounded-2xl shadow-xl w-full h-96 object-cover"
                 alt="Reunión del equipo de la fundación planificando proyectos comunitarios"
-                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/c93288dd-3aa0-49f8-b2c6-b145823c3caf/7e3b035e48adf87a55a239d0b919dc66.png" />
+                src="/img/hogar_abuelos.png" />
             </motion.div>
           </div>
         </div>

@@ -41,7 +41,7 @@ const Header = () => {
     ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
   
-  const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/c93288dd-3aa0-49f8-b2c6-b145823c3caf/1911a78c207f4976853bc75e11bbad81.png";
+  const logoUrl = "/img/transparente.png"; 
 
   return (
     <motion.header 

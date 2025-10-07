@@ -89,7 +89,7 @@ const Home = () => {
               <div className="relative z-10">
                 <img     
                   className="rounded-2xl shadow-2xl w-full h-96 object-cover"
-                  alt="Joven en silla de ruedas sonríe al recibir una camiseta y donaciones" src="https://storage.googleapis.com/hostinger-horizons-assets-prod/c93288dd-3aa0-49f8-b2c6-b145823c3caf/5ed629216a4539e64282c012818d1f82.png" />
+                  alt="Joven en silla de ruedas sonríe al recibir una camiseta y donaciones" src="/img/donativo_cancha.png" />
               </div>
               <div className="absolute -top-4 -right-4 w-full h-full bg-celeste-complementario/20 dark:bg-primary/20 rounded-2xl opacity-20 transform -rotate-3"></div>
             </motion.div>
