@@ -75,7 +75,7 @@ const LegalDocuments = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano mb-6 text-balance"
+            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-azul-profundo dark:text-white mb-6 text-balance"
           >
             Documentos Legales
           </motion.h1>
@@ -83,7 +83,7 @@ const LegalDocuments = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl text-marron-legado/90 max-w-3xl mx-auto leading-relaxed text-balance"
+            className="text-lg md:text-xl text-marron-legado/90 dark:text-white/80 max-w-3xl mx-auto leading-relaxed text-balance"
           >
             Accede a nuestra documentación oficial para conocer más sobre nuestra estructura, operaciones y políticas.
           </motion.p>
