@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Calendar, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import BenefitCard from '@/components/BenefitCard';
 import { getBenefits } from '@/lib/storage';
 

@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { getPartners } from '@/lib/storage';
 
 const PartnersPage = () => {

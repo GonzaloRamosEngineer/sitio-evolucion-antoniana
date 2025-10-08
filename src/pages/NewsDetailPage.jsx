@@ -3,8 +3,6 @@ import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, ArrowLeft, Share2, Copy } from 'lucide-react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { getNewsById } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
