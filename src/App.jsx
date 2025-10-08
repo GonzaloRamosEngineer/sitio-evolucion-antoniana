@@ -26,6 +26,17 @@ import LegalDocuments from '@/pages/LegalDocuments';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
+// 🔹 Nuevas páginas de Partners, Beneficios y Novedades
+import PartnersPage from '@/pages/PartnersPage';
+import PartnerDetailPage from '@/pages/PartnerDetailPage';
+import BenefitsPage from '@/pages/BenefitsPage';
+import BenefitDetailPage from '@/pages/BenefitDetailPage';
+import ApplyPartnerPage from '@/pages/ApplyPartnerPage';
+import NewsPage from '@/pages/NewsPage';
+import NewsDetailPage from '@/pages/NewsDetailPage';
+
+
+
 const PageRoutes = () => {
   const location = useLocation();
   return (
@@ -44,6 +55,17 @@ const PageRoutes = () => {
         <Route path="/update-password" element={<UpdatePasswordForm />} /> 
         <Route path="/agradecimiento" element={<Agradecimiento />} />
         <Route path="/legal-documents" element={<LegalDocuments />} />
+
+
+        {/* 🔹 Nuevas rutas */}
+        <Route path="/partners" element={<PartnersPage />} />
+        <Route path="/partners/:id" element={<PartnerDetailPage />} />
+        <Route path="/beneficios" element={<BenefitsPage />} />
+        <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
+        <Route path="/postular-partner" element={<ApplyPartnerPage />} />
+        <Route path="/novedades" element={<NewsPage />} />
+        <Route path="/novedades/:id" element={<NewsDetailPage />} />
+
         <Route 
           path="/dashboard" 
           element={

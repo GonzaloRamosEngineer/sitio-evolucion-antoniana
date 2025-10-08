@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -10,7 +10,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
-import { Menu, X, User, LogOut, Settings, CalendarDays, LayoutDashboard, FileText } from 'lucide-react';
+import {
+  Menu, X, User, LogOut, Settings, CalendarDays, LayoutDashboard, FileText,
+  Newspaper, Handshake, Gift, ChevronDown
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
 
@@ -20,13 +23,19 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // 🔹 Menú principal
   const navigation = [
     { name: 'Inicio', href: '/' },
-    { name: 'Sobre Nosotros', href: '/about' },
+    { name: 'Novedades', href: '/novedades' },
+    { name: 'Sobre Nosotros', href: '/about', subitems: [
+      { name: 'Partners', href: '/partners', icon: Handshake },
+    ]},
     { name: 'Actividades', href: '/activities' },
-    { name: 'Colaborá', href: '/collaborate' },
+    { name: 'Colaborá', href: '/collaborate', subitems: [
+      { name: 'Beneficios', href: '/beneficios', icon: Gift },
+    ]},
     { name: 'Documentos Legales', href: '/legal-documents' },
-    { name: 'Contacto', href: '/contact' }
+    { name: 'Contacto', href: '/contact' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -34,17 +43,17 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
-    navigate('/'); 
+    navigate('/');
   };
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
-  
-  const logoUrl = "/img/transparente.png"; 
+
+  const logoUrl = "/img/transparente.png";
 
   return (
-    <motion.header 
+    <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
@@ -52,8 +61,9 @@ const Header = () => {
     >
       <nav className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
+          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <motion.div 
+            <motion.div
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
               className="w-12 h-12 flex items-center justify-center"
@@ -66,37 +76,57 @@ const Header = () => {
             </div>
           </Link>
 
+          {/* Menú Desktop */}
           <div className="hidden lg:flex items-center space-x-1">
             {navigation.map((item) => (
-              <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
-                <Button variant="ghost" asChild className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary">
-                  <Link
-                    to={item.href}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                      isActive(item.href)
-                        ? 'text-primary-antoniano dark:text-primary'
-                        : ''
-                    }`}
-                  >
-                    {item.name}
-                    <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${isActive(item.href) ? 'scale-x-100' : ''}`}></span>
-                  </Link>
-                </Button>
-              </motion.div>
+              item.subitems ? (
+                <DropdownMenu key={item.name}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary px-4">
+                      {item.name} <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {item.subitems.map((sub) => (
+                      <DropdownMenuItem key={sub.href} asChild>
+                        <Link to={sub.href} className="flex items-center gap-2">
+                          {sub.icon && <sub.icon className="h-4 w-4 text-primary-antoniano dark:text-primary" />}
+                          {sub.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
+                  <Button variant="ghost" asChild className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary">
+                    <Link
+                      to={item.href}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
+                        isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+                      }`}
+                    >
+                      {item.name}
+                      <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${isActive(item.href) ? 'scale-x-100' : ''}`}></span>
+                    </Link>
+                  </Button>
+                </motion.div>
+              )
             ))}
           </div>
 
+          {/* Usuario / Auth */}
           <div className="flex items-center space-x-2">
             <ThemeSwitch />
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <motion.button 
+                  <motion.button
                     whileTap={{ scale: 0.95 }}
                     className="relative h-10 w-10 rounded-full p-0 focus-visible:ring-primary-antoniano focus:outline-none"
                   >
                     <Avatar className="h-10 w-10 border-2 border-primary-antoniano/50 hover:border-primary-antoniano dark:border-primary/50 dark:hover:border-primary transition-all">
-                       <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary font-semibold text-sm">
+                      <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary font-semibold text-sm">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -116,7 +146,7 @@ const Header = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
                     <motion.div whileTap={{ scale: 0.98 }} className="w-full">
                       <Link to="/dashboard" className="flex items-center text-sm py-2 px-3">
@@ -144,7 +174,7 @@ const Header = () => {
                           </Link>
                         </motion.div>
                       </DropdownMenuItem>
-                       <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
+                      <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
                         <motion.div whileTap={{ scale: 0.98 }} className="w-full">
                           <Link to="/admin?tab=legal_documents" className="flex items-center text-sm py-2 px-3">
                             <FileText className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
@@ -166,18 +196,19 @@ const Header = () => {
             ) : (
               <div className="hidden lg:flex items-center space-x-2">
                 <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button variant="ghost" asChild className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary px-4">
+                  <Button variant="ghost" asChild className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4">
                     <Link to="/login">Iniciar Sesión</Link>
                   </Button>
                 </motion.div>
                 <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button asChild className="bg-primary-antoniano text-white dark:bg-primary dark:text-primary-foreground hover:bg-primary-antoniano/90 dark:hover:bg-primary/90 rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+                  <Button asChild className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
                     <Link to="/register">Registrarse</Link>
                   </Button>
                 </motion.div>
               </div>
             )}
 
+            {/* Botón menú móvil */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               className="lg:hidden text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent p-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-antoniano"
@@ -189,6 +220,7 @@ const Header = () => {
           </div>
         </div>
 
+        {/* Menú móvil */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
@@ -199,39 +231,33 @@ const Header = () => {
             >
               <div className="px-2 pt-2 pb-3 space-y-1">
                 {navigation.map((item) => (
-                  <motion.div key={item.name} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to={item.href}
-                      className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
-                        isActive(item.href)
-                          ? 'text-primary-antoniano dark:text-primary bg-celeste-complementario dark:bg-accent font-semibold'
-                          : 'text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70'
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  </motion.div>
-                ))}
-                
-                {!isAuthenticated && (
-                  <div className="pt-4 pb-2 space-y-2 border-t border-border mt-2">
-                    <motion.div whileTap={{ scale: 0.98 }}>
-                      <Button variant="outline" className="w-full border-primary-antoniano dark:border-primary text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent" asChild>
-                        <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                          Iniciar Sesión
+                  <div key={item.name}>
+                    {!item.subitems ? (
+                      <Link
+                        to={item.href}
+                        className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                          isActive(item.href)
+                            ? 'text-primary-antoniano dark:text-primary bg-celeste-complementario dark:bg-accent font-semibold'
+                            : 'text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.name}
+                      </Link>
+                    ) : (
+                      item.subitems.map((sub) => (
+                        <Link
+                          key={sub.href}
+                          to={sub.href}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="block px-5 py-2 text-sm text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70 rounded-md"
+                        >
+                          ↳ {sub.name}
                         </Link>
-                      </Button>
-                    </motion.div>
-                    <motion.div whileTap={{ scale: 0.98 }}>
-                      <Button className="w-full bg-primary-antoniano dark:bg-primary text-white dark:text-primary-foreground hover:bg-primary-antoniano/90 dark:hover:bg-primary/90" asChild>
-                        <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                          Registrarse
-                        </Link>
-                      </Button>
-                    </motion.div>
+                      ))
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             </motion.div>
           )}
