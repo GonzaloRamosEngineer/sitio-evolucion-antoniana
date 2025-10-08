@@ -4,10 +4,10 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, ArrowLeft, Share2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 import { getNewsById } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
+import Header from '@/components/Layout/Header';
+import Footer from '@/components/Layout/Footer';
 
 const SocialShareButton = ({ platform, url, title }) => {
   const platforms = {
@@ -20,9 +20,7 @@ const SocialShareButton = ({ platform, url, title }) => {
       icon: 'https://img.icons8.com/color/48/twitterx.png',
     },
     linkedin: {
-      url: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(
-        title
-      )}`,
+      url: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
       icon: 'https://img.icons8.com/color/48/linkedin.png',
     },
     instagram: {
@@ -62,14 +60,13 @@ const NewsDetailPage = () => {
   const { id } = useParams();
   const [newsItem, setNewsItem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pageUrl =
-    typeof window !== 'undefined' ? window.location.href : '';
+  const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   useEffect(() => {
     const fetchNews = async () => {
       setLoading(true);
       const data = await getNewsById(id);
-      setNewsItem(data || null);
+      setNewsItem(data);
       setLoading(false);
     };
     fetchNews();
@@ -106,10 +103,7 @@ const NewsDetailPage = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Helmet>
         <title>{newsItem.title} - Fundación Evolución Antoniana</title>
-        <meta
-          name="description"
-          content={newsItem.content.substring(0, 160)}
-        />
+        <meta name="description" content={newsItem.content?.substring(0, 160)} />
       </Helmet>
 
       <Header />
@@ -139,12 +133,12 @@ const NewsDetailPage = () => {
                 />
               </div>
             )}
+
             <div className="p-8 md:p-12">
               <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
                 <Calendar className="h-4 w-4" />
                 <span>
-                  Publicado el{' '}
-                  {new Date(newsItem.created_at).toLocaleDateString()}
+                  Publicado el {new Date(newsItem.created_at).toLocaleDateString()}
                 </span>
               </div>
 
@@ -162,26 +156,10 @@ const NewsDetailPage = () => {
                   Compartir
                 </h3>
                 <div className="flex items-center gap-4">
-                  <SocialShareButton
-                    platform="facebook"
-                    url={pageUrl}
-                    title={newsItem.title}
-                  />
-                  <SocialShareButton
-                    platform="twitter"
-                    url={pageUrl}
-                    title={newsItem.title}
-                  />
-                  <SocialShareButton
-                    platform="linkedin"
-                    url={pageUrl}
-                    title={newsItem.title}
-                  />
-                  <SocialShareButton
-                    platform="instagram"
-                    url={pageUrl}
-                    title={newsItem.title}
-                  />
+                  <SocialShareButton platform="facebook" url={pageUrl} title={newsItem.title} />
+                  <SocialShareButton platform="twitter" url={pageUrl} title={newsItem.title} />
+                  <SocialShareButton platform="linkedin" url={pageUrl} title={newsItem.title} />
+                  <SocialShareButton platform="instagram" url={pageUrl} title={newsItem.title} />
                   <Button variant="outline" onClick={copyToClipboard} className="gap-2">
                     <Copy className="h-4 w-4" />
                     Copiar enlace

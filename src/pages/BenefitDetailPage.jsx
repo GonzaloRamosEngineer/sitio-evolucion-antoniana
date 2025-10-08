@@ -4,10 +4,10 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Tag, ArrowLeft, Info, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 import { getBenefits } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
+import Header from '@/components/Layout/Header';
+import Footer from '@/components/Layout/Footer';
 
 const BenefitDetailPage = () => {
   const { id } = useParams();
@@ -18,7 +18,7 @@ const BenefitDetailPage = () => {
     const fetchBenefit = async () => {
       setLoading(true);
       const allBenefits = await getBenefits();
-      const foundBenefit = (allBenefits || []).find((b) => b.id === id);
+      const foundBenefit = (allBenefits || []).find((b) => String(b.id) === String(id));
       setBenefit(foundBenefit || null);
       setLoading(false);
     };
@@ -93,6 +93,7 @@ const BenefitDetailPage = () => {
                   </div>
                 )}
               </div>
+
               <div className="p-8 md:p-12">
                 <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full mb-4 capitalize">
                   {benefit.categoria}
@@ -112,9 +113,7 @@ const BenefitDetailPage = () => {
                       <CheckCircle className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">
-                        ¿Cómo obtener el descuento?
-                      </h3>
+                      <h3 className="font-semibold text-gray-800">¿Cómo obtener el descuento?</h3>
                       <p className="text-gray-600">
                         Ingresa a la web y aplicá el código:{' '}
                         <strong className="text-blue-600">HOLA10</strong>
@@ -131,13 +130,9 @@ const BenefitDetailPage = () => {
                         <h3 className="font-semibold text-gray-800">Validez</h3>
                         <p className="text-gray-600">
                           {benefit.fecha_inicio &&
-                            `Desde ${new Date(
-                              benefit.fecha_inicio
-                            ).toLocaleDateString()}`}
+                            `Desde ${new Date(benefit.fecha_inicio).toLocaleDateString()}`}
                           {benefit.fecha_fin &&
-                            ` hasta ${new Date(
-                              benefit.fecha_fin
-                            ).toLocaleDateString()}`}
+                            ` hasta ${new Date(benefit.fecha_fin).toLocaleDateString()}`}
                         </p>
                       </div>
                     </div>
@@ -148,22 +143,15 @@ const BenefitDetailPage = () => {
                       <Info className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">
-                        Términos y condiciones
-                      </h3>
+                      <h3 className="font-semibold text-gray-800">Términos y condiciones</h3>
                       <p className="text-gray-600">
-                        Un único uso por persona. Acumulable con otros medios de
-                        pago.
+                        Un único uso por persona. Acumulable con otros medios de pago.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <Button
-                  size="lg"
-                  className="w-full md:w-auto"
-                  onClick={handleCopyCode}
-                >
+                <Button size="lg" className="w-full md:w-auto" onClick={handleCopyCode}>
                   Obtener Código
                 </Button>
               </div>

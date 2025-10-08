@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getPartners } from '@/lib/storage';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import { getPartners } from '@/lib/storage';
 
 const PartnersPage = () => {
   const [partners, setPartners] = useState([]);

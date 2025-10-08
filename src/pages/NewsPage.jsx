@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getNews } from '@/lib/storage';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import { getNews } from '@/lib/storage';
 
 const NewsPage = () => {
   const [news, setNews] = useState([]);
@@ -14,7 +14,7 @@ const NewsPage = () => {
   useEffect(() => {
     const fetchNews = async () => {
       const loadedNews = await getNews();
-      setNews(loadedNews || []);
+      setNews(loadedNews);
     };
     fetchNews();
   }, []);

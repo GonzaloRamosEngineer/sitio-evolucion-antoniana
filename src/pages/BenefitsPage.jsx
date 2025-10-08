@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 import BenefitCard from '@/components/BenefitCard';
 import { getBenefits } from '@/lib/storage';
+import Header from '@/components/Layout/Header';
+import Footer from '@/components/Layout/Footer';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -29,9 +29,7 @@ const BenefitsPage = () => {
   useEffect(() => {
     const fetchBenefits = async () => {
       const loadedBenefits = await getBenefits();
-      const activeBenefits = (loadedBenefits || []).filter(
-        (b) => b.estado === 'activo'
-      );
+      const activeBenefits = (loadedBenefits || []).filter((b) => b.estado === 'activo');
       setBenefits(activeBenefits);
       setFilteredBenefits(activeBenefits);
     };
@@ -46,11 +44,10 @@ const BenefitsPage = () => {
     }
 
     if (searchTerm) {
-      const s = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (b) =>
-          b.titulo.toLowerCase().includes(s) ||
-          b.descripcion.toLowerCase().includes(s)
+          b.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          b.descripcion.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -89,7 +86,7 @@ const BenefitsPage = () => {
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   type="text"
                   placeholder="Buscar beneficios..."

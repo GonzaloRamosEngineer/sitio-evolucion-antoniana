@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { addPartner } from '@/lib/storage';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import { addPartner } from '@/lib/storage';
 
 const ApplyPartnerPage = () => {
   const navigate = useNavigate();
@@ -34,10 +34,7 @@ const ApplyPartnerPage = () => {
       return;
     }
 
-    const newPartner = {
-      ...formData,
-      estado: 'pendiente',
-    };
+    const newPartner = { ...formData, estado: 'pendiente' };
 
     await addPartner(newPartner);
 
@@ -53,10 +50,7 @@ const ApplyPartnerPage = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -82,8 +76,7 @@ const ApplyPartnerPage = () => {
             >
               <h1 className="text-5xl font-bold mb-4">Postularse como Partner</h1>
               <p className="text-xl text-blue-100">
-                Únete a nuestra red de aliados y contribuye al desarrollo de la
-                comunidad
+                Únete a nuestra red de aliados y contribuye al desarrollo de la comunidad
               </p>
             </motion.div>
           </div>
@@ -186,8 +179,7 @@ const ApplyPartnerPage = () => {
                 </div>
 
                 <p className="text-sm text-gray-500 text-center">
-                  * Campos obligatorios. Tu solicitud será revisada en un plazo de
-                  5 días hábiles.
+                  * Campos obligatorios. Tu solicitud será revisada en un plazo de 5 días hábiles.
                 </p>
               </form>
             </motion.div>

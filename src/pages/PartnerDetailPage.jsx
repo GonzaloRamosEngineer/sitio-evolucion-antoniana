@@ -4,9 +4,9 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getPartners } from '@/lib/storage';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
-import { getPartners } from '@/lib/storage';
 
 const PartnerDetailPage = () => {
   const { id } = useParams();
@@ -17,7 +17,7 @@ const PartnerDetailPage = () => {
     const fetchPartner = async () => {
       setLoading(true);
       const allPartners = await getPartners();
-      const foundPartner = (allPartners || []).find((p) => p.id === id);
+      const foundPartner = (allPartners || []).find((p) => String(p.id) === String(id));
       setPartner(foundPartner || null);
       setLoading(false);
     };
@@ -79,11 +79,10 @@ const PartnerDetailPage = () => {
                     className="max-h-full max-w-full object-contain"
                   />
                 ) : (
-                  <h2 className="text-5xl font-bold text-gray-400">
-                    {partner.nombre}
-                  </h2>
+                  <h2 className="text-5xl font-bold text-gray-400">{partner.nombre}</h2>
                 )}
               </div>
+
               <div className="p-8 md:p-12">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
                   {partner.nombre}
@@ -99,13 +98,9 @@ const PartnerDetailPage = () => {
                       <Info className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">
-                        Sobre la colaboración
-                      </h3>
+                      <h3 className="font-semibold text-gray-800">Sobre la colaboración</h3>
                       <p className="text-gray-600">
-                        {partner.nombre} colabora activamente con nuestros
-                        proyectos de desarrollo social y deportivo, ofreciendo
-                        beneficios exclusivos a nuestra comunidad.
+                        {partner.nombre} colabora activamente con nuestros proyectos, ofreciendo beneficios a la comunidad.
                       </p>
                     </div>
                   </div>
@@ -113,11 +108,7 @@ const PartnerDetailPage = () => {
 
                 <div className="flex flex-wrap gap-4">
                   {partner.sitio_web && (
-                    <a
-                      href={partner.sitio_web}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={partner.sitio_web} target="_blank" rel="noopener noreferrer">
                       <Button size="lg" variant="outline">
                         <Globe className="mr-2 h-5 w-5" />
                         Visitar Sitio Web
