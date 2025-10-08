@@ -4,31 +4,45 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Header from '@/components/Layout/Header';
+import Footer from '@/components/Layout/Footer';
 import { getPartners } from '@/lib/storage';
 
 const PartnersPage = () => {
   const [partners, setPartners] = useState([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchPartners = async () => {
       const loadedPartners = await getPartners();
-      setPartners((loadedPartners || []).filter(p => p.estado === 'aprobado'));
-    })();
+      setPartners((loadedPartners || []).filter((p) => p.estado === 'aprobado'));
+    };
+    fetchPartners();
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
         <title>Marcas Aliadas - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Conoce a nuestras marcas aliadas y los beneficios que ofrecen" />
+        <meta
+          name="description"
+          content="Conoce a nuestras marcas aliadas y los beneficios que ofrecen"
+        />
       </Helmet>
+
+      <Header />
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-sky-700 text-white py-16 px-4">
           <div className="max-w-6xl mx-auto">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
               <h1 className="text-5xl font-bold mb-4">Marcas Aliadas</h1>
-              <p className="text-xl text-blue-100 mb-6">Organizaciones comprometidas con el desarrollo de nuestra comunidad</p>
+              <p className="text-xl text-blue-100 mb-6">
+                Organizaciones comprometidas con el desarrollo de nuestra comunidad
+              </p>
               <Link to="/postular-partner">
                 <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50">
                   <Plus className="mr-2 h-5 w-5" />
@@ -43,7 +57,9 @@ const PartnersPage = () => {
           <div className="max-w-6xl mx-auto">
             {partners.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-xl text-gray-600 mb-6">Aún no hay marcas aliadas. ¡Sé el primero en unirte!</p>
+                <p className="text-xl text-gray-600 mb-6">
+                  Aún no hay marcas aliadas. ¡Sé el primero en unirte!
+                </p>
                 <Link to="/postular-partner">
                   <Button size="lg">Postularse ahora</Button>
                 </Link>
@@ -64,17 +80,20 @@ const PartnersPage = () => {
                           src={partner.logo_url}
                           alt={`Logo de ${partner.nombre}`}
                           className="max-h-full max-w-full object-contain"
-                          loading="lazy"
                         />
                       ) : (
-                        <div className="text-6xl font-bold text-blue-300">{partner.nombre?.charAt(0)}</div>
+                        <div className="text-6xl font-bold text-blue-300">
+                          {partner.nombre?.charAt(0)}
+                        </div>
                       )}
                     </div>
                     <div className="p-6 flex-grow flex flex-col">
                       <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                         {partner.nombre}
                       </h3>
-                      <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">{partner.descripcion}</p>
+                      <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
+                        {partner.descripcion}
+                      </p>
                       <Link to={`/partners/${partner.id}`} className="mt-auto">
                         <Button variant="outline" className="w-full">
                           Ver Beneficios <ArrowRight className="ml-2 h-4 w-4" />
@@ -88,6 +107,8 @@ const PartnersPage = () => {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 };
