@@ -13,20 +13,19 @@ const BenefitDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBenefit = async () => {
+    (async () => {
       setLoading(true);
-      const allBenefits = await getBenefits();
-      const foundBenefit = allBenefits.find(b => b.id === id);
-      setBenefit(foundBenefit);
+      const allBenefits = (await getBenefits()) || [];
+      const found = allBenefits.find(b => String(b.id) === String(id));
+      setBenefit(found || null);
       setLoading(false);
-    };
-    fetchBenefit();
+    })();
   }, [id]);
 
   const handleCopyCode = () => {
     toast({
-      title: "🚧 Función no implementada",
-      description: "Próximamente podrás copiar y usar códigos de descuento. ¡Pídelo en tu siguiente prompt! 🚀",
+      title: '🚧 Función no implementada',
+      description: 'Próximamente podrás copiar y usar códigos de descuento.',
     });
   };
 
@@ -56,9 +55,7 @@ const BenefitDetailPage = () => {
         <title>{benefit.titulo} - Fundación Evolución Antoniana</title>
         <meta name="description" content={benefit.descripcion} />
       </Helmet>
-      
-      <Header />
-      
+
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
           <Link to="/beneficios" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
@@ -66,19 +63,11 @@ const BenefitDetailPage = () => {
             Volver a todos los beneficios
           </Link>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <div className="h-64 bg-gray-200">
                 {benefit.imagen_url ? (
-                  <img 
-                    src={benefit.imagen_url} 
-                    alt={benefit.titulo}
-                    class="w-full h-full object-cover"
-                   /* src="https://images.unsplash.com/photo-1627577741153-74b82d87607b" */ />
+                  <img src={benefit.imagen_url} alt={benefit.titulo} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-200 flex items-center justify-center">
                     <Tag className="h-24 w-24 text-blue-300" />
@@ -103,7 +92,9 @@ const BenefitDetailPage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">¿Cómo obtener el descuento?</h3>
-                      <p className="text-gray-600">Ingresa a la web y aplicá el código: <strong className="text-blue-600">HOLA10</strong></p>
+                      <p className="text-gray-600">
+                        Ingresa a la web y aplicá el código: <strong className="text-blue-600">HOLA10</strong>
+                      </p>
                     </div>
                   </div>
                   {(benefit.fecha_inicio || benefit.fecha_fin) && (
@@ -139,8 +130,6 @@ const BenefitDetailPage = () => {
           </motion.div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
