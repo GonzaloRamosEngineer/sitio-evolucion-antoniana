@@ -1,4 +1,3 @@
-// src/components/Layout/Header.jsx
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,9 +24,11 @@ import { ThemeSwitch } from '@/components/ThemeSwitch';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [openNos, setOpenNos] = useState(false);       // Desktop submenu: Nosotros
-  const [openColab, setOpenColab] = useState(false);   // Desktop submenu: Colaborá
-  const [openMob, setOpenMob] = useState({ nosotros: false, colabora: false }); // Mobile accordions
+  // Estado para controlar apertura por hover en desktop
+  const [openNos, setOpenNos] = useState(false);
+  const [openColab, setOpenColab] = useState(false);
+  // Estado para acordeones en mobile
+  const [openMob, setOpenMob] = useState({ nosotros: false, colabora: false });
 
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
@@ -68,57 +69,47 @@ const Header = () => {
 
   const logoUrl = '/img/transparente.png';
 
-  // Subcomponente para items con submenu en Desktop
-  const DesktopSubmenu = ({ item, open, setOpen }) => {
-    return (
-      <div
-        className="relative flex items-center"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-      >
-        <DropdownMenu open={open} onOpenChange={setOpen}>
-          {/* Trigger: Link que navega en segundo click; primer click sólo abre */}
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              asChild
-              className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+  // Submenú de escritorio controlado solo por hover
+  const DesktopSubmenu = ({ item, open, setOpen }) => (
+    <div
+      className="relative flex items-center"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <DropdownMenu open={open} onOpenChange={() => { /* ignoramos clics; sólo hover */ }}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            asChild
+            className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+          >
+            {/* Click SIEMPRE navega al padre */}
+            <Link
+              to={item.href}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
+                isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+              }`}
             >
-              <Link
-                to={item.href}
-                aria-expanded={open}
-                onClick={(e) => {
-                  if (!open) {
-                    e.preventDefault();
-                    setOpen(true);
-                  }
-                  // si ya está abierto, permitimos la navegación
-                }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                  isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+              {item.name}
+              <span
+                className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+                  isActive(item.href) ? 'scale-x-100' : ''
                 }`}
-              >
-                {item.name}
-                <span
-                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
-                    isActive(item.href) ? 'scale-x-100' : ''
-                  }`}
-                />
-              </Link>
-            </Button>
-          </DropdownMenuTrigger>
+              />
+            </Link>
+          </Button>
+        </DropdownMenuTrigger>
 
-          <DropdownMenuContent sideOffset={8}>
-            {item.subitems.map((sub) => (
-              <DropdownMenuItem key={sub.href} asChild>
-                <Link to={sub.href}>{sub.name}</Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    );
-  };
+        <DropdownMenuContent sideOffset={8}>
+          {item.subitems.map((sub) => (
+            <DropdownMenuItem key={sub.href} asChild>
+              <Link to={sub.href}>{sub.name}</Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   return (
     <motion.header
@@ -323,21 +314,28 @@ const Header = () => {
                     </Link>
                   ) : (
                     <div key={item.name} className="rounded-md">
-                      <button
-                        type="button"
-                        className="w-full text-left px-3 py-3 rounded-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
-                        onClick={() =>
-                          setOpenMob((s) => ({
-                            ...s,
-                            [item.key]: !s[item.key],
-                          }))
-                        }
-                      >
-                        {item.name}{' '}
-                        <span className="ml-1 text-sm opacity-70">
-                          {openMob[item.key] ? '－' : '＋'}
-                        </span>
-                      </button>
+                      <div className="flex items-stretch">
+                        {/* Tap al nombre: navega al padre */}
+                        <Link
+                          to={item.href}
+                          className="flex-1 px-3 py-3 rounded-l-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {item.name}
+                        </Link>
+                        {/* Botón pequeño para expandir submenú */}
+                        <button
+                          type="button"
+                          aria-label={`Abrir submenú de ${item.name}`}
+                          className="px-3 py-3 rounded-r-md text-base font-medium text-marron-legado/80 dark:text-foreground/80 hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
+                          onClick={() =>
+                            setOpenMob((s) => ({ ...s, [item.key]: !s[item.key] }))
+                          }
+                        >
+                          <span className="text-sm">{openMob[item.key] ? '－' : '＋'}</span>
+                        </button>
+                      </div>
+
                       <AnimatePresence>
                         {openMob[item.key] && (
                           <motion.div
@@ -346,17 +344,6 @@ const Header = () => {
                             exit={{ height: 0, opacity: 0 }}
                             className="pl-4"
                           >
-                            {/* Link al padre */}
-                            <Link
-                              to={item.href}
-                              className="block px-3 py-2 text-sm rounded-md text-marron-legado/90 dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
-                              onClick={() => {
-                                setIsMenuOpen(false);
-                                setOpenMob({ nosotros: false, colabora: false });
-                              }}
-                            >
-                              {item.name}
-                            </Link>
                             {item.subitems.map((sub) => (
                               <Link
                                 key={sub.href}
