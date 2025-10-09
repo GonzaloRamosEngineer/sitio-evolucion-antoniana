@@ -24,10 +24,10 @@ import { ThemeSwitch } from '@/components/ThemeSwitch';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // Estado para controlar apertura por hover en desktop
+  // desktop: hover states
   const [openNos, setOpenNos] = useState(false);
   const [openColab, setOpenColab] = useState(false);
-  // Estado para acordeones en mobile
+  // mobile: acordeones
   const [openMob, setOpenMob] = useState({ nosotros: false, colabora: false });
 
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
@@ -69,45 +69,55 @@ const Header = () => {
 
   const logoUrl = '/img/transparente.png';
 
-  // Submenú de escritorio controlado solo por hover
+  // Submenú de escritorio (custom, no usa DropdownMenu para no bloquear el click)
   const DesktopSubmenu = ({ item, open, setOpen }) => (
     <div
-      className="relative flex items-center"
+      className="relative"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <DropdownMenu open={open} onOpenChange={() => { /* ignoramos clics; sólo hover */ }}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            asChild
-            className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
-          >
-            {/* Click SIEMPRE navega al padre */}
-            <Link
-              to={item.href}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
-              }`}
-            >
-              {item.name}
-              <span
-                className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
-                  isActive(item.href) ? 'scale-x-100' : ''
-                }`}
-              />
-            </Link>
-          </Button>
-        </DropdownMenuTrigger>
+      <Button
+        variant="ghost"
+        asChild
+        className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+      >
+        {/* Click navega al padre */}
+        <Link
+          to={item.href}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
+            isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+          }`}
+        >
+          {item.name}
+          <span
+            className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+              isActive(item.href) ? 'scale-x-100' : ''
+            }`}
+          />
+        </Link>
+      </Button>
 
-        <DropdownMenuContent sideOffset={8}>
-          {item.subitems.map((sub) => (
-            <DropdownMenuItem key={sub.href} asChild>
-              <Link to={sub.href}>{sub.name}</Link>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.12 }}
+            className="absolute left-0 top-full mt-2 min-w-[200px] rounded-md border border-border bg-white dark:bg-card text-foreground shadow-lg z-50 p-1"
+          >
+            {item.subitems.map((sub) => (
+              <Link
+                key={sub.href}
+                to={sub.href}
+                className="block w-full px-3 py-2 text-sm rounded-md hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
+              >
+                {sub.name}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 
@@ -315,7 +325,6 @@ const Header = () => {
                   ) : (
                     <div key={item.name} className="rounded-md">
                       <div className="flex items-stretch">
-                        {/* Tap al nombre: navega al padre */}
                         <Link
                           to={item.href}
                           className="flex-1 px-3 py-3 rounded-l-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
@@ -323,7 +332,6 @@ const Header = () => {
                         >
                           {item.name}
                         </Link>
-                        {/* Botón pequeño para expandir submenú */}
                         <button
                           type="button"
                           aria-label={`Abrir submenú de ${item.name}`}
