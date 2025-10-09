@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Menu, X, User, LogOut, Settings, CalendarDays, LayoutDashboard, FileText,
-  Newspaper, Handshake, Gift, ChevronDown
+  Newspaper, Users, Gift, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
@@ -28,7 +28,7 @@ const Header = () => {
     { name: 'Inicio', href: '/' },
     { name: 'Novedades', href: '/novedades' },
     { name: 'Sobre Nosotros', href: '/about', subitems: [
-      { name: 'Partners', href: '/partners', icon: Handshake },
+      { name: 'Partners', href: '/partners', icon: Users },
     ]},
     { name: 'Actividades', href: '/activities' },
     { name: 'Colaborá', href: '/collaborate', subitems: [
