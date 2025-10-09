@@ -19,30 +19,34 @@ import {
   CalendarDays,
   LayoutDashboard,
   FileText,
-  ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openNos, setOpenNos] = useState(false);       // Desktop submenu: Nosotros
+  const [openColab, setOpenColab] = useState(false);   // Desktop submenu: Colaborá
+  const [openMob, setOpenMob] = useState({ nosotros: false, colabora: false }); // Mobile accordions
+
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 🔹 Menú principal
   const navigation = [
     { name: 'Inicio', href: '/' },
     { name: 'Novedades', href: '/novedades' },
     {
       name: 'Nosotros',
       href: '/about',
+      key: 'nosotros',
       subitems: [{ name: 'Partners', href: '/partners' }],
     },
     { name: 'Actividades', href: '/activities' },
     {
       name: 'Colaborá',
       href: '/collaborate',
+      key: 'colabora',
       subitems: [{ name: 'Beneficios', href: '/beneficios' }],
     },
     { name: 'Transparencia', href: '/legal-documents' },
@@ -59,15 +63,62 @@ const Header = () => {
   };
 
   const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .substring(0, 2)
-        .toUpperCase()
+    ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
 
   const logoUrl = '/img/transparente.png';
+
+  // Subcomponente para items con submenu en Desktop
+  const DesktopSubmenu = ({ item, open, setOpen }) => {
+    return (
+      <div
+        className="relative flex items-center"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          {/* Trigger: Link que navega en segundo click; primer click sólo abre */}
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              asChild
+              className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+            >
+              <Link
+                to={item.href}
+                aria-expanded={open}
+                onClick={(e) => {
+                  if (!open) {
+                    e.preventDefault();
+                    setOpen(true);
+                  }
+                  // si ya está abierto, permitimos la navegación
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
+                  isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+                }`}
+              >
+                {item.name}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+                    isActive(item.href) ? 'scale-x-100' : ''
+                  }`}
+                />
+              </Link>
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent sideOffset={8}>
+            {item.subitems.map((sub) => (
+              <DropdownMenuItem key={sub.href} asChild>
+                <Link to={sub.href}>{sub.name}</Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
 
   return (
     <motion.header
@@ -105,59 +156,12 @@ const Header = () => {
           <div className="hidden lg:flex items-center space-x-1">
             {navigation.map((item) =>
               item.subitems ? (
-                <div key={item.name} className="flex items-center">
-                  {/* Texto que navega al padre */}
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
-                  >
-                    <Link
-                      to={item.href}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                        isActive(item.href)
-                          ? 'text-primary-antoniano dark:text-primary'
-                          : ''
-                      }`}
-                    >
-                      {item.name}
-                      <span
-                        className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
-                          isActive(item.href) ? 'scale-x-100' : ''
-                        }`}
-                      />
-                    </Link>
-                  </Button>
-
-                  {/* Flecha que abre el dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        aria-label={`Abrir menú ${item.name}`}
-                        className="px-2"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {/* (Opcional) enlace al padre dentro del menú */}
-                      <DropdownMenuItem asChild>
-                        <Link to={item.href} className="font-medium">
-                          Ir a {item.name}
-                        </Link>
-                      </DropdownMenuItem>
-
-                      {item.subitems.map((sub) => (
-                        <DropdownMenuItem key={sub.href} asChild>
-                          <Link to={sub.href} className="flex items-center gap-2">
-                            {sub.name}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <DesktopSubmenu
+                  key={item.name}
+                  item={item}
+                  open={item.key === 'nosotros' ? openNos : openColab}
+                  setOpen={item.key === 'nosotros' ? setOpenNos : setOpenColab}
+                />
               ) : (
                 <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
                   <Button
@@ -168,9 +172,7 @@ const Header = () => {
                     <Link
                       to={item.href}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                        isActive(item.href)
-                          ? 'text-primary-antoniano dark:text-primary'
-                          : ''
+                        isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
                       }`}
                     >
                       {item.name}
@@ -225,39 +227,31 @@ const Header = () => {
                   </div>
 
                   <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                    <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-                      <Link to="/dashboard" className="flex items-center text-sm py-2 px-3">
-                        <LayoutDashboard className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                        <span className="text-foreground">Mi Panel</span>
-                      </Link>
-                    </motion.div>
+                    <Link to="/dashboard" className="flex items-center text-sm py-2 px-3">
+                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
+                      <span className="text-foreground">Mi Panel</span>
+                    </Link>
                   </DropdownMenuItem>
 
                   {isAdmin && (
                     <>
                       <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-                          <Link to="/admin" className="flex items-center text-sm py-2 px-3">
-                            <Settings className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                            <span className="text-foreground">Panel Admin</span>
-                          </Link>
-                        </motion.div>
+                        <Link to="/admin" className="flex items-center text-sm py-2 px-3">
+                          <Settings className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
+                          <span className="text-foreground">Panel Admin</span>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-                          <Link to="/admin?tab=activities" className="flex items-center text-sm py-2 px-3">
-                            <CalendarDays className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                            <span className="text-foreground">Gestionar Actividades</span>
-                          </Link>
-                        </motion.div>
+                        <Link to="/admin?tab=activities" className="flex items-center text-sm py-2 px-3">
+                          <CalendarDays className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
+                          <span className="text-foreground">Gestionar Actividades</span>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-                          <Link to="/admin?tab=legal_documents" className="flex items-center text-sm py-2 px-3">
-                            <FileText className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                            <span className="text-foreground">Documentos Legales</span>
-                          </Link>
-                        </motion.div>
+                        <Link to="/admin?tab=legal_documents" className="flex items-center text-sm py-2 px-3">
+                          <FileText className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
+                          <span className="text-foreground">Documentos Legales</span>
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -268,29 +262,26 @@ const Header = () => {
                     onClick={handleLogout}
                     className="hover:bg-accent cursor-pointer text-sm py-2 px-3"
                   >
-                    <motion.div whileTap={{ scale: 0.98 }} className="flex items-center w-full">
-                      <LogOut className="mr-2 h-4 w-4 text-destructive" />
-                      <span className="text-destructive">Cerrar Sesión</span>
-                    </motion.div>
+                    <LogOut className="mr-2 h-4 w-4 text-destructive" />
+                    <span className="text-destructive">Cerrar Sesión</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="hidden lg:flex items-center space-x-2">
-                <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4"
-                  >
-                    <Link to="/login">Iniciar Sesión</Link>
-                  </Button>
-                </motion.div>
-                <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105" asChild>
-                    <Link to="/register">Registrarse</Link>
-                  </Button>
-                </motion.div>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4"
+                >
+                  <Link to="/login">Iniciar Sesión</Link>
+                </Button>
+                <Button
+                  className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
+                  asChild
+                >
+                  <Link to="/register">Registrarse</Link>
+                </Button>
               </div>
             )}
 
@@ -316,45 +307,75 @@ const Header = () => {
               className="lg:hidden border-t border-border bg-blanco-fundacion/95 dark:bg-card/95"
             >
               <div className="px-2 pt-2 pb-3 space-y-1">
-                {navigation.map((item) => (
-                  <div key={item.name}>
-                    {!item.subitems ? (
-                      <Link
-                        to={item.href}
-                        className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
-                          isActive(item.href)
-                            ? 'text-primary-antoniano dark:text-primary bg-celeste-complementario dark:bg-accent font-semibold'
-                            : 'text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70'
-                        }`}
-                        onClick={() => setIsMenuOpen(false)}
+                {navigation.map((item) =>
+                  !item.subitems ? (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                        isActive(item.href)
+                          ? 'text-primary-antoniano dark:text-primary bg-celeste-complementario dark:bg-accent font-semibold'
+                          : 'text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ) : (
+                    <div key={item.name} className="rounded-md">
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-3 rounded-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
+                        onClick={() =>
+                          setOpenMob((s) => ({
+                            ...s,
+                            [item.key]: !s[item.key],
+                          }))
+                        }
                       >
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <>
-                        {/* Link del padre */}
-                        <Link
-                          to={item.href}
-                          onClick={() => setIsMenuOpen(false)}
-                          className="block px-3 py-3 rounded-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
-                        >
-                          {item.name}
-                        </Link>
-                        {/* Subitems */}
-                        {item.subitems.map((sub) => (
-                          <Link
-                            key={sub.href}
-                            to={sub.href}
-                            onClick={() => setIsMenuOpen(false)}
-                            className="block px-5 py-2 text-sm text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70 rounded-md"
+                        {item.name}{' '}
+                        <span className="ml-1 text-sm opacity-70">
+                          {openMob[item.key] ? '－' : '＋'}
+                        </span>
+                      </button>
+                      <AnimatePresence>
+                        {openMob[item.key] && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="pl-4"
                           >
-                            ↳ {sub.name}
-                          </Link>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                ))}
+                            {/* Link al padre */}
+                            <Link
+                              to={item.href}
+                              className="block px-3 py-2 text-sm rounded-md text-marron-legado/90 dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                setOpenMob({ nosotros: false, colabora: false });
+                              }}
+                            >
+                              {item.name}
+                            </Link>
+                            {item.subitems.map((sub) => (
+                              <Link
+                                key={sub.href}
+                                to={sub.href}
+                                className="block px-5 py-2 text-sm rounded-md text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
+                                onClick={() => {
+                                  setIsMenuOpen(false);
+                                  setOpenMob({ nosotros: false, colabora: false });
+                                }}
+                              >
+                                ↳ {sub.name}
+                              </Link>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )
+                )}
               </div>
             </motion.div>
           )}
