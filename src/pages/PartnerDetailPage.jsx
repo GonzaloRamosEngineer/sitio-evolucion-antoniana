@@ -5,8 +5,6 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 
 const PartnerDetailPage = () => {
   const { id } = useParams();
@@ -53,7 +51,6 @@ const PartnerDetailPage = () => {
         <meta name="description" content={partner.descripcion} />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
@@ -130,7 +127,6 @@ const PartnerDetailPage = () => {
         </div>
       </main>
 
-      <Footer />
     </div>
   );
 };

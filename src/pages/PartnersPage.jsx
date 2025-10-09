@@ -5,8 +5,6 @@ import { Link } from 'react-router-dom';
 import { Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 
 const PartnersPage = () => {
   const [partners, setPartners] = useState([]);
@@ -29,7 +27,6 @@ const PartnersPage = () => {
         />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-sky-700 text-white py-16 px-4">
@@ -108,7 +105,6 @@ const PartnersPage = () => {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 };

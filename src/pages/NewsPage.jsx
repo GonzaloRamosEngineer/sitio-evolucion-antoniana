@@ -5,8 +5,6 @@ import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNews } from '@/lib/storage';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 
 const NewsPage = () => {
   const [news, setNews] = useState([]);
@@ -29,7 +27,6 @@ const NewsPage = () => {
         />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1 bg-gray-50">
         <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-sky-700 text-white py-16 px-4">
@@ -113,7 +110,6 @@ const NewsPage = () => {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 };

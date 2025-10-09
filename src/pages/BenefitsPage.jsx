@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BenefitCard from '@/components/BenefitCard';
 import { getBenefits } from '@/lib/storage';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -64,7 +62,6 @@ const BenefitsPage = () => {
         />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-amber-600 via-amber-500 to-yellow-500 text-white py-16 px-4">
@@ -132,7 +129,6 @@ const BenefitsPage = () => {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 };

@@ -9,8 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { addPartner } from '@/lib/storage';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
+
 
 const ApplyPartnerPage = () => {
   const navigate = useNavigate();
@@ -63,7 +62,6 @@ const ApplyPartnerPage = () => {
         />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-sky-600 via-blue-600 to-blue-700 text-white py-16 px-4">
@@ -187,7 +185,6 @@ const ApplyPartnerPage = () => {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 };

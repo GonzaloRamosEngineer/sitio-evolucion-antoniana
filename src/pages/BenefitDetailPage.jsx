@@ -6,8 +6,7 @@ import { Calendar, Tag, ArrowLeft, Info, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getBenefits } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
+
 
 const BenefitDetailPage = () => {
   const { id } = useParams();
@@ -62,7 +61,7 @@ const BenefitDetailPage = () => {
         <meta name="description" content={benefit.descripcion} />
       </Helmet>
 
-      <Header />
+
 
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
@@ -160,7 +159,7 @@ const BenefitDetailPage = () => {
         </div>
       </main>
 
-      <Footer />
+
     </div>
   );
 };

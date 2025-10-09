@@ -6,8 +6,6 @@ import { Calendar, ArrowLeft, Share2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNewsById } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
 
 const SocialShareButton = ({ platform, url, title }) => {
   const platforms = {
@@ -106,7 +104,6 @@ const NewsDetailPage = () => {
         <meta name="description" content={newsItem.content?.substring(0, 160)} />
       </Helmet>
 
-      <Header />
 
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
@@ -171,7 +168,6 @@ const NewsDetailPage = () => {
         </div>
       </main>
 
-      <Footer />
     </div>
   );
 };
