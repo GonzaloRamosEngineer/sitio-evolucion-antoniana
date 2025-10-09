@@ -1,3 +1,4 @@
+// src/components/Layout/Header.jsx
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,13 +7,19 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  Menu, X, User, LogOut, Settings, CalendarDays, LayoutDashboard, FileText,
-  Newspaper, Users, Gift, ChevronDown
+  Menu,
+  X,
+  LogOut,
+  Settings,
+  CalendarDays,
+  LayoutDashboard,
+  FileText,
+  ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
@@ -27,18 +34,23 @@ const Header = () => {
   const navigation = [
     { name: 'Inicio', href: '/' },
     { name: 'Novedades', href: '/novedades' },
-    { name: 'Sobre Nosotros', href: '/about', subitems: [
-      { name: 'Partners', href: '/partners', icon: Users },
-    ]},
+    {
+      name: 'Nosotros',
+      href: '/about',
+      subitems: [{ name: 'Partners', href: '/partners' }],
+    },
     { name: 'Actividades', href: '/activities' },
-    { name: 'Colaborá', href: '/collaborate', subitems: [
-      { name: 'Beneficios', href: '/beneficios', icon: Gift },
-    ]},
-    { name: 'Documentos Legales', href: '/legal-documents' },
+    {
+      name: 'Colaborá',
+      href: '/collaborate',
+      subitems: [{ name: 'Beneficios', href: '/beneficios' }],
+    },
+    { name: 'Transparencia', href: '/legal-documents' },
     { name: 'Contacto', href: '/contact' },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + '/');
 
   const handleLogout = async () => {
     await logout();
@@ -47,16 +59,21 @@ const Header = () => {
   };
 
   const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
 
-  const logoUrl = "/img/transparente.png";
+  const logoUrl = '/img/transparente.png';
 
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
       className="bg-blanco-fundacion/80 dark:bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-50 shadow-sm"
     >
       <nav className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,51 +85,105 @@ const Header = () => {
               transition={{ duration: 0.3 }}
               className="w-12 h-12 flex items-center justify-center"
             >
-              <img src={logoUrl} alt="Fundación Evolución Antoniana Logo" className="w-full h-full object-contain" />
+              <img
+                src={logoUrl}
+                alt="Fundación Evolución Antoniana Logo"
+                className="w-full h-full object-contain"
+              />
             </motion.div>
             <div className="hidden sm:block">
-              <span className="text-2xl font-poppins font-bold text-primary-antoniano dark:text-primary">Fundación</span>
-              <span className="text-2xl font-poppins font-semibold text-marron-legado/80 dark:text-foreground/80 ml-1">Evolución Antoniana</span>
+              <span className="text-2xl font-poppins font-bold text-primary-antoniano dark:text-primary">
+                Fundación
+              </span>
+              <span className="text-2xl font-poppins font-semibold text-marron-legado/80 dark:text-foreground/80 ml-1">
+                Evolución Antoniana
+              </span>
             </div>
           </Link>
 
           {/* Menú Desktop */}
           <div className="hidden lg:flex items-center space-x-1">
-            {navigation.map((item) => (
+            {navigation.map((item) =>
               item.subitems ? (
-                <DropdownMenu key={item.name}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary px-4">
-                      {item.name} <ChevronDown className="ml-1 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {item.subitems.map((sub) => (
-                      <DropdownMenuItem key={sub.href} asChild>
-                        <Link to={sub.href} className="flex items-center gap-2">
-                          {sub.icon && <sub.icon className="h-4 w-4 text-primary-antoniano dark:text-primary" />}
-                          {sub.name}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
-                  <Button variant="ghost" asChild className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary">
+                <div key={item.name} className="flex items-center">
+                  {/* Texto que navega al padre */}
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+                  >
                     <Link
                       to={item.href}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                        isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
+                        isActive(item.href)
+                          ? 'text-primary-antoniano dark:text-primary'
+                          : ''
                       }`}
                     >
                       {item.name}
-                      <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${isActive(item.href) ? 'scale-x-100' : ''}`}></span>
+                      <span
+                        className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+                          isActive(item.href) ? 'scale-x-100' : ''
+                        }`}
+                      />
+                    </Link>
+                  </Button>
+
+                  {/* Flecha que abre el dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        aria-label={`Abrir menú ${item.name}`}
+                        className="px-2"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {/* (Opcional) enlace al padre dentro del menú */}
+                      <DropdownMenuItem asChild>
+                        <Link to={item.href} className="font-medium">
+                          Ir a {item.name}
+                        </Link>
+                      </DropdownMenuItem>
+
+                      {item.subitems.map((sub) => (
+                        <DropdownMenuItem key={sub.href} asChild>
+                          <Link to={sub.href} className="flex items-center gap-2">
+                            {sub.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+                  >
+                    <Link
+                      to={item.href}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
+                        isActive(item.href)
+                          ? 'text-primary-antoniano dark:text-primary'
+                          : ''
+                      }`}
+                    >
+                      {item.name}
+                      <span
+                        className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+                          isActive(item.href) ? 'scale-x-100' : ''
+                        }`}
+                      />
                     </Link>
                   </Button>
                 </motion.div>
               )
-            ))}
+            )}
           </div>
 
           {/* Usuario / Auth */}
@@ -132,7 +203,11 @@ const Header = () => {
                     </Avatar>
                   </motion.button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 mt-2 border-border shadow-xl rounded-lg bg-card" align="end" forceMount>
+                <DropdownMenuContent
+                  className="w-56 mt-2 border-border shadow-xl rounded-lg bg-card"
+                  align="end"
+                  forceMount
+                >
                   <div className="flex items-center justify-start gap-2 p-3 border-b border-border">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary font-semibold">
@@ -140,7 +215,9 @@ const Header = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col space-y-0.5 leading-none">
-                      <p className="font-poppins font-medium text-sm text-foreground">{user?.name || 'Usuario'}</p>
+                      <p className="font-poppins font-medium text-sm text-foreground">
+                        {user?.name || 'Usuario'}
+                      </p>
                       <p className="w-[150px] truncate text-xs text-muted-foreground">
                         {user?.email}
                       </p>
@@ -184,8 +261,13 @@ const Header = () => {
                       </DropdownMenuItem>
                     </>
                   )}
+
                   <DropdownMenuSeparator className="bg-border" />
-                  <DropdownMenuItem onClick={handleLogout} className="hover:bg-accent cursor-pointer text-sm py-2 px-3">
+
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="hover:bg-accent cursor-pointer text-sm py-2 px-3"
+                  >
                     <motion.div whileTap={{ scale: 0.98 }} className="flex items-center w-full">
                       <LogOut className="mr-2 h-4 w-4 text-destructive" />
                       <span className="text-destructive">Cerrar Sesión</span>
@@ -196,12 +278,16 @@ const Header = () => {
             ) : (
               <div className="hidden lg:flex items-center space-x-2">
                 <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button variant="ghost" asChild className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4">
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4"
+                  >
                     <Link to="/login">Iniciar Sesión</Link>
                   </Button>
                 </motion.div>
                 <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button asChild className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+                  <Button className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105" asChild>
                     <Link to="/register">Registrarse</Link>
                   </Button>
                 </motion.div>
@@ -245,16 +331,27 @@ const Header = () => {
                         {item.name}
                       </Link>
                     ) : (
-                      item.subitems.map((sub) => (
+                      <>
+                        {/* Link del padre */}
                         <Link
-                          key={sub.href}
-                          to={sub.href}
+                          to={item.href}
                           onClick={() => setIsMenuOpen(false)}
-                          className="block px-5 py-2 text-sm text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70 rounded-md"
+                          className="block px-3 py-3 rounded-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
                         >
-                          ↳ {sub.name}
+                          {item.name}
                         </Link>
-                      ))
+                        {/* Subitems */}
+                        {item.subitems.map((sub) => (
+                          <Link
+                            key={sub.href}
+                            to={sub.href}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="block px-5 py-2 text-sm text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70 rounded-md"
+                          >
+                            ↳ {sub.name}
+                          </Link>
+                        ))}
+                      </>
                     )}
                   </div>
                 ))}
