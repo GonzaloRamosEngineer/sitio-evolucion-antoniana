@@ -6,6 +6,9 @@ import { ArrowLeft, Globe, Mail, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
 
+const slugify = (s = '') =>
+  s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
 const PartnerDetailPage = () => {
   const { slug } = useParams();
   const [partner, setPartner] = useState(null);
@@ -15,12 +18,15 @@ const PartnerDetailPage = () => {
     const fetchPartner = async () => {
       setLoading(true);
       const allPartners = await getPartners();
-      const foundPartner = (allPartners || []).find((p) => p.slug === slug);
+      // Busca por slug; si algún registro aún no lo tiene, compará contra slugify(nombre)
+      const foundPartner = (allPartners || []).find(
+        (p) => (p.slug || slugify(p.nombre)) === slug
+      );
       setPartner(foundPartner || null);
       setLoading(false);
     };
     fetchPartner();
-  }, [id]);
+  }, [slug]); // <-- FIX: dependemos de slug
 
   if (loading) {
     return (
@@ -67,7 +73,7 @@ const PartnerDetailPage = () => {
             transition={{ duration: 0.5 }}
           >
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              {/* Contenedor del logo mejorado */}
+              {/* Contenedor del logo */}
               <div className="bg-gray-50 flex items-center justify-center h-64 md:h-80 p-4">
                 {partner.logo_url ? (
                   <img

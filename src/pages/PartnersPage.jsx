@@ -95,7 +95,7 @@ const PartnersPage = () => {
                       <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
                         {partner.descripcion}
                       </p>
-                      <Link to={`/partners/${partner.slug}`} className="mt-auto">
+                      <Link to={`/partners/${partner.slug || partner.id}`} className="mt-auto">
                         <Button variant="outline" className="w-full">
                           Ver Beneficios <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
