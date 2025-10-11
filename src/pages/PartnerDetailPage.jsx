@@ -51,7 +51,6 @@ const PartnerDetailPage = () => {
         <meta name="description" content={partner.descripcion} />
       </Helmet>
 
-
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
           <Link
@@ -68,12 +67,15 @@ const PartnerDetailPage = () => {
             transition={{ duration: 0.5 }}
           >
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="h-64 bg-gray-200 p-8 flex items-center justify-center">
+              {/* Contenedor del logo mejorado */}
+              <div className="bg-gray-50 flex items-center justify-center h-64 md:h-80 p-4">
                 {partner.logo_url ? (
                   <img
                     src={partner.logo_url}
                     alt={`Logo de ${partner.nombre}`}
-                    className="max-h-full max-w-full object-contain"
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <h2 className="text-5xl font-bold text-gray-400">{partner.nombre}</h2>
@@ -126,7 +128,6 @@ const PartnerDetailPage = () => {
           </motion.div>
         </div>
       </main>
-
     </div>
   );
 };
