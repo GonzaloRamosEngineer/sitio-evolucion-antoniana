@@ -1,3 +1,4 @@
+// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\PartnersPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
@@ -26,7 +27,6 @@ const PartnersPage = () => {
           content="Conoce a nuestras marcas aliadas y los beneficios que ofrecen"
         />
       </Helmet>
-
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-sky-700 text-white py-16 px-4">
@@ -71,12 +71,15 @@ const PartnersPage = () => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-100 group flex flex-col"
                   >
-                    <div className="h-48 bg-gray-100 flex items-center justify-center p-6">
+                    {/* Contenedor del logo */}
+                    <div className="bg-gray-50 flex items-center justify-center h-56 md:h-48 p-2">
                       {partner.logo_url ? (
                         <img
                           src={partner.logo_url}
                           alt={`Logo de ${partner.nombre}`}
-                          className="max-h-full max-w-full object-contain"
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="text-6xl font-bold text-blue-300">
@@ -84,6 +87,7 @@ const PartnersPage = () => {
                         </div>
                       )}
                     </div>
+
                     <div className="p-6 flex-grow flex flex-col">
                       <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                         {partner.nombre}
@@ -104,7 +108,6 @@ const PartnersPage = () => {
           </div>
         </section>
       </main>
-
     </div>
   );
 };
