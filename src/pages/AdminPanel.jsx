@@ -3,7 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, Heart, Plus, MailWarning, UserCog, UserCheck, Gift, FileText as FileTextIcon } from 'lucide-react';
+import {
+  Users, Calendar, Heart, Plus, MailWarning, UserCog, UserCheck, Gift,
+  FileText as FileTextIcon, CheckCircle, Clock
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,11 +18,13 @@ import DonationList from '@/components/Admin/DonationList';
 import LegalDocumentList from '@/components/Admin/LegalDocumentList';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-
-import PartnersAdmin from '@/components/admin/PartnersAdmin';
-import BenefitsAdmin from '@/components/admin/BenefitsAdmin';
-import NewsAdmin from '@/components/admin/NewsAdmin';
+import PartnersAdmin from '@/components/Admin/PartnersAdmin';
+import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
+import NewsAdmin from '@/components/Admin/NewsAdmin';
 import { Helmet } from 'react-helmet';
+
+// Para stats de partners/beneficios sin depender de StatsOverview.jsx
+import { getPartners, getBenefits } from '@/lib/storage';
 
 const AdminPanel = () => {
   const [stats, setStats] = useState({
@@ -32,6 +37,16 @@ const AdminPanel = () => {
     totalDonations: 0,
     totalLegalDocuments: 0,
   });
+
+  // Stats extra de Partners/Beneficios (equivalente a StatsOverview)
+  const [ecoStats, setEcoStats] = useState({
+    totalPartners: 0,
+    approvedPartners: 0,
+    pendingPartners: 0,
+    totalBenefits: 0,
+    activeBenefits: 0,
+  });
+
   const [recentActivitiesData, setRecentActivitiesData] = useState([]);
   const { toast } = useToast();
   const { isAdmin, loading: authLoading } = useAuth();
@@ -117,8 +132,27 @@ const AdminPanel = () => {
     }
   };
 
+  const fetchEcoStats = async () => {
+    try {
+      const partners = await getPartners();
+      const benefits = await getBenefits();
+
+      setEcoStats({
+        totalPartners: partners.length,
+        approvedPartners: partners.filter((p) => p.estado === 'aprobado').length,
+        pendingPartners: partners.filter((p) => p.estado === 'pendiente').length,
+        totalBenefits: benefits.length,
+        activeBenefits: benefits.filter((b) => b.estado === 'activo').length,
+      });
+    } catch (err) {
+      console.error('Error fetching ecosystem stats:', err);
+      // No rompemos el panel si storage no está disponible
+    }
+  };
+
   useEffect(() => {
     fetchAdminData();
+    fetchEcoStats();
   }, []);
 
   useEffect(() => {
@@ -126,7 +160,6 @@ const AdminPanel = () => {
     if (currentTab !== activeTab) {
       setActiveTab(currentTab);
     }
-    // no deps para evitar loop con activeTab
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
@@ -177,6 +210,7 @@ const AdminPanel = () => {
         />
       </Helmet>
 
+      {/* Hero */}
       <section className="bg-gradient-to-br from-primary-antoniano/95 to-blue-700/95 dark:from-primary-antoniano/80 dark:to-blue-800/80 text-blanco-fundacion dark:text-primary-foreground py-16 shadow-lg hero-pattern">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
@@ -195,7 +229,7 @@ const AdminPanel = () => {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
             <TabsList
               className="grid w-full mx-auto bg-celeste-complementario/30 dark:bg-muted p-1 rounded-lg
-                                grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 xl:grid-cols-10 gap-1 max-w-full"
+                         grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 xl:grid-cols-10 gap-1 max-w-full"
             >
               {TABS_CONFIG.map((tab) => (
                 <TabsTrigger
@@ -211,7 +245,9 @@ const AdminPanel = () => {
               ))}
             </TabsList>
 
+            {/* RESUMEN */}
             <TabsContent value="overview" className="space-y-8">
+              {/* Tus cards clásicas */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[
                   { title: 'Total Usuarios', value: stats.totalUsers, icon: Users, desc: 'Usuarios registrados' },
@@ -249,6 +285,36 @@ const AdminPanel = () => {
                 ))}
               </div>
 
+              {/* Mini StatsOverview (partners/beneficios) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { title: 'Total Partners', value: ecoStats.totalPartners, icon: Users, color: 'from-blue-500 to-blue-600' },
+                  { title: 'Partners Aprobados', value: ecoStats.approvedPartners, icon: CheckCircle, color: 'from-green-500 to-green-600' },
+                  { title: 'Partners Pendientes', value: ecoStats.pendingPartners, icon: Clock, color: 'from-amber-500 to-amber-600' },
+                  { title: 'Beneficios Activos', value: ecoStats.activeBenefits, icon: Gift, color: 'from-purple-500 to-purple-600' },
+                ].map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <motion.div
+                      key={stat.title}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      className="bg-white rounded-xl shadow-lg p-6 border border-gray-100"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center`}>
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                      <p className="text-sm text-gray-600">{stat.title}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Actividades recientes */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
                 <Card className="border-marron-legado/10 dark:border-border shadow-lg bg-card text-card-foreground">
                   <CardHeader>
@@ -288,6 +354,7 @@ const AdminPanel = () => {
               </motion.div>
             </TabsContent>
 
+            {/* ACTIVIDADES */}
             <TabsContent value="activities">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 {isAdmin && (
@@ -310,48 +377,56 @@ const AdminPanel = () => {
               </motion.div>
             </TabsContent>
 
+            {/* PENDIENTES */}
             <TabsContent value="pending">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <PendingConfirmationsList />
               </motion.div>
             </TabsContent>
 
+            {/* USUARIOS */}
             <TabsContent value="users">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <UserList />
               </motion.div>
             </TabsContent>
 
+            {/* COLABORACIONES */}
             <TabsContent value="memberships">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <MembershipList />
               </motion.div>
             </TabsContent>
 
+            {/* DONACIONES */}
             <TabsContent value="donations">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <DonationList />
               </motion.div>
             </TabsContent>
 
+            {/* DOCUMENTOS LEGALES */}
             <TabsContent value="legal_documents">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <LegalDocumentList />
               </motion.div>
             </TabsContent>
 
+            {/* PARTNERS */}
             <TabsContent value="partners">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <PartnersAdmin />
               </motion.div>
             </TabsContent>
 
+            {/* BENEFICIOS */}
             <TabsContent value="benefits">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <BenefitsAdmin />
               </motion.div>
             </TabsContent>
 
+            {/* NOVEDADES */}
             <TabsContent value="news">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <NewsAdmin />
