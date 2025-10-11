@@ -1,3 +1,4 @@
+// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\Contact.jsx
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +22,15 @@ const Contact = () => {
   const { toast } = useToast();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     const emailBody = `
@@ -43,7 +45,7 @@ const Contact = () => {
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          recipient_email: 'contacto@evolucionantoniana.com',
+          recipient_email: 'info@evolucionantoniana.com', // destinatario final
           subject: `Nuevo Mensaje de Contacto: ${formData.subject}`,
           text_content: emailBody,
           html_content: `<p><strong>Nombre:</strong> ${formData.name}</p>
@@ -52,17 +54,17 @@ const Contact = () => {
                          <p><strong>Asunto:</strong> ${formData.subject}</p>
                          <p><strong>Mensaje:</strong></p>
                          <p>${formData.message.replace(/\n/g, '<br>')}</p>`,
+          reply_to: formData.email, // para que “Responder” vaya al visitante
         },
       });
 
       if (error) throw error;
-      
+
       toast({
-        title: "¡Mensaje enviado!",
-        description: "Gracias por contactarnos. Te responderemos pronto.",
-        variant: "default",
+        title: '¡Mensaje enviado!',
+        description: 'Gracias por contactarnos. Te responderemos pronto.'
       });
-      
+
       setFormData({
         name: '',
         email: '',
@@ -71,11 +73,12 @@ const Contact = () => {
         message: ''
       });
     } catch (error) {
-      console.error("Error sending contact email:", error);
+      console.error('Error sending contact email:', error);
       toast({
-        title: "Error al enviar mensaje",
-        description: "Hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo más tarde o contáctanos directamente.",
-        variant: "destructive",
+        title: 'Error al enviar mensaje',
+        description:
+          'Hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo más tarde o contáctanos directamente.',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -97,8 +100,8 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email',
-      details: ['info@evolucionantoniana.com', 'contacto@evolucionantoniana.com'],
-      href: 'mailto:contacto@evolucionantoniana.com'
+      details: ['info@evolucionantoniana.com'],
+      href: 'mailto:info@evolucionantoniana.com'
     },
     {
       icon: Clock,
@@ -114,7 +117,7 @@ const Contact = () => {
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
             className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano mb-6 text-balance"
           >
             Contáctanos
@@ -122,10 +125,11 @@ const Contact = () => {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
             className="text-lg md:text-xl text-marron-legado/90 max-w-3xl mx-auto leading-relaxed text-balance"
           >
-            Estamos aquí para ayudarte. Ponte en contacto con nosotros para cualquier consulta, sugerencia o para conocer más sobre nuestros programas.
+            Estamos aquí para ayudarte. Ponte en contacto con nosotros para cualquier consulta, sugerencia o para
+            conocer más sobre nuestros programas.
           </motion.p>
         </div>
       </section>
@@ -137,7 +141,7 @@ const Contact = () => {
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
             >
               <Card className="border-primary-antoniano/20 shadow-xl bg-white">
                 <CardHeader>
@@ -150,7 +154,9 @@ const Contact = () => {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <Label htmlFor="name" className="text-marron-legado font-medium">Nombre completo</Label>
+                        <Label htmlFor="name" className="text-marron-legado font-medium">
+                          Nombre completo
+                        </Label>
                         <Input
                           id="name"
                           name="name"
@@ -162,7 +168,9 @@ const Contact = () => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="email" className="text-marron-legado font-medium">Email</Label>
+                        <Label htmlFor="email" className="text-marron-legado font-medium">
+                          Email
+                        </Label>
                         <Input
                           id="email"
                           name="email"
@@ -178,7 +186,9 @@ const Contact = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <Label htmlFor="phone" className="text-marron-legado font-medium">Teléfono (Opcional)</Label>
+                        <Label htmlFor="phone" className="text-marron-legado font-medium">
+                          Teléfono (Opcional)
+                        </Label>
                         <Input
                           id="phone"
                           name="phone"
@@ -190,7 +200,9 @@ const Contact = () => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="subject" className="text-marron-legado font-medium">Asunto</Label>
+                        <Label htmlFor="subject" className="text-marron-legado font-medium">
+                          Asunto
+                        </Label>
                         <Input
                           id="subject"
                           name="subject"
@@ -204,7 +216,9 @@ const Contact = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="message" className="text-marron-legado font-medium">Mensaje</Label>
+                      <Label htmlFor="message" className="text-marron-legado font-medium">
+                        Mensaje
+                      </Label>
                       <Textarea
                         id="message"
                         name="message"
@@ -240,7 +254,7 @@ const Contact = () => {
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
               className="space-y-8"
             >
               <div>
@@ -248,7 +262,8 @@ const Contact = () => {
                   Información de Contacto
                 </h2>
                 <p className="text-marron-legado/80 mb-8 leading-relaxed">
-                  Estamos ubicados en Salta Capital y siempre dispuestos a atenderte. No dudes en visitarnos (con cita previa) o contactarnos por cualquiera de estos medios.
+                  Estamos ubicados en Salta Capital y siempre dispuestos a atenderte. No dudes en visitarnos (con cita
+                  previa) o contactarnos por cualquiera de estos medios.
                 </p>
               </div>
 
@@ -259,7 +274,7 @@ const Contact = () => {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
+                    transition={{ duration: 0.6, delay: index * 0.1, ease: 'easeOut' }}
                   >
                     <Card className="border-celeste-complementario/30 shadow-lg card-hover bg-white hover:bg-celeste-complementario/5 transition-colors">
                       <CardContent className="p-6">
@@ -272,7 +287,12 @@ const Contact = () => {
                             {info.details.map((detail, detailIndex) => (
                               <p key={detailIndex} className="text-marron-legado/80 text-sm">
                                 {info.href && detailIndex === 0 ? (
-                                  <a href={info.href} target="_blank" rel="noopener noreferrer" className="hover:text-primary-antoniano hover:underline transition-colors">
+                                  <a
+                                    href={info.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-primary-antoniano hover:underline transition-colors"
+                                  >
                                     {detail}
                                   </a>
                                 ) : (
@@ -298,7 +318,7 @@ const Contact = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
             className="text-center mb-16"
           >
             <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-primary-antoniano mb-4">
@@ -311,17 +331,29 @@ const Contact = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              { q: "¿Cómo puedo participar en las actividades?", a: "Puedes registrarte en nuestras actividades a través de la página web. Solo necesitas crear una cuenta y seleccionar las actividades de tu interés." },
-              { q: "¿Qué beneficio tengo al registrarme?", a: "Los miembros de la Red Solidaria Evolución Antoniana obtienen descuentos en actividades, acceso anticipado a eventos, certificados digitales y contenido exclusivo." },
-              { q: "¿Cómo puedo ser voluntario?", a: "Contáctanos a través de este formulario o por email expresando tu interés. Te informaremos sobre las oportunidades de voluntariado disponibles." },
-              { q: "¿Las actividades tienen costo?", a: "Algunas actividades son gratuitas y otras tienen un costo simbólico. Los miembros siempre obtienen descuentos especiales en todas las actividades pagas." }
+              {
+                q: '¿Cómo puedo participar en las actividades?',
+                a: 'Puedes registrarte en nuestras actividades a través de la página web. Solo necesitas crear una cuenta y seleccionar las actividades de tu interés.'
+              },
+              {
+                q: '¿Qué beneficio tengo al registrarme?',
+                a: 'Los miembros de la Red Solidaria Evolución Antoniana obtienen descuentos en actividades, acceso anticipado a eventos, certificados digitales y contenido exclusivo.'
+              },
+              {
+                q: '¿Cómo puedo ser voluntario?',
+                a: 'Contáctanos a través de este formulario o por email expresando tu interés. Te informaremos sobre las oportunidades de voluntariado disponibles.'
+              },
+              {
+                q: '¿Las actividades tienen costo?',
+                a: 'Algunas actividades son gratuitas y otras tienen un costo simbólico. Los miembros siempre obtienen descuentos especiales en todas las actividades pagas.'
+              }
             ].map((faq, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
+                transition={{ duration: 0.6, delay: index * 0.1, ease: 'easeOut' }}
               >
                 <Card className="h-full border-primary-antoniano/20 shadow-lg bg-blanco-fundacion">
                   <CardHeader>

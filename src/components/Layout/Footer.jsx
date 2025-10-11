@@ -36,7 +36,7 @@ const Footer = () => {
   const contactInfo = [
     { icon: MapPin, text: 'Salta, Argentina' },
     { icon: Phone, text: '+54 387 213-1916', href: 'tel:+543872131916' },
-    { icon: Mail, text: 'contacto@evolucionantoniana.com', href: 'mailto:contacto@evolucionantoniana.com' },
+    { icon: Mail, text: 'info@evolucionantoniana.com', href: 'mailto:info@evolucionantoniana.com' },
   ];
 
   return (
