@@ -59,7 +59,7 @@ const PageRoutes = () => {
 
         {/* 🔹 Nuevas rutas */}
         <Route path="/partners" element={<PartnersPage />} />
-        <Route path="/partners/:id" element={<PartnerDetailPage />} />
+        <Route path="/partners/:slug" element={<PartnerDetailPage />} />
         <Route path="/beneficios" element={<BenefitsPage />} />
         <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
         <Route path="/postular-partner" element={<ApplyPartnerPage />} />

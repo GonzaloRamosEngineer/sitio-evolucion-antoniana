@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
 
 const PartnerDetailPage = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +15,7 @@ const PartnerDetailPage = () => {
     const fetchPartner = async () => {
       setLoading(true);
       const allPartners = await getPartners();
-      const foundPartner = (allPartners || []).find((p) => String(p.id) === String(id));
+      const foundPartner = (allPartners || []).find((p) => p.slug === slug);
       setPartner(foundPartner || null);
       setLoading(false);
     };
