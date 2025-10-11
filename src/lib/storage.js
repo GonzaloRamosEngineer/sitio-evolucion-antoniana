@@ -1,10 +1,14 @@
 import { supabase } from '@/lib/customSupabaseClient';
 
-// PARTNERS
+/* =======================
+ * PARTNERS
+ * ======================= */
+
+// Trae partners (incluye slug)
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
-    .select('*')
+    .select('id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -14,8 +18,21 @@ export const getPartners = async () => {
   return data || [];
 };
 
+// Crear postulación de partner (público): NO mandar estado ni slug
 export const addPartner = async (partner) => {
-  const { data, error } = await supabase.from('partners').insert([partner]).select();
+  const payload = {
+    nombre: partner.nombre,
+    descripcion: partner.descripcion,
+    contacto_email: partner.contacto_email,
+    sitio_web: partner.sitio_web || null,
+    logo_url: partner.logo_url || null,
+  };
+
+  const { data, error } = await supabase
+    .from('partners')
+    .insert([payload])
+    .select();
+
   if (error) {
     console.error('Error adding partner:', error);
     return null;
@@ -23,8 +40,14 @@ export const addPartner = async (partner) => {
   return data ? data[0] : null;
 };
 
+// Update/Delete seguirán funcionando para admin (según policies)
 export const updatePartner = async (id, updates) => {
-  const { data, error } = await supabase.from('partners').update(updates).eq('id', id).select();
+  const { data, error } = await supabase
+    .from('partners')
+    .update(updates)
+    .eq('id', id)
+    .select();
+
   if (error) {
     console.error('Error updating partner:', error);
     return null;
@@ -33,7 +56,11 @@ export const updatePartner = async (id, updates) => {
 };
 
 export const deletePartner = async (id) => {
-  const { error } = await supabase.from('partners').delete().eq('id', id);
+  const { error } = await supabase
+    .from('partners')
+    .delete()
+    .eq('id', id);
+
   if (error) {
     console.error('Error deleting partner:', error);
     return error;
@@ -41,7 +68,25 @@ export const deletePartner = async (id) => {
   return null;
 };
 
-// BENEFITS
+// (Opcional) Obtener un partner por slug
+export const getPartnerBySlug = async (slug) => {
+  const { data, error } = await supabase
+    .from('partners')
+    .select('id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at')
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    console.error('Error fetching partner by slug:', error);
+    return null;
+  }
+  return data || null;
+};
+
+/* =======================
+ * BENEFITS
+ * ======================= */
+
 export const getBenefits = async () => {
   const { data, error } = await supabase
     .from('benefits')
@@ -56,7 +101,10 @@ export const getBenefits = async () => {
 };
 
 export const addBenefit = async (benefit) => {
-  const { data, error } = await supabase.from('benefits').insert([benefit]).select();
+  const { data, error } = await supabase
+    .from('benefits')
+    .insert([benefit])
+    .select();
   if (error) {
     console.error('Error adding benefit:', error);
     return null;
@@ -65,7 +113,11 @@ export const addBenefit = async (benefit) => {
 };
 
 export const updateBenefit = async (id, updates) => {
-  const { data, error } = await supabase.from('benefits').update(updates).eq('id', id).select();
+  const { data, error } = await supabase
+    .from('benefits')
+    .update(updates)
+    .eq('id', id)
+    .select();
   if (error) {
     console.error('Error updating benefit:', error);
     return null;
@@ -74,7 +126,10 @@ export const updateBenefit = async (id, updates) => {
 };
 
 export const deleteBenefit = async (id) => {
-  const { error } = await supabase.from('benefits').delete().eq('id', id);
+  const { error } = await supabase
+    .from('benefits')
+    .delete()
+    .eq('id', id);
   if (error) {
     console.error('Error deleting benefit:', error);
     return error;
@@ -82,7 +137,10 @@ export const deleteBenefit = async (id) => {
   return null;
 };
 
-// NEWS
+/* =======================
+ * NEWS
+ * ======================= */
+
 export const getNews = async () => {
   const { data, error } = await supabase
     .from('news')
@@ -97,8 +155,11 @@ export const getNews = async () => {
 };
 
 export const getNewsById = async (id) => {
-  // si el id es numérico, asegúrate de pasarlo como número
-  const { data, error } = await supabase.from('news').select('*').eq('id', id).single();
+  const { data, error } = await supabase
+    .from('news')
+    .select('*')
+    .eq('id', id)
+    .single();
   if (error) {
     console.error('Error fetching news by id:', error);
     return null;
@@ -107,7 +168,10 @@ export const getNewsById = async (id) => {
 };
 
 export const addNews = async (newsItem) => {
-  const { data, error } = await supabase.from('news').insert([newsItem]).select();
+  const { data, error } = await supabase
+    .from('news')
+    .insert([newsItem])
+    .select();
   if (error) {
     console.error('Error adding news:', error);
     return null;
@@ -116,7 +180,11 @@ export const addNews = async (newsItem) => {
 };
 
 export const updateNews = async (id, updates) => {
-  const { data, error } = await supabase.from('news').update(updates).eq('id', id).select();
+  const { data, error } = await supabase
+    .from('news')
+    .update(updates)
+    .eq('id', id)
+    .select();
   if (error) {
     console.error('Error updating news:', error);
     return null;
@@ -125,7 +193,10 @@ export const updateNews = async (id, updates) => {
 };
 
 export const deleteNews = async (id) => {
-  const { error } = await supabase.from('news').delete().eq('id', id);
+  const { error } = await supabase
+    .from('news')
+    .delete()
+    .eq('id', id);
   if (error) {
     console.error('Error deleting news:', error);
     return error;
