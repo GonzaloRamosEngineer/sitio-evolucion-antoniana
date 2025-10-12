@@ -62,7 +62,7 @@ const NewsPage = () => {
                     className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-100 group flex flex-col"
                   >
                     <Link
-                      to={`/novedades/${newsItem.slug || newsItem.id}`}
+                      to={`/novedades/${newsItem.slug}`}
                       className="block h-48 bg-gray-200 overflow-hidden"
                     >
                       {newsItem.image_url ? (
@@ -82,20 +82,16 @@ const NewsPage = () => {
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                         <Calendar className="h-4 w-4" />
-                        <span>
-                          {new Date(newsItem.created_at).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(newsItem.created_at).toLocaleDateString()}</span>
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        <Link to={`/novedades/${newsItem.slug || newsItem.id}`}>
-                          {newsItem.title}
-                        </Link>
+                        <Link to={`/novedades/${newsItem.slug}`}>{newsItem.title}</Link>
                       </h3>
                       <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
                         {newsItem.content}
                       </p>
                       <Link
-                        to={`/novedades/${newsItem.slug || newsItem.id}`}
+                        to={`/novedades/${newsItem.slug}`}
                         className="mt-auto self-start font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2"
                       >
                         Leer más <ArrowRight className="h-4 w-4" />

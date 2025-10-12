@@ -1,147 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
+import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  Calendar,
-  ArrowLeft,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Copy,
-  MessageCircle
-} from 'lucide-react';
+import { ArrowLeft, Facebook, Twitter, Linkedin, Instagram, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
-const isUUID = (v = '') =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-
 const NewsDetailPage = () => {
-  const { slug } = useParams();
+  const { id: maybeSlug } = useParams();
   const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      let news = await getNewsBySlug(slug);
-      if (!news && isUUID(slug)) {
-        news = await getNewsById(slug);
-      }
-      setItem(news);
-      setLoading(false);
-    };
-    load();
-  }, [slug]);
+    (async () => {
+      // si es UUID viejo, busca por id; si es slug, por slug
+      const isUuid = /^[0-9a-f-]{36}$/i.test(maybeSlug);
+      const data = isUuid ? await getNewsById(maybeSlug) : await getNewsBySlug(maybeSlug);
+      setItem(data);
+    })();
+  }, [maybeSlug]);
 
-  const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const title = item?.title ?? '';
+  const canonicalUrl = useMemo(() => {
+    if (!item) return window.location.href;
+    return `${window.location.origin}/novedades/${item.slug || maybeSlug}`;
+  }, [item, maybeSlug]);
 
-  const share = {
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
-    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(title)}`,
-    linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(pageUrl)}&title=${encodeURIComponent(title)}`,
-    instagram: 'https://www.instagram.com/',
-    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + pageUrl)}`
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(pageUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (e) {}
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <p>Cargando novedad…</p>
-      </div>
-    );
-  }
+  // URL especial para previews OG:
+  const shareUrl = useMemo(() => {
+    const slug = item?.slug || maybeSlug;
+    return `${window.location.origin}/api/share/news/${slug}`;
+  }, [item, maybeSlug]);
 
   if (!item) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
-        <h1 className="text-2xl font-bold mb-2">Novedad no encontrada</h1>
-        <p className="text-gray-600 mb-6">La novedad que buscas no existe o fue eliminada.</p>
-        <Link to="/novedades" className="text-blue-600 hover:underline">Volver a todas las novedades</Link>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Cargando...</p>
       </div>
     );
   }
 
-  const published = new Date(item.created_at);
+  const title = item.title;
+  const description = (item.content || '').slice(0, 180);
+
+  const encodedShare = encodeURIComponent(`${title} ${shareUrl}`);
+  const waHref = `https://wa.me/?text=${encodedShare}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Helmet>
-        <title>{item.title} - Fundación Evolución Antoniana</title>
-        <meta name="description" content={item.content?.slice(0, 150)} />
+        <title>{title} - Fundación Evolución Antoniana</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={canonicalUrl} />
       </Helmet>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <Link to="/novedades" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
-          <ArrowLeft className="h-4 w-4" />
-          Volver a todas las novedades
-        </Link>
+      <main className="flex-1">
+        <div className="max-w-4xl mx-auto py-8 px-4">
+          <Link to="/novedades" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
+            <ArrowLeft className="h-4 w-4" /> Volver a todas las novedades
+          </Link>
 
-        <motion.article
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white rounded-2xl shadow overflow-hidden"
-        >
-          {item.image_url && (
-            <img
-              src={item.image_url}
-              alt={item.title}
-              className="w-full h-64 md:h-96 object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-          )}
+          <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              {item.image_url && (
+                <img src={item.image_url} alt={title} className="w-full h-[280px] md:h-[360px] object-cover" />
+              )}
 
-          <div className="p-6 md:p-10">
-            <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-              <Calendar className="h-4 w-4" />
-              <span>Publicado el {published.toLocaleDateString()}</span>
-            </div>
+              <div className="p-6 md:p-10">
+                <p className="text-sm text-gray-500 mb-2">
+                  Publicado el {new Date(item.created_at).toLocaleDateString()}
+                </p>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">{title}</h1>
+                <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
 
-            <h1 className="text-4xl font-extrabold tracking-tight mb-4">{item.title}</h1>
-
-            <div className="prose prose-lg max-w-none text-gray-800 whitespace-pre-line mb-8">
-              {item.content}
-            </div>
-
-            {/* Compartir */}
-            <div className="pt-4 border-t">
-              <p className="text-gray-700 mb-3 font-medium">Compartir</p>
-              <div className="flex flex-wrap gap-2">
-                <a href={share.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Facebook className="h-4 w-4" /> Facebook
-                </a>
-                <a href={share.twitter} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Twitter className="h-4 w-4" /> X
-                </a>
-                <a href={share.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Linkedin className="h-4 w-4" /> LinkedIn
-                </a>
-                <a href={share.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Instagram className="h-4 w-4" /> Instagram
-                </a>
-                <a href={share.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </a>
-                <button onClick={handleCopy} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Copy className="h-4 w-4" /> {copied ? '¡Copiado!' : 'Copiar enlace'}
-                </button>
+                {/* Compartir */}
+                <div className="pt-6 border-t">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Compartir</p>
+                  <div className="flex flex-wrap gap-3">
+                    <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><Facebook className="h-4 w-4 mr-2" /> Facebook</Button>
+                    </a>
+                    <a href={`https://twitter.com/intent/tweet?text=${encodedShare}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><Twitter className="h-4 w-4 mr-2" /> X</Button>
+                    </a>
+                    <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><Linkedin className="h-4 w-4 mr-2" /> LinkedIn</Button>
+                    </a>
+                    <a href={waHref} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm">
+                        {/* pequeño ícono de WhatsApp inline (SVG libre) */}
+                        <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2"><path d="M19.11 17.2c-.27-.15-1.59-.86-1.84-.96-.25-.09-.43-.15-.62.15-.18.27-.72.96-.88 1.15-.16.18-.32.2-.59.07-.27-.14-1.12-.41-2.13-1.31-.79-.7-1.32-1.57-1.48-1.83-.15-.27-.02-.42.11-.56.11-.11.25-.29.36-.43.12-.14.16-.25.25-.41.09-.18.04-.33-.02-.46-.06-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.7.33-.25.27-.93.91-.93 2.22s.96 2.58 1.09 2.76c.14.18 1.88 2.86 4.56 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.59-.65 1.81-1.28.22-.64.22-1.18.15-1.29-.07-.11-.25-.18-.52-.33zM16.02 4C9.94 4 5 8.93 5 15c0 1.94.52 3.75 1.43 5.32L5 27l6.86-1.8A10.95 10.95 0 0 0 16.02 26c6.07 0 11-4.94 11-11s-4.93-11-11-11zm0 20c-1.86 0-3.58-.54-5.02-1.46l-.36-.23-4.06 1.07 1.09-3.95-.25-.4A8.88 8.88 0 0 1 7.02 15c0-4.96 4.04-9 9-9s9 4.04 9 9-4.04 9-9 9z" fill="currentColor"/></svg>
+                        WhatsApp
+                      </Button>
+                    </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${title} ${shareUrl}`);
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-2" /> Copiar enlace
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.article>
+          </motion.article>
+        </div>
       </main>
     </div>
   );
