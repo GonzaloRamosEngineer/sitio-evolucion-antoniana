@@ -62,10 +62,11 @@ const NewsDetailPage = () => {
     return `${window.location.origin}/novedades/${slug}`;
   }, [item, routeParam]);
 
-  // URL “share” con metatags (servida por la Function de Vercel)
+  // URL “share” (function con metatags) + cache-buster para forzar nueva tarjeta
   const shareUrl = useMemo(() => {
     const slug = item?.slug || routeParam;
-    return `${window.location.origin}/api/share/news/${slug}`;
+    const v = item?.id || '1';
+    return `${window.location.origin}/api/share/news/${encodeURIComponent(slug)}?v=${encodeURIComponent(v)}`;
   }, [item, routeParam]);
 
   if (loading) {
@@ -175,7 +176,6 @@ const NewsDetailPage = () => {
                       onClick={async () => {
                         const ok = await copyToClipboard(`${title} ${shareUrl}`);
                         if (ok) {
-                          // feedback mínimo sin romper estilos
                           alert('Enlace copiado al portapapeles');
                         } else {
                           alert('No se pudo copiar. Copiá manualmente.');

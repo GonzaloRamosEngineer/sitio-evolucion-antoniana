@@ -56,25 +56,31 @@ module.exports = async (req, res) => {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    const canonical = `${proto}://${host}/novedades/${item.slug || item.id}`;
+    // URL visible (SPA) y URL de share (esta function)
+    const visibleUrl = `${proto}://${host}/novedades/${item.slug || item.id}`;
+    const shareUrl   = `${proto}://${host}/api/share/news/${encodeURIComponent(item.slug || item.id)}`;
+
     const title = escapeHtml(item.title || 'Novedad');
     const desc = escapeHtml((item.content || '').replace(/\s+/g, ' ').slice(0, 160));
     const image =
       item.image_url ||
-      `${proto}://${host}/favicon-512x512.png`; // fallback a un logo si querés
+      `${proto}://${host}/favicon-512x512.png`; // fallback
+
+    // IMPORTANTE:
+    // - No incluimos <link rel="canonical"> para que los scrapers NO se vayan al SPA.
+    // - og:url apunta al MISMO shareUrl para que la tarjeta sea consistente.
 
     const html = `<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <title>${title}</title>
-  <link rel="canonical" href="${canonical}"/>
 
   <!-- Open Graph -->
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url" content="${canonical}"/>
+  <meta property="og:url" content="${shareUrl}"/>
   <meta property="og:image" content="${image}"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
 
@@ -84,13 +90,13 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <meta http-equiv="refresh" content="0;url=${canonical}">
+  <meta http-equiv="refresh" content="0;url=${visibleUrl}">
   <meta name="robots" content="noindex,nofollow"/>
   <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; padding:24px}</style>
 </head>
 <body>
-  <p>Redirigiendo a <a href="${canonical}">${canonical}</a>…</p>
-  <script>location.replace(${JSON.stringify(canonical)});</script>
+  <p>Redirigiendo a <a href="${visibleUrl}">${visibleUrl}</a>…</p>
+  <script>location.replace(${JSON.stringify(visibleUrl)});</script>
 </body>
 </html>`;
 
