@@ -26,7 +26,7 @@ const PartnerDetailPage = () => {
       setLoading(false);
     };
     fetchPartner();
-  }, [slug]); // <-- FIX: dependemos de slug
+  }, [slug]);
 
   if (loading) {
     return (
@@ -104,8 +104,9 @@ const PartnerDetailPage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">Sobre la colaboración</h3>
-                      <p className="text-gray-600">
-                        {partner.nombre} colabora activamente con nuestros proyectos, ofreciendo beneficios a la comunidad.
+                      <p className="text-gray-600 whitespace-pre-line break-words">
+                        {partner.colaboracion_detalle?.trim()
+                          || `${partner.nombre} colabora activamente con nuestros proyectos, ofreciendo beneficios a la comunidad.`}
                       </p>
                     </div>
                   </div>

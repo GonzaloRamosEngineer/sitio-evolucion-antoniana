@@ -4,12 +4,12 @@ import { supabase } from '@/lib/customSupabaseClient';
  * PARTNERS
  * ======================= */
 
-// Trae partners (incluye slug)
+// Trae partners (incluye slug y colaboracion_detalle)
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
     .select(
-      'id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at'
     )
     .order('created_at', { ascending: false });
 
@@ -21,27 +21,27 @@ export const getPartners = async () => {
 };
 
 // Crear postulación pública de partner:
-// NO enviar estado ni slug (los setean default/trigger en DB)
 // NO encadenar .select() para evitar SELECT bloqueado por RLS (estado = 'pendiente')
 export const addPartner = async (partner) => {
   const payload = {
     nombre: partner?.nombre,
     descripcion: partner?.descripcion,
+    colaboracion_detalle: partner?.colaboracion_detalle || null,
     contacto_email: partner?.contacto_email,
     sitio_web: partner?.sitio_web || null,
     logo_url: partner?.logo_url || null,
+    // NO es necesario enviar estado/slug (defaults/trigger en DB)
   };
 
   const { error, status } = await supabase
     .from('partners')
-    .insert([payload], { returning: 'minimal' }); // evita retorno de la fila (y el SELECT)
+    .insert([payload], { returning: 'minimal' });
 
   if (error) {
     console.error('Error adding partner:', error);
     return null;
   }
 
-  // Devolvemos algo simple para el UI
   return { ok: true, status };
 };
 
@@ -70,12 +70,12 @@ export const deletePartner = async (id) => {
   return null;
 };
 
-// (Opcional) obtener un partner por slug (útil para vistas de detalle)
+// Obtener un partner por slug (útil para vistas de detalle)
 export const getPartnerBySlug = async (slug) => {
   const { data, error } = await supabase
     .from('partners')
     .select(
-      'id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at'
     )
     .eq('slug', slug)
     .single();
@@ -105,10 +105,7 @@ export const getBenefits = async () => {
 };
 
 export const addBenefit = async (benefit) => {
-  const { data, error } = await supabase
-    .from('benefits')
-    .insert([benefit])
-    .select();
+  const { data, error } = await supabase.from('benefits').insert([benefit]).select();
   if (error) {
     console.error('Error adding benefit:', error);
     return null;
@@ -156,11 +153,7 @@ export const getNews = async () => {
 };
 
 export const getNewsById = async (id) => {
-  const { data, error } = await supabase
-    .from('news')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('news').select('*').eq('id', id).single();
   if (error) {
     console.error('Error fetching news by id:', error);
     return null;
@@ -169,10 +162,7 @@ export const getNewsById = async (id) => {
 };
 
 export const addNews = async (newsItem) => {
-  const { data, error } = await supabase
-    .from('news')
-    .insert([newsItem])
-    .select();
+  const { data, error } = await supabase.from('news').insert([newsItem]).select();
   if (error) {
     console.error('Error adding news:', error);
     return null;
@@ -181,11 +171,7 @@ export const addNews = async (newsItem) => {
 };
 
 export const updateNews = async (id, updates) => {
-  const { data, error } = await supabase
-    .from('news')
-    .update(updates)
-    .eq('id', id)
-    .select();
+  const { data, error } = await supabase.from('news').update(updates).eq('id', id).select();
   if (error) {
     console.error('Error updating news:', error);
     return null;

@@ -17,6 +17,7 @@ const PartnersAdmin = () => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
+    colaboracion_detalle: '',
     contacto_email: '',
     sitio_web: '',
     logo_url: '',
@@ -37,6 +38,7 @@ const PartnersAdmin = () => {
     setFormData({
       nombre: '',
       descripcion: '',
+      colaboracion_detalle: '',
       contacto_email: '',
       sitio_web: '',
       logo_url: '',
@@ -47,10 +49,20 @@ const PartnersAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingPartner) {
-      await updatePartner(editingPartner.id, formData);
+      await updatePartner(editingPartner.id, {
+        ...formData,
+        sitio_web: formData.sitio_web || null,
+        logo_url: formData.logo_url || null,
+        colaboracion_detalle: formData.colaboracion_detalle || null,
+      });
       toast({ title: "Partner actualizado ✅" });
     } else {
-      await addPartner(formData);
+      await addPartner({
+        ...formData,
+        sitio_web: formData.sitio_web || null,
+        logo_url: formData.logo_url || null,
+        colaboracion_detalle: formData.colaboracion_detalle || null,
+      });
       toast({ title: "Partner creado ✅" });
     }
     resetForm();
@@ -63,6 +75,7 @@ const PartnersAdmin = () => {
     setFormData({
       nombre: partner.nombre,
       descripcion: partner.descripcion,
+      colaboracion_detalle: partner.colaboracion_detalle || '',
       contacto_email: partner.contacto_email,
       sitio_web: partner.sitio_web || '',
       logo_url: partner.logo_url || '',
@@ -141,6 +154,19 @@ const PartnersAdmin = () => {
                 <Label htmlFor="descripcion">Descripción *</Label>
                 <Textarea id="descripcion" required value={formData.descripcion} onChange={(e) => handleChange('descripcion', e.target.value)} />
               </div>
+
+              {/* Nuevo: detalle de la colaboración */}
+              <div>
+                <Label htmlFor="colaboracion_detalle">Detalle de la colaboración (opcional)</Label>
+                <Textarea
+                  id="colaboracion_detalle"
+                  value={formData.colaboracion_detalle}
+                  onChange={(e) => handleChange('colaboracion_detalle', e.target.value)}
+                  placeholder="Ej.: Aportan horas de consultoría 🧠, descuentos para la comunidad 💙, etc."
+                  rows={5}
+                />
+              </div>
+
               <div>
                 <Label htmlFor="contacto_email">Email de Contacto *</Label>
                 <Input id="contacto_email" type="email" required value={formData.contacto_email} onChange={(e) => handleChange('contacto_email', e.target.value)} />
