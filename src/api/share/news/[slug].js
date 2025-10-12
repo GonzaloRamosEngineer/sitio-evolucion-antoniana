@@ -1,9 +1,12 @@
 // api/share/news/[slug].js
+const BOT_UA_REGEX =
+  /(facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Google-InspectionTool|Googlebot)/i;
+
 const isUuid = (v = '') =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const escapeHtml = (s = '') =>
-  s
+  String(s || '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -46,7 +49,6 @@ module.exports = async (req, res) => {
 
     const rows = await r.json();
     const item = rows && rows[0];
-
     if (!item) {
       res.status(404).send('Not found');
       return;
@@ -56,20 +58,34 @@ module.exports = async (req, res) => {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    // URL visible (SPA) y URL de share (esta function)
-    const visibleUrl = `${proto}://${host}/novedades/${item.slug || item.id}`;
-    const shareUrl   = `${proto}://${host}/api/share/news/${encodeURIComponent(item.slug || item.id)}`;
+    const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(
+      item.slug || item.id
+    )}`;
+    const shareUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(
+      item.slug || item.id
+    )}`;
 
     const title = escapeHtml(item.title || 'Novedad');
     const desc = escapeHtml((item.content || '').replace(/\s+/g, ' ').slice(0, 160));
     const image =
-      item.image_url ||
-      `${proto}://${host}/favicon-512x512.png`; // fallback
+      item.image_url || `${proto}://${host}/favicon-512x512.png`;
 
-    // IMPORTANTE:
-    // - No incluimos <link rel="canonical"> para que los scrapers NO se vayan al SPA.
-    // - og:url apunta al MISMO shareUrl para que la tarjeta sea consistente.
+    const ua = req.headers['user-agent'] || '';
+    const isBot = BOT_UA_REGEX.test(ua);
 
+    if (!isBot) {
+      // Usuario normal: redirigimos de una
+      res.statusCode = 302;
+      res.setHeader('Location', visibleUrl);
+      // Opcional: breve HTML por si algún cliente no sigue el 302
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.end(
+        `<!doctype html><meta http-equiv="refresh" content="0;url=${visibleUrl}"><a href="${visibleUrl}">Ir a la noticia</a>`
+      );
+      return;
+    }
+
+    // Bot (WhatsApp/Facebook/Twitter/LinkedIn…): devolvemos metatags sin redirigir
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -90,18 +106,19 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <meta http-equiv="refresh" content="0;url=${visibleUrl}">
   <meta name="robots" content="noindex,nofollow"/>
-  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; padding:24px}</style>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; padding:24px}
+  </style>
 </head>
 <body>
-  <p>Redirigiendo a <a href="${visibleUrl}">${visibleUrl}</a>…</p>
-  <script>location.replace(${JSON.stringify(visibleUrl)});</script>
+  <p>Previsualización para compartir. Abrí la noticia aquí: <a href="${visibleUrl}">${visibleUrl}</a></p>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=86400');
+    // Cache razonable en edge, los bots suelen recachear igual
+    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
   } catch (e) {
     res.status(500).send('Internal error');
