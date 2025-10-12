@@ -1,6 +1,6 @@
 // api/share/news/[slug].js
 
-// Cobertura amplia de bots/crawlers que generan el preview
+// Bots/crawlers habituales para generar el preview
 const BOT_UA_REGEX =
   /(facebookexternalhit|facebot|meta-externalagent|whatsapp|twitterbot|slackbot|linkedinbot|telegrambot|discordbot|google-inspectiontool|googlebot|pinterest|skypeuripreview)/i;
 
@@ -23,18 +23,20 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // En funciones serverless usá estas envs (configuralas en Vercel):
+    // SUPABASE_URL y SUPABASE_ANON_KEY
     const SUPABASE_URL =
-      process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SUPABASE_ANON_KEY =
-      process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+      process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       res.status(500).send('Supabase env vars not set');
       return;
     }
 
-    // Buscamos por slug o por id (uuid)
-    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${slug}`;
+    // Buscar por slug o por id (uuid)
+    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -64,33 +66,34 @@ module.exports = async (req, res) => {
     const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(
       item.slug || item.id
     )}`;
-    const shareSelfUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(
-      item.slug || item.id
-    )}`;
+
+    // Aseguramos imagen absoluta
+    const image =
+      (item.image_url && /^https?:\/\//i.test(item.image_url))
+        ? item.image_url
+        : `${proto}://${host}${item.image_url || '/favicon-512x512.png'}`;
 
     const title = escapeHtml(item.title || 'Novedad');
     const desc = escapeHtml((item.content || '').replace(/\s+/g, ' ').slice(0, 160));
-    const image =
-      item.image_url || `${proto}://${host}/favicon-512x512.png`;
 
     const ua = (req.headers['user-agent'] || '').toLowerCase();
     const isBot = BOT_UA_REGEX.test(ua);
 
-    // Importante para CDN: el contenido cambia por User-Agent
+    // El contenido varía según UA => importante para el caché/CDN
     res.setHeader('Vary', 'User-Agent');
 
     if (!isBot) {
-      // Usuario real -> redirigimos al detalle
+      // Usuario real => redirigimos al detalle “lindo”
       res.statusCode = 302;
       res.setHeader('Location', visibleUrl);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end(
-        `<!doctype html><meta http-equiv="refresh" content="0;url=${visibleUrl}"><a href="${visibleUrl}">Ir a la noticia</a>`
-      );
+      res.end(`<!doctype html>
+<meta http-equiv="refresh" content="0;url=${visibleUrl}">
+<a href="${visibleUrl}">Ir a la noticia</a>`);
       return;
     }
 
-    // Bot -> servimos HTML con metatags (sin redirigir)
+    // Bot => servimos HTML con metatags OG/Twitter
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -101,12 +104,13 @@ module.exports = async (req, res) => {
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <!-- og:url: ponemos la URL visible, no la /api/share, para que el origen mostrado sea la página final -->
   <meta property="og:url" content="${visibleUrl}"/>
   <meta property="og:image" content="${image}"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
+  <meta property="og:locale" content="es_AR"/>
+  <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image"/>
@@ -114,9 +118,10 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <!-- Canonical informativo -->
-  <link rel="canonical" href="${visibleUrl}"/>
+  <!-- Evitamos que Google indexe /api/share -->
+  <meta name="robots" content="noindex, nofollow"/>
 
+  <link rel="canonical" href="${visibleUrl}"/>
   <meta http-equiv="x-ua-compatible" content="IE=edge"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
@@ -127,7 +132,7 @@ module.exports = async (req, res) => {
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Cache para bots en el edge; WhatsApp suele recachear, pero esto acelera
+    // Cache razonable para bots
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
   } catch (_e) {

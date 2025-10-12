@@ -1,3 +1,4 @@
+// src/lib/storage.js
 import { supabase } from '@/lib/customSupabaseClient';
 
 /* =======================
@@ -67,6 +68,7 @@ export const deletePartner = async (id) => {
 };
 
 export const getPartnerBySlug = async (slug) => {
+  if (!slug) return null; // evita 406 si slug viene vacío
   const { data, error } = await supabase
     .from('partners')
     .select(
@@ -148,6 +150,7 @@ export const getNews = async () => {
 };
 
 export const getNewsById = async (id) => {
+  if (!id) return null; // evita 406 si id viene vacío
   const { data, error } = await supabase
     .from('news')
     .select('id, title, content, image_url, created_at, slug')
@@ -161,6 +164,7 @@ export const getNewsById = async (id) => {
 };
 
 export const getNewsBySlug = async (slug) => {
+  if (!slug) return null; // evita 406 si slug viene vacío
   const { data, error } = await supabase
     .from('news')
     .select('id, title, content, image_url, created_at, slug')

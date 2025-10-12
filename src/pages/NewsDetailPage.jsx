@@ -12,6 +12,7 @@ const isUuid = (v = '') =>
 
 const NewsDetailPage = () => {
   const params = useParams();
+  // soporta /novedades/:slug y rutas legacy con :id
   const routeParam = params.slug ?? params.id;
 
   const [item, setItem] = useState(null);
@@ -20,10 +21,7 @@ const NewsDetailPage = () => {
   useEffect(() => {
     let active = true;
     (async () => {
-      if (!routeParam) {
-        setLoading(false);
-        return;
-      }
+      if (!routeParam) { setLoading(false); return; }
       setLoading(true);
       try {
         const data = isUuid(routeParam)
@@ -34,42 +32,31 @@ const NewsDetailPage = () => {
         if (active) setLoading(false);
       }
     })();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [routeParam]);
 
-  const canonicalUrl = useMemo(() => {
-    const slugOrId = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
-    if (typeof window === 'undefined') return `/novedades/${slugOrId}`;
-    return `${window.location.origin}/novedades/${slugOrId}`;
-  }, [item, routeParam]);
+  const slugOrId = useMemo(
+    () => item?.slug || routeParam,
+    [item, routeParam]
+  );
 
-  // URL que los scrapers deben leer para armar el preview
-  const shareUrl = useMemo(() => {
-    const slugOrId = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
-    if (typeof window === 'undefined') return `/api/share/news/${slugOrId}`;
-    return `${window.location.origin}/api/share/news/${slugOrId}`;
-  }, [item, routeParam]);
+  const origin =
+    typeof window === 'undefined' ? '' : window.location.origin;
+
+  const canonicalUrl = `${origin}/novedades/${slugOrId}`;
+  // URL especial para scrapers/preview
+  const shareUrl = `${origin}/api/share/news/${slugOrId}`;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen"><p>Cargando...</p></div>;
   }
 
   if (!item) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center">
         <h1 className="text-3xl font-bold mb-4">Noticia no encontrada</h1>
-        <p className="text-gray-600 mb-6">
-          La noticia que buscas no existe o ha sido eliminada.
-        </p>
-        <Link to="/novedades">
-          <Button>Volver a Novedades</Button>
-        </Link>
+        <p className="text-gray-600 mb-6">La noticia que buscas no existe o ha sido eliminada.</p>
+        <Link to="/novedades"><Button>Volver a Novedades</Button></Link>
       </div>
     );
   }
@@ -77,30 +64,31 @@ const NewsDetailPage = () => {
   const title = item.title;
   const description = (item.content || '').slice(0, 180);
 
-  const encodedShare = encodeURIComponent(`${title} ${shareUrl}`);
-  const waHref = `https://wa.me/?text=${encodedShare}`;
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(`${title} ${shareUrl}`)}`;
+  const twitterHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`;
+  const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  const linkedinHref = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
 
   const copyToClipboard = async () => {
     const text = `${title} ${shareUrl}`;
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
-        alert('Enlace copiado');
-        return;
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
       }
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.top = '-9999px';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      alert('Enlace copiado');
+      // feedback mínimo sin romper UI
+      window.alert('Enlace copiado');
     } catch {
-      alert('No se pudo copiar el enlace');
+      window.alert('No se pudo copiar el enlace');
     }
   };
 
@@ -114,18 +102,11 @@ const NewsDetailPage = () => {
 
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
-          <Link
-            to="/novedades"
-            className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6"
-          >
+          <Link to="/novedades" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
             <ArrowLeft className="h-4 w-4" /> Volver a todas las novedades
           </Link>
 
-          <motion.article
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               {item.image_url && (
                 <img
@@ -139,51 +120,33 @@ const NewsDetailPage = () => {
                 <p className="text-sm text-gray-500 mb-2">
                   Publicado el {new Date(item.created_at).toLocaleDateString()}
                 </p>
-                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-                  {title}
-                </h1>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">{title}</h1>
                 <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
 
                 {/* Compartir */}
                 <div className="pt-6 border-t">
                   <p className="text-sm font-medium text-gray-700 mb-3">Compartir</p>
                   <div className="flex flex-wrap gap-3">
-                    <a
-                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                        shareUrl
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={facebookHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <Facebook className="h-4 w-4 mr-2" /> Facebook
                       </Button>
                     </a>
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${encodedShare}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={twitterHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <Twitter className="h-4 w-4 mr-2" /> X
                       </Button>
                     </a>
-                    <a
-                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-                        shareUrl
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={linkedinHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <Linkedin className="h-4 w-4 mr-2" /> LinkedIn
                       </Button>
                     </a>
 
-                    {/* WhatsApp */}
-                    <a href={waHref} target="_blank" rel="noopener noreferrer">
+                    {/* WhatsApp (icono inline para no depender de librería) */}
+                    <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
-                        <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2">
+                        <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2" aria-hidden="true">
                           <path
                             d="M19.11 17.2c-.27-.15-1.59-.86-1.84-.96-.25-.09-.43-.15-.62.15-.18.27-.72.96-.88 1.15-.16.18-.32.2-.59.07-.27-.14-1.12-.41-2.13-1.31-.79-.7-1.32-1.57-1.48-1.83-.15-.27-.02-.42.11-.56.11-.11.25-.29.36-.43.12-.14.16-.25.25-.41.09-.18.04-.33-.02-.46-.06-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.7.33-.25.27-.93.91-.93 2.22s.96 2.58 1.09 2.76c.14.18 1.88 2.86 4.56 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.59-.65 1.81-1.28.22-.64.22-1.18.15-1.29-.07-.11-.25-.18-.52-.33zM16.02 4C9.94 4 5 8.93 5 15c0 1.94.52 3.75 1.43 5.32L5 27l6.86-1.8A10.95 10.95 0 0 0 16.02 26c6.07 0 11-4.94 11-11s-4.93-11-11-11zm0 20c-1.86 0-3.58-.54-5.02-1.46l-.36-.23-4.06 1.07 1.09-3.95-.25-.4A8.88 8.88 0 0 1 7.02 15c0-4.96 4.04-9 9-9s9 4.04 9 9-4.04 9-9 9z"
                             fill="currentColor"
