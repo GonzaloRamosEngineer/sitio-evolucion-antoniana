@@ -12,8 +12,8 @@ import ActivityDetailPage from '@/pages/ActivityDetailPage';
 import ConfirmAttendancePage from '@/pages/ConfirmAttendancePage';
 import Collaborate from '@/pages/Collaborate';
 import Contact from '@/pages/Contact';
-import LoginPage from '@/pages/LoginPage'; 
-import RegisterPage from '@/pages/RegisterPage'; 
+import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
 import RequestPasswordResetForm from '@/components/Auth/RequestPasswordResetForm';
 import UpdatePasswordForm from '@/components/Auth/UpdatePasswordForm';
 import Dashboard from '@/pages/Dashboard';
@@ -26,7 +26,7 @@ import LegalDocuments from '@/pages/LegalDocuments';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
-// 🔹 Nuevas páginas de Partners, Beneficios y Novedades
+// Partners / Beneficios / Novedades
 import PartnersPage from '@/pages/PartnersPage';
 import PartnerDetailPage from '@/pages/PartnerDetailPage';
 import BenefitsPage from '@/pages/BenefitsPage';
@@ -34,8 +34,6 @@ import BenefitDetailPage from '@/pages/BenefitDetailPage';
 import ApplyPartnerPage from '@/pages/ApplyPartnerPage';
 import NewsPage from '@/pages/NewsPage';
 import NewsDetailPage from '@/pages/NewsDetailPage';
-
-
 
 const PageRoutes = () => {
   const location = useLocation();
@@ -49,59 +47,60 @@ const PageRoutes = () => {
         <Route path="/confirm-attendance" element={<ConfirmAttendancePage />} />
         <Route path="/collaborate" element={<Collaborate />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<LoginPage />} /> 
-        <Route path="/register" element={<RegisterPage />} /> 
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/request-password-reset" element={<RequestPasswordResetForm />} />
-        <Route path="/update-password" element={<UpdatePasswordForm />} /> 
+        <Route path="/update-password" element={<UpdatePasswordForm />} />
         <Route path="/agradecimiento" element={<Agradecimiento />} />
         <Route path="/legal-documents" element={<LegalDocuments />} />
 
-
-        {/* 🔹 Nuevas rutas */}
+        {/* Partners / Beneficios / Novedades */}
         <Route path="/partners" element={<PartnersPage />} />
         <Route path="/partners/:slug" element={<PartnerDetailPage />} />
         <Route path="/beneficios" element={<BenefitsPage />} />
         <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
         <Route path="/postular-partner" element={<ApplyPartnerPage />} />
-        <Route path="/novedades" element={<NewsPage />} />
-        <Route path="/novedades/:id" element={<NewsDetailPage />} />
 
-        <Route 
-          path="/dashboard" 
+        <Route path="/novedades" element={<NewsPage />} />
+        {/* ⬇️ ahora usa slug */}
+        <Route path="/novedades/:slug" element={<NewsDetailPage />} />
+
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/admin/*" 
+        <Route
+          path="/admin/*"
           element={
             <ProtectedRoute requireAdmin>
               <AdminPanel />
             </ProtectedRoute>
-          } 
+          }
         />
-         <Route 
-          path="/admin/activities/new" 
+        <Route
+          path="/admin/activities/new"
           element={
             <ProtectedRoute requireAdmin>
               <CreateActivityPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/admin/activities/edit/:id" 
+        <Route
+          path="/admin/activities/edit/:id"
           element={
             <ProtectedRoute requireAdmin>
               <EditActivityPage />
             </ProtectedRoute>
-          } 
+          }
         />
       </Routes>
     </AnimatePresence>
   );
-}
+};
 
 function App() {
   return (

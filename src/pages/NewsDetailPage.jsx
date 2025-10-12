@@ -1,173 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Calendar, ArrowLeft, Share2, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getNewsById } from '@/lib/storage';
-import { toast } from '@/components/ui/use-toast';
+import {
+  Calendar,
+  ArrowLeft,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram,
+  Copy,
+  Whatsapp
+} from 'lucide-react';
+import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
-const SocialShareButton = ({ platform, url, title }) => {
-  const platforms = {
-    facebook: {
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-      icon: 'https://img.icons8.com/color/48/facebook-new.png',
-    },
-    twitter: {
-      url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
-      icon: 'https://img.icons8.com/color/48/twitterx.png',
-    },
-    linkedin: {
-      url: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
-      icon: 'https://img.icons8.com/color/48/linkedin.png',
-    },
-    instagram: {
-      url: 'https://www.instagram.com',
-      icon: 'https://img.icons8.com/color/48/instagram-new--v1.png',
-    },
-  };
-
-  const p = platforms[platform];
-
-  const handleClick = (e) => {
-    if (platform === 'instagram') {
-      e.preventDefault();
-      toast({
-        title: 'Compartir en Instagram',
-        description:
-          'Abrí Instagram y creá una nueva publicación con el enlace de esta noticia.',
-      });
-      navigator.clipboard.writeText(url);
-    }
-  };
-
-  return (
-    <a
-      href={p.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={handleClick}
-      className="transform hover:scale-110 transition-transform"
-    >
-      <img src={p.icon} alt={platform} className="w-10 h-10" />
-    </a>
-  );
-};
+const isUUID = (v = '') =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const NewsDetailPage = () => {
-  const { id } = useParams();
-  const [newsItem, setNewsItem] = useState(null);
+  const { slug } = useParams();
+  const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const fetchNews = async () => {
+    const load = async () => {
       setLoading(true);
-      const data = await getNewsById(id);
-      setNewsItem(data);
+      let news = await getNewsBySlug(slug);
+      if (!news && isUUID(slug)) {
+        news = await getNewsById(slug);
+      }
+      setItem(news);
       setLoading(false);
     };
-    fetchNews();
-  }, [id]);
+    load();
+  }, [slug]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(pageUrl);
-    toast({
-      title: 'Enlace copiado',
-      description: 'Puedes compartirlo en cualquier red social.',
-    });
+  const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const title = item?.title ?? '';
+
+  const share = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(title)}`,
+    linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(pageUrl)}&title=${encodeURIComponent(title)}`,
+    instagram: 'https://www.instagram.com/', // no hay sharer directo; lo dejamos como acceso rápido
+    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + pageUrl)}`
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      // noop
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Cargando noticia...</p>
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <p>Cargando novedad…</p>
       </div>
     );
   }
 
-  if (!newsItem) {
+  if (!item) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center">
-        <h1 className="text-3xl font-bold mb-4">Noticia no encontrada</h1>
-        <Link to="/novedades">
-          <Button>Volver a Novedades</Button>
-        </Link>
+      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
+        <h1 className="text-2xl font-bold mb-2">Novedad no encontrada</h1>
+        <p className="text-gray-600 mb-6">La novedad que buscas no existe o fue eliminada.</p>
+        <Link to="/novedades" className="text-blue-600 hover:underline">Volver a todas las novedades</Link>
       </div>
     );
   }
+
+  const published = new Date(item.created_at);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <Helmet>
-        <title>{newsItem.title} - Fundación Evolución Antoniana</title>
-        <meta name="description" content={newsItem.content?.substring(0, 160)} />
+        <title>{item.title} - Fundación Evolución Antoniana</title>
+        <meta name="description" content={item.content?.slice(0, 150)} />
       </Helmet>
 
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <Link to="/novedades" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Volver a todas las novedades
+        </Link>
 
-      <main className="flex-1">
-        <div className="max-w-4xl mx-auto py-8 px-4">
-          <Link
-            to="/novedades"
-            className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a todas las novedades
-          </Link>
+        <motion.article
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-2xl shadow overflow-hidden"
+        >
+          {item.image_url && (
+            <img
+              src={item.image_url}
+              alt={item.title}
+              className="w-full h-64 md:h-96 object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-xl overflow-hidden"
-          >
-            {newsItem.image_url && (
-              <div className="h-80 bg-gray-200">
-                <img
-                  src={newsItem.image_url}
-                  alt={newsItem.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          <div className="p-6 md:p-10">
+            <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+              <Calendar className="h-4 w-4" />
+              <span>Publicado el {published.toLocaleDateString()}</span>
+            </div>
 
-            <div className="p-8 md:p-12">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  Publicado el {new Date(newsItem.created_at).toLocaleDateString()}
-                </span>
-              </div>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-4">{item.title}</h1>
 
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
-                {newsItem.title}
-              </h1>
+            <div className="prose prose-lg max-w-none text-gray-800 whitespace-pre-line mb-8">
+              {item.content}
+            </div>
 
-              <div className="prose prose-lg max-w-none text-gray-700 whitespace-pre-wrap">
-                {newsItem.content}
-              </div>
-
-              <div className="border-t mt-8 pt-6">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                  <Share2 className="h-5 w-5" />
-                  Compartir
-                </h3>
-                <div className="flex items-center gap-4">
-                  <SocialShareButton platform="facebook" url={pageUrl} title={newsItem.title} />
-                  <SocialShareButton platform="twitter" url={pageUrl} title={newsItem.title} />
-                  <SocialShareButton platform="linkedin" url={pageUrl} title={newsItem.title} />
-                  <SocialShareButton platform="instagram" url={pageUrl} title={newsItem.title} />
-                  <Button variant="outline" onClick={copyToClipboard} className="gap-2">
-                    <Copy className="h-4 w-4" />
-                    Copiar enlace
-                  </Button>
-                </div>
+            {/* Compartir */}
+            <div className="pt-4 border-t">
+              <p className="text-gray-700 mb-3 font-medium">Compartir</p>
+              <div className="flex flex-wrap gap-2">
+                <a href={share.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Facebook className="h-4 w-4" /> Facebook
+                </a>
+                <a href={share.twitter} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Twitter className="h-4 w-4" /> X
+                </a>
+                <a href={share.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Linkedin className="h-4 w-4" /> LinkedIn
+                </a>
+                <a href={share.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Instagram className="h-4 w-4" /> Instagram
+                </a>
+                {/* Nuevo: WhatsApp */}
+                <a href={share.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Whatsapp className="h-4 w-4" /> WhatsApp
+                </a>
+                <button onClick={handleCopy} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
+                  <Copy className="h-4 w-4" /> {copied ? '¡Copiado!' : 'Copiar enlace'}
+                </button>
               </div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.article>
       </main>
-
     </div>
   );
 };
