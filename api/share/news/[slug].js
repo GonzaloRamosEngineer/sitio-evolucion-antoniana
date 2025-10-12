@@ -1,9 +1,5 @@
 // api/share/news/[slug].js
 
-// Bots/crawlers habituales para generar preview
-const BOT_UA_REGEX =
-  /(facebookexternalhit|facebot|meta-externalagent|whatsapp|twitterbot|slackbot|linkedinbot|telegrambot|discordbot|google-inspectiontool|googlebot|pinterest|skypeuripreview)/i;
-
 const isUuid = (v = '') =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
@@ -17,8 +13,8 @@ const escapeHtml = (s = '') =>
 
 const stripToOneLine = (s = '') =>
   String(s || '')
-    .replace(/<[^>]+>/g, ' ')      // saca HTML si hubiera
-    .replace(/\s+/g, ' ')          // comprime espacios
+    .replace(/<[^>]+>/g, ' ')    // saca HTML si hubiera
+    .replace(/\s+/g, ' ')
     .trim();
 
 module.exports = async (req, res) => {
@@ -39,7 +35,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Buscar por slug o por id
+    // Buscar la noticia por slug o id
     const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
@@ -69,7 +65,7 @@ module.exports = async (req, res) => {
 
     const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta (usa fallback local si vino vacío)
+    // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
@@ -78,24 +74,8 @@ module.exports = async (req, res) => {
     const title = escapeHtml(item.title || 'Novedad');
     const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
 
-    const ua = (req.headers['user-agent'] || '');
-    const isBot = BOT_UA_REGEX.test(ua);
-
-    // Vary por User-Agent para que CDN no mezcle bot/usuario
-    res.setHeader('Vary', 'User-Agent');
-
-    if (!isBot) {
-      // Usuario real => redirección al detalle
-      res.statusCode = 302;
-      res.setHeader('Location', visibleUrl);
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end(`<!doctype html>
-<meta http-equiv="refresh" content="0;url=${visibleUrl}">
-<a href="${visibleUrl}">Ir a la noticia</a>`);
-      return;
-    }
-
-    // Bot => HTML con OG/Twitter
+    // SIEMPRE devolvemos el HTML con OG/Twitter para que cualquier bot lo lea.
+    // Para humanos, redirigimos en 0s (meta refresh + JS).
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -124,16 +104,22 @@ module.exports = async (req, res) => {
   <meta name="robots" content="noindex, nofollow"/>
 
   <link rel="canonical" href="${visibleUrl}"/>
+
+  <!-- Redirección instantánea para humanos -->
+  <meta http-equiv="refresh" content="0;url=${visibleUrl}">
+  <script>location.replace(${JSON.stringify(visibleUrl)});</script>
+
   <meta http-equiv="x-ua-compatible" content="IE=edge"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Previsualización para compartir. Abrí la noticia: <a href="${visibleUrl}">${visibleUrl}</a></p>
+  <p>Previsualización para compartir. Si no redirige, abrí la noticia: <a href="${visibleUrl}">${visibleUrl}</a></p>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Cache para bots/CDN (10 min) + stale un día
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
   } catch {
