@@ -1,3 +1,4 @@
+// src/pages/ApplyPartnerPage.jsx
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
@@ -9,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { addPartner } from '@/lib/storage';
-
 
 const ApplyPartnerPage = () => {
   const navigate = useNavigate();
@@ -34,18 +34,14 @@ const ApplyPartnerPage = () => {
     }
 
     const newPartner = { ...formData, estado: 'pendiente' };
-
     await addPartner(newPartner);
 
     toast({
       title: '¡Solicitud enviada! 🎉',
-      description:
-        'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
+      description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
     });
 
-    setTimeout(() => {
-      navigate('/partners');
-    }, 2000);
+    setTimeout(() => navigate('/partners'), 2000);
   };
 
   const handleChange = (e) => {
@@ -62,6 +58,19 @@ const ApplyPartnerPage = () => {
         />
       </Helmet>
 
+      {/* Fix autofill (Chrome/Safari) para que no invierta colores */}
+      <style>{`
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        textarea:-webkit-autofill,
+        textarea:-webkit-autofill:hover,
+        textarea:-webkit-autofill:focus {
+          -webkit-text-fill-color: var(--marron-legado, #2f2a26);
+          box-shadow: 0 0 0px 1000px var(--blanco-fundacion, #ffffff) inset;
+          transition: background-color 9999s ease-out 0s;
+        }
+      `}</style>
 
       <main className="flex-1">
         <section className="bg-gradient-to-br from-sky-600 via-blue-600 to-blue-700 text-white py-16 px-4">
@@ -87,10 +96,11 @@ const ApplyPartnerPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100"
+              data-theme="light"
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="nombre" className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="nombre" className="flex items-center gap-2 mb-2 text-marron-legado">
                     <Building2 className="h-4 w-4" />
                     Nombre de la Organización *
                   </Label>
@@ -102,11 +112,18 @@ const ApplyPartnerPage = () => {
                     value={formData.nombre}
                     onChange={handleChange}
                     placeholder="Ej: Empresa ABC S.A."
+                    className="
+                      bg-blanco-fundacion border-gray-300
+                      text-marron-legado placeholder:text-marron-legado/60
+                      caret-primary-antoniano
+                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
+                      [color-scheme:light]
+                    "
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="descripcion" className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="descripcion" className="flex items-center gap-2 mb-2 text-marron-legado">
                     <FileText className="h-4 w-4" />
                     Descripción *
                   </Label>
@@ -118,11 +135,18 @@ const ApplyPartnerPage = () => {
                     onChange={handleChange}
                     placeholder="Cuéntanos sobre tu organización y cómo deseas colaborar..."
                     rows={5}
+                    className="
+                      bg-blanco-fundacion border-gray-300
+                      text-marron-legado placeholder:text-marron-legado/60
+                      caret-primary-antoniano
+                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
+                      [color-scheme:light]
+                    "
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="contacto_email" className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="contacto_email" className="flex items-center gap-2 mb-2 text-marron-legado">
                     <Mail className="h-4 w-4" />
                     Email de Contacto *
                   </Label>
@@ -134,11 +158,18 @@ const ApplyPartnerPage = () => {
                     value={formData.contacto_email}
                     onChange={handleChange}
                     placeholder="contacto@empresa.com"
+                    className="
+                      bg-blanco-fundacion border-gray-300
+                      text-marron-legado placeholder:text-marron-legado/60
+                      caret-primary-antoniano
+                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
+                      [color-scheme:light]
+                    "
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="sitio_web" className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="sitio_web" className="flex items-center gap-2 mb-2 text-marron-legado">
                     <Globe className="h-4 w-4" />
                     Sitio Web
                   </Label>
@@ -149,11 +180,18 @@ const ApplyPartnerPage = () => {
                     value={formData.sitio_web}
                     onChange={handleChange}
                     placeholder="https://www.empresa.com"
+                    className="
+                      bg-blanco-fundacion border-gray-300
+                      text-marron-legado placeholder:text-marron-legado/60
+                      caret-primary-antoniano
+                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
+                      [color-scheme:light]
+                    "
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="logo_url" className="mb-2 block">
+                  <Label htmlFor="logo_url" className="mb-2 block text-marron-legado">
                     URL del Logo (opcional)
                   </Label>
                   <Input
@@ -163,8 +201,15 @@ const ApplyPartnerPage = () => {
                     value={formData.logo_url}
                     onChange={handleChange}
                     placeholder="https://ejemplo.com/logo.png"
+                    className="
+                      bg-blanco-fundacion border-gray-300
+                      text-marron-legado placeholder:text-marron-legado/60
+                      caret-primary-antoniano
+                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
+                      [color-scheme:light]
+                    "
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-marron-legado/70 mt-1">
                     Proporciona un enlace a tu logo en formato PNG o JPG
                   </p>
                 </div>
@@ -176,7 +221,7 @@ const ApplyPartnerPage = () => {
                   </Button>
                 </div>
 
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-marron-legado/70 text-center">
                   * Campos obligatorios. Tu solicitud será revisada en un plazo de 5 días hábiles.
                 </p>
               </form>
@@ -184,7 +229,6 @@ const ApplyPartnerPage = () => {
           </div>
         </section>
       </main>
-
     </div>
   );
 };
