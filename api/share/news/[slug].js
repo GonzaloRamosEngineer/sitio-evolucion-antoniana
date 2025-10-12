@@ -1,6 +1,6 @@
 // api/share/news/[slug].js
 
-// Bots/crawlers habituales para generar el preview
+// Bots/crawlers habituales para generar preview
 const BOT_UA_REGEX =
   /(facebookexternalhit|facebot|meta-externalagent|whatsapp|twitterbot|slackbot|linkedinbot|telegrambot|discordbot|google-inspectiontool|googlebot|pinterest|skypeuripreview)/i;
 
@@ -15,6 +15,12 @@ const escapeHtml = (s = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
+const stripToOneLine = (s = '') =>
+  String(s || '')
+    .replace(/<[^>]+>/g, ' ')      // saca HTML si hubiera
+    .replace(/\s+/g, ' ')          // comprime espacios
+    .trim();
+
 module.exports = async (req, res) => {
   try {
     const { slug } = req.query;
@@ -23,8 +29,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // En funciones serverless usá estas envs (configuralas en Vercel):
-    // SUPABASE_URL y SUPABASE_ANON_KEY
     const SUPABASE_URL =
       process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const SUPABASE_ANON_KEY =
@@ -35,7 +39,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Buscar por slug o por id (uuid)
+    // Buscar por slug o por id
     const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
@@ -63,27 +67,25 @@ module.exports = async (req, res) => {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(
-      item.slug || item.id
-    )}`;
+    const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Aseguramos imagen absoluta
-    const image =
-      (item.image_url && /^https?:\/\//i.test(item.image_url))
-        ? item.image_url
-        : `${proto}://${host}${item.image_url || '/favicon-512x512.png'}`;
+    // Imagen absoluta (usa fallback local si vino vacío)
+    let image = item.image_url || '/og-default.png';
+    if (!/^https?:\/\//i.test(image)) {
+      image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
+    }
 
     const title = escapeHtml(item.title || 'Novedad');
-    const desc = escapeHtml((item.content || '').replace(/\s+/g, ' ').slice(0, 160));
+    const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
 
-    const ua = (req.headers['user-agent'] || '').toLowerCase();
+    const ua = (req.headers['user-agent'] || '');
     const isBot = BOT_UA_REGEX.test(ua);
 
-    // El contenido varía según UA => importante para el caché/CDN
+    // Vary por User-Agent para que CDN no mezcle bot/usuario
     res.setHeader('Vary', 'User-Agent');
 
     if (!isBot) {
-      // Usuario real => redirigimos al detalle “lindo”
+      // Usuario real => redirección al detalle
       res.statusCode = 302;
       res.setHeader('Location', visibleUrl);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -93,7 +95,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Bot => servimos HTML con metatags OG/Twitter
+    // Bot => HTML con OG/Twitter
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -118,7 +120,7 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <!-- Evitamos que Google indexe /api/share -->
+  <!-- No index para /api/share -->
   <meta name="robots" content="noindex, nofollow"/>
 
   <link rel="canonical" href="${visibleUrl}"/>
@@ -126,16 +128,15 @@ module.exports = async (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Previsualización para compartir. Abrí la noticia aquí: <a href="${visibleUrl}">${visibleUrl}</a></p>
+  <p>Previsualización para compartir. Abrí la noticia: <a href="${visibleUrl}">${visibleUrl}</a></p>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Cache razonable para bots
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
-  } catch (_e) {
+  } catch {
     res.status(500).send('Internal error');
   }
 };
