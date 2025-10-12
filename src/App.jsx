@@ -64,11 +64,9 @@ const PageRoutes = () => {
         {/* Novedades por SLUG */}
         <Route path="/novedades" element={<NewsPage />} />
         <Route path="/novedades/:slug" element={<NewsDetailPage />} />
-        {/* Compatibilidad vieja (por id/uuid) */}
+        {/* Compatibilidad por id/uuid */}
         <Route path="/novedades/id/:id" element={<NewsDetailPage />} />
         <Route path="/novedades/uuid/:id" element={<NewsDetailPage />} />
-        {/* Si alguna vez quedó /novedades/:id, también lo soportamos */}
-        <Route path="/novedades/:id" element={<NewsDetailPage />} />
 
         <Route
           path="/dashboard"

@@ -2,15 +2,38 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Facebook, Twitter, Linkedin, Instagram, Copy } from 'lucide-react';
+import { ArrowLeft, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
 const isUuid = (v = '') => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
+// Fallback robusto para copiar al portapapeles
+const copyToClipboard = async (text) => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_) {
+    return false;
+  }
+};
+
 const NewsDetailPage = () => {
   const params = useParams();
-  // Soportamos cualquier nombre: slug, id, etc.
   const routeParam = params.slug ?? params.id;
 
   const [item, setItem] = useState(null);
@@ -18,7 +41,6 @@ const NewsDetailPage = () => {
 
   useEffect(() => {
     (async () => {
-      // Si no hay parámetro (edge case), no pegamos a la API
       if (!routeParam) {
         setLoading(false);
         return;
@@ -36,13 +58,13 @@ const NewsDetailPage = () => {
   }, [routeParam]);
 
   const canonicalUrl = useMemo(() => {
-    const slug = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
+    const slug = item?.slug || routeParam;
     return `${window.location.origin}/novedades/${slug}`;
   }, [item, routeParam]);
 
-  // URL “share” con Open Graph para scrapers (Edge Function)
+  // URL “share” con metatags (servida por la Function de Vercel)
   const shareUrl = useMemo(() => {
-    const slug = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
+    const slug = item?.slug || routeParam;
     return `${window.location.origin}/api/share/news/${slug}`;
   }, [item, routeParam]);
 
@@ -69,9 +91,9 @@ const NewsDetailPage = () => {
   }
 
   const title = item.title;
-  const description = (item.content || '').slice(0, 180);
-  const encodedShare = encodeURIComponent(`${title} ${shareUrl}`);
-  const waHref = `https://wa.me/?text=${encodedShare}`;
+  const description = (item.content || '').replace(/\s+/g, ' ').slice(0, 180);
+  const encodedShareText = encodeURIComponent(`${title} ${shareUrl}`);
+  const waHref = `https://wa.me/?text=${encodedShareText}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -118,7 +140,7 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
                     <a
-                      href={`https://twitter.com/intent/tweet?text=${encodedShare}`}
+                      href={`https://twitter.com/intent/tweet?text=${encodedShareText}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -150,8 +172,14 @@ const NewsDetailPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${title} ${shareUrl}`);
+                      onClick={async () => {
+                        const ok = await copyToClipboard(`${title} ${shareUrl}`);
+                        if (ok) {
+                          // feedback mínimo sin romper estilos
+                          alert('Enlace copiado al portapapeles');
+                        } else {
+                          alert('No se pudo copiar. Copiá manualmente.');
+                        }
                       }}
                     >
                       <Copy className="h-4 w-4 mr-2" /> Copiar enlace

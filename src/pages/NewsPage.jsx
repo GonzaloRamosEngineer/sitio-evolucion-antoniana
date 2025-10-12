@@ -53,52 +53,59 @@ const NewsPage = () => {
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {news.map((newsItem, index) => (
-                  <motion.div
-                    key={newsItem.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-100 group flex flex-col"
-                  >
-                    <Link
-                      to={`/novedades/${newsItem.slug}`}
-                      className="block h-48 bg-gray-200 overflow-hidden"
+                {news.map((newsItem, index) => {
+                  const slugOrId = newsItem.slug || newsItem.id;
+                  return (
+                    <motion.div
+                      key={newsItem.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-100 group flex flex-col"
                     >
-                      {newsItem.image_url ? (
-                        <img
-                          src={newsItem.image_url}
-                          alt={newsItem.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-200 flex items-center justify-center">
-                          <span className="text-blue-300 font-bold text-xl text-center p-4">
-                            Fundación Evolución Antoniana
+                      <Link
+                        to={`/novedades/${slugOrId}`}
+                        className="block h-48 bg-gray-200 overflow-hidden"
+                      >
+                        {newsItem.image_url ? (
+                          <img
+                            src={newsItem.image_url}
+                            alt={newsItem.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-200 flex items-center justify-center">
+                            <span className="text-blue-300 font-bold text-xl text-center p-4">
+                              Fundación Evolución Antoniana
+                            </span>
+                          </div>
+                        )}
+                      </Link>
+                      <div className="p-6 flex-grow flex flex-col">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            {new Date(newsItem.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                      )}
-                    </Link>
-                    <div className="p-6 flex-grow flex flex-col">
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(newsItem.created_at).toLocaleDateString()}</span>
+                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                          <Link to={`/novedades/${slugOrId}`}>
+                            {newsItem.title}
+                          </Link>
+                        </h3>
+                        <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
+                          {newsItem.content}
+                        </p>
+                        <Link
+                          to={`/novedades/${slugOrId}`}
+                          className="mt-auto self-start font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2"
+                        >
+                          Leer más <ArrowRight className="h-4 w-4" />
+                        </Link>
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        <Link to={`/novedades/${newsItem.slug}`}>{newsItem.title}</Link>
-                      </h3>
-                      <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
-                        {newsItem.content}
-                      </p>
-                      <Link
-                        to={`/novedades/${newsItem.slug}`}
-                        className="mt-auto self-start font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-2"
-                      >
-                        Leer más <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>

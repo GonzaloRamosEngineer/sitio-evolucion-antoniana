@@ -4,6 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
  * PARTNERS
  * ======================= */
 
+// Trae partners (incluye slug y colaboracion_detalle)
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
@@ -19,6 +20,7 @@ export const getPartners = async () => {
   return data || [];
 };
 
+// Crear postulación pública de partner (sin select para evitar RLS en estado=pendiente)
 export const addPartner = async (partner) => {
   const payload = {
     nombre: partner?.nombre,
@@ -37,6 +39,7 @@ export const addPartner = async (partner) => {
     console.error('Error adding partner:', error);
     return null;
   }
+
   return { ok: true, status };
 };
 
@@ -164,20 +167,14 @@ export const getNewsBySlug = async (slug) => {
     .eq('slug', slug)
     .single();
   if (error) {
-    // Si no hay noticia con ese slug, devolvemos null sin loguear como error fatal
+    console.error('Error fetching news by slug:', error);
     return null;
   }
   return data || null;
 };
 
 export const addNews = async (newsItem) => {
-  const payload = {
-    title: newsItem?.title,
-    content: newsItem?.content,
-    image_url: newsItem?.image_url || null,
-    // slug se genera por trigger en DB
-  };
-  const { data, error } = await supabase.from('news').insert([payload]).select();
+  const { data, error } = await supabase.from('news').insert([newsItem]).select();
   if (error) {
     console.error('Error adding news:', error);
     return null;

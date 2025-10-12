@@ -1,68 +1,103 @@
-export const config = { runtime: 'edge' };
+// api/share/news/[slug].js
+const isUuid = (v = '') =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
-function escapeHtml(s = '') {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+const escapeHtml = (s = '') =>
+  s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 
-export default async function handler(req) {
-  const { pathname, origin } = new URL(req.url);
-  const slug = pathname.split('/').pop();
-
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
-  // Pedimos sólo lo necesario para OG
-  const url = `${SUPABASE_URL}/rest/v1/news?slug=eq.${encodeURIComponent(slug)}&select=title,content,image_url,slug&limit=1`;
-  const r = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    cache: 'no-store'
-  });
-
-  let title = 'Fundación Evolución Antoniana';
-  let description = 'Organización sin fines de lucro comprometida con el desarrollo social y educativo.';
-  let image = `${origin}/favicon-512.png`; // backup
-  let canonical = `${origin}/novedades/${slug}`;
-
-  if (r.ok) {
-    const [row] = await r.json();
-    if (row) {
-      title = row.title || title;
-      description = (row.content || description).slice(0, 180);
-      if (row.image_url) image = row.image_url;
+module.exports = async (req, res) => {
+  try {
+    const { slug } = req.query;
+    if (!slug) {
+      res.status(400).send('Missing slug');
+      return;
     }
-  }
 
-  const html = `<!doctype html>
+    const SUPABASE_URL =
+      process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SUPABASE_ANON_KEY =
+      process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      res.status(500).send('Supabase env vars not set');
+      return;
+    }
+
+    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${slug}`;
+    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
+
+    const r = await fetch(apiUrl, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!r.ok) {
+      res.status(r.status).send('Upstream error');
+      return;
+    }
+
+    const rows = await r.json();
+    const item = rows && rows[0];
+
+    if (!item) {
+      res.status(404).send('Not found');
+      return;
+    }
+
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const proto =
+      (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
+
+    const canonical = `${proto}://${host}/novedades/${item.slug || item.id}`;
+    const title = escapeHtml(item.title || 'Novedad');
+    const desc = escapeHtml((item.content || '').replace(/\s+/g, ' ').slice(0, 160));
+    const image =
+      item.image_url ||
+      `${proto}://${host}/favicon-512x512.png`; // fallback a un logo si querés
+
+    const html = `<!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<title>${escapeHtml(title)}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="canonical" href="${canonical}" />
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <link rel="canonical" href="${canonical}"/>
 
-<meta property="og:type" content="article" />
-<meta property="og:title" content="${escapeHtml(title)}" />
-<meta property="og:description" content="${escapeHtml(description)}" />
-<meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${image}" />
-<meta property="og:site_name" content="Fundación Evolución Antoniana" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="${title}"/>
+  <meta property="og:description" content="${desc}"/>
+  <meta property="og:url" content="${canonical}"/>
+  <meta property="og:image" content="${image}"/>
+  <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
 
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)}" />
-<meta name="twitter:description" content="${escapeHtml(description)}" />
-<meta name="twitter:image" content="${image}" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="${title}"/>
+  <meta name="twitter:description" content="${desc}"/>
+  <meta name="twitter:image" content="${image}"/>
 
-<!-- redirige a la vista SPA para usuarios humanos -->
-<meta http-equiv="refresh" content="0; url=${canonical}" />
+  <meta http-equiv="refresh" content="0;url=${canonical}">
+  <meta name="robots" content="noindex,nofollow"/>
+  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; padding:24px}</style>
 </head>
 <body>
-Si no eres redirigido automáticamente, <a href="${canonical}">haz clic aquí</a>.
+  <p>Redirigiendo a <a href="${canonical}">${canonical}</a>…</p>
+  <script>location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 
-  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
-}
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=86400');
+    res.status(200).send(html);
+  } catch (e) {
+    res.status(500).send('Internal error');
+  }
+};
