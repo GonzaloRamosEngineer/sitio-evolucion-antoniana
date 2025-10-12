@@ -8,7 +8,9 @@ import { supabase } from '@/lib/customSupabaseClient';
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
-    .select('id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at')
+    .select(
+      'id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+    )
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -18,29 +20,32 @@ export const getPartners = async () => {
   return data || [];
 };
 
-// Crear postulación de partner (público): NO mandar estado ni slug
+// Crear postulación pública de partner:
+// NO enviar estado ni slug (los setean default/trigger en DB)
+// NO encadenar .select() para evitar SELECT bloqueado por RLS (estado = 'pendiente')
 export const addPartner = async (partner) => {
   const payload = {
-    nombre: partner.nombre,
-    descripcion: partner.descripcion,
-    contacto_email: partner.contacto_email,
-    sitio_web: partner.sitio_web || null,
-    logo_url: partner.logo_url || null,
+    nombre: partner?.nombre,
+    descripcion: partner?.descripcion,
+    contacto_email: partner?.contacto_email,
+    sitio_web: partner?.sitio_web || null,
+    logo_url: partner?.logo_url || null,
   };
 
-  const { data, error } = await supabase
+  const { error, status } = await supabase
     .from('partners')
-    .insert([payload])
-    .select();
+    .insert([payload], { returning: 'minimal' }); // evita retorno de la fila (y el SELECT)
 
   if (error) {
     console.error('Error adding partner:', error);
     return null;
   }
-  return data ? data[0] : null;
+
+  // Devolvemos algo simple para el UI
+  return { ok: true, status };
 };
 
-// Update/Delete seguirán funcionando para admin (según policies)
+// Admin: actualizar (requiere policy/admin del lado DB)
 export const updatePartner = async (id, updates) => {
   const { data, error } = await supabase
     .from('partners')
@@ -55,12 +60,9 @@ export const updatePartner = async (id, updates) => {
   return data ? data[0] : null;
 };
 
+// Admin: eliminar (requiere policy/admin del lado DB)
 export const deletePartner = async (id) => {
-  const { error } = await supabase
-    .from('partners')
-    .delete()
-    .eq('id', id);
-
+  const { error } = await supabase.from('partners').delete().eq('id', id);
   if (error) {
     console.error('Error deleting partner:', error);
     return error;
@@ -68,11 +70,13 @@ export const deletePartner = async (id) => {
   return null;
 };
 
-// (Opcional) Obtener un partner por slug
+// (Opcional) obtener un partner por slug (útil para vistas de detalle)
 export const getPartnerBySlug = async (slug) => {
   const { data, error } = await supabase
     .from('partners')
-    .select('id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at')
+    .select(
+      'id, nombre, descripcion, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+    )
     .eq('slug', slug)
     .single();
 
@@ -126,10 +130,7 @@ export const updateBenefit = async (id, updates) => {
 };
 
 export const deleteBenefit = async (id) => {
-  const { error } = await supabase
-    .from('benefits')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('benefits').delete().eq('id', id);
   if (error) {
     console.error('Error deleting benefit:', error);
     return error;
@@ -193,10 +194,7 @@ export const updateNews = async (id, updates) => {
 };
 
 export const deleteNews = async (id) => {
-  const { error } = await supabase
-    .from('news')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('news').delete().eq('id', id);
   if (error) {
     console.error('Error deleting news:', error);
     return error;
