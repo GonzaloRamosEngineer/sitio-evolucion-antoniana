@@ -4,7 +4,6 @@ import { supabase } from '@/lib/customSupabaseClient';
  * PARTNERS
  * ======================= */
 
-// Trae partners (incluye slug y colaboracion_detalle)
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
@@ -20,7 +19,6 @@ export const getPartners = async () => {
   return data || [];
 };
 
-// Crear postulación pública (sin select para evitar RLS en retorno)
 export const addPartner = async (partner) => {
   const payload = {
     nombre: partner?.nombre,
@@ -39,11 +37,9 @@ export const addPartner = async (partner) => {
     console.error('Error adding partner:', error);
     return null;
   }
-
   return { ok: true, status };
 };
 
-// Admin
 export const updatePartner = async (id, updates) => {
   const { data, error } = await supabase
     .from('partners')
@@ -135,11 +131,10 @@ export const deleteBenefit = async (id) => {
  * NEWS
  * ======================= */
 
-// Listado (incluye slug)
 export const getNews = async () => {
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, slug, created_at')
+    .select('id, title, content, image_url, created_at, slug')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -150,7 +145,11 @@ export const getNews = async () => {
 };
 
 export const getNewsById = async (id) => {
-  const { data, error } = await supabase.from('news').select('*').eq('id', id).single();
+  const { data, error } = await supabase
+    .from('news')
+    .select('id, title, content, image_url, created_at, slug')
+    .eq('id', id)
+    .single();
   if (error) {
     console.error('Error fetching news by id:', error);
     return null;
@@ -159,16 +158,26 @@ export const getNewsById = async (id) => {
 };
 
 export const getNewsBySlug = async (slug) => {
-  const { data, error } = await supabase.from('news').select('*').eq('slug', slug).single();
+  const { data, error } = await supabase
+    .from('news')
+    .select('id, title, content, image_url, created_at, slug')
+    .eq('slug', slug)
+    .single();
   if (error) {
-    console.error('Error fetching news by slug:', error);
+    // Si no hay noticia con ese slug, devolvemos null sin loguear como error fatal
     return null;
   }
   return data || null;
 };
 
 export const addNews = async (newsItem) => {
-  const { data, error } = await supabase.from('news').insert([newsItem]).select();
+  const payload = {
+    title: newsItem?.title,
+    content: newsItem?.content,
+    image_url: newsItem?.image_url || null,
+    // slug se genera por trigger en DB
+  };
+  const { data, error } = await supabase.from('news').insert([payload]).select();
   if (error) {
     console.error('Error adding news:', error);
     return null;

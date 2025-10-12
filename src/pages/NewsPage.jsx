@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getNews } from '@/lib/storage';
 
 const NewsPage = () => {
@@ -69,8 +70,6 @@ const NewsPage = () => {
                           src={newsItem.image_url}
                           alt={newsItem.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                          decoding="async"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-100 to-sky-200 flex items-center justify-center">
@@ -83,7 +82,9 @@ const NewsPage = () => {
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(newsItem.created_at).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(newsItem.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
                         <Link to={`/novedades/${newsItem.slug || newsItem.id}`}>

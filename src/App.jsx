@@ -26,7 +26,7 @@ import LegalDocuments from '@/pages/LegalDocuments';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
-// Partners / Beneficios / Novedades
+// Partners / Novedades
 import PartnersPage from '@/pages/PartnersPage';
 import PartnerDetailPage from '@/pages/PartnerDetailPage';
 import BenefitsPage from '@/pages/BenefitsPage';
@@ -54,15 +54,15 @@ const PageRoutes = () => {
         <Route path="/agradecimiento" element={<Agradecimiento />} />
         <Route path="/legal-documents" element={<LegalDocuments />} />
 
-        {/* Partners / Beneficios / Novedades */}
+        {/* Partners */}
         <Route path="/partners" element={<PartnersPage />} />
         <Route path="/partners/:slug" element={<PartnerDetailPage />} />
         <Route path="/beneficios" element={<BenefitsPage />} />
         <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
         <Route path="/postular-partner" element={<ApplyPartnerPage />} />
 
+        {/* Novedades por SLUG */}
         <Route path="/novedades" element={<NewsPage />} />
-        {/* ⬇️ ahora usa slug */}
         <Route path="/novedades/:slug" element={<NewsDetailPage />} />
 
         <Route

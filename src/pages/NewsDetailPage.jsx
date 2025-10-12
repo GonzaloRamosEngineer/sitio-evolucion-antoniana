@@ -10,7 +10,7 @@ import {
   Linkedin,
   Instagram,
   Copy,
-  MessageCircle // <-- reemplazo del icono de WhatsApp
+  MessageCircle
 } from 'lucide-react';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
@@ -52,9 +52,7 @@ const NewsDetailPage = () => {
       await navigator.clipboard.writeText(pageUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-      // noop
-    }
+    } catch (e) {}
   };
 
   if (loading) {
@@ -134,7 +132,6 @@ const NewsDetailPage = () => {
                 <a href={share.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
                   <Instagram className="h-4 w-4" /> Instagram
                 </a>
-                {/* WhatsApp con icono MessageCircle */}
                 <a href={share.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </a>
@@ -151,4 +148,3 @@ const NewsDetailPage = () => {
 };
 
 export default NewsDetailPage;
-s
