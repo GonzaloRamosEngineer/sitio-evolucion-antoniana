@@ -1,6 +1,8 @@
 // api/share/news/[slug].js
+
+// Cobertura amplia de bots/crawlers que generan el preview
 const BOT_UA_REGEX =
-  /(facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Google-InspectionTool|Googlebot)/i;
+  /(facebookexternalhit|facebot|meta-externalagent|whatsapp|twitterbot|slackbot|linkedinbot|telegrambot|discordbot|google-inspectiontool|googlebot|pinterest|skypeuripreview)/i;
 
 const isUuid = (v = '') =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
@@ -31,6 +33,7 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // Buscamos por slug o por id (uuid)
     const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${slug}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
@@ -61,7 +64,7 @@ module.exports = async (req, res) => {
     const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(
       item.slug || item.id
     )}`;
-    const shareUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(
+    const shareSelfUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(
       item.slug || item.id
     )}`;
 
@@ -70,14 +73,16 @@ module.exports = async (req, res) => {
     const image =
       item.image_url || `${proto}://${host}/favicon-512x512.png`;
 
-    const ua = req.headers['user-agent'] || '';
+    const ua = (req.headers['user-agent'] || '').toLowerCase();
     const isBot = BOT_UA_REGEX.test(ua);
 
+    // Importante para CDN: el contenido cambia por User-Agent
+    res.setHeader('Vary', 'User-Agent');
+
     if (!isBot) {
-      // Usuario normal: redirigimos de una
+      // Usuario real -> redirigimos al detalle
       res.statusCode = 302;
       res.setHeader('Location', visibleUrl);
-      // Opcional: breve HTML por si algún cliente no sigue el 302
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.end(
         `<!doctype html><meta http-equiv="refresh" content="0;url=${visibleUrl}"><a href="${visibleUrl}">Ir a la noticia</a>`
@@ -85,7 +90,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Bot (WhatsApp/Facebook/Twitter/LinkedIn…): devolvemos metatags sin redirigir
+    // Bot -> servimos HTML con metatags (sin redirigir)
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -96,8 +101,11 @@ module.exports = async (req, res) => {
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url" content="${shareUrl}"/>
+  <!-- og:url: ponemos la URL visible, no la /api/share, para que el origen mostrado sea la página final -->
+  <meta property="og:url" content="${visibleUrl}"/>
   <meta property="og:image" content="${image}"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
 
   <!-- Twitter -->
@@ -106,10 +114,11 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <meta name="robots" content="noindex,nofollow"/>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; padding:24px}
-  </style>
+  <!-- Canonical informativo -->
+  <link rel="canonical" href="${visibleUrl}"/>
+
+  <meta http-equiv="x-ua-compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
   <p>Previsualización para compartir. Abrí la noticia aquí: <a href="${visibleUrl}">${visibleUrl}</a></p>
@@ -117,10 +126,11 @@ module.exports = async (req, res) => {
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Cache razonable en edge, los bots suelen recachear igual
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Cache para bots en el edge; WhatsApp suele recachear, pero esto acelera
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     res.status(200).send(html);
-  } catch (e) {
+  } catch (_e) {
     res.status(500).send('Internal error');
   }
 };

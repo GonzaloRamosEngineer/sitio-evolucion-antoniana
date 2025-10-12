@@ -1,3 +1,4 @@
+// src/pages/NewsDetailPage.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
@@ -6,31 +7,8 @@ import { ArrowLeft, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
-const isUuid = (v = '') => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-
-// Fallback robusto para copiar al portapapeles
-const copyToClipboard = async (text) => {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch (_) {}
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    return ok;
-  } catch (_) {
-    return false;
-  }
-};
+const isUuid = (v = '') =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const NewsDetailPage = () => {
   const params = useParams();
@@ -40,6 +18,7 @@ const NewsDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     (async () => {
       if (!routeParam) {
         setLoading(false);
@@ -50,23 +29,27 @@ const NewsDetailPage = () => {
         const data = isUuid(routeParam)
           ? await getNewsById(routeParam)
           : await getNewsBySlug(routeParam);
-        setItem(data);
+        if (active) setItem(data);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     })();
+    return () => {
+      active = false;
+    };
   }, [routeParam]);
 
   const canonicalUrl = useMemo(() => {
-    const slug = item?.slug || routeParam;
-    return `${window.location.origin}/novedades/${slug}`;
+    const slugOrId = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
+    if (typeof window === 'undefined') return `/novedades/${slugOrId}`;
+    return `${window.location.origin}/novedades/${slugOrId}`;
   }, [item, routeParam]);
 
-  // URL “share” (function con metatags) + cache-buster para forzar nueva tarjeta
+  // URL que los scrapers deben leer para armar el preview
   const shareUrl = useMemo(() => {
-    const slug = item?.slug || routeParam;
-    const v = item?.id || '1';
-    return `${window.location.origin}/api/share/news/${encodeURIComponent(slug)}?v=${encodeURIComponent(v)}`;
+    const slugOrId = item?.slug || (isUuid(routeParam) ? routeParam : routeParam);
+    if (typeof window === 'undefined') return `/api/share/news/${slugOrId}`;
+    return `${window.location.origin}/api/share/news/${slugOrId}`;
   }, [item, routeParam]);
 
   if (loading) {
@@ -92,9 +75,34 @@ const NewsDetailPage = () => {
   }
 
   const title = item.title;
-  const description = (item.content || '').replace(/\s+/g, ' ').slice(0, 180);
-  const encodedShareText = encodeURIComponent(`${title} ${shareUrl}`);
-  const waHref = `https://wa.me/?text=${encodedShareText}`;
+  const description = (item.content || '').slice(0, 180);
+
+  const encodedShare = encodeURIComponent(`${title} ${shareUrl}`);
+  const waHref = `https://wa.me/?text=${encodedShare}`;
+
+  const copyToClipboard = async () => {
+    const text = `${title} ${shareUrl}`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        alert('Enlace copiado');
+        return;
+      }
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('Enlace copiado');
+    } catch {
+      alert('No se pudo copiar el enlace');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -106,11 +114,18 @@ const NewsDetailPage = () => {
 
       <main className="flex-1">
         <div className="max-w-4xl mx-auto py-8 px-4">
-          <Link to="/novedades" className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6">
+          <Link
+            to="/novedades"
+            className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6"
+          >
             <ArrowLeft className="h-4 w-4" /> Volver a todas las novedades
           </Link>
 
-          <motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               {item.image_url && (
                 <img
@@ -124,7 +139,9 @@ const NewsDetailPage = () => {
                 <p className="text-sm text-gray-500 mb-2">
                   Publicado el {new Date(item.created_at).toLocaleDateString()}
                 </p>
-                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">{title}</h1>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                  {title}
+                </h1>
                 <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
 
                 {/* Compartir */}
@@ -132,7 +149,9 @@ const NewsDetailPage = () => {
                   <p className="text-sm font-medium text-gray-700 mb-3">Compartir</p>
                   <div className="flex flex-wrap gap-3">
                     <a
-                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                        shareUrl
+                      )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -141,7 +160,7 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
                     <a
-                      href={`https://twitter.com/intent/tweet?text=${encodedShareText}`}
+                      href={`https://twitter.com/intent/tweet?text=${encodedShare}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -150,7 +169,9 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
                     <a
-                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                        shareUrl
+                      )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -158,9 +179,10 @@ const NewsDetailPage = () => {
                         <Linkedin className="h-4 w-4 mr-2" /> LinkedIn
                       </Button>
                     </a>
+
+                    {/* WhatsApp */}
                     <a href={waHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
-                        {/* ícono WhatsApp inline */}
                         <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2">
                           <path
                             d="M19.11 17.2c-.27-.15-1.59-.86-1.84-.96-.25-.09-.43-.15-.62.15-.18.27-.72.96-.88 1.15-.16.18-.32.2-.59.07-.27-.14-1.12-.41-2.13-1.31-.79-.7-1.32-1.57-1.48-1.83-.15-.27-.02-.42.11-.56.11-.11.25-.29.36-.43.12-.14.16-.25.25-.41.09-.18.04-.33-.02-.46-.06-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.7.33-.25.27-.93.91-.93 2.22s.96 2.58 1.09 2.76c.14.18 1.88 2.86 4.56 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.59-.65 1.81-1.28.22-.64.22-1.18.15-1.29-.07-.11-.25-.18-.52-.33zM16.02 4C9.94 4 5 8.93 5 15c0 1.94.52 3.75 1.43 5.32L5 27l6.86-1.8A10.95 10.95 0 0 0 16.02 26c6.07 0 11-4.94 11-11s-4.93-11-11-11zm0 20c-1.86 0-3.58-.54-5.02-1.46l-.36-.23-4.06 1.07 1.09-3.95-.25-.4A8.88 8.88 0 0 1 7.02 15c0-4.96 4.04-9 9-9s9 4.04 9 9-4.04 9-9 9z"
@@ -170,18 +192,8 @@ const NewsDetailPage = () => {
                         WhatsApp
                       </Button>
                     </a>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        const ok = await copyToClipboard(`${title} ${shareUrl}`);
-                        if (ok) {
-                          alert('Enlace copiado al portapapeles');
-                        } else {
-                          alert('No se pudo copiar. Copiá manualmente.');
-                        }
-                      }}
-                    >
+
+                    <Button variant="outline" size="sm" onClick={copyToClipboard}>
                       <Copy className="h-4 w-4 mr-2" /> Copiar enlace
                     </Button>
                   </div>
