@@ -13,7 +13,7 @@ const escapeHtml = (s = '') =>
 
 const stripToOneLine = (s = '') =>
   String(s || '')
-    .replace(/<[^>]+>/g, ' ')    // saca HTML si hubiera
+    .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -34,6 +34,12 @@ module.exports = async (req, res) => {
       res.status(500).send('Supabase env vars not set');
       return;
     }
+
+    // URL ABSOLUTA de este endpoint (la usaremos como og:url y canonical)
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const proto =
+      (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
+    const shareUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(slug)}`;
 
     // Buscar la noticia por slug o id
     const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
@@ -59,11 +65,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const proto =
-      (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
-
-    const visibleUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
+    // Página linda para humanos (SPA)
+    const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
@@ -74,8 +77,6 @@ module.exports = async (req, res) => {
     const title = escapeHtml(item.title || 'Novedad');
     const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
 
-    // SIEMPRE devolvemos el HTML con OG/Twitter para que cualquier bot lo lea.
-    // Para humanos, redirigimos en 0s (meta refresh + JS).
     const html = `<!doctype html>
 <html lang="es">
 <head>
@@ -86,8 +87,10 @@ module.exports = async (req, res) => {
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url" content="${visibleUrl}"/>
+  <!-- MUY IMPORTANTE: que los bots se queden en /api/share/... -->
+  <meta property="og:url" content="${shareUrl}"/>
   <meta property="og:image" content="${image}"/>
+  <meta property="og:image:secure_url" content="${image}"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
@@ -102,25 +105,26 @@ module.exports = async (req, res) => {
 
   <!-- No index para /api/share -->
   <meta name="robots" content="noindex, nofollow"/>
-
-  <link rel="canonical" href="${visibleUrl}"/>
+  <!-- Canonical apuntando al SHARE, no a la SPA -->
+  <link rel="canonical" href="${shareUrl}"/>
 
   <!-- Redirección instantánea para humanos -->
-  <meta http-equiv="refresh" content="0;url=${visibleUrl}">
-  <script>location.replace(${JSON.stringify(visibleUrl)});</script>
+  <meta http-equiv="refresh" content="0;url=${humanUrl}">
+  <script>location.replace(${JSON.stringify(humanUrl)});</script>
 
   <meta http-equiv="x-ua-compatible" content="IE=edge"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Previsualización para compartir. Si no redirige, abrí la noticia: <a href="${visibleUrl}">${visibleUrl}</a></p>
+  <p>Previsualización para compartir. Si no redirige, abrí la noticia: <a href="${humanUrl}">${humanUrl}</a></p>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Cache para bots/CDN (10 min) + stale un día
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
+    // También por header (además del meta) para motores que lo leen por header:
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.status(200).send(html);
   } catch {
     res.status(500).send('Internal error');
