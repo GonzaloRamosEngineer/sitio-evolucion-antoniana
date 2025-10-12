@@ -10,7 +10,7 @@ import {
   Linkedin,
   Instagram,
   Copy,
-  Whatsapp
+  MessageCircle // <-- reemplazo del icono de WhatsApp
 } from 'lucide-react';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
@@ -43,7 +43,7 @@ const NewsDetailPage = () => {
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
     twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(title)}`,
     linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(pageUrl)}&title=${encodeURIComponent(title)}`,
-    instagram: 'https://www.instagram.com/', // no hay sharer directo; lo dejamos como acceso rápido
+    instagram: 'https://www.instagram.com/',
     whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' ' + pageUrl)}`
   };
 
@@ -134,9 +134,9 @@ const NewsDetailPage = () => {
                 <a href={share.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
                   <Instagram className="h-4 w-4" /> Instagram
                 </a>
-                {/* Nuevo: WhatsApp */}
+                {/* WhatsApp con icono MessageCircle */}
                 <a href={share.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
-                  <Whatsapp className="h-4 w-4" /> WhatsApp
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
                 </a>
                 <button onClick={handleCopy} className="inline-flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-gray-50">
                   <Copy className="h-4 w-4" /> {copied ? '¡Copiado!' : 'Copiar enlace'}
@@ -151,3 +151,4 @@ const NewsDetailPage = () => {
 };
 
 export default NewsDetailPage;
+s
