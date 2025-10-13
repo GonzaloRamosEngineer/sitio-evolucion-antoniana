@@ -13,14 +13,13 @@ const escapeHtml = (s = '') =>
 
 const stripToOneLine = (s = '') =>
   String(s || '')
-    .replace(/<[^>]+>/g, ' ') // Quita etiquetas HTML
-    .replace(/\s+/g, ' ') // Compacta espacios
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
 export default async function handler(req, res) {
   try {
     const { slug } = req.query;
-
     if (!slug) {
       res.status(400).send('Missing slug parameter (?slug=...)');
       return;
@@ -36,18 +35,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Host y protocolo
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    // URL de este share endpoint
-    const shareUrl = `${proto}://${host}/api/share/news/slug?slug=${encodeURIComponent(slug)}`;
-
-    // Buscar noticia
-    const filter = isUuid(slug)
-      ? `id=eq.${slug}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -70,10 +62,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    // URL humana (la página de la noticia en la SPA)
-    const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(
-      item.slug || item.id
-    )}`;
+    const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
@@ -101,9 +90,7 @@ export default async function handler(req, res) {
   <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
   <meta property="og:locale" content="es_AR"/>
-  <meta property="article:published_time" content="${new Date(
-    item.created_at
-  ).toISOString()}"/>
+  <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image"/>
@@ -115,27 +102,30 @@ export default async function handler(req, res) {
   <link rel="canonical" href="${humanUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
 
-  <!-- Redirección automática -->
+  <!-- Redirección para humanos -->
   <meta http-equiv="refresh" content="0;url=${humanUrl}">
   <script>window.location.replace(${JSON.stringify(humanUrl)});</script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>...</p>
+  <p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>…</p>
 </body>
 </html>`;
 
-    // ✅ Fuerza respuesta 200 completa (sin 206 / gzip)
+    // === Respuesta 200 COMPLETA ===
+    const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Accept-Ranges', 'none'); // 🔥 evita 206 parcial
-    res.setHeader('Content-Encoding', 'identity'); // 🔥 desactiva compresión
-    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    // Evita que el CDN haga range-requests o modifique el cuerpo
+    res.setHeader('Accept-Ranges', 'none');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.end(html);
+    // Enviamos Content-Length para que el scraper sepa que llegó todo
+    res.setHeader('Content-Length', String(buf.byteLength));
+    res.end(buf);
   } catch (err) {
     console.error('Error en share/news/slug.js:', err);
     res.status(500).send('Internal error');
