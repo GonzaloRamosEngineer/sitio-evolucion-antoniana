@@ -1,4 +1,6 @@
-const isUuid = (v = '') => 
+// /api/share/news/slug.js
+
+const isUuid = (v = '') =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const escapeHtml = (s = '') =>
@@ -11,15 +13,16 @@ const escapeHtml = (s = '') =>
 
 const stripToOneLine = (s = '') =>
   String(s || '')
-    .replace(/<[^>]+>/g, ' ')    // Saca HTML si hubiera
-    .replace(/\s+/g, ' ')        // Comprime espacios
+    .replace(/<[^>]+>/g, ' ') // Saca etiquetas HTML
+    .replace(/\s+/g, ' ') // Comprime espacios
     .trim();
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const { slug } = req.query;
+
     if (!slug) {
-      res.status(400).send('Missing slug');
+      res.status(400).send('Missing slug parameter (?slug=...)');
       return;
     }
 
@@ -33,13 +36,14 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // URL ABSOLUTA de este endpoint (usada como og:url y canonical)
+    // URL base del sitio (para imágenes absolutas)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
-    const shareUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(slug)}`;
 
-    // Buscar la noticia por slug o id
+    const shareUrl = `${proto}://${host}/api/share/news/slug?slug=${encodeURIComponent(slug)}`;
+
+    // Buscar noticia en Supabase
     const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
@@ -63,7 +67,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Página para humanos (SPA)
+    // URL de noticia pública
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
@@ -85,8 +89,7 @@ module.exports = async (req, res) => {
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <!-- MUY IMPORTANTE: que los bots se queden en /api/share/... -->
-  <meta property="og:url" content="${shareUrl}"/>
+  <meta property="og:url" content="${humanUrl}"/>
   <meta property="og:image" content="${image}"/>
   <meta property="og:image:secure_url" content="${image}"/>
   <meta property="og:image:width" content="1200"/>
@@ -101,31 +104,32 @@ module.exports = async (req, res) => {
   <meta name="twitter:description" content="${desc}"/>
   <meta name="twitter:image" content="${image}"/>
 
-  <!-- No index para /api/share -->
+  <!-- SEO y canonical -->
+  <link rel="canonical" href="${humanUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
-  <!-- Canonical apuntando al SHARE, no a la SPA -->
-  <link rel="canonical" href="${shareUrl}"/>
 
-  <!-- Redirección instantánea para humanos -->
+  <!-- Redirección para humanos -->
   <meta http-equiv="refresh" content="0;url=${humanUrl}">
-  <script>location.replace(${JSON.stringify(humanUrl)});</script>
+  <script>window.location.replace(${JSON.stringify(humanUrl)});</script>
 
-  <meta http-equiv="x-ua-compatible" content="IE=edge"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Previsualización para compartir. Si no redirige, abrí la noticia: <a href="${humanUrl}">${humanUrl}</a></p>
+  <p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>...</p>
 </body>
 </html>`;
 
-    // Asegúrate de enviar el contenido completo
+    // 🔧 Enviar respuesta completa, sin streaming parcial (corrige 206)
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
-    res.end(html);  // Aquí es importante que se use .end() y no .send()
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.end(html);
 
   } catch (err) {
-    console.error(err);
+    console.error('Error en share/news/slug.js:', err);
     res.status(500).send('Internal error');
   }
-};
+}
