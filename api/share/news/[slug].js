@@ -1,4 +1,4 @@
-const isUuid = (v = '') =>
+const isUuid = (v = '') => 
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const escapeHtml = (s = '') =>
@@ -118,12 +118,14 @@ module.exports = async (req, res) => {
 </body>
 </html>`;
 
+    // Asegúrate de enviar el contenido completo
+    res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
     res.end(html);
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).send('Internal error');
   }
 };
