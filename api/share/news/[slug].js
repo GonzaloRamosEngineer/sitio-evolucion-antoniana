@@ -125,7 +125,11 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
     // También por header (además del meta) para motores que lo leen por header:
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    res.status(200).send(html);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
+    res.end(html);
+
   } catch {
     res.status(500).send('Internal error');
   }
