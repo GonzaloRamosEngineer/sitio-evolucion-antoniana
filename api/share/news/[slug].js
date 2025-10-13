@@ -122,7 +122,7 @@ module.exports = async (req, res) => {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
-    res.end(html);
+    res.end(html);  // Aquí es importante que se use .end() y no .send()
 
   } catch (err) {
     console.error(err);
