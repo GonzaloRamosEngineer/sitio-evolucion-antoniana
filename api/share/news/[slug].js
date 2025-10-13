@@ -1,5 +1,3 @@
-// api/share/news/[slug].js
-
 const isUuid = (v = '') =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
@@ -13,8 +11,8 @@ const escapeHtml = (s = '') =>
 
 const stripToOneLine = (s = '') =>
   String(s || '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/<[^>]+>/g, ' ')    // Saca HTML si hubiera
+    .replace(/\s+/g, ' ')        // Comprime espacios
     .trim();
 
 module.exports = async (req, res) => {
@@ -35,7 +33,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // URL ABSOLUTA de este endpoint (la usaremos como og:url y canonical)
+    // URL ABSOLUTA de este endpoint (usada como og:url y canonical)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
@@ -65,7 +63,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // Página linda para humanos (SPA)
+    // Página para humanos (SPA)
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
@@ -122,11 +120,6 @@ module.exports = async (req, res) => {
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=86400');
-    // También por header (además del meta) para motores que lo leen por header:
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
     res.end(html);
 
