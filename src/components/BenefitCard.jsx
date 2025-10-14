@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Tag } from 'lucide-react';
 
+const slugify = (s = '') =>
+  s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
 const BenefitCard = ({ benefit, index = 0 }) => {
+  const slug = benefit.slug || slugify(benefit.titulo);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -36,7 +41,7 @@ const BenefitCard = ({ benefit, index = 0 }) => {
           {benefit.descripcion}
         </p>
         <Link
-          to={`/beneficios/${benefit.id}`}
+          to={`/beneficios/${slug}`}
           className="mt-auto inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold"
         >
           Ver detalle <ArrowRight className="h-4 w-4" />

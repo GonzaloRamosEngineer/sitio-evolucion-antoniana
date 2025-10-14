@@ -75,8 +75,13 @@ const PageRoutes = () => {
         {/* Partners / Beneficios */}
         <Route path="/partners" element={<PartnersPage />} />
         <Route path="/partners/:slug" element={<PartnerDetailPage />} />
+
         <Route path="/beneficios" element={<BenefitsPage />} />
-        <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
+        {/* Ruta canónica por slug */}
+        <Route path="/beneficios/:slug" element={<BenefitDetailPage />} />
+        {/* Compatibilidad por id -> el componente redirige a /beneficios/:slug */}
+        <Route path="/beneficios/id/:id" element={<BenefitDetailPage />} />
+
         <Route path="/postular-partner" element={<ApplyPartnerPage />} />
 
         {/* Novedades */}
