@@ -46,7 +46,6 @@ const NewsDetailPage = () => {
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
   // URL especial para scrapers/preview
   const shareUrl = `${origin}/api/share/news/${slugOrId}`;
-
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen"><p>Cargando...</p></div>;
   }

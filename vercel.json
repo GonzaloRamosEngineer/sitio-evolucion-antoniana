@@ -1,11 +1,14 @@
 {
   "rewrites": [
+    { "source": "/api/share/news/(.*)", "destination": "/api/share/news/slug?slug=$1" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
+
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/img/(.*)", "destination": "/img/$1" },
     { "source": "/favicon.ico", "destination": "/favicon.ico" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
