@@ -2,11 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { getBenefits, addBenefit, updateBenefit, deleteBenefit, getPartners } from '@/lib/storage';
 import { Link } from 'react-router-dom';
@@ -18,7 +30,7 @@ const categories = [
   { value: 'gastronomia', label: 'Gastronomía' },
   { value: 'bienestar', label: 'Bienestar' },
   { value: 'tecnologia', label: 'Tecnología' },
-  { value: 'cultura', label: 'Cultura' },
+  { value: 'cultura', label: 'Cultura' }
 ];
 
 const emptyForm = {
@@ -29,7 +41,6 @@ const emptyForm = {
   fecha_inicio: '',
   fecha_fin: '',
   estado: 'activo',
-  // nuevos:
   slug: '',
   instrucciones: '',
   terminos: '',
@@ -38,12 +49,12 @@ const emptyForm = {
   descuento: '',
   sitio_web: '',
   contacto_email: '',
-  partner_id: '',
+  partner_id: 'none' // <-- valor inicial no vacío para evitar error del Select
 };
 
 const nullify = (obj) =>
   Object.fromEntries(
-    Object.entries(obj).map(([k, v]) => [k, v === '' ? null : v])
+    Object.entries(obj).map(([k, v]) => [k, v === '' || v === 'none' ? null : v])
   );
 
 const BenefitsAdmin = () => {
@@ -74,25 +85,23 @@ const BenefitsAdmin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const payload = nullify({
       ...formData,
-      // asegurar fechas en formato date o null
       fecha_inicio: formData.fecha_inicio || null,
-      fecha_fin: formData.fecha_fin || null,
+      fecha_fin: formData.fecha_fin || null
     });
 
     if (editingBenefit) {
       await updateBenefit(editingBenefit.id, payload);
       toast({
         title: 'Beneficio actualizado ✅',
-        description: 'El beneficio ha sido actualizado correctamente',
+        description: 'El beneficio ha sido actualizado correctamente'
       });
     } else {
       await addBenefit(payload);
       toast({
         title: 'Beneficio creado ✅',
-        description: 'El nuevo beneficio ha sido agregado',
+        description: 'El nuevo beneficio ha sido agregado'
       });
     }
 
@@ -111,7 +120,6 @@ const BenefitsAdmin = () => {
       fecha_inicio: benefit.fecha_inicio || '',
       fecha_fin: benefit.fecha_fin || '',
       estado: benefit.estado || 'activo',
-      // nuevos:
       slug: benefit.slug || '',
       instrucciones: benefit.instrucciones || '',
       terminos: benefit.terminos || '',
@@ -120,7 +128,7 @@ const BenefitsAdmin = () => {
       descuento: benefit.descuento || '',
       sitio_web: benefit.sitio_web || '',
       contacto_email: benefit.contacto_email || '',
-      partner_id: benefit.partner_id || '',
+      partner_id: benefit.partner_id || 'none'
     });
     setIsDialogOpen(true);
   };
@@ -131,7 +139,7 @@ const BenefitsAdmin = () => {
       loadData();
       toast({
         title: 'Beneficio eliminado',
-        description: 'El beneficio ha sido eliminado permanentemente',
+        description: 'El beneficio ha sido eliminado permanentemente'
       });
     }
   };
@@ -153,14 +161,18 @@ const BenefitsAdmin = () => {
               Nuevo Beneficio
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+
+          <DialogContent
+            className="max-w-3xl w-[95vw] md:w-auto h-[95vh] md:max-h-[90vh] overflow-y-auto bg-background text-foreground border border-border shadow-lg rounded-xl p-6"
+            style={{ zIndex: 9999 }}
+          >
             <DialogHeader>
               <DialogTitle>
                 {editingBenefit ? 'Editar Beneficio' : 'Nuevo Beneficio'}
               </DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="titulo">Título *</Label>
@@ -252,28 +264,31 @@ const BenefitsAdmin = () => {
                 </div>
               </div>
 
-              {/* Relación con Partner (opcional) */}
+              {/* Partner (opcional) */}
               <div>
                 <Label htmlFor="partner_id">Partner (opcional)</Label>
                 <Select
-                  value={formData.partner_id || ''}
-                  onValueChange={(value) => handleChange('partner_id', value)}
+                  value={formData.partner_id || 'none'}
+                  onValueChange={(value) =>
+                    handleChange('partner_id', value === 'none' ? null : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sin partner" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin partner</SelectItem>
-                    {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nombre}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">Sin partner</SelectItem>
+                    {Array.isArray(partners) &&
+                      partners.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nombre}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Campos de detalle gestionables */}
+              {/* Campos de detalle */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="instrucciones">Instrucciones</Label>
@@ -313,7 +328,7 @@ const BenefitsAdmin = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="descuento">Descuento (texto)</Label>
+                  <Label htmlFor="descuento">Descuento</Label>
                   <Input
                     id="descuento"
                     placeholder="Ej: 10% OFF, 2x1, etc."
@@ -344,7 +359,6 @@ const BenefitsAdmin = () => {
                 </div>
               </div>
 
-              {/* Slug opcional (si lo dejás vacío, el trigger lo genera del título) */}
               <div>
                 <Label htmlFor="slug">Slug (opcional)</Label>
                 <Input
@@ -375,23 +389,39 @@ const BenefitsAdmin = () => {
         </Dialog>
       </div>
 
+      {/* Tabla */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Título</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Categoría</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Slug</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Acciones</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  Título
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  Categoría
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  Estado
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  Slug
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  Fecha
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {benefits.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
                     No hay beneficios registrados
                   </td>
                 </tr>
@@ -405,8 +435,12 @@ const BenefitsAdmin = () => {
                     className="hover:bg-gray-50"
                   >
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{benefit.titulo}</p>
-                      <p className="text-sm text-gray-500 line-clamp-1">{benefit.descripcion}</p>
+                      <p className="font-medium text-gray-900">
+                        {benefit.titulo}
+                      </p>
+                      <p className="text-sm text-gray-500 line-clamp-1">
+                        {benefit.descripcion}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
@@ -444,11 +478,17 @@ const BenefitsAdmin = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {benefit.created_at ? new Date(benefit.created_at).toLocaleDateString() : '—'}
+                      {benefit.created_at
+                        ? new Date(benefit.created_at).toLocaleDateString()
+                        : '—'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(benefit)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(benefit)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
