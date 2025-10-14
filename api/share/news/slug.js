@@ -19,7 +19,6 @@ const stripToOneLine = (s = '') =>
 
 export default async function handler(req, res) {
   try {
-    const method = (req.method || 'GET').toUpperCase();
     const { slug } = req.query;
     if (!slug) {
       res.status(400).send('Missing slug parameter (?slug=...)');
@@ -40,12 +39,10 @@ export default async function handler(req, res) {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    const filter = isUuid(slug)
-      ? `id=eq.${encodeURIComponent(slug)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
 
-    const selectCols = 'id,title,content,body_md,body,image_url,created_at,slug';
-    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=${selectCols}&${filter}`;
+    // ⬇️ Cambio 1: incluir body_md y body en el SELECT
+    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,body_md,body,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -77,13 +74,13 @@ export default async function handler(req, res) {
 
     const title = escapeHtml(item.title || 'Novedad');
 
-    // content → body_md (limpio) → body (limpio)
+    // ⬇️ Cambio 2: descripción -> content || body_md(clean) || body(clean)
     const rawDesc =
       (item.content && String(item.content).trim()) ||
       stripToOneLine(item.body_md) ||
       stripToOneLine(item.body) ||
       '';
-    const desc = escapeHtml(String(rawDesc).slice(0, 200));
+    const desc = escapeHtml(String(rawDesc).slice(0, 180));
 
     const html = `<!doctype html>
 <html lang="es">
@@ -101,7 +98,7 @@ export default async function handler(req, res) {
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
-  <meta property="og:locale" content="es_UY"/>
+  <meta property="og:locale" content="es_AR"/>
   <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
 
   <!-- Twitter -->
@@ -125,26 +122,17 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    if (method === 'HEAD') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Accept-Ranges', 'none');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.end();
-      return;
-    }
-
+    // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    // Evita que el CDN haga range-requests o modifique el cuerpo
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Enviamos Content-Length para que el scraper sepa que llegó todo
     res.setHeader('Content-Length', String(buf.byteLength));
     res.end(buf);
   } catch (err) {
