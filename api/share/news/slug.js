@@ -47,8 +47,8 @@ export default async function handler(req, res) {
     }
     if (!slug) { res.status(400).send('Missing slug parameter (?slug=...)'); return; }
 
-    const SUPABASE_URL     = process.env.SUPABASE_URL     || process.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY= process.env.SUPABASE_ANON_KEY|| process.env.VITE_SUPABASE_ANON_KEY;
+    const SUPABASE_URL      = process.env.SUPABASE_URL      || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { res.status(500).send('Supabase env vars not set'); return; }
 
     const host  = req.headers['x-forwarded-host']  || req.headers.host;
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // Columnas de PROD
+    // Columnas existentes en PROD
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -115,6 +115,9 @@ export default async function handler(req, res) {
   <meta property="og:locale" content="es_AR"/>
   <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
 
+  <!-- Facebook App ID (opcional, elimina warning del depurador) -->
+  <meta property="fb:app_id" content="966242223397117" />
+
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="${title}"/>
@@ -137,6 +140,7 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
+    // HEAD support (algunos scrapers hacen HEAD primero)
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -149,14 +153,17 @@ export default async function handler(req, res) {
       return;
     }
 
+    // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    // Evita que el CDN haga range-requests o modifique el cuerpo
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Enviamos Content-Length para que el scraper sepa que llegó todo
     res.setHeader('Content-Length', String(buf.byteLength));
     res.end(buf);
   } catch (err) {
