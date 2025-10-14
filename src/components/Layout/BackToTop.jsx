@@ -9,7 +9,7 @@ export default function BackToTop({ threshold = 300, label = 'Volver arriba' }) 
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > threshold);
-    onScroll(); // estado inicial
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [threshold]);
@@ -26,14 +26,24 @@ export default function BackToTop({ threshold = 300, label = 'Volver arriba' }) 
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
-          transition={{ duration: 0.2 }}
-          className="fixed bottom-6 right-6 z-50"
+          transition={{ duration: 0.25 }}
+          // 🔽 antes era bottom-6 → ahora bottom-[88px] (sube un poquito sobre la barra)
+          className="fixed bottom-[88px] right-5 z-50 md:bottom-6 md:right-6"
         >
           <Button
             onClick={toTop}
             size="icon"
             variant="outline"
-            className="h-10 w-10 rounded-full shadow-lg bg-white/80 backdrop-blur hover:bg-white dark:bg-background"
+            className="
+              h-11 w-11 rounded-full shadow-lg border-2
+              border-[hsl(var(--azul-antoniano))] 
+              text-[hsl(var(--azul-antoniano))] 
+              bg-white/80 backdrop-blur 
+              hover:bg-[hsl(var(--azul-antoniano))] hover:text-white 
+              dark:bg-background dark:border-primary dark:text-primary 
+              dark:hover:bg-primary dark:hover:text-[hsl(var(--blanco-fundacion))]
+              transition-colors duration-200
+            "
             aria-label={label}
             title={label}
           >
