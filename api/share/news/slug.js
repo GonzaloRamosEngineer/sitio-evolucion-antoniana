@@ -22,6 +22,18 @@ const isShareBot = (ua = '') =>
   /(facebookexternalhit|facebot|facebookcatalog|instagram|igbot|whatsapp|wa\/|whatsApp\/|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|pinterest|vkshare|quora link preview|google.*snippet)/i
     .test(ua);
 
+// Deducir MIME desde la extensión; si no se reconoce, devolvemos null
+function guessMimeFromUrl(u = '') {
+  try {
+    const lower = String(u.split('?')[0] || '').toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+  } catch {}
+  return null;
+}
+
 export default async function handler(req, res) {
   try {
     const method = (req.method || 'GET').toUpperCase();
@@ -35,8 +47,8 @@ export default async function handler(req, res) {
     }
     if (!slug) { res.status(400).send('Missing slug parameter (?slug=...)'); return; }
 
-    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const SUPABASE_URL     = process.env.SUPABASE_URL     || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY= process.env.SUPABASE_ANON_KEY|| process.env.VITE_SUPABASE_ANON_KEY;
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { res.status(500).send('Supabase env vars not set'); return; }
 
     const host  = req.headers['x-forwarded-host']  || req.headers.host;
@@ -47,7 +59,7 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // Columnas que existen en PROD
+    // Columnas de PROD
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -67,7 +79,7 @@ export default async function handler(req, res) {
     // URL humana (a donde redirigimos a personas)
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // URL del endpoint de share (estable para OG, sin cache-buster)
+    // URL del endpoint de share (estable para OG)
     const shareOgUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
@@ -75,10 +87,13 @@ export default async function handler(req, res) {
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
     }
+    const imageMime = guessMimeFromUrl(image);
 
     const title = escapeHtml(item.title || 'Novedad');
     const desc  = escapeHtml(stripToOneLine(item.content).slice(0, 180));
     const bot   = isShareBot(ua);
+
+    const extraImageType = imageMime ? `<meta property="og:image:type" content="${imageMime}"/>` : '';
 
     const html = `<!doctype html>
 <html lang="es">
@@ -95,7 +110,7 @@ export default async function handler(req, res) {
   <meta property="og:image:secure_url" content="${image}"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
-  <meta property="og:image:type" content="image/jpeg"/>
+  ${extraImageType}
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
   <meta property="og:locale" content="es_AR"/>
   <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
@@ -122,7 +137,6 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // HEAD support
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');

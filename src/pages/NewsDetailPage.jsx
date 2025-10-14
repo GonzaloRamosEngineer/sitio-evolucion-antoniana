@@ -1,4 +1,3 @@
-// src/pages/NewsDetailPage.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
@@ -39,13 +38,8 @@ const NewsDetailPage = () => {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
 
-  // ✅ URL de preview con cache-buster para forzar que WhatsApp/Facebook re-raspen
-  const version = useMemo(() => {
-    const ts = item?.updated_at || item?.created_at || Date.now();
-    try { return new Date(ts).getTime(); } catch { return Date.now(); }
-  }, [item?.updated_at, item?.created_at]);
-
-  const shareUrl = `${origin}/api/share/news/${slugOrId}?v=${version}`;
+  // URL estable para scrapers/preview (sin cache-buster)
+  const shareUrl = `${origin}/api/share/news/${slugOrId}`;
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen"><p>Cargando...</p></div>;
@@ -157,10 +151,7 @@ const NewsDetailPage = () => {
                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2" aria-hidden="true">
-                          <path
-                            d="M19.11 17.2c-.27-.15-1.59-.86-1.84-.96-.25-.09-.43-.15-.62.15-.18.27-.72.96-.88 1.15-.16.18-.32.2-.59.07-.27-.14-1.12-.41-2.13-1.31-.79-.7-1.32-1.57-1.48-1.83-.15-.27-.02-.42.11-.56.11-.11.25-.29.36-.43.12-.14.16-.25.25-.41.09-.18.04-.33-.02-.46-.06-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.7.33-.25.27-.93.91-.93 2.22s.96 2.58 1.09 2.76c.14.18 1.88 2.86 4.56 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.59-.65 1.81-1.28.22-.64.22-1.18.15-1.29-.07-.11-.25-.18-.52-.33zM16.02 4C9.94 4 5 8.93 5 15c0 1.94.52 3.75 1.43 5.32L5 27l6.86-1.8A10.95 10.95 0 0 0 16.02 26c6.07 0 11-4.94 11-11s-4.93-11-11-11zm0 20c-1.86 0-3.58-.54-5.02-1.46l-.36-.23-4.06 1.07 1.09-3.95-.25-.4A8.88 8.88 0 0 1 7.02 15c0-4.96 4.04-9 9-9s9 4.04 9 9-4.04 9-9 9z"
-                            fill="currentColor"
-                          />
+                          <path d="M19.11 17.2c-.27-.15-1.59-.86-1.84-.96-.25-.09-.43-.15-.62.15-.18.27-.72.96-.88 1.15-.16.18-.32.2-.59.07-.27-.14-1.12-.41-2.13-1.31-.79-.7-1.32-1.57-1.48-1.83-.15-.27-.02-.42.11-.56.11-.11.25-.29.36-.43.12-.14.16-.25.25-.41.09-.18.04-.33-.02-.46-.06-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.7.33-.25.27-.93.91-.93 2.22s.96 2.58 1.09 2.76c.14.18 1.88 2.86 4.56 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.59-.65 1.81-1.28.22-.64.22-1.18.15-1.29-.07-.11-.25-.18-.52-.33zM16.02 4C9.94 4 5 8.93 5 15c0 1.94.52 3.75 1.43 5.32L5 27l6.86-1.8A10.95 10.95 0 0 0 16.02 26c6.07 0 11-4.94 11-11s-4.93-11-11-11zm0 20c-1.86 0-3.58-.54-5.02-1.46l-.36-.23-4.06 1.07 1.09-3.95-.25-.4A8.88 8.88 0 0 1 7.02 15c0-4.96 4.04-9 9-9s9 4.04 9 9-4.04 9-9 9z" fill="currentColor" />
                         </svg>
                         WhatsApp
                       </Button>
@@ -174,28 +165,12 @@ const NewsDetailPage = () => {
                     >
                       <AnimatePresence mode="wait" initial={false}>
                         {copied ? (
-                          <motion.span
-                            key="check"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ duration: 0.25 }}
-                            className="inline-flex items-center"
-                          >
-                            <Check className="h-4 w-4 mr-2" />
-                            Copiado
+                          <motion.span key="check" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.25 }} className="inline-flex items-center">
+                            <Check className="h-4 w-4 mr-2" /> Copiado
                           </motion.span>
                         ) : (
-                          <motion.span
-                            key="copy"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ duration: 0.25 }}
-                            className="inline-flex items-center"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copiar enlace
+                          <motion.span key="copy" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.25 }} className="inline-flex items-center">
+                            <Copy className="h-4 w-4 mr-2" /> Copiar enlace
                           </motion.span>
                         )}
                       </AnimatePresence>
