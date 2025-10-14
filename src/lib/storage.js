@@ -139,7 +139,7 @@ export const deleteBenefit = async (id) => {
 export const getNews = async () => {
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -153,7 +153,7 @@ export const getNewsById = async (id) => {
   if (!id) return null; // evita 406 si id viene vacío
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .eq('id', id)
     .single();
   if (error) {
@@ -167,7 +167,7 @@ export const getNewsBySlug = async (slug) => {
   if (!slug) return null; // evita 406 si slug viene vacío
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .eq('slug', slug)
     .single();
   if (error) {
