@@ -21,16 +21,16 @@ export default async function handler(req, res) {
   try {
     const method = (req.method || 'GET').toUpperCase();
 
-    // ✅ Robusto: acepta ?slug=... o el último segmento del path (/api/share/news/:slug)
+    // Robusto: toma ?slug=... o el último segmento (/api/share/news/:slug)
     let { slug } = req.query || {};
     if (!slug) {
       const path = (req.url || '').split('?')[0] || '';
       const segs = path.split('/').filter(Boolean);
-      slug = segs[segs.length - 1]; // podría ser "educacion-..."
+      slug = segs[segs.length - 1];
     }
 
     if (!slug) {
-      res.status(400).send('Missing slug parameter');
+      res.status(400).send('Missing slug parameter (?slug=...)');
       return;
     }
 
@@ -52,9 +52,8 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // Traemos content + body_md + body
-    const selectCols = 'id,title,content,body_md,body,image_url,created_at,slug';
-    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=${selectCols}&${filter}`;
+    // 🚫 SIN body/body_md: volvemos al SELECT que en PROD existe
+    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -65,6 +64,7 @@ export default async function handler(req, res) {
     });
 
     if (!r.ok) {
+      // devolvemos el mismo mensaje corto que veías en PROD
       res.status(r.status).send('Upstream error');
       return;
     }
@@ -78,19 +78,15 @@ export default async function handler(req, res) {
 
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta con fallback seguro en /public/img/og-default.png
-    let image = item.image_url || '/img/og-default.png';
+    // Imagen absoluta con fallback (como tu versión original)
+    let image = item.image_url || '/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
     }
 
     const title = escapeHtml(item.title || 'Novedad');
-    const rawDesc =
-      (item.content && String(item.content).trim()) ||
-      stripToOneLine(item.body_md) ||
-      stripToOneLine(item.body) ||
-      '';
-    const desc = escapeHtml(String(rawDesc).slice(0, 200));
+    // Descripción: volvemos a usar content (tu versión que funcionaba)
+    const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
 
     const html = `<!doctype html>
 <html lang="es">
@@ -121,7 +117,7 @@ export default async function handler(req, res) {
   <link rel="canonical" href="${humanUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
 
-  <!-- Redirección para humanos (los scrapers ignoran esto) -->
+  <!-- Redirección para humanos -->
   <meta http-equiv="refresh" content="0;url=${humanUrl}">
   <script>window.location.replace(${JSON.stringify(humanUrl)});</script>
 
@@ -132,6 +128,7 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
+    // HEAD support (algunos scrapers lo usan)
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -144,9 +141,11 @@ export default async function handler(req, res) {
       return;
     }
 
+    // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    // Evita range-requests y asegura longitud para que no salga 206
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
