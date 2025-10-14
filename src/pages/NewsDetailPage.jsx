@@ -1,3 +1,4 @@
+// src/pages/NewsDetailPage.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
@@ -38,8 +39,8 @@ const NewsDetailPage = () => {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
 
-  // ✅ Evitamos depender del rewrite y pasamos el query explícito
-  const shareUrl = `${origin}/api/share/news/slug?slug=${encodeURIComponent(slugOrId)}`;
+  // 🔙 Restauramos la URL limpia original (usa rewrite de vercel.json)
+  const shareUrl = `${origin}/api/share/news/${slugOrId}`;
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen"><p>Cargando...</p></div>;
@@ -148,6 +149,7 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
+                    {/* WhatsApp */}
                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2" aria-hidden="true">
@@ -160,6 +162,7 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
+                    {/* Copiar enlace */}
                     <Button
                       variant="outline"
                       size="sm"
