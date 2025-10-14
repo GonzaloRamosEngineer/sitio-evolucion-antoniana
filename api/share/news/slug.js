@@ -11,6 +11,7 @@ const escapeHtml = (s = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
+// Limpia HTML y lo deja en una sola línea
 const stripToOneLine = (s = '') =>
   String(s || '')
     .replace(/<[^>]+>/g, ' ')
@@ -19,6 +20,7 @@ const stripToOneLine = (s = '') =>
 
 export default async function handler(req, res) {
   try {
+    const method = (req.method || 'GET').toUpperCase();
     const { slug } = req.query;
     if (!slug) {
       res.status(400).send('Missing slug parameter (?slug=...)');
@@ -39,8 +41,13 @@ export default async function handler(req, res) {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
-    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
+    const filter = isUuid(slug)
+      ? `id=eq.${encodeURIComponent(slug)}`
+      : `slug=eq.${encodeURIComponent(slug)}`;
+
+    // 🔑 Traemos también body_md y body por si la "bajada" ya no está en content
+    const selectCols = 'id,title,content,body_md,body,image_url,created_at,slug';
+    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=${selectCols}&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -64,14 +71,22 @@ export default async function handler(req, res) {
 
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta con fallback
+    // Imagen absoluta con fallback (usa tu PNG por defecto en /public si falta)
     let image = item.image_url || '/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
     }
 
     const title = escapeHtml(item.title || 'Novedad');
-    const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
+
+    // 🧠 Nueva lógica de descripción:
+    // prioridad: content -> body_md (limpio) -> body (limpio)
+    const rawDesc =
+      (item.content && String(item.content).trim()) ||
+      stripToOneLine(item.body_md) ||
+      stripToOneLine(item.body) ||
+      '';
+    const desc = escapeHtml(String(rawDesc).slice(0, 200));
 
     const html = `<!doctype html>
 <html lang="es">
@@ -89,7 +104,7 @@ export default async function handler(req, res) {
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
-  <meta property="og:locale" content="es_AR"/>
+  <meta property="og:locale" content="es_UY"/>
   <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
 
   <!-- Twitter -->
@@ -112,6 +127,19 @@ export default async function handler(req, res) {
   <p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>…</p>
 </body>
 </html>`;
+
+    // HEAD: algunos scrapers lo usan; devolvemos headers consistentes
+    if (method === 'HEAD') {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Accept-Ranges', 'none');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.end();
+      return;
+    }
 
     // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
