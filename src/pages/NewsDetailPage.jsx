@@ -1,11 +1,9 @@
-// src/pages/NewsDetailPage.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
+import { ArrowLeft, Facebook, Twitter, Linkedin, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
 const isUuid = (v = '') =>
@@ -19,8 +17,7 @@ const NewsDetailPage = () => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // feedback UI
-  const { toast } = useToast();
+  // estado para feedback minimalista del botón
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -76,18 +73,6 @@ const NewsDetailPage = () => {
 
   const copyToClipboard = async () => {
     const text = `${title} ${shareUrl}`;
-
-    // 1) Intentar compartir con el Web Share API si está disponible (UX nativa en mobile)
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text, url: shareUrl });
-        return; // si comparte, no hace falta copiar
-      } catch {
-        // si cancela o falla, continuamos con el copy
-      }
-    }
-
-    // 2) Copiar al portapapeles sin usar alert()
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
@@ -103,10 +88,9 @@ const NewsDetailPage = () => {
         document.body.removeChild(ta);
       }
       setCopied(true);
-      toast({ description: 'Enlace copiado ✅' });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({ description: 'No se pudo copiar el enlace', variant: 'destructive' });
+      // si falla, no rompemos la UI; se podría loguear si querés
     }
   };
 
@@ -174,11 +158,31 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
-                    <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                      <Copy className="h-4 w-4 mr-2" />
-                      {copied ? 'Copiado' : 'Copiar enlace'}
+                    {/* Copiar enlace con feedback inline */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className={copied ? 'border-green-600 text-green-700' : ''}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar enlace
+                        </>
+                      )}
                     </Button>
                   </div>
+
+                  {/* feedback invisible para lectores de pantalla */}
+                  <span aria-live="polite" className="sr-only">
+                    {copied ? 'Enlace copiado al portapapeles' : ''}
+                  </span>
                 </div>
               </div>
             </div>
