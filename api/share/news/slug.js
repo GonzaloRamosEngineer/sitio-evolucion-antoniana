@@ -33,31 +33,21 @@ export default async function handler(req, res) {
       const segs = path.split('/').filter(Boolean);
       slug = segs[segs.length - 1];
     }
-    if (!slug) {
-      res.status(400).send('Missing slug parameter (?slug=...)');
-      return;
-    }
+    if (!slug) { res.status(400).send('Missing slug parameter (?slug=...)'); return; }
 
-    const SUPABASE_URL =
-      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY =
-      process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { res.status(500).send('Supabase env vars not set'); return; }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      res.status(500).send('Supabase env vars not set');
-      return;
-    }
-
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const proto =
-      (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
-    const ua = String(req.headers['user-agent'] || '');
+    const host  = req.headers['x-forwarded-host']  || req.headers.host;
+    const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
+    const ua    = String(req.headers['user-agent'] || '');
 
     const filter = isUuid(slug)
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // Columnas existentes en PROD
+    // Columnas que existen en PROD
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -68,19 +58,17 @@ export default async function handler(req, res) {
       },
     });
 
-    if (!r.ok) {
-      res.status(r.status).send('Upstream error');
-      return;
-    }
+    if (!r.ok) { res.status(r.status).send('Upstream error'); return; }
 
     const rows = await r.json();
     const item = rows && rows[0];
-    if (!item) {
-      res.status(404).send('Not found');
-      return;
-    }
+    if (!item) { res.status(404).send('Not found'); return; }
 
+    // URL humana (a donde redirigimos a personas)
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
+
+    // URL del endpoint de share (estable para OG, sin cache-buster)
+    const shareOgUrl = `${proto}://${host}/api/share/news/${encodeURIComponent(item.slug || item.id)}`;
 
     // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
@@ -89,10 +77,8 @@ export default async function handler(req, res) {
     }
 
     const title = escapeHtml(item.title || 'Novedad');
-    const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
-
-    // Para bots dejamos SOLO las meta OG. Para humanos, JS redirect (sin meta-refresh).
-    const bot = isShareBot(ua);
+    const desc  = escapeHtml(stripToOneLine(item.content).slice(0, 180));
+    const bot   = isShareBot(ua);
 
     const html = `<!doctype html>
 <html lang="es">
@@ -104,11 +90,12 @@ export default async function handler(req, res) {
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url" content="${humanUrl}"/>
+  <meta property="og:url" content="${shareOgUrl}"/>
   <meta property="og:image" content="${image}"/>
   <meta property="og:image:secure_url" content="${image}"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
+  <meta property="og:image:type" content="image/jpeg"/>
   <meta property="og:site_name" content="Fundación Evolución Antoniana"/>
   <meta property="og:locale" content="es_AR"/>
   <meta property="article:published_time" content="${new Date(item.created_at).toISOString()}"/>
@@ -120,10 +107,10 @@ export default async function handler(req, res) {
   <meta name="twitter:image" content="${image}"/>
 
   <!-- SEO -->
-  <link rel="canonical" href="${humanUrl}"/>
+  <link rel="canonical" href="${shareOgUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
 
-  <!-- Importante: SIN meta-refresh para evitar que los bots se vayan a la SPA -->
+  <!-- Sin meta-refresh: algunos bots se escapan a la SPA si la ven -->
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
@@ -135,7 +122,7 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // HEAD (algunos scrapers lo usan)
+    // HEAD support
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
