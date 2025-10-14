@@ -17,18 +17,22 @@ const stripToOneLine = (s = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+// Detección amplia de bots de “link preview”
+const isShareBot = (ua = '') =>
+  /(facebookexternalhit|facebot|facebookcatalog|instagram|igbot|whatsapp|wa\/|whatsApp\/|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|pinterest|vkshare|quora link preview|google.*snippet)/i
+    .test(ua);
+
 export default async function handler(req, res) {
   try {
     const method = (req.method || 'GET').toUpperCase();
 
-    // Robusto: toma ?slug=... o el último segmento (/api/share/news/:slug)
+    // Soportar ?slug=... o /api/share/news/:slug
     let { slug } = req.query || {};
     if (!slug) {
       const path = (req.url || '').split('?')[0] || '';
       const segs = path.split('/').filter(Boolean);
       slug = segs[segs.length - 1];
     }
-
     if (!slug) {
       res.status(400).send('Missing slug parameter (?slug=...)');
       return;
@@ -47,12 +51,13 @@ export default async function handler(req, res) {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
+    const ua = String(req.headers['user-agent'] || '');
 
     const filter = isUuid(slug)
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // 🚫 SIN body/body_md: volvemos al SELECT que en PROD existe
+    // Columnas existentes en PROD
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
@@ -64,7 +69,6 @@ export default async function handler(req, res) {
     });
 
     if (!r.ok) {
-      // devolvemos el mismo mensaje corto que veías en PROD
       res.status(r.status).send('Upstream error');
       return;
     }
@@ -78,15 +82,17 @@ export default async function handler(req, res) {
 
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta con fallback (como tu versión original)
+    // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
     }
 
     const title = escapeHtml(item.title || 'Novedad');
-    // Descripción: volvemos a usar content (tu versión que funcionaba)
     const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
+
+    // Para bots dejamos SOLO las meta OG. Para humanos, JS redirect (sin meta-refresh).
+    const bot = isShareBot(ua);
 
     const html = `<!doctype html>
 <html lang="es">
@@ -117,18 +123,19 @@ export default async function handler(req, res) {
   <link rel="canonical" href="${humanUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
 
-  <!-- Redirección para humanos -->
-  <meta http-equiv="refresh" content="0;url=${humanUrl}">
-  <script>window.location.replace(${JSON.stringify(humanUrl)});</script>
-
+  <!-- Importante: SIN meta-refresh para evitar que los bots se vayan a la SPA -->
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 </head>
 <body>
-  <p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>…</p>
+  ${bot
+    ? `<p>Previsualización lista. <a href="${humanUrl}">Abrir noticia</a>.</p>`
+    : `<script>window.location.replace(${JSON.stringify(humanUrl)});</script>
+       <noscript><p>Redirigiendo a <a href="${humanUrl}">${humanUrl}</a>…</p></noscript>`
+  }
 </body>
 </html>`;
 
-    // HEAD support (algunos scrapers lo usan)
+    // HEAD (algunos scrapers lo usan)
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -141,11 +148,9 @@ export default async function handler(req, res) {
       return;
     }
 
-    // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Evita range-requests y asegura longitud para que no salga 206
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
