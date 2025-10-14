@@ -119,10 +119,10 @@ const NewsDetailPage = () => {
                 {/* Bajada / subtítulo corto (content) */}
                 <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
 
-                {/* Cuerpo largo (body_md) - HTML/Markdown ya renderizado como HTML */}
+                {/* Cuerpo largo (body_md) */}
                 {item.body_md && (
                   <div
-                    className="prose prose-invert max-w-none mb-8"
+                    className="prose max-w-none mb-8 text-gray-800 dark:prose-invert prose-headings:text-gray-900 prose-strong:text-gray-900 prose-a:text-blue-600 hover:prose-a:text-blue-700"
                     // Importante: este contenido lo cargan solo admins del panel.
                     // Si alguna vez habilitás carga pública, sanitizá antes de inyectar.
                     dangerouslySetInnerHTML={{ __html: item.body_md }}
