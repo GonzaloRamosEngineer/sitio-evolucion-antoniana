@@ -5,6 +5,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
 
 const isUuid = (v = '') =>
@@ -17,6 +18,10 @@ const NewsDetailPage = () => {
 
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // feedback UI
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +51,7 @@ const NewsDetailPage = () => {
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
   // URL especial para scrapers/preview
   const shareUrl = `${origin}/api/share/news/${slugOrId}`;
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen"><p>Cargando...</p></div>;
   }
@@ -70,6 +76,18 @@ const NewsDetailPage = () => {
 
   const copyToClipboard = async () => {
     const text = `${title} ${shareUrl}`;
+
+    // 1) Intentar compartir con el Web Share API si está disponible (UX nativa en mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url: shareUrl });
+        return; // si comparte, no hace falta copiar
+      } catch {
+        // si cancela o falla, continuamos con el copy
+      }
+    }
+
+    // 2) Copiar al portapapeles sin usar alert()
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
@@ -84,10 +102,11 @@ const NewsDetailPage = () => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      // feedback mínimo sin romper UI
-      window.alert('Enlace copiado');
+      setCopied(true);
+      toast({ description: 'Enlace copiado ✅' });
+      setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.alert('No se pudo copiar el enlace');
+      toast({ description: 'No se pudo copiar el enlace', variant: 'destructive' });
     }
   };
 
@@ -156,7 +175,8 @@ const NewsDetailPage = () => {
                     </a>
 
                     <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                      <Copy className="h-4 w-4 mr-2" /> Copiar enlace
+                      <Copy className="h-4 w-4 mr-2" />
+                      {copied ? 'Copiado' : 'Copiar enlace'}
                     </Button>
                   </div>
                 </div>
