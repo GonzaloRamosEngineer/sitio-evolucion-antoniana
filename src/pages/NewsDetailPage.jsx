@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Facebook, Twitter, Linkedin, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNewsBySlug, getNewsById } from '@/lib/storage';
@@ -11,13 +11,10 @@ const isUuid = (v = '') =>
 
 const NewsDetailPage = () => {
   const params = useParams();
-  // soporta /novedades/:slug y rutas legacy con :id
   const routeParam = params.slug ?? params.id;
 
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // estado para feedback minimalista del botón
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -37,16 +34,9 @@ const NewsDetailPage = () => {
     return () => { active = false; };
   }, [routeParam]);
 
-  const slugOrId = useMemo(
-    () => item?.slug || routeParam,
-    [item, routeParam]
-  );
-
-  const origin =
-    typeof window === 'undefined' ? '' : window.location.origin;
-
+  const slugOrId = useMemo(() => item?.slug || routeParam, [item, routeParam]);
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
-  // URL especial para scrapers/preview
   const shareUrl = `${origin}/api/share/news/${slugOrId}`;
 
   if (loading) {
@@ -87,10 +77,13 @@ const NewsDetailPage = () => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
+
+      // feedback visual y háptico
       setCopied(true);
+      if (navigator.vibrate) navigator.vibrate(40); // leve vibración
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // si falla, no rompemos la UI; se podría loguear si querés
+      console.warn('No se pudo copiar el enlace');
     }
   };
 
@@ -145,7 +138,6 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
-                    {/* WhatsApp (icono inline para no depender de librería) */}
                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2" aria-hidden="true">
@@ -158,31 +150,42 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
-                    {/* Copiar enlace con feedback inline */}
+                    {/* Copiar enlace con animación + vibración */}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={copyToClipboard}
-                      className={copied ? 'border-green-600 text-green-700' : ''}
+                      className={`relative overflow-hidden transition-colors ${copied ? 'border-green-600 text-green-700' : ''}`}
                     >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Copiado
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copiar enlace
-                        </>
-                      )}
+                      <AnimatePresence mode="wait" initial={false}>
+                        {copied ? (
+                          <motion.span
+                            key="check"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.25 }}
+                            className="inline-flex items-center"
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Copiado
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            key="copy"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.25 }}
+                            className="inline-flex items-center"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copiar enlace
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
                     </Button>
                   </div>
-
-                  {/* feedback invisible para lectores de pantalla */}
-                  <span aria-live="polite" className="sr-only">
-                    {copied ? 'Enlace copiado al portapapeles' : ''}
-                  </span>
                 </div>
               </div>
             </div>
