@@ -19,9 +19,18 @@ const stripToOneLine = (s = '') =>
 
 export default async function handler(req, res) {
   try {
-    const { slug } = req.query;
+    const method = (req.method || 'GET').toUpperCase();
+
+    // ✅ Robusto: acepta ?slug=... o el último segmento del path (/api/share/news/:slug)
+    let { slug } = req.query || {};
     if (!slug) {
-      res.status(400).send('Missing slug parameter (?slug=...)');
+      const path = (req.url || '').split('?')[0] || '';
+      const segs = path.split('/').filter(Boolean);
+      slug = segs[segs.length - 1]; // podría ser "educacion-..."
+    }
+
+    if (!slug) {
+      res.status(400).send('Missing slug parameter');
       return;
     }
 
@@ -39,10 +48,13 @@ export default async function handler(req, res) {
     const proto =
       (req.headers['x-forwarded-proto'] || 'https').split(',')[0] || 'https';
 
-    const filter = isUuid(slug) ? `id=eq.${slug}` : `slug=eq.${encodeURIComponent(slug)}`;
+    const filter = isUuid(slug)
+      ? `id=eq.${encodeURIComponent(slug)}`
+      : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // ⬇️ Cambio 1: incluir body_md y body en el SELECT
-    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,body_md,body,image_url,created_at,slug&${filter}`;
+    // Traemos content + body_md + body
+    const selectCols = 'id,title,content,body_md,body,image_url,created_at,slug';
+    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=${selectCols}&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -66,21 +78,19 @@ export default async function handler(req, res) {
 
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta con fallback
-    let image = item.image_url || '/og-default.png';
+    // Imagen absoluta con fallback seguro en /public/img/og-default.png
+    let image = item.image_url || '/img/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
     }
 
     const title = escapeHtml(item.title || 'Novedad');
-
-    // ⬇️ Cambio 2: descripción -> content || body_md(clean) || body(clean)
     const rawDesc =
       (item.content && String(item.content).trim()) ||
       stripToOneLine(item.body_md) ||
       stripToOneLine(item.body) ||
       '';
-    const desc = escapeHtml(String(rawDesc).slice(0, 180));
+    const desc = escapeHtml(String(rawDesc).slice(0, 200));
 
     const html = `<!doctype html>
 <html lang="es">
@@ -111,7 +121,7 @@ export default async function handler(req, res) {
   <link rel="canonical" href="${humanUrl}"/>
   <meta name="robots" content="noindex, nofollow"/>
 
-  <!-- Redirección para humanos -->
+  <!-- Redirección para humanos (los scrapers ignoran esto) -->
   <meta http-equiv="refresh" content="0;url=${humanUrl}">
   <script>window.location.replace(${JSON.stringify(humanUrl)});</script>
 
@@ -122,17 +132,26 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // === Respuesta 200 COMPLETA ===
+    if (method === 'HEAD') {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Accept-Ranges', 'none');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.end();
+      return;
+    }
+
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Evita que el CDN haga range-requests o modifique el cuerpo
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Enviamos Content-Length para que el scraper sepa que llegó todo
     res.setHeader('Content-Length', String(buf.byteLength));
     res.end(buf);
   } catch (err) {
