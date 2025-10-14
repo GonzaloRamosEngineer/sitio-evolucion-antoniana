@@ -11,7 +11,6 @@ const escapeHtml = (s = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
-// Limpia HTML y lo deja en una sola línea
 const stripToOneLine = (s = '') =>
   String(s || '')
     .replace(/<[^>]+>/g, ' ')
@@ -45,7 +44,6 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // 🔑 Traemos también body_md y body por si la "bajada" ya no está en content
     const selectCols = 'id,title,content,body_md,body,image_url,created_at,slug';
     const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=${selectCols}&${filter}`;
 
@@ -71,7 +69,7 @@ export default async function handler(req, res) {
 
     const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(item.slug || item.id)}`;
 
-    // Imagen absoluta con fallback (usa tu PNG por defecto en /public si falta)
+    // Imagen absoluta con fallback
     let image = item.image_url || '/og-default.png';
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith('/') ? '' : '/'}${image}`;
@@ -79,8 +77,7 @@ export default async function handler(req, res) {
 
     const title = escapeHtml(item.title || 'Novedad');
 
-    // 🧠 Nueva lógica de descripción:
-    // prioridad: content -> body_md (limpio) -> body (limpio)
+    // content → body_md (limpio) → body (limpio)
     const rawDesc =
       (item.content && String(item.content).trim()) ||
       stripToOneLine(item.body_md) ||
@@ -128,7 +125,6 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // HEAD: algunos scrapers lo usan; devolvemos headers consistentes
     if (method === 'HEAD') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -141,17 +137,14 @@ export default async function handler(req, res) {
       return;
     }
 
-    // === Respuesta 200 COMPLETA ===
     const buf = Buffer.from(html, 'utf8');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Evita que el CDN haga range-requests o modifique el cuerpo
     res.setHeader('Accept-Ranges', 'none');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Enviamos Content-Length para que el scraper sepa que llegó todo
     res.setHeader('Content-Length', String(buf.byteLength));
     res.end(buf);
   } catch (err) {
