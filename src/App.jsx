@@ -6,6 +6,10 @@ import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
 import BottomNavBar from '@/components/Layout/BottomNavBar';
+import { AnimatePresence } from 'framer-motion';
+import { ThemeProvider } from '@/providers/ThemeProvider';
+
+// Pages
 import Home from '@/pages/Home';
 import About from '@/pages/About';
 import Activities from '@/pages/Activities';
@@ -24,8 +28,6 @@ import CreateActivityPage from '@/pages/CreateActivityPage';
 import EditActivityPage from '@/pages/EditActivityPage';
 import Agradecimiento from '@/pages/Agradecimiento';
 import LegalDocuments from '@/pages/LegalDocuments';
-import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider } from '@/providers/ThemeProvider';
 
 // Partners / Novedades
 import PartnersPage from '@/pages/PartnersPage';
@@ -36,6 +38,10 @@ import ApplyPartnerPage from '@/pages/ApplyPartnerPage';
 import NewsPage from '@/pages/NewsPage';
 import NewsDetailPage from '@/pages/NewsDetailPage';
 
+// NUEVO: Legal
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import TermsOfUse from '@/pages/TermsOfUse';
+
 // NUEVO: helpers de navegación/scroll
 import ScrollToTop from '@/components/Layout/ScrollToTop';
 import BackToTop from '@/components/Layout/BackToTop';
@@ -45,6 +51,7 @@ const PageRoutes = () => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
+        {/* Sitio */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/activities" element={<Activities />} />
@@ -52,27 +59,34 @@ const PageRoutes = () => {
         <Route path="/confirm-attendance" element={<ConfirmAttendancePage />} />
         <Route path="/collaborate" element={<Collaborate />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/agradecimiento" element={<Agradecimiento />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/request-password-reset" element={<RequestPasswordResetForm />} />
         <Route path="/update-password" element={<UpdatePasswordForm />} />
-        <Route path="/agradecimiento" element={<Agradecimiento />} />
-        <Route path="/legal-documents" element={<LegalDocuments />} />
 
-        {/* Partners */}
+        {/* Legal */}
+        <Route path="/legal-documents" element={<LegalDocuments />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfUse />} />
+
+        {/* Partners / Beneficios */}
         <Route path="/partners" element={<PartnersPage />} />
         <Route path="/partners/:slug" element={<PartnerDetailPage />} />
         <Route path="/beneficios" element={<BenefitsPage />} />
         <Route path="/beneficios/:id" element={<BenefitDetailPage />} />
         <Route path="/postular-partner" element={<ApplyPartnerPage />} />
 
-        {/* Novedades por SLUG */}
+        {/* Novedades */}
         <Route path="/novedades" element={<NewsPage />} />
         <Route path="/novedades/:slug" element={<NewsDetailPage />} />
         {/* Compatibilidad por id/uuid */}
         <Route path="/novedades/id/:id" element={<NewsDetailPage />} />
         <Route path="/novedades/uuid/:id" element={<NewsDetailPage />} />
 
+        {/* Áreas protegidas */}
         <Route
           path="/dashboard"
           element={
