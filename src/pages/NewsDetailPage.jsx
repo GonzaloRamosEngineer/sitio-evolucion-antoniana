@@ -77,7 +77,6 @@ const NewsDetailPage = () => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-
       setCopied(true);
       if (navigator.vibrate) navigator.vibrate(40);
       setTimeout(() => setCopied(false), 2000);
@@ -85,6 +84,9 @@ const NewsDetailPage = () => {
       console.warn('No se pudo copiar el enlace');
     }
   };
+
+  // Utilidad: normalizamos body a string (evita falsy si viene null/undefined)
+  const bodyHtml = typeof item.body_md === 'string' ? item.body_md : '';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -119,13 +121,11 @@ const NewsDetailPage = () => {
                 {/* Bajada / subtítulo corto (content) */}
                 <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
 
-                {/* Cuerpo largo (body_md) */}
-                {item.body_md && (
+                {/* Cuerpo largo (body_md) con buen contraste en light/dark */}
+                {bodyHtml.trim().length > 0 && (
                   <div
                     className="prose max-w-none mb-8 text-gray-800 dark:prose-invert prose-headings:text-gray-900 prose-strong:text-gray-900 prose-a:text-blue-600 hover:prose-a:text-blue-700"
-                    // Importante: este contenido lo cargan solo admins del panel.
-                    // Si alguna vez habilitás carga pública, sanitizá antes de inyectar.
-                    dangerouslySetInnerHTML={{ __html: item.body_md }}
+                    dangerouslySetInnerHTML={{ __html: bodyHtml }}
                   />
                 )}
 
@@ -148,7 +148,6 @@ const NewsDetailPage = () => {
                         <Linkedin className="h-4 w-4 mr-2" /> LinkedIn
                       </Button>
                     </a>
-
                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" size="sm">
                         <svg viewBox="0 0 32 32" width="16" height="16" className="mr-2" aria-hidden="true">
