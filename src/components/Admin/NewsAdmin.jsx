@@ -17,6 +17,7 @@ const NewsAdmin = () => {
     title: '',
     content: '',
     image_url: '',
+    body_md: '',      // NUEVO: cuerpo largo (HTML/Markdown)
   });
 
   const loadNews = async () => {
@@ -56,6 +57,7 @@ const NewsAdmin = () => {
       title: newsItem.title,
       content: newsItem.content,
       image_url: newsItem.image_url || '',
+      body_md: newsItem.body_md || '',   // NUEVO
     });
     setIsDialogOpen(true);
   };
@@ -77,6 +79,7 @@ const NewsAdmin = () => {
       title: '',
       content: '',
       image_url: '',
+      body_md: '',      // NUEVO
     });
   };
 
@@ -115,15 +118,35 @@ const NewsAdmin = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="content">Contenido *</Label>
+                <Label htmlFor="content">Contenido (bajada) *</Label>
                 <Textarea
                   id="content"
                   required
                   value={formData.content}
                   onChange={(e) => handleChange('content', e.target.value)}
                   rows={8}
+                  placeholder="Resumen corto que se ve en la tarjeta (subtítulo)."
                 />
               </div>
+
+              {/* NUEVO: cuerpo largo */}
+              <div>
+                <Label htmlFor="body_md">Cuerpo (HTML/Markdown)</Label>
+                <Textarea
+                  id="body_md"
+                  value={formData.body_md}
+                  onChange={(e) => handleChange('body_md', e.target.value)}
+                  rows={14}
+                  placeholder='Ejemplo: 
+<h3>Programa EPJA</h3>
+<p>La cursada es gratuita, presencial y virtual.</p>
+<p><a href="https://forms.gle/..." target="_blank" rel="noreferrer">Inscribirme ahora</a></p>'
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Podés pegar HTML simple o Markdown. Links y saltos de línea son soportados.
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="image_url">URL de Imagen de Portada</Label>
                 <Input

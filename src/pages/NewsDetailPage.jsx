@@ -78,9 +78,8 @@ const NewsDetailPage = () => {
         document.body.removeChild(ta);
       }
 
-      // feedback visual y háptico
       setCopied(true);
-      if (navigator.vibrate) navigator.vibrate(40); // leve vibración
+      if (navigator.vibrate) navigator.vibrate(40);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       console.warn('No se pudo copiar el enlace');
@@ -116,7 +115,19 @@ const NewsDetailPage = () => {
                   Publicado el {new Date(item.created_at).toLocaleDateString()}
                 </p>
                 <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">{title}</h1>
+
+                {/* Bajada / subtítulo corto (content) */}
                 <p className="text-gray-700 mb-8 whitespace-pre-wrap">{item.content}</p>
+
+                {/* Cuerpo largo (body_md) - HTML/Markdown ya renderizado como HTML */}
+                {item.body_md && (
+                  <div
+                    className="prose prose-invert max-w-none mb-8"
+                    // Importante: este contenido lo cargan solo admins del panel.
+                    // Si alguna vez habilitás carga pública, sanitizá antes de inyectar.
+                    dangerouslySetInnerHTML={{ __html: item.body_md }}
+                  />
+                )}
 
                 {/* Compartir */}
                 <div className="pt-6 border-t">
@@ -150,7 +161,7 @@ const NewsDetailPage = () => {
                       </Button>
                     </a>
 
-                    {/* Copiar enlace con animación + vibración */}
+                    {/* Copiar enlace */}
                     <Button
                       variant="outline"
                       size="sm"
