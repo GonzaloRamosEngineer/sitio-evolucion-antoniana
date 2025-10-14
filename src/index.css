@@ -145,3 +145,5 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 2s infinite ease-in-out;
 }
+
+html { scroll-behavior: smooth; }

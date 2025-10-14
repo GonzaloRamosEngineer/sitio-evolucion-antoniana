@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
@@ -34,6 +35,10 @@ import BenefitDetailPage from '@/pages/BenefitDetailPage';
 import ApplyPartnerPage from '@/pages/ApplyPartnerPage';
 import NewsPage from '@/pages/NewsPage';
 import NewsDetailPage from '@/pages/NewsDetailPage';
+
+// NUEVO: helpers de navegación/scroll
+import ScrollToTop from '@/components/Layout/ScrollToTop';
+import BackToTop from '@/components/Layout/BackToTop';
 
 const PageRoutes = () => {
   const location = useLocation();
@@ -110,6 +115,9 @@ function App() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <AuthProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          {/* Reset de scroll en cada navegación */}
+          <ScrollToTop behavior="smooth" />
+
           <div className="min-h-screen flex flex-col bg-blanco-fundacion dark:bg-background transition-colors duration-300">
             <Header />
             <main className="flex-1 font-inter pb-16 md:pb-0">
@@ -117,6 +125,8 @@ function App() {
             </main>
             <Footer />
             <BottomNavBar />
+            {/* Botón flotante global */}
+            <BackToTop threshold={300} />
             <Toaster />
           </div>
         </Router>
