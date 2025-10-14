@@ -1,3 +1,4 @@
+// src/components/Admin/BenefitsAdmin.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit, ExternalLink } from 'lucide-react';
@@ -30,7 +31,8 @@ const categories = [
   { value: 'gastronomia', label: 'Gastronomía' },
   { value: 'bienestar', label: 'Bienestar' },
   { value: 'tecnologia', label: 'Tecnología' },
-  { value: 'cultura', label: 'Cultura' }
+  { value: 'cultura', label: 'Cultura' },
+  { value: 'otros', label: 'Otros' }, // <-- agregado
 ];
 
 const emptyForm = {
@@ -49,7 +51,7 @@ const emptyForm = {
   descuento: '',
   sitio_web: '',
   contacto_email: '',
-  partner_id: 'none' // <-- valor inicial no vacío para evitar error del Select
+  partner_id: 'none' // valor no vacío para evitar error del Select
 };
 
 const nullify = (obj) =>
@@ -93,16 +95,10 @@ const BenefitsAdmin = () => {
 
     if (editingBenefit) {
       await updateBenefit(editingBenefit.id, payload);
-      toast({
-        title: 'Beneficio actualizado ✅',
-        description: 'El beneficio ha sido actualizado correctamente'
-      });
+      toast({ title: 'Beneficio actualizado ✅', description: 'El beneficio ha sido actualizado correctamente' });
     } else {
       await addBenefit(payload);
-      toast({
-        title: 'Beneficio creado ✅',
-        description: 'El nuevo beneficio ha sido agregado'
-      });
+      toast({ title: 'Beneficio creado ✅', description: 'El nuevo beneficio ha sido agregado' });
     }
 
     resetForm();
@@ -137,10 +133,7 @@ const BenefitsAdmin = () => {
     if (window.confirm('¿Estás seguro de eliminar este beneficio?')) {
       await deleteBenefit(id);
       loadData();
-      toast({
-        title: 'Beneficio eliminado',
-        description: 'El beneficio ha sido eliminado permanentemente'
-      });
+      toast({ title: 'Beneficio eliminado', description: 'El beneficio ha sido eliminado permanentemente' });
     }
   };
 
@@ -167,33 +160,24 @@ const BenefitsAdmin = () => {
             style={{ zIndex: 9999 }}
           >
             <DialogHeader>
-              <DialogTitle>
-                {editingBenefit ? 'Editar Beneficio' : 'Nuevo Beneficio'}
-              </DialogTitle>
+              <DialogTitle>{editingBenefit ? 'Editar Beneficio' : 'Nuevo Beneficio'}</DialogTitle>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="titulo">Título *</Label>
-                  <Input
-                    id="titulo"
-                    required
-                    value={formData.titulo}
-                    onChange={(e) => handleChange('titulo', e.target.value)}
-                  />
+                  <Input id="titulo" required value={formData.titulo} onChange={(e) => handleChange('titulo', e.target.value)} />
                 </div>
 
                 <div>
                   <Label htmlFor="categoria">Categoría *</Label>
-                  <Select
-                    value={formData.categoria}
-                    onValueChange={(value) => handleChange('categoria', value)}
-                  >
+                  {/* modal={false} evita el “bloqueo” del overlay del Dialog */}
+                  <Select modal={false} value={formData.categoria} onValueChange={(value) => handleChange('categoria', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[10000]">
                       {categories.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
@@ -206,36 +190,22 @@ const BenefitsAdmin = () => {
 
               <div>
                 <Label htmlFor="descripcion">Descripción *</Label>
-                <Textarea
-                  id="descripcion"
-                  required
-                  value={formData.descripcion}
-                  onChange={(e) => handleChange('descripcion', e.target.value)}
-                  rows={4}
-                />
+                <Textarea id="descripcion" required value={formData.descripcion} onChange={(e) => handleChange('descripcion', e.target.value)} rows={4} />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="imagen_url">URL de Imagen</Label>
-                  <Input
-                    id="imagen_url"
-                    type="url"
-                    value={formData.imagen_url || ''}
-                    onChange={(e) => handleChange('imagen_url', e.target.value)}
-                  />
+                  <Input id="imagen_url" type="url" value={formData.imagen_url || ''} onChange={(e) => handleChange('imagen_url', e.target.value)} />
                 </div>
 
                 <div>
                   <Label htmlFor="estado">Estado *</Label>
-                  <Select
-                    value={formData.estado}
-                    onValueChange={(value) => handleChange('estado', value)}
-                  >
+                  <Select modal={false} value={formData.estado} onValueChange={(value) => handleChange('estado', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Estado" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[10000]">
                       <SelectItem value="activo">Activo</SelectItem>
                       <SelectItem value="inactivo">Inactivo</SelectItem>
                     </SelectContent>
@@ -246,21 +216,11 @@ const BenefitsAdmin = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="fecha_inicio">Fecha Inicio</Label>
-                  <Input
-                    id="fecha_inicio"
-                    type="date"
-                    value={formData.fecha_inicio || ''}
-                    onChange={(e) => handleChange('fecha_inicio', e.target.value)}
-                  />
+                  <Input id="fecha_inicio" type="date" value={formData.fecha_inicio || ''} onChange={(e) => handleChange('fecha_inicio', e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="fecha_fin">Fecha Fin</Label>
-                  <Input
-                    id="fecha_fin"
-                    type="date"
-                    value={formData.fecha_fin || ''}
-                    onChange={(e) => handleChange('fecha_fin', e.target.value)}
-                  />
+                  <Input id="fecha_fin" type="date" value={formData.fecha_fin || ''} onChange={(e) => handleChange('fecha_fin', e.target.value)} />
                 </div>
               </div>
 
@@ -268,15 +228,14 @@ const BenefitsAdmin = () => {
               <div>
                 <Label htmlFor="partner_id">Partner (opcional)</Label>
                 <Select
+                  modal={false}
                   value={formData.partner_id || 'none'}
-                  onValueChange={(value) =>
-                    handleChange('partner_id', value === 'none' ? null : value)
-                  }
+                  onValueChange={(value) => handleChange('partner_id', value === 'none' ? null : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sin partner" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[10000]">
                     <SelectItem value="none">Sin partner</SelectItem>
                     {Array.isArray(partners) &&
                       partners.map((p) => (
@@ -292,81 +251,43 @@ const BenefitsAdmin = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="instrucciones">Instrucciones</Label>
-                  <Textarea
-                    id="instrucciones"
-                    value={formData.instrucciones || ''}
-                    onChange={(e) => handleChange('instrucciones', e.target.value)}
-                    rows={3}
-                  />
+                  <Textarea id="instrucciones" value={formData.instrucciones || ''} onChange={(e) => handleChange('instrucciones', e.target.value)} rows={3} />
                 </div>
                 <div>
                   <Label htmlFor="terminos">Términos y condiciones</Label>
-                  <Textarea
-                    id="terminos"
-                    value={formData.terminos || ''}
-                    onChange={(e) => handleChange('terminos', e.target.value)}
-                    rows={3}
-                  />
+                  <Textarea id="terminos" value={formData.terminos || ''} onChange={(e) => handleChange('terminos', e.target.value)} rows={3} />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="codigo">Código</Label>
-                  <Input
-                    id="codigo"
-                    value={formData.codigo || ''}
-                    onChange={(e) => handleChange('codigo', e.target.value)}
-                  />
+                  <Input id="codigo" value={formData.codigo || ''} onChange={(e) => handleChange('codigo', e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="codigo_descuento">Código (alternativo)</Label>
-                  <Input
-                    id="codigo_descuento"
-                    value={formData.codigo_descuento || ''}
-                    onChange={(e) => handleChange('codigo_descuento', e.target.value)}
-                  />
+                  <Input id="codigo_descuento" value={formData.codigo_descuento || ''} onChange={(e) => handleChange('codigo_descuento', e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="descuento">Descuento</Label>
-                  <Input
-                    id="descuento"
-                    placeholder="Ej: 10% OFF, 2x1, etc."
-                    value={formData.descuento || ''}
-                    onChange={(e) => handleChange('descuento', e.target.value)}
-                  />
+                  <Input id="descuento" placeholder="Ej: 10% OFF, 2x1, etc." value={formData.descuento || ''} onChange={(e) => handleChange('descuento', e.target.value)} />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="sitio_web">Sitio web</Label>
-                  <Input
-                    id="sitio_web"
-                    type="url"
-                    value={formData.sitio_web || ''}
-                    onChange={(e) => handleChange('sitio_web', e.target.value)}
-                  />
+                  <Input id="sitio_web" type="url" value={formData.sitio_web || ''} onChange={(e) => handleChange('sitio_web', e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="contacto_email">Email de contacto</Label>
-                  <Input
-                    id="contacto_email"
-                    type="email"
-                    value={formData.contacto_email || ''}
-                    onChange={(e) => handleChange('contacto_email', e.target.value)}
-                  />
+                  <Input id="contacto_email" type="email" value={formData.contacto_email || ''} onChange={(e) => handleChange('contacto_email', e.target.value)} />
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="slug">Slug (opcional)</Label>
-                <Input
-                  id="slug"
-                  placeholder="si lo dejás vacío se autogenera"
-                  value={formData.slug || ''}
-                  onChange={(e) => handleChange('slug', e.target.value)}
-                />
+                <Input id="slug" placeholder="si lo dejás vacío se autogenera" value={formData.slug || ''} onChange={(e) => handleChange('slug', e.target.value)} />
               </div>
 
               <div className="flex gap-2 pt-4">
@@ -395,35 +316,18 @@ const BenefitsAdmin = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                  Título
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                  Categoría
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                  Estado
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                  Slug
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                  Fecha
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                  Acciones
-                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Título</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Categoría</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Slug</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {benefits.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    No hay beneficios registrados
-                  </td>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">No hay beneficios registrados</td>
                 </tr>
               ) : (
                 benefits.map((benefit, index) => (
@@ -435,12 +339,8 @@ const BenefitsAdmin = () => {
                     className="hover:bg-gray-50"
                   >
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">
-                        {benefit.titulo}
-                      </p>
-                      <p className="text-sm text-gray-500 line-clamp-1">
-                        {benefit.descripcion}
-                      </p>
+                      <p className="font-medium text-gray-900">{benefit.titulo}</p>
+                      <p className="text-sm text-gray-500 line-clamp-1">{benefit.descripcion}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
@@ -448,22 +348,16 @@ const BenefitsAdmin = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-                          benefit.estado === 'activo'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                        benefit.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
                         {benefit.estado}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {benefit.slug ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                            {benefit.slug}
-                          </span>
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{benefit.slug}</span>
                           <Link
                             to={`/beneficios/${benefit.slug}`}
                             className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
@@ -478,25 +372,14 @@ const BenefitsAdmin = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {benefit.created_at
-                        ? new Date(benefit.created_at).toLocaleDateString()
-                        : '—'}
+                      {benefit.created_at ? new Date(benefit.created_at).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(benefit)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(benefit)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(benefit.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(benefit.id)} className="text-red-600 hover:text-red-700">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
