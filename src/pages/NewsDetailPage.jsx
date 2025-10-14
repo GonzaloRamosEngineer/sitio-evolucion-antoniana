@@ -77,7 +77,6 @@ const NewsDetailPage = () => {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-
       setCopied(true);
       if (navigator.vibrate) navigator.vibrate(40);
       setTimeout(() => setCopied(false), 2000);
@@ -122,7 +121,7 @@ const NewsDetailPage = () => {
                 {/* Cuerpo largo (body_md) */}
                 {item.body_md && (
                   <div
-                    className="prose prose-lg md:prose-xl max-w-none mb-8 text-gray-800 dark:prose-invert prose-headings:font-semibold prose-h2:text-3xl prose-h3:text-2xl prose-p:leading-relaxed prose-p:my-4 prose-ul:list-disc prose-ul:pl-6 prose-li:my-1.5 prose-strong:text-gray-900 prose-a:text-blue-700 hover:prose-a:text-blue-800 underline underline-offset-4 prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:border-l-4 prose-blockquote:border-blue-200 prose-blockquote:bg-blue-50 prose-blockquote:px-4 prose-blockquote:py-2 rounded-md"
+                    className="prose prose-lg md:prose-xl max-w-none mb-8 text-gray-800 dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-h2:text-3xl prose-h3:text-2xl prose-p:leading-relaxed prose-p:my-4 prose-ul:list-disc prose-ul:pl-6 prose-ol:pl-6 prose-li:my-1.5 prose-strong:text-gray-900 prose-a:text-blue-700 hover:prose-a:text-blue-800 prose-a:underline prose-a:underline-offset-4 prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:border-l-4 prose-blockquote:border-blue-200 prose-blockquote:bg-blue-50 prose-blockquote:px-4 prose-blockquote:py-3 prose-img:rounded-xl"
                     // Importante: este contenido lo cargan solo admins del panel.
                     // Si alguna vez habilitás carga pública, sanitizá antes de inyectar.
                     dangerouslySetInnerHTML={{ __html: item.body_md }}
