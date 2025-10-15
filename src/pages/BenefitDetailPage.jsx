@@ -24,8 +24,9 @@ const slugify = (s = '') =>
 const fmt = (d) => new Date(d).toLocaleDateString();
 
 const BenefitDetailPage = () => {
-  // OJO: acá "id" puede ser realmente un UUID o un SLUG
-  const { id } = useParams();
+  // 👇 lee ambos params y usa el que esté presente
+  const params = useParams();
+  const lookup = params.slug ?? params.id ?? ''; // puede venir /beneficios/:slug o /beneficios/id/:id
 
   const [benefit, setBenefit] = useState(null);
   const [partner, setPartner] = useState(null);
@@ -37,13 +38,13 @@ const BenefitDetailPage = () => {
 
       const all = await getBenefits();
 
-      // 1) intentá por ID exacto (uuid)
+      // 1) por ID exacto
       let found =
-        (all || []).find((b) => String(b.id) === String(id)) ||
-        // 2) si no está, intentá por slug guardado
-        (all || []).find((b) => b.slug && b.slug === id) ||
-        // 3) fallback: slugify(titulo) por compatibilidad
-        (all || []).find((b) => slugify(b.titulo) === id);
+        (all || []).find((b) => String(b.id) === String(lookup)) ||
+        // 2) por slug guardado
+        (all || []).find((b) => b.slug && b.slug === lookup) ||
+        // 3) fallback: slugify(titulo)
+        (all || []).find((b) => slugify(b.titulo) === lookup);
 
       setBenefit(found || null);
 
@@ -58,7 +59,7 @@ const BenefitDetailPage = () => {
     };
 
     fetchBenefit();
-  }, [id]);
+  }, [lookup]);
 
   const handleCopyCode = async () => {
     const code = benefit?.codigo || benefit?.codigo_descuento || '';
