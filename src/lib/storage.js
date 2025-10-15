@@ -84,11 +84,26 @@ export const getPartnerBySlug = async (slug) => {
   return data || null;
 };
 
+// ✅ NUEVO: traer partner por id (para detalle de beneficio)
+export const getPartnerById = async (id) => {
+  if (!id) return null;
+  const { data, error } = await supabase
+    .from('partners')
+    .select('id, nombre, logo_url, sitio_web, slug, estado')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching partner by id:', error);
+    return null;
+  }
+  return data || null;
+};
+
 /* =======================
  * BENEFITS
  * ======================= */
 
-// Trae beneficios con todos los campos gestionables (incluye slug)
 export const getBenefits = async () => {
   const { data, error } = await supabase
     .from('benefits')
@@ -119,40 +134,6 @@ export const getBenefits = async () => {
     return [];
   }
   return data || [];
-};
-
-export const getBenefitBySlug = async (slug) => {
-  if (!slug) return null; // evita 406 si slug viene vacío
-  const { data, error } = await supabase
-    .from('benefits')
-    .select(`
-      id,
-      titulo,
-      descripcion,
-      categoria,
-      imagen_url,
-      partner_id,
-      fecha_inicio,
-      fecha_fin,
-      estado,
-      created_at,
-      slug,
-      instrucciones,
-      terminos,
-      codigo,
-      codigo_descuento,
-      descuento,
-      sitio_web,
-      contacto_email
-    `)
-    .eq('slug', slug)
-    .single();
-
-  if (error) {
-    console.error('Error fetching benefit by slug:', error);
-    return null;
-  }
-  return data || null;
 };
 
 export const addBenefit = async (benefit) => {
@@ -193,7 +174,7 @@ export const deleteBenefit = async (id) => {
 export const getNews = async () => {
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -207,7 +188,7 @@ export const getNewsById = async (id) => {
   if (!id) return null; // evita 406 si id viene vacío
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .eq('id', id)
     .single();
   if (error) {
@@ -221,7 +202,7 @@ export const getNewsBySlug = async (slug) => {
   if (!slug) return null; // evita 406 si slug viene vacío
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md')
+    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
     .eq('slug', slug)
     .single();
   if (error) {
