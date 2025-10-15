@@ -64,7 +64,7 @@ const PartnerDetailPage = () => {
             className="inline-flex items-center gap-2 text-blue-600 hover:underline mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver a todas las marcas aliadas
+            Volver a todos los aliados evolutivos
           </Link>
 
           <motion.div

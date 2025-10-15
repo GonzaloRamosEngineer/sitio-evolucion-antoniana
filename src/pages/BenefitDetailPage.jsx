@@ -250,7 +250,7 @@ const BenefitDetailPage = () => {
                   {partner?.slug && (
                     <Link to={`/partners/${partner.slug}`}>
                       <Button size="lg" variant="outline">
-                        Ver marca aliada
+                        Ver aliado evolutivo
                       </Button>
                     </Link>
                   )}
@@ -277,9 +277,9 @@ const BenefitDetailPage = () => {
                     </a>
                   )}
 
-                  <Button size="lg" onClick={handleCopyCode}>
+                  {/* <Button size="lg" onClick={handleCopyCode}>
                     Obtener código
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </div>

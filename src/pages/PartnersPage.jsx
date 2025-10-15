@@ -21,7 +21,7 @@ const PartnersPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>Marcas Aliadas - Fundación Evolución Antoniana</title>
+        <title>Partners Evolutivos - Fundación Evolución Antoniana</title>
         <meta
           name="description"
           content="Conoce a nuestras marcas aliadas y los beneficios que ofrecen"
@@ -36,7 +36,7 @@ const PartnersPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-5xl font-bold mb-4">Marcas Aliadas</h1>
+              <h1 className="text-5xl font-bold mb-4">Partners Evolutivos</h1>
               <p className="text-xl text-blue-100 mb-6">
                 Organizaciones comprometidas con el desarrollo de nuestra comunidad
               </p>
@@ -97,7 +97,7 @@ const PartnersPage = () => {
                       </p>
                       <Link to={`/partners/${partner.slug || partner.id}`} className="mt-auto">
                         <Button variant="outline" className="w-full">
-                          Ver Beneficios <ArrowRight className="ml-2 h-4 w-4" />
+                          Conocer vínculo <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </Link>
                     </div>
