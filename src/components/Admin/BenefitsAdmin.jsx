@@ -1,28 +1,14 @@
-// src/components/Admin/BenefitsAdmin.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { getBenefits, addBenefit, updateBenefit, deleteBenefit, getPartners } from '@/lib/storage';
-import { Link } from 'react-router-dom';
+import { getBenefits, addBenefit, updateBenefit, deleteBenefit } from '@/lib/storage';
 
 const categories = [
   { value: 'educacion', label: 'Educación' },
@@ -35,102 +21,69 @@ const categories = [
   { value: 'otros', label: 'Otros' },
 ];
 
-const emptyForm = {
-  titulo: '',
-  descripcion: '',
-  categoria: 'educacion',
-  imagen_url: '',
-  fecha_inicio: '',
-  fecha_fin: '',
-  estado: 'activo',
-  slug: '',
-  instrucciones: '',
-  terminos: '',
-  codigo: '',
-  codigo_descuento: '',
-  descuento: '',
-  sitio_web: '',
-  contacto_email: '',
-  partner_id: 'none'
-};
-
-const nullify = (obj) =>
-  Object.fromEntries(
-    Object.entries(obj).map(([k, v]) => [k, v === '' || v === 'none' ? null : v])
-  );
-
 const BenefitsAdmin = () => {
   const [benefits, setBenefits] = useState([]);
-  const [partners, setPartners] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBenefit, setEditingBenefit] = useState(null);
-  const [formData, setFormData] = useState(emptyForm);
+  const [formData, setFormData] = useState({
+    titulo: '',
+    descripcion: '',
+    categoria: 'educacion',
+    imagen_url: '',
+    fecha_inicio: '',
+    fecha_fin: '',
+    estado: 'activo',
+    orden: 1000,
+  });
 
-  const loadData = async () => {
-    const [bens, parts] = await Promise.all([getBenefits(), getPartners()]);
-    setBenefits(bens);
-    setPartners(parts);
+  const loadBenefits = async () => {
+    const data = await getBenefits();
+    setBenefits(data);
   };
 
   useEffect(() => {
-    loadData();
+    loadBenefits();
   }, []);
-
-  const resetForm = () => {
-    setEditingBenefit(null);
-    setFormData(emptyForm);
-  };
-
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = nullify({
+
+    const payload = {
       ...formData,
-      fecha_inicio: formData.fecha_inicio || null,
-      fecha_fin: formData.fecha_fin || null
-    });
+      // normalizamos orden a número o 1000
+      orden: Number.isFinite(Number(formData.orden)) ? Number(formData.orden) : 1000,
+    };
 
     if (editingBenefit) {
       await updateBenefit(editingBenefit.id, payload);
       toast({
         title: 'Beneficio actualizado ✅',
-        description: 'El beneficio ha sido actualizado correctamente'
+        description: 'El beneficio ha sido actualizado correctamente',
       });
     } else {
       await addBenefit(payload);
       toast({
         title: 'Beneficio creado ✅',
-        description: 'El nuevo beneficio ha sido agregado'
+        description: 'El nuevo beneficio ha sido agregado',
       });
     }
 
     resetForm();
+    loadBenefits();
     setIsDialogOpen(false);
-    loadData();
   };
 
   const handleEdit = (benefit) => {
     setEditingBenefit(benefit);
     setFormData({
-      titulo: benefit.titulo || '',
-      descripcion: benefit.descripcion || '',
-      categoria: benefit.categoria || 'educacion',
+      titulo: benefit.titulo,
+      descripcion: benefit.descripcion,
+      categoria: benefit.categoria,
       imagen_url: benefit.imagen_url || '',
       fecha_inicio: benefit.fecha_inicio || '',
       fecha_fin: benefit.fecha_fin || '',
-      estado: benefit.estado || 'activo',
-      slug: benefit.slug || '',
-      instrucciones: benefit.instrucciones || '',
-      terminos: benefit.terminos || '',
-      codigo: benefit.codigo || '',
-      codigo_descuento: benefit.codigo_descuento || '',
-      descuento: benefit.descuento || '',
-      sitio_web: benefit.sitio_web || '',
-      contacto_email: benefit.contacto_email || '',
-      partner_id: benefit.partner_id || 'none'
+      estado: benefit.estado,
+      orden: benefit.orden ?? 1000,
     });
     setIsDialogOpen(true);
   };
@@ -138,12 +91,30 @@ const BenefitsAdmin = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este beneficio?')) {
       await deleteBenefit(id);
-      loadData();
+      loadBenefits();
       toast({
         title: 'Beneficio eliminado',
-        description: 'El beneficio ha sido eliminado permanentemente'
+        description: 'El beneficio ha sido eliminado permanentemente',
       });
     }
+  };
+
+  const resetForm = () => {
+    setEditingBenefit(null);
+    setFormData({
+      titulo: '',
+      descripcion: '',
+      categoria: 'educacion',
+      imagen_url: '',
+      fecha_inicio: '',
+      fecha_fin: '',
+      estado: 'activo',
+      orden: 1000,
+    });
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -163,20 +134,14 @@ const BenefitsAdmin = () => {
               Nuevo Beneficio
             </Button>
           </DialogTrigger>
-
-          <DialogContent
-            className="max-w-3xl w-[95vw] md:w-auto h-[95vh] md:max-h-[90vh] overflow-y-auto bg-background text-foreground border border-border shadow-lg rounded-xl p-6"
-            style={{ zIndex: 9999 }}
-          >
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {editingBenefit ? 'Editar Beneficio' : 'Nuevo Beneficio'}
-              </DialogTitle>
+              <DialogTitle>{editingBenefit ? 'Editar Beneficio' : 'Nuevo Beneficio'}</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
                   <Label htmlFor="titulo">Título *</Label>
                   <Input
                     id="titulo"
@@ -188,15 +153,11 @@ const BenefitsAdmin = () => {
 
                 <div>
                   <Label htmlFor="categoria">Categoría *</Label>
-                  <Select
-                    modal={false}
-                    value={formData.categoria}
-                    onValueChange={(value) => handleChange('categoria', value)}
-                  >
+                  <Select value={formData.categoria} onValueChange={(value) => handleChange('categoria', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[10000]">
+                    <SelectContent>
                       {categories.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
@@ -218,28 +179,24 @@ const BenefitsAdmin = () => {
                 />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
                   <Label htmlFor="imagen_url">URL de Imagen</Label>
                   <Input
                     id="imagen_url"
                     type="url"
-                    value={formData.imagen_url || ''}
+                    value={formData.imagen_url}
                     onChange={(e) => handleChange('imagen_url', e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="estado">Estado *</Label>
-                  <Select
-                    modal={false}
-                    value={formData.estado}
-                    onValueChange={(value) => handleChange('estado', value)}
-                  >
+                  <Label htmlFor="estado">Estado</Label>
+                  <Select value={formData.estado} onValueChange={(value) => handleChange('estado', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Estado" />
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[10000]">
+                    <SelectContent>
                       <SelectItem value="activo">Activo</SelectItem>
                       <SelectItem value="inactivo">Inactivo</SelectItem>
                     </SelectContent>
@@ -247,13 +204,13 @@ const BenefitsAdmin = () => {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="fecha_inicio">Fecha Inicio</Label>
                   <Input
                     id="fecha_inicio"
                     type="date"
-                    value={formData.fecha_inicio || ''}
+                    value={formData.fecha_inicio}
                     onChange={(e) => handleChange('fecha_inicio', e.target.value)}
                   />
                 </div>
@@ -262,116 +219,22 @@ const BenefitsAdmin = () => {
                   <Input
                     id="fecha_fin"
                     type="date"
-                    value={formData.fecha_fin || ''}
+                    value={formData.fecha_fin}
                     onChange={(e) => handleChange('fecha_fin', e.target.value)}
                   />
                 </div>
-              </div>
 
-              {/* Partner (opcional) */}
-              <div>
-                <Label htmlFor="partner_id">Partner (opcional)</Label>
-                <Select
-                  modal={false}
-                  value={formData.partner_id || 'none'}
-                  onValueChange={(value) =>
-                    handleChange('partner_id', value === 'none' ? null : value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin partner" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[10000]">
-                    <SelectItem value="none">Sin partner</SelectItem>
-                    {Array.isArray(partners) &&
-                      partners.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nombre}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Campos de detalle */}
-              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="instrucciones">Instrucciones</Label>
-                  <Textarea
-                    id="instrucciones"
-                    value={formData.instrucciones || ''}
-                    onChange={(e) => handleChange('instrucciones', e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="terminos">Términos y condiciones</Label>
-                  <Textarea
-                    id="terminos"
-                    value={formData.terminos || ''}
-                    onChange={(e) => handleChange('terminos', e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="codigo">Código</Label>
+                  <Label htmlFor="orden">Orden (1 primero)</Label>
                   <Input
-                    id="codigo"
-                    value={formData.codigo || ''}
-                    onChange={(e) => handleChange('codigo', e.target.value)}
+                    id="orden"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={formData.orden}
+                    onChange={(e) => handleChange('orden', e.target.value)}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="codigo_descuento">Código (alternativo)</Label>
-                  <Input
-                    id="codigo_descuento"
-                    value={formData.codigo_descuento || ''}
-                    onChange={(e) => handleChange('codigo_descuento', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="descuento">Descuento</Label>
-                  <Input
-                    id="descuento"
-                    placeholder="Ej: 10% OFF, 2x1, etc."
-                    value={formData.descuento || ''}
-                    onChange={(e) => handleChange('descuento', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="sitio_web">Sitio web</Label>
-                  <Input
-                    id="sitio_web"
-                    type="url"
-                    value={formData.sitio_web || ''}
-                    onChange={(e) => handleChange('sitio_web', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contacto_email">Email de contacto</Label>
-                  <Input
-                    id="contacto_email"
-                    type="email"
-                    value={formData.contacto_email || ''}
-                    onChange={(e) => handleChange('contacto_email', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="slug">Slug (opcional)</Label>
-                <Input
-                  id="slug"
-                  placeholder="si lo dejás vacío se autogenera"
-                  value={formData.slug || ''}
-                  onChange={(e) => handleChange('slug', e.target.value)}
-                />
               </div>
 
               <div className="flex gap-2 pt-4">
@@ -394,7 +257,6 @@ const BenefitsAdmin = () => {
         </Dialog>
       </div>
 
-      {/* Tabla */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -402,10 +264,8 @@ const BenefitsAdmin = () => {
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Título</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Categoría</th>
-                {/* ✅ NUEVO: Partner */}
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Partner</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Slug</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Orden</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fecha</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Acciones</th>
               </tr>
@@ -413,91 +273,60 @@ const BenefitsAdmin = () => {
             <tbody className="divide-y divide-gray-200">
               {benefits.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                     No hay beneficios registrados
                   </td>
                 </tr>
               ) : (
-                benefits.map((benefit, index) => {
-                  const p = partners.find((x) => x.id === benefit.partner_id);
-                  return (
-                    <motion.tr
-                      key={benefit.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">{benefit.titulo}</p>
-                        <p className="text-sm text-gray-500 line-clamp-1">{benefit.descripcion}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
-                          {benefit.categoria}
-                        </span>
-                      </td>
-                      {/* ✅ NUEVO: nombre del partner o guion si no tiene */}
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {p ? p.nombre : <span className="text-gray-400">—</span>}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-                            benefit.estado === 'activo'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
+                benefits.map((benefit, index) => (
+                  <motion.tr
+                    key={benefit.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="hover:bg-gray-50"
+                  >
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-gray-900">{benefit.titulo}</p>
+                      <p className="text-sm text-gray-500 line-clamp-1">{benefit.descripcion}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
+                        {benefit.categoria}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                          benefit.estado === 'activo'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {benefit.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{benefit.orden ?? 1000}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(benefit.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(benefit)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(benefit.id)}
+                          className="text-red-600 hover:text-red-700"
                         >
-                          {benefit.estado}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {benefit.slug ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                              {benefit.slug}
-                            </span>
-                            <Link
-                              to={`/beneficios/${benefit.id}`}
-                              className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Ver <ExternalLink className="ml-1 h-3 w-3" />
-                            </Link>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {benefit.created_at
-                          ? new Date(benefit.created_at).toLocaleDateString()
-                          : '—'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(benefit)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(benefit.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
               )}
             </tbody>
           </table>

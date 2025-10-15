@@ -5,13 +5,14 @@ import { supabase } from '@/lib/customSupabaseClient';
  * PARTNERS
  * ======================= */
 
-// Trae partners (incluye slug y colaboracion_detalle)
+// Trae partners (incluye slug, colaboracion_detalle y orden)
 export const getPartners = async () => {
   const { data, error } = await supabase
     .from('partners')
     .select(
-      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at, orden'
     )
+    .order('orden', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -21,7 +22,6 @@ export const getPartners = async () => {
   return data || [];
 };
 
-// Crear postulación pública de partner (sin select para evitar RLS en estado=pendiente)
 export const addPartner = async (partner) => {
   const payload = {
     nombre: partner?.nombre,
@@ -30,6 +30,7 @@ export const addPartner = async (partner) => {
     contacto_email: partner?.contacto_email,
     sitio_web: partner?.sitio_web || null,
     logo_url: partner?.logo_url || null,
+    orden: partner?.orden ?? 1000,
   };
 
   const { error, status } = await supabase
@@ -40,7 +41,6 @@ export const addPartner = async (partner) => {
     console.error('Error adding partner:', error);
     return null;
   }
-
   return { ok: true, status };
 };
 
@@ -68,11 +68,11 @@ export const deletePartner = async (id) => {
 };
 
 export const getPartnerBySlug = async (slug) => {
-  if (!slug) return null; // evita 406 si slug viene vacío
+  if (!slug) return null;
   const { data, error } = await supabase
     .from('partners')
     .select(
-      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at'
+      'id, nombre, descripcion, colaboracion_detalle, logo_url, sitio_web, contacto_email, estado, slug, created_at, orden'
     )
     .eq('slug', slug)
     .single();
@@ -84,12 +84,12 @@ export const getPartnerBySlug = async (slug) => {
   return data || null;
 };
 
-// ✅ NUEVO: traer partner por id (para detalle de beneficio)
+// Usado por detalle de beneficio
 export const getPartnerById = async (id) => {
   if (!id) return null;
   const { data, error } = await supabase
     .from('partners')
-    .select('id, nombre, logo_url, sitio_web, slug, estado')
+    .select('id, nombre, logo_url, sitio_web, slug, estado, orden')
     .eq('id', id)
     .single();
 
@@ -125,8 +125,10 @@ export const getBenefits = async () => {
       codigo_descuento,
       descuento,
       sitio_web,
-      contacto_email
+      contacto_email,
+      orden
     `)
+    .order('orden', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -137,7 +139,8 @@ export const getBenefits = async () => {
 };
 
 export const addBenefit = async (benefit) => {
-  const { data, error } = await supabase.from('benefits').insert([benefit]).select();
+  const payload = { ...benefit, orden: benefit?.orden ?? 1000 };
+  const { data, error } = await supabase.from('benefits').insert([payload]).select();
   if (error) {
     console.error('Error adding benefit:', error);
     return null;
@@ -174,7 +177,7 @@ export const deleteBenefit = async (id) => {
 export const getNews = async () => {
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
+    .select('id, title, content, image_url, created_at, slug, body_md')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -185,10 +188,10 @@ export const getNews = async () => {
 };
 
 export const getNewsById = async (id) => {
-  if (!id) return null; // evita 406 si id viene vacío
+  if (!id) return null;
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
+    .select('id, title, content, image_url, created_at, slug, body_md')
     .eq('id', id)
     .single();
   if (error) {
@@ -199,10 +202,10 @@ export const getNewsById = async (id) => {
 };
 
 export const getNewsBySlug = async (slug) => {
-  if (!slug) return null; // evita 406 si slug viene vacío
+  if (!slug) return null;
   const { data, error } = await supabase
     .from('news')
-    .select('id, title, content, image_url, created_at, slug, body_md') // <-- incluye body_md
+    .select('id, title, content, image_url, created_at, slug, body_md')
     .eq('slug', slug)
     .single();
   if (error) {
