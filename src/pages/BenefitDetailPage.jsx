@@ -1,30 +1,54 @@
-// src/pages/BenefitDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Tag, ArrowLeft, Info, CheckCircle, Globe, Mail, Percent, ArrowRight } from 'lucide-react';
+import {
+  Calendar,
+  Tag,
+  ArrowLeft,
+  Info,
+  CheckCircle,
+  Globe,
+  Mail,
+  Percent,
+  ArrowRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getBenefits, getPartnerById } from '@/lib/storage';
 import { toast } from '@/components/ui/use-toast';
 
+// Util para comparar slugs
+const slugify = (s = '') =>
+  s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
 const fmt = (d) => new Date(d).toLocaleDateString();
 
 const BenefitDetailPage = () => {
+  // OJO: acá "id" puede ser realmente un UUID o un SLUG
   const { id } = useParams();
+
   const [benefit, setBenefit] = useState(null);
-  const [partner, setPartner] = useState(null); // partner asociado (si existe)
+  const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBenefit = async () => {
       setLoading(true);
-      const allBenefits = await getBenefits();
-      const foundBenefit = (allBenefits || []).find((b) => String(b.id) === String(id));
-      setBenefit(foundBenefit || null);
 
-      if (foundBenefit?.partner_id) {
-        const p = await getPartnerById(foundBenefit.partner_id);
+      const all = await getBenefits();
+
+      // 1) intentá por ID exacto (uuid)
+      let found =
+        (all || []).find((b) => String(b.id) === String(id)) ||
+        // 2) si no está, intentá por slug guardado
+        (all || []).find((b) => b.slug && b.slug === id) ||
+        // 3) fallback: slugify(titulo) por compatibilidad
+        (all || []).find((b) => slugify(b.titulo) === id);
+
+      setBenefit(found || null);
+
+      if (found?.partner_id) {
+        const p = await getPartnerById(found.partner_id);
         setPartner(p || null);
       } else {
         setPartner(null);
@@ -32,6 +56,7 @@ const BenefitDetailPage = () => {
 
       setLoading(false);
     };
+
     fetchBenefit();
   }, [id]);
 
