@@ -77,7 +77,7 @@ const LegalDocuments = () => {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-azul-profundo dark:text-white mb-6 text-balance"
           >
-            Documentos Legales
+            Transparencia
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

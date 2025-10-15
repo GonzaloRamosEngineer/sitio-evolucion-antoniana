@@ -20,7 +20,7 @@ const Footer = () => {
       links: [
         { name: 'Política de Privacidad', href: '/privacy' },
         { name: 'Términos de Uso', href: '/terms' },
-        { name: 'Documentos Legales', href: '/legal-documents' },
+        { name: 'Transparencia', href: '/legal-documents' },
       ],
     },
   ];
