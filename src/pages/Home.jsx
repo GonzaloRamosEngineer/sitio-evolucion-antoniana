@@ -1,3 +1,4 @@
+// src/pages/Home.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,34 +11,54 @@ const Home = () => {
     {
       icon: Heart,
       title: 'Compromiso Social',
-      description: 'Trabajamos por el desarrollo integral de nuestra comunidad con pasión y dedicación.'
+      description:
+        'Trabajamos por el desarrollo integral de nuestra comunidad con pasión y dedicación.',
     },
     {
       icon: Users,
       title: 'Trabajo en Equipo',
-      description: 'Fomentamos la colaboración y el trabajo conjunto para lograr objetivos comunes.'
+      description:
+        'Fomentamos la colaboración y el trabajo conjunto para lograr objetivos comunes.',
     },
     {
       icon: BookOpen,
       title: 'Educación Continua',
-      description: 'Ofrecemos talleres, cursos y actividades formativas para el crecimiento personal.'
+      description:
+        'Ofrecemos talleres, cursos y actividades formativas para el crecimiento personal.',
     },
     {
       icon: Award,
       title: 'Excelencia',
-      description: 'Nos esforzamos por brindar servicios de calidad y generar un impacto positivo.'
-    }
+      description:
+        'Nos esforzamos por brindar servicios de calidad y generar un impacto positivo.',
+    },
   ];
 
   const stats = [
-    { number: '305+', description: 'Almas alcanzadas que han sido beneficiadas por nuestros programas y servicios, reportando satisfacción con los resultados obtenidos.' },
-    { number: '7+', description: 'Proyectos Realizados iniciativas implementadas para abordar desafíos sociales, tecnológicos y puramente solidarios en nuestras comunidades.' },
-    { number: '6+', description: 'Años de Experiencia acumulada en la implementación de proyectos de impacto social y tecnológico en diversos escenarios.' },
-    { number: '4+', description: 'Reconocimientos obtenidos por nuestro compromiso con el desarrollo sostenible, la innovación social y el impacto comunitario.' }
+    {
+      number: '305+',
+      description:
+        'Almas alcanzadas que han sido beneficiadas por nuestros programas y servicios, reportando satisfacción con los resultados obtenidos.',
+    },
+    {
+      number: '7+',
+      description:
+        'Proyectos Realizados iniciativas implementadas para abordar desafíos sociales, tecnológicos y puramente solidarios en nuestras comunidades.',
+    },
+    {
+      number: '6+',
+      description:
+        'Años de Experiencia acumulada en la implementación de proyectos de impacto social y tecnológico en diversos escenarios.',
+    },
+    {
+      number: '4+',
+      description:
+        'Reconocimientos obtenidos por nuestro compromiso con el desarrollo sostenible, la innovación social y el impacto comunitario.',
+    },
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -46,7 +67,7 @@ const Home = () => {
     >
       {/* Hero Section */}
       <section className="relative bg-azul-profundo dark:bg-primary-antoniano/90 text-white overflow-hidden">
-        <div className="absolute inset-0 hero-pattern opacity-30 dark:opacity-10"></div>
+        <div className="absolute inset-0 hero-pattern opacity-30 dark:opacity-10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -56,30 +77,56 @@ const Home = () => {
             >
               <h1 className="text-4xl lg:text-6xl font-extrabold font-poppins mb-6 leading-tight text-balance">
                 Construyendo un
-                <span className="text-celeste-complementario dark:text-primary block">Futuro Mejor</span>
+                <span className="text-celeste-complementario dark:text-primary block">
+                  Futuro Mejor
+                </span>
               </h1>
               <p className="text-lg text-white/80 dark:text-foreground/80 mb-8 leading-relaxed text-balance">
-                Somos una organización sin fines de lucro enfocada en el desarrollo social, educativo, deportivo y tecnológico.
-                <br/><br/>
-                Impulsamos iniciativas que combinan el compromiso comunitario con la innovación digital, creando oportunidades reales para transformar vidas.
-                <br/><br/>
-                También formamos parte del programa Mercado Libre Solidario, y trabajamos con principios de transparencia, impacto medible y gestión moderna.
-                <br/><br/>
+                Somos una organización sin fines de lucro enfocada en el desarrollo social, educativo,
+                deportivo y tecnológico.
+                <br />
+                <br />
+                Impulsamos iniciativas que combinan el compromiso comunitario con la innovación
+                digital, creando oportunidades reales para transformar vidas.
+                <br />
+                <br />
+                También formamos parte del programa Mercado Libre Solidario, y trabajamos con
+                principios de transparencia, impacto medible y gestión moderna.
+                <br />
+                <br />
                 Unite a nuestra misión y se parte del cambio.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80" asChild>
+                <Button
+                  size="lg"
+                  className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80"
+                  asChild
+                >
                   <Link to="/activities">
                     Ver Actividades
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-white/50 text-white dark:border-primary/50 dark:text-primary hover:bg-white hover:text-azul-profundo dark:hover:bg-primary dark:hover:text-primary-foreground" asChild>
-                  <Link to="/collaborate">Colaborá</Link>
+
+                {/* FIX: botón outline visible en reposo */}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="
+                    border-white/50 text-white
+                    bg-transparent
+                    hover:bg-white hover:text-azul-profundo
+                    dark:border-primary/50 dark:text-primary
+                    dark:hover:bg-primary dark:hover:text-primary-foreground
+                    transition-all duration-300 font-semibold
+                  "
+                  asChild
+                >
+                  <Link to="/contact">Contáctanos</Link>
                 </Button>
               </div>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -87,11 +134,13 @@ const Home = () => {
               className="relative"
             >
               <div className="relative z-10">
-                <img     
+                <img
                   className="rounded-2xl shadow-2xl w-full h-96 object-cover"
-                  alt="Joven en silla de ruedas sonríe al recibir una camiseta y donaciones" src="/img/donativo_cancha.png" />
+                  alt="Joven en silla de ruedas sonríe al recibir una camiseta y donaciones"
+                  src="/img/donativo_cancha.png"
+                />
               </div>
-              <div className="absolute -top-4 -right-4 w-full h-full bg-celeste-complementario/20 dark:bg-primary/20 rounded-2xl opacity-20 transform -rotate-3"></div>
+              <div className="absolute -top-4 -right-4 w-full h-full bg-celeste-complementario/20 dark:bg-primary/20 rounded-2xl opacity-20 transform -rotate-3" />
             </motion.div>
           </div>
         </div>
@@ -112,7 +161,9 @@ const Home = () => {
                 <div className="text-4xl lg:text-5xl font-extrabold font-poppins text-celeste-complementario dark:text-primary mb-3">
                   {stat.number}
                 </div>
-                <div className="text-white/80 dark:text-foreground/80 font-medium text-sm leading-relaxed">{stat.description}</div>
+                <div className="text-white/80 dark:text-foreground/80 font-medium text-sm leading-relaxed">
+                  {stat.description}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -132,8 +183,8 @@ const Home = () => {
               Nuestros Valores
             </h2>
             <p className="text-xl text-marron-legado/80 dark:text-foreground/80 max-w-3xl mx-auto text-balance">
-              Los principios que guían nuestro trabajo y nos impulsan a crear 
-              un impacto positivo en la sociedad.
+              Los principios que guían nuestro trabajo y nos impulsan a crear un impacto positivo en
+              la sociedad.
             </p>
           </motion.div>
 
@@ -146,15 +197,24 @@ const Home = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="h-full flex"
               >
-                <Card className="h-full w-full text-center card-hover border-marron-legado/10 dark:border-border shadow-lg bg-white dark:bg-card">
+                <Card
+                  className="
+                    h-full w-full text-center card-hover
+                    border-marron-legado/10 dark:border-white/10
+                    shadow-lg
+                    bg-white dark:bg-[#0f1b27]
+                  "
+                >
                   <CardHeader>
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary-antoniano to-azul-profundo dark:from-primary dark:to-primary/70 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <feature.icon className="w-8 h-8 text-white dark:text-primary-foreground" />
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary-antoniano to-azul-profundo rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <feature.icon className="w-8 h-8 text-white" />
                     </div>
-                    <CardTitle className="text-xl text-primary-antoniano dark:text-primary-foreground">{feature.title}</CardTitle>
+                    <CardTitle className="text-xl text-primary-antoniano dark:text-white">
+                      {feature.title}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-marron-legado/90 dark:text-muted-foreground">
+                    <CardDescription className="text-marron-legado/90 dark:text-white/80">
                       {feature.description}
                     </CardDescription>
                   </CardContent>
@@ -177,18 +237,35 @@ const Home = () => {
               ¿Listo para ser parte del cambio?
             </h2>
             <p className="text-xl text-white/80 dark:text-foreground/80 mb-8 max-w-3xl mx-auto text-balance">
-              Únete a nuestra comunidad y accede a beneficios exclusivos, 
-              descuentos en actividades y la oportunidad de contribuir 
-              a un futuro mejor.
+              Únete a nuestra comunidad y accede a beneficios exclusivos, descuentos en actividades y
+              la oportunidad de contribuir a un futuro mejor.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80" asChild>
+              <Button
+                size="lg"
+                className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80"
+                asChild
+              >
                 <Link to="/collaborate">
                   Colaborá Ahora
                   <Heart className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white/50 text-white dark:border-primary/50 dark:text-primary hover:bg-white hover:text-azul-profundo dark:hover:bg-primary dark:hover:text-primary-foreground" asChild>
+
+              {/* FIX aplicado también aquí por si reusas este bloque */}
+              <Button
+                size="lg"
+                variant="outline"
+                className="
+                  border-white/50 text-white
+                  bg-transparent
+                  hover:bg-white hover:text-azul-profundo
+                  dark:border-primary/50 dark:text-primary
+                  dark:hover:bg-primary dark:hover:text-primary-foreground
+                  transition-all duration-300 font-semibold
+                "
+                asChild
+              >
                 <Link to="/contact">Contáctanos</Link>
               </Button>
             </div>
