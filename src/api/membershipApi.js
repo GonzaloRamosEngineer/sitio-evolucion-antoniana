@@ -1,9 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-/**
- * NUEVO: trae TODAS las membresías del usuario (opcional: solo activas).
- * Mantiene el mismo estilo, select('*') y orden desc.
- */
 export const getUserMemberships = async (userId, { onlyActive = false } = {}) => {
   if (!userId) return [];
   try {
@@ -14,14 +10,11 @@ export const getUserMemberships = async (userId, { onlyActive = false } = {}) =>
       .order('created_at', { ascending: false });
 
     if (onlyActive) {
-      // ajustá si tu columna/valor de estado es distinto
       query = query.eq('status', 'active');
     }
 
     const { data, error } = await query;
-
     if (error) throw error;
-
     return data || [];
   } catch (err) {
     console.error('Error fetching user memberships from API:', err);
@@ -29,10 +22,6 @@ export const getUserMemberships = async (userId, { onlyActive = false } = {}) =>
   }
 };
 
-/**
- * COMPATIBILIDAD: misma función que tenías, pero ahora usa la de arriba
- * y retorna SOLO la más reciente (índice 0). Así no rompe otros usos.
- */
 export const getUserMembership = async (userId) => {
   if (!userId) return null;
   try {
@@ -44,3 +33,27 @@ export const getUserMembership = async (userId) => {
     return null;
   }
 };
+
+/* NUEVO: acciones contra el microservicio en Render */
+const WEBHOOK_BASE = import.meta.env.VITE_WEBHOOK_BASE_URL; 
+// ejemplo .env: VITE_WEBHOOK_BASE_URL=https://mp-supabase-webhook.onrender.com
+
+async function callWebhook(path) {
+  const res = await fetch(`${WEBHOOK_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data?.error ? JSON.stringify(data.error) : 'Error en la operación');
+  return data;
+}
+
+export const pauseMembership = (preapprovalId) =>
+  callWebhook(`/api/suscripciones/${preapprovalId}/pausar`);
+
+export const resumeMembership = (preapprovalId) =>
+  callWebhook(`/api/suscripciones/${preapprovalId}/activar`);
+
+export const cancelMembership = (preapprovalId) =>
+  callWebhook(`/api/suscripciones/${preapprovalId}/cancelar`);

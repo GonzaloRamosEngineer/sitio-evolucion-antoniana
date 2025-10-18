@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserRegistrations } from '@/api/activitiesApi';
-import { getUserMemberships } from '@/api/membershipApi';
+import {
+  getUserMemberships,
+  pauseMembership,
+  resumeMembership,
+  cancelMembership
+} from '@/api/membershipApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +39,7 @@ const Dashboard = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [metrics, setMetrics] = useState({ total_donado: 0, total_suscripciones_activas: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   useEffect(() => {
     setCurrentUser(user);
@@ -47,7 +53,7 @@ const Dashboard = () => {
     try {
       const [registrationsData, membershipsResult, metricsDataResult] = await Promise.all([
         getUserRegistrations(userId),
-        getUserMemberships(userId, { onlyActive: true }), // poné false si querés ver también las inactivas
+        getUserMemberships(userId, { onlyActive: false }), // todas para gestionar
         supabase.from('fundacion_metrics').select('*').single()
       ]);
 
@@ -60,7 +66,7 @@ const Dashboard = () => {
         setMetrics({ total_donado: 0, total_suscripciones_activas: 0 });
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error.message);
+      console.error('Error fetching dashboard data:', error?.message || error);
       toast({
         title: 'Error al cargar datos',
         description: 'No se pudieron cargar los datos del dashboard.',
@@ -115,6 +121,44 @@ const Dashboard = () => {
     in: { opacity: 1, y: 0 },
     out: { opacity: 0, y: -20 }
   };
+
+  const statusBadge = (status) => {
+    const s = (status || '').toLowerCase();
+    const common = 'text-white dark:text-primary-foreground';
+    if (s === 'active') return <Badge className={`bg-green-600 dark:bg-green-700 ${common}`}>activa</Badge>;
+    if (s === 'paused') return <Badge className={`bg-yellow-600 dark:bg-yellow-700 ${common}`}>pausada</Badge>;
+    if (s === 'cancelled') return <Badge className={`bg-gray-500 dark:bg-gray-600 ${common}`}>cancelada</Badge>;
+    return <Badge className={`bg-blue-600 dark:bg-blue-700 ${common}`}>{s}</Badge>; // pending u otros
+  };
+
+  async function performAction(kind, preapprovalId) {
+    if (!preapprovalId) {
+      toast({
+        title: 'Acción no disponible',
+        description: 'Falta el identificador de la suscripción.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      setActionLoadingId(preapprovalId);
+      if (kind === 'pause') await pauseMembership(preapprovalId);
+      if (kind === 'resume') await resumeMembership(preapprovalId);
+      if (kind === 'cancel') await cancelMembership(preapprovalId);
+
+      toast({ title: 'Listo', description: 'Estado de la suscripción actualizado.' });
+      if (user?.id) await fetchDashboardData(user.id);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: 'No se pudo actualizar',
+        description: e?.message || 'Error en la operación.',
+        variant: 'destructive'
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
 
   if (authLoading || pageLoading) {
     return (
@@ -214,23 +258,63 @@ const Dashboard = () => {
                         <p className="text-marron-legado dark:text-foreground">
                           Monto:{' '}
                           <span className="font-semibold text-primary-antoniano dark:text-primary">
-                            ${m.amount}
+                            ${Number(m.amount).toLocaleString('es-AR')}
                           </span>
                         </p>
-                        <p className="text-marron-legado dark:text-foreground">
-                          Estado:{' '}
-                          <Badge
-                            variant={m.status === 'active' ? 'default' : 'secondary'}
-                            className={
-                              m.status === 'active'
-                                ? 'bg-green-500 text-white dark:bg-green-600 dark:text-primary-foreground'
-                                : 'bg-gray-400 text-white dark:bg-gray-500 dark:text-primary-foreground'
-                            }
-                          >
-                            {m.status}
-                          </Badge>
+                        <p className="text-marron-legado dark:text-foreground flex items-center gap-2">
+                          Estado: {statusBadge(m.status)}
                         </p>
+                        {m.next_charge_date && (
+                          <p className="text-sm text-muted-foreground">
+                            Próximo cobro: {formatDate(m.next_charge_date)}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">Desde: {formatDate(m.created_at)}</p>
+
+                        {/* Acciones */}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {m.status === 'active' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={actionLoadingId === m.preapproval_id}
+                              onClick={() => performAction('pause', m.preapproval_id)}
+                            >
+                              {actionLoadingId === m.preapproval_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Pausar
+                            </Button>
+                          )}
+
+                          {m.status === 'paused' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={actionLoadingId === m.preapproval_id}
+                              onClick={() => performAction('resume', m.preapproval_id)}
+                            >
+                              {actionLoadingId === m.preapproval_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Reanudar
+                            </Button>
+                          )}
+
+                          {m.status !== 'cancelled' && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={actionLoadingId === m.preapproval_id}
+                              onClick={() => performAction('cancel', m.preapproval_id)}
+                            >
+                              {actionLoadingId === m.preapproval_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Cancelar
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -238,7 +322,7 @@ const Dashboard = () => {
                   <div className="text-center py-4">
                     <Info className="w-10 h-10 text-primary-antoniano/50 dark:text-primary/50 mx-auto mb-3" />
                     <p className="text-marron-legado/90 dark:text-muted-foreground mb-3">
-                      Aún no tienes una colaboración activa.
+                      Aún no tienes colaboraciones.
                     </p>
                     <Button variant="antoniano" asChild className="text-white dark:text-primary-foreground">
                       <Link to="/collaborate">Quiero Colaborar</Link>
