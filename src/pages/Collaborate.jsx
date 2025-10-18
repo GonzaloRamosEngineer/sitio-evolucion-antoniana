@@ -25,6 +25,7 @@ const Collaborate = () => {
   const [isProcessingSubscription, setIsProcessingSubscription] = useState(false);
 
   const subscriptionPlans = [
+    { value: '50', label: '$50 ARS / mes' },
     { value: '5000', label: '$5000 ARS / mes' },
     { value: '7500', label: '$7500 ARS / mes' },
     { value: '10000', label: '$10.000 ARS / mes' },
