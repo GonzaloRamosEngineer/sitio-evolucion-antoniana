@@ -202,7 +202,7 @@ const Home = () => {
                     h-full w-full text-center card-hover
                     border-marron-legado/10 dark:border-white/10
                     shadow-lg
-                    bg-white dark:bg-[#0f1b27]
+                    bg-white dark:bg-[#142b3a]
                   "
                 >
                   <CardHeader>
