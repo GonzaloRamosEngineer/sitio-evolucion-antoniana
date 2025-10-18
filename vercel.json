@@ -1,7 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/share/news/(.*)", "destination": "/api/share/news/slug?slug=$1" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" },
 
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/img/(.*)", "destination": "/img/$1" },
