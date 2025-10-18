@@ -1,5 +1,9 @@
+// src/api/membershipApi.js
 import { supabase } from '@/lib/supabase';
 
+/* ============================
+   Lectura directa desde Supabase
+   ============================ */
 export const getUserMemberships = async (userId, { onlyActive = false } = {}) => {
   if (!userId) return [];
   try {
@@ -9,9 +13,7 @@ export const getUserMemberships = async (userId, { onlyActive = false } = {}) =>
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (onlyActive) {
-      query = query.eq('status', 'active');
-    }
+    if (onlyActive) query = query.eq('status', 'active');
 
     const { data, error } = await query;
     if (error) throw error;
@@ -34,18 +36,44 @@ export const getUserMembership = async (userId) => {
   }
 };
 
-/* NUEVO: acciones contra el microservicio en Render */
-const WEBHOOK_BASE = import.meta.env.VITE_WEBHOOK_BASE_URL; 
-// ejemplo .env: VITE_WEBHOOK_BASE_URL=https://mp-supabase-webhook.onrender.com
+/* ==========================================
+   Acciones contra el microservicio en Render
+   ========================================== */
+
+/**
+ * WEBHOOK_BASE opcional:
+ * - Si existe VITE_WEBHOOK_BASE_URL => usa base absoluta (ej: https://mp-supabase-webhook.onrender.com)
+ * - Si NO existe => usa ruta relativa y Vercel reescribe /api/* hacia Render (ver vercel.json)
+ */
+const WEBHOOK_BASE =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_WEBHOOK_BASE_URL
+    ? String(import.meta.env.VITE_WEBHOOK_BASE_URL).replace(/\/$/, '')
+    : '') || '';
+
+/** Une base + path garantizando un solo "/" y que siempre empiece con "/" */
+function buildUrl(path) {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `${WEBHOOK_BASE}${p}`.replace(/([^:]\/)\/+/g, '$1');
+}
 
 async function callWebhook(path) {
-  const res = await fetch(`${WEBHOOK_BASE}${path}`, {
+  const url = buildUrl(path);
+
+  // útil para debuggear si alguna vez vuelve a aparecer 'undefined'
+  // console.log('[membershipApi] POST', url);
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
+
   let data = {};
   try { data = await res.json(); } catch {}
-  if (!res.ok) throw new Error(data?.error ? JSON.stringify(data.error) : 'Error en la operación');
+
+  if (!res.ok) {
+    const msg = data?.error ? JSON.stringify(data.error) : 'Error en la operación';
+    throw new Error(msg);
+  }
   return data;
 }
 
