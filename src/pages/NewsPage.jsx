@@ -6,6 +6,7 @@ import { Calendar, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getNews } from '@/lib/storage';
 
+
 const NewsPage = () => {
   const [news, setNews] = useState([]);
 
