@@ -56,19 +56,19 @@ function buildUrl(path) {
   return `${WEBHOOK_BASE}${p}`.replace(/([^:]\/)\/+/g, '$1');
 }
 
-async function callWebhook(path) {
+async function callWebhook(path, options = {}) {
   const url = buildUrl(path);
 
-  // útil para debuggear si alguna vez vuelve a aparecer 'undefined'
-  // console.log('[membershipApi] POST', url);
-
   const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    method: options.method || 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: options.body ? JSON.stringify(options.body) : undefined
   });
 
   let data = {};
-  try { data = await res.json(); } catch {}
+  try {
+    data = await res.json();
+  } catch {}
 
   if (!res.ok) {
     const msg = data?.error ? JSON.stringify(data.error) : 'Error en la operación';
@@ -77,6 +77,9 @@ async function callWebhook(path) {
   return data;
 }
 
+/* ============================
+   CRUD de suscripciones Render
+   ============================ */
 export const pauseMembership = (preapprovalId) =>
   callWebhook(`/api/suscripciones/${preapprovalId}/pausar`);
 
@@ -85,3 +88,42 @@ export const resumeMembership = (preapprovalId) =>
 
 export const cancelMembership = (preapprovalId) =>
   callWebhook(`/api/suscripciones/${preapprovalId}/cancelar`);
+
+/**
+ * Crear suscripción recurrente (Render)
+ */
+export const createSubscription = async ({ userId, emailUsuario, amount = 50, currency = 'ARS' }) => {
+  return callWebhook(`/api/crear-suscripcion`, {
+    method: 'POST',
+    body: {
+      reason: 'Beca mensual Fundación Evolución Antoniana',
+      payer_email: emailUsuario,
+      user_id: userId,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: Number(amount),
+        currency_id: currency
+      }
+    }
+  });
+};
+
+/**
+ * Crear donación única (Render)
+ */
+export const createOneTimeDonation = async ({ userId, emailUsuario, amount }) => {
+  return callWebhook(`/api/crear-preferencia`, {
+    method: 'POST',
+    body: {
+      amount: Number(amount),
+      description: 'Donación única a la Fundación Evolución Antoniana',
+      user_id: userId,
+      payer: {
+        name: 'Invitado',
+        surname: '',
+        email: emailUsuario
+      }
+    }
+  });
+};
