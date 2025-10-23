@@ -31,7 +31,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          recipient_email: 'contacto@fundacionevolucionantoniana.org', 
+          recipient_email: 'info@evolucionantoniana.com', 
           subject: subject,
           text_content: emailBody,
           html_content: `<p><strong>Nombre:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Tipo de Colaboración:</strong> ${collaborationType}</p><p><strong>Mensaje:</strong></p><p>${message.replace(/\n/g, '<br>')}</p>`,
