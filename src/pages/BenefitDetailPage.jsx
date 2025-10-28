@@ -129,7 +129,7 @@ const BenefitDetailPage = () => {
                   <img
                     src={benefit.imagen_url}
                     alt={benefit.titulo}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain md:h-[360px] md:object-cover"
                     loading="lazy"
                     decoding="async"
                   />
