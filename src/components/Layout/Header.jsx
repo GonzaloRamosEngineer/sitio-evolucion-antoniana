@@ -46,10 +46,11 @@ const Header = () => {
       href: '/about',
       key: 'nosotros',
       subitems: [
-        { name: 'Actividades', href: '/activities' },
+        
         { name: 'Partners', href: '/partners' },
       ],
     },
+    { name: 'Actividades', href: '/activities' },
     {
       name: 'Colaborá',
       href: '/collaborate',
@@ -57,7 +58,7 @@ const Header = () => {
       subitems: [{ name: 'Beneficios', href: '/beneficios' }],
     },
     { name: 'Transparencia', href: '/legal-documents' },
-    { name: 'Contacto', href: '/contact' },
+    
   ];
 
   // Activo para enlaces simples
@@ -108,6 +109,30 @@ const Header = () => {
     timerRef.current = setTimeout(() => setOpen(false), delay);
   };
 
+  // 🔒 Ajuste mínimo 1: cerrar menús en cambio de ruta
+  React.useEffect(() => {
+    setOpenNos(false);
+    setOpenColab(false);
+    setIsMenuOpen(false);
+    setOpenMob({ nosotros: false, colabora: false });
+  }, [location.pathname]);
+
+  // 🔒 Ajuste mínimo 2: cerrar en scroll / click fuera / cambio de orientación
+  React.useEffect(() => {
+    const close = () => { setOpenNos(false); setOpenColab(false); };
+    const onDocClick = (e) => {
+      if (!e.target.closest?.('header')) close();
+    };
+    window.addEventListener('scroll', close, { passive: true });
+    window.addEventListener('orientationchange', close);
+    document.addEventListener('click', onDocClick);
+    return () => {
+      window.removeEventListener('scroll', close);
+      window.removeEventListener('orientationchange', close);
+      document.removeEventListener('click', onDocClick);
+    };
+  }, []);
+
   // Submenú de escritorio (custom)
   const DesktopSubmenu = ({ item, open, setOpen, timerRef }) => (
     <div
@@ -144,7 +169,8 @@ const Header = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.12 }}
-            className="absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-md border border-border bg-white dark:bg-card text-foreground shadow-lg p-1"
+            // ✅ Ajuste mínimo 3: quitar mt-1 para evitar “gap” de hover
+            className="absolute left-0 top-full z-50 min-w-[220px] rounded-md border border-border bg-white dark:bg-card text-foreground shadow-lg p-1"
             // mantener abierto mientras el mouse está encima
             onMouseEnter={() => openWithIntent(setOpen, timerRef)}
             onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
@@ -170,6 +196,8 @@ const Header = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="bg-blanco-fundacion/80 dark:bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-50 shadow-sm"
+      // ✅ Ajuste mínimo 4: cerrar al salir del header (desktop)
+      onMouseLeave={() => { setOpenNos(false); setOpenColab(false); }}
     >
       <nav className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
