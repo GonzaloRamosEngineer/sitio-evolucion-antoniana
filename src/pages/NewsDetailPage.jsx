@@ -107,7 +107,9 @@ const NewsDetailPage = () => {
                 <img
                   src={item.image_url}
                   alt={title}
-                  className="w-full h-[280px] md:h-[360px] object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-auto object-contain md:h-[360px] md:object-cover"
                 />
               )}
 
