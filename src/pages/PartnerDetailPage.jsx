@@ -50,6 +50,13 @@ const PartnerDetailPage = () => {
     );
   }
 
+  // ---- NUEVO: preparar HTML para "Sobre la colaboración" ----
+  const defaultColaboracion = `${partner.nombre} colabora activamente con nuestros proyectos, ofreciendo beneficios a la comunidad.`;
+
+  const colaboracionHtml =
+    partner.colaboracion_detalle?.trim() || defaultColaboracion;
+  // -----------------------------------------------------------
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Helmet>
@@ -84,7 +91,9 @@ const PartnerDetailPage = () => {
                     decoding="async"
                   />
                 ) : (
-                  <h2 className="text-5xl font-bold text-gray-400">{partner.nombre}</h2>
+                  <h2 className="text-5xl font-bold text-gray-400">
+                    {partner.nombre}
+                  </h2>
                 )}
               </div>
 
@@ -97,24 +106,32 @@ const PartnerDetailPage = () => {
                   <p>{partner.descripcion}</p>
                 </div>
 
+                {/* Bloque "Sobre la colaboración" con HTML embebido */}
                 <div className="bg-gray-100 rounded-lg p-6 space-y-4 mb-8">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                       <Info className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-800">Sobre la colaboración</h3>
-                      <p className="text-gray-600 whitespace-pre-line break-words">
-                        {partner.colaboracion_detalle?.trim()
-                          || `${partner.nombre} colabora activamente con nuestros proyectos, ofreciendo beneficios a la comunidad.`}
-                      </p>
+                      <h3 className="font-semibold text-gray-800">
+                        Sobre la colaboración
+                      </h3>
+
+                      <div
+                        className="prose prose-lg max-w-none text-gray-600"
+                        dangerouslySetInnerHTML={{ __html: colaboracionHtml }}
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
                   {partner.sitio_web && (
-                    <a href={partner.sitio_web} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={partner.sitio_web}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Button size="lg" variant="outline">
                         <Globe className="mr-2 h-5 w-5" />
                         Visitar Sitio Web
