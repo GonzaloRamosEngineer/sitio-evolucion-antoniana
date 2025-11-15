@@ -46,7 +46,9 @@ const PartnerDetailPage = () => {
     fetchPartner();
   }, [slug]);
 
-  const pageTitle = partner ? `${partner.nombre} – Fundación Evolución Antoniana` : 'Alianzas estratégicas';
+  const pageTitle = partner
+    ? `${partner.nombre} – Fundación Evolución Antoniana`
+    : 'Alianzas estratégicas';
 
   if (loading) {
     return (
@@ -55,10 +57,8 @@ const PartnerDetailPage = () => {
           <title>Cargando alianza… – Fundación Evolución Antoniana</title>
         </Helmet>
         <div className="max-w-4xl mx-auto px-4 py-10 sm:py-12 space-y-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-slate-200 animate-pulse" />
-            <div className="h-7 w-48 rounded bg-slate-200 animate-pulse" />
-          </div>
+          <div className="h-10 w-10 rounded-full bg-slate-200 animate-pulse" />
+          <div className="h-7 w-48 rounded bg-slate-200 animate-pulse" />
           <div className="h-4 w-3/4 rounded bg-slate-200 animate-pulse" />
           <div className="h-4 w-2/3 rounded bg-slate-200 animate-pulse" />
           <div className="mt-6 h-40 rounded-2xl bg-slate-100 animate-pulse" />
@@ -88,7 +88,7 @@ const PartnerDetailPage = () => {
               No encontramos esta alianza
             </h1>
             <p className="text-slate-600">
-              Es posible que el vínculo haya cambiado o que el enlace no sea correcto. 
+              Es posible que el vínculo haya cambiado o que el enlace no sea correcto.
               Volvé al listado para explorar todas nuestras alianzas estratégicas.
             </p>
           </div>
@@ -125,35 +125,37 @@ const PartnerDetailPage = () => {
           transition={{ duration: 0.25 }}
           className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 mb-6"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-            {partner.logo_url && (
-              <div className="shrink-0 flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
+          {/* Logo grande ocupando todo el ancho del contenedor */}
+          {partner.logo_url && (
+            <div className="w-full mb-5">
+              <div className="w-full rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden px-4 py-5 sm:py-6">
                 <img
                   src={partner.logo_url}
                   alt={partner.nombre}
-                  className="max-h-full max-w-full object-contain"
+                  className="w-full h-auto max-h-40 sm:max-h-52 object-contain"
                   loading="lazy"
                 />
               </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 leading-tight">
+              {partner.nombre}
+            </h1>
+
+            {partner.estado === 'aprobado' && (
+              <span className="inline-flex items-center self-start text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
+                Alianza activa
+              </span>
             )}
 
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 leading-tight">
-                {partner.nombre}
-              </h1>
-              {partner.estado === 'aprobado' && (
-                <p className="mt-1 inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
-                  Alianza activa
-                </p>
-              )}
-            </div>
+            {partner.descripcion && (
+              <p className="text-sm sm:text-base text-slate-700 mt-1">
+                {partner.descripcion}
+              </p>
+            )}
           </div>
-
-          {partner.descripcion && (
-            <p className="text-sm sm:text-base text-slate-700 mt-2">
-              {partner.descripcion}
-            </p>
-          )}
         </motion.section>
 
         {/* Collaboration + actions */}
@@ -177,7 +179,6 @@ const PartnerDetailPage = () => {
             {partner.colaboracion_detalle ? (
               <article
                 className="prose prose-sm sm:prose-base max-w-none text-slate-700 prose-p:mb-3 prose-p:last:mb-0"
-                // 👇 Renderizamos el HTML que viene de la BD de forma segura
                 dangerouslySetInnerHTML={{
                   __html: partner.colaboracion_detalle,
                 }}
