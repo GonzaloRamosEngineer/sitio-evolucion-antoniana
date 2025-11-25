@@ -62,7 +62,7 @@ const founders = [
     name: 'Gonzalo Andrés Ramos',
     role: 'Fundador',
     description:
-      'Ingeniero en Sistemas de Información, gestor deportivo e impulsor de la transformación institucional y tecnológica de la Fundación.',
+      'Ingeniero en Sistemas de Información, Gestor Deportivo CONMEBOL e impulsor de la transformación institucional y tecnológica de la Fundación.',
     image: '/img/gonzalo_ramos.png' // ajustá o eliminá si aún no tenés foto
   },
   {
