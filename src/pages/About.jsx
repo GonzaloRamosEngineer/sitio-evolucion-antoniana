@@ -62,8 +62,8 @@ const founders = [
     name: 'Gonzalo Andrés Ramos',
     role: 'Fundador',
     description:
-      'Ingeniero en Sistemas, gestor digital e impulsor de la transformación institucional y tecnológica de la Fundación.',
-    image: '/img/fundadores/gonzalo_ramos.jpg' // ajustá o eliminá si aún no tenés foto
+      'Ingeniero en Sistemas de Información, gestor deportivo e impulsor de la transformación institucional y tecnológica de la Fundación.',
+    image: '/img/gonzalo_ramos.jpg' // ajustá o eliminá si aún no tenés foto
   },
   {
     name: 'Juan Carlos Palavecino',
