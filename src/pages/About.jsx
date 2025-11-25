@@ -63,14 +63,14 @@ const founders = [
     role: 'Fundador',
     description:
       'Ingeniero en Sistemas de Información, gestor deportivo e impulsor de la transformación institucional y tecnológica de la Fundación.',
-    image: '/img/gonzalo_ramos.jpg' // ajustá o eliminá si aún no tenés foto
+    image: '/img/gonzalo_ramos.png' // ajustá o eliminá si aún no tenés foto
   },
   {
     name: 'Juan Carlos Palavecino',
     role: 'Fundador',
     description:
       'Referente institucional y cofundador, comprometido con el desarrollo social, educativo y deportivo de la comunidad.',
-    image: '/img/fundadores/juan_carlos_palavecino.jpg'
+    image: '/img/juan_carlos_palavecino.png'
   }
 ];
 
