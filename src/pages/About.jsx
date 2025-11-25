@@ -1,21 +1,20 @@
 import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
-import { 
-  Heart, 
-  Target, 
-  Eye, 
-  Users, 
-  Award, 
+import {
+  Heart,
+  Target,
+  Eye,
+  Users,
+  Award,
   BookOpen,
   ShieldCheck,
-  Sparkles,
-  Handshake
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -45,7 +44,7 @@ const values = [
       'Promovemos oportunidades equitativas para todas las personas, sin distinción de origen, género, edad o condición socioeconómica.'
   },
   {
-    icon: Handshake,
+    icon: Users,
     title: 'Trabajo en Comunidad',
     description:
       'Creemos en la fuerza de las redes: articulamos con clubes, escuelas, organizaciones sociales, empresas y el sector público.'
@@ -362,7 +361,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* RECONOCIMIENTOS (lo dejo como lo tenías, podés ajustar textos si querés hacerlo más preciso) */}
+      {/* RECONOCIMIENTOS */}
       <section className="py-16 md:py-20 bg-blanco-fundacion">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
