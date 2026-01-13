@@ -51,10 +51,21 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Tus colores originales (Se mantienen para no romper nada)
         'blanco-fundacion': '#F8F9F7',
         'marron-legado': '#3D2612',
         'celeste-complementario': '#D3E8FF',
         'azul-profundo': '#1A2F48',
+
+        // --- NUEVA PALETA "LEGADO MODERNO" (Para el enchulamiento) ---
+        brand: {
+          primary: '#163A68',      // Azul Antoniana (Base)
+          dark: '#0F294A',         // Azul Noche (Textos)
+          action: '#9C2A32',       // Granate (Botones/CTAs)
+          gold: '#C98E2A',         // Dorado (Detalles/Iconos)
+          sand: '#F9F7F5',         // Fondo Body (Surface Light)
+          white: '#FFFFFF',        // Surface White
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -64,6 +75,10 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
+      },
+      backgroundImage: {
+        // Nuevo degradado para el Hero
+        'hero-glow': 'radial-gradient(circle at top right, #1e4d8a 0%, #163A68 100%)',
       },
       keyframes: {
         "accordion-down": {
