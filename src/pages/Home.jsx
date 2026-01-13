@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, Users, BookOpen, Award, ArrowRight } from "lucide-react";
+import { Heart, Users, BookOpen, Award, ArrowRight, CheckCircle2} from "lucide-react";
 import { motion } from "framer-motion";
 
 const Home = () => {
