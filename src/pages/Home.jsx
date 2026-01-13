@@ -1,40 +1,66 @@
 // src/pages/Home.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Users, BookOpen, Award, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Heart, Users, BookOpen, Award, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Home = () => {
   const features = [
     {
       icon: Heart,
-      title: 'Compromiso Social',
-      description: 'Desarrollo integral de nuestra comunidad con pasión y dedicación franciscana.',
+      title: "Compromiso Social",
+      description:
+        "Trabajamos por el desarrollo integral de nuestra comunidad con pasión y dedicación.",
     },
     {
       icon: Users,
-      title: 'Trabajo en Equipo',
-      description: 'Fomentamos la colaboración sinérgica para lograr objetivos comunes.',
+      title: "Trabajo en Equipo",
+      description:
+        "Fomentamos la colaboración y el trabajo conjunto para lograr objetivos comunes.",
     },
     {
       icon: BookOpen,
-      title: 'Educación Continua',
-      description: 'Talleres y capacitación tecnológica para el crecimiento real.',
+      title: "Educación Continua",
+      description:
+        "Ofrecemos talleres, cursos y actividades formativas para el crecimiento personal.",
     },
     {
       icon: Award,
-      title: 'Excelencia',
-      description: 'Servicios de calidad con impacto medible y gestión moderna.',
+      title: "Excelencia",
+      description:
+        "Servicios de calidad con impacto medible y gestión moderna.",
     },
   ];
 
   const stats = [
-    { number: '305+', label: 'Almas Impactadas', desc: 'Beneficiarios directos de programas.' },
-    { number: '7+', label: 'Proyectos Activos', desc: 'Iniciativas tecnológicas y sociales.' },
-    { number: '6+', label: 'Años de Trayectoria', desc: 'Experiencia en gestión de impacto.' },
-    { number: '4+', label: 'Reconocimientos', desc: 'Premios a la innovación social.' },
+    {
+      number: "305+",
+      label: "Almas Impactadas",
+      desc: "Beneficiarios directos de programas.",
+    },
+    {
+      number: "7+",
+      label: "Proyectos Activos",
+      desc: "Iniciativas tecnológicas y sociales.",
+    },
+    {
+      number: "6+",
+      label: "Años de Trayectoria",
+      desc: "Experiencia en gestión de impacto.",
+    },
+    {
+      number: "4+",
+      label: "Reconocimientos",
+      desc: "Premios a la innovación social.",
+    },
   ];
 
   return (
@@ -43,60 +69,65 @@ const Home = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-brand-sand min-h-screen font-sans selection:bg-brand-gold/30"
+      className="bg-blanco-fundacion dark:bg-background"
     >
-      {/* --- HERO SECTION MODERNIZADO --- */}
-      <section className="relative bg-brand-primary overflow-hidden">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-32 lg:pb-40">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            
-            {/* Texto Hero */}
+      {/* Hero Section */}
+      <section className="relative bg-azul-profundo dark:bg-primary-antoniano/90 text-white overflow-hidden">
+        <div className="absolute inset-0 hero-pattern opacity-30 dark:opacity-10" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
-              className="space-y-8"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm">
-                <span className="flex h-2 w-2 rounded-full bg-brand-gold animate-pulse"></span>
-                <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Evolución Antoniana 2024</span>
-              </div>
-
               <h1 className="text-5xl lg:text-7xl font-bold font-poppins text-white leading-[1.1]">
-                Futuro <br/>
+                Construyendo un
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-yellow-200">
-                  Inteligente.
+                  Futuro Mejor
                 </span>
               </h1>
-              
-              <p className="text-lg text-gray-200 max-w-xl leading-relaxed">
-                Transformamos la pasión deportiva en desarrollo social. Impulsamos la innovación tecnológica y administrativa en Salta, creando oportunidades reales con transparencia y gestión moderna.
+              <p className="text-lg text-white/80 dark:text-foreground/80 mb-8 leading-relaxed text-balance">
+                Somos una organización sin fines de lucro enfocada en el
+                desarrollo social, educativo, deportivo y tecnológico.
+                <br />
+                <br />
+                Impulsamos iniciativas que combinan el compromiso comunitario
+                con la innovación digital, creando oportunidades reales para
+                transformar vidas.
+                <br />
+                <br />
+                También formamos parte del programa Mercado Libre Solidario, y
+                trabajamos con principios de transparencia, impacto medible y
+                gestión moderna.
+                <br />
+                <br />
+                Unite a nuestra misión y se parte del cambio.
               </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Button
-                  size="xl"
-                  className="h-14 px-8 bg-brand-action hover:bg-red-900 text-white font-bold rounded-xl shadow-lg shadow-brand-action/20 hover:shadow-brand-action/40 transition-all duration-300 text-lg group"
+                  size="lg"
+                  className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80"
                   asChild
                 >
                   <Link to="/activities">
                     Ver Actividades
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
 
+                {/* FIX: botón outline visible en reposo */}
                 <Button
-                  size="xl"
+                  size="lg"
                   variant="outline"
-                  className="h-14 px-8 border-white/20 text-white bg-white/5 hover:bg-white/10 hover:text-white backdrop-blur-sm font-semibold rounded-xl transition-all duration-300 text-lg"
+                  className="
+                    border-white/50 text-white
+                    bg-transparent
+                    hover:bg-white hover:text-azul-profundo
+                    dark:border-primary/50 dark:text-primary
+                    dark:hover:bg-primary dark:hover:text-primary-foreground
+                    transition-all duration-300 font-semibold
+                  "
                   asChild
                 >
                   <Link to="/contact">Contáctanos</Link>
@@ -105,17 +136,20 @@ const Home = () => {
 
               {/* Alianzas Mini */}
               <div className="pt-8 border-t border-white/10">
-                <p className="text-xs text-brand-gold/80 mb-4 uppercase tracking-wider font-semibold">En alianza estratégica con</p>
+                <p className="text-xs text-brand-gold/80 mb-4 uppercase tracking-wider font-semibold">
+                  En alianza estratégica con
+                </p>
                 <div className="flex gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500 items-center">
-                   {/* Textos placeholders - Reemplazar con logos SVG reales luego */}
-                   <span className="text-white font-bold text-lg">Google</span>
-                   <span className="text-white font-bold text-lg">Canva</span>
-                   <span className="text-white font-bold text-xs uppercase">Min. Educación Salta</span>
+                  {/* Textos placeholders - Reemplazar con logos SVG reales luego */}
+                  <span className="text-white font-bold text-lg">Google</span>
+                  <span className="text-white font-bold text-lg">Canva</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    Min. Educación Salta
+                  </span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Imagen Hero con efecto Glass */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -129,29 +163,8 @@ const Home = () => {
                   src="/img/donativo_cancha.png"
                   alt="Impacto Social"
                 />
-                
-                {/* Tarjeta Flotante "Datos en vivo" */}
-                <div className="absolute bottom-8 left-8 right-8 bg-brand-dark/90 backdrop-blur-md p-6 rounded-xl border border-white/10 shadow-xl z-20">
-                  <div className="flex justify-between items-start mb-2">
-                     <div>
-                        <p className="text-brand-gold text-xs font-bold uppercase mb-1">Impacto Actual</p>
-                        <h3 className="text-white font-bold text-xl">Campaña Solidaria 2024</h3>
-                     </div>
-                     <div className="bg-green-500/20 p-2 rounded-full">
-                        <Zap className="w-5 h-5 text-green-400" />
-                     </div>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                    <div className="bg-brand-action h-2 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>Progreso</span>
-                    <span>75% Completado</span>
-                  </div>
-                </div>
               </div>
-              {/* Elemento decorativo detrás */}
-              <div className="absolute -top-6 -right-6 w-full h-full border-2 border-brand-gold/30 rounded-2xl -z-10"></div>
+              <div className="absolute -top-4 -right-4 w-full h-full bg-celeste-complementario/20 dark:bg-primary/20 rounded-2xl opacity-20 transform -rotate-3" />
             </motion.div>
           </div>
         </div>
@@ -198,7 +211,8 @@ const Home = () => {
             </h2>
             <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-6"></div>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Principios que fusionan la tradición franciscana con la innovación moderna.
+              Principios que fusionan la tradición franciscana con la innovación
+              moderna.
             </p>
           </motion.div>
 
@@ -245,12 +259,14 @@ const Home = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl lg:text-5xl font-bold font-poppins text-white mb-8">
-              ¿Listo para ser parte de la <span className="text-brand-gold">Evolución</span>?
+              ¿Listo para ser parte de la{" "}
+              <span className="text-brand-gold">Evolución</span>?
             </h2>
             <p className="text-xl text-gray-300 mb-10 leading-relaxed">
-              Únete a nuestra comunidad. Accede a beneficios exclusivos de nuestros partners y contribuye al desarrollo tecnológico de Salta.
+              Únete a nuestra comunidad. Accede a beneficios exclusivos de
+              nuestros partners y contribuye al desarrollo tecnológico de Salta.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
@@ -262,10 +278,10 @@ const Home = () => {
                   Quiero Colaborar
                 </Link>
               </Button>
-              
+
               <div className="flex items-center gap-2 text-sm text-gray-400 mt-4 sm:mt-0">
-                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                 <span>Transparencia Garantizada</span>
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span>Transparencia Garantizada</span>
               </div>
             </div>
           </motion.div>
