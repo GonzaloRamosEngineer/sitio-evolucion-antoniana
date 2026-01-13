@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
@@ -12,9 +11,9 @@ import {
   Eye,
   Users,
   Award,
-  BookOpen,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -27,9 +26,9 @@ const values = [
   },
   {
     icon: ShieldCheck,
-    title: 'Integridad y Transparencia',
+    title: 'Integridad',
     description:
-      'Gestionamos recursos y decisiones con ética, claridad y rendición de cuentas, fortaleciendo la confianza de la comunidad y de nuestros aliados.'
+      'Gestionamos recursos y decisiones con ética, claridad y rendición de cuentas, fortaleciendo la confianza de la comunidad.'
   },
   {
     icon: Sparkles,
@@ -45,7 +44,7 @@ const values = [
   },
   {
     icon: Users,
-    title: 'Trabajo en Comunidad',
+    title: 'Comunidad',
     description:
       'Creemos en la fuerza de las redes: articulamos con clubes, escuelas, organizaciones sociales, empresas y el sector público.'
   },
@@ -63,7 +62,7 @@ const founders = [
     role: 'Fundador',
     description:
       'Ingeniero en Sistemas de Información, Gestor Deportivo CONMEBOL e impulsor de la transformación institucional y tecnológica de la Fundación.',
-    image: '/img/gonzalo_ramos.png' // ajustá o eliminá si aún no tenés foto
+    image: '/img/gonzalo_ramos.png'
   },
   {
     name: 'Juan Carlos Palavecino',
@@ -86,248 +85,249 @@ const authorities = [
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-blanco-fundacion">
-      {/* HERO */}
-      <section className="py-20 md:py-28 text-center bg-gradient-to-b from-celeste-complementario/30 via-blanco-fundacion to-blanco-fundacion hero-pattern">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h1
+    <div className="min-h-screen bg-brand-sand font-sans selection:bg-brand-gold/30">
+      
+      {/* --- HERO SECTION (Tech-Institucional) --- */}
+      <section className="relative bg-brand-primary overflow-hidden py-24 md:py-32 px-4">
+        {/* Fondo Tech Sutil */}
+        <div className="absolute inset-0">
+           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+           <div className="absolute inset-0 opacity-10" 
+                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+           </div>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto text-center z-10">
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano mb-6 text-balance"
           >
-            Sobre Nuestra Fundación
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-            className="text-lg md:text-xl text-marron-legado/90 max-w-3xl mx-auto leading-relaxed text-balance"
-          >
-            Conoce nuestra historia, misión y el equipo comprometido que trabaja día a día por el desarrollo
-            social, educativo, deportivo y tecnológico de nuestra comunidad.
-          </motion.p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
+               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Institucional</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6 leading-tight">
+              Sobre Nuestra <span className="text-brand-gold">Fundación</span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              Conoce nuestra historia, misión y el equipo comprometido que trabaja día a día por el desarrollo social, educativo, deportivo y tecnológico de nuestra comunidad.
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      {/* HISTORIA */}
-      <section className="py-16 md:py-20 bg-blanco-fundacion">
+      {/* --- HISTORIA --- */}
+      <section className="py-20 bg-brand-sand relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Texto Historia */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
             >
-              <h2 className="text-3xl font-poppins font-bold text-primary-antoniano mb-6">Nuestra Historia</h2>
-              <div className="space-y-4 text-marron-legado/80 leading-relaxed">
+              <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-brand-dark mb-8 relative inline-block">
+                Nuestra Historia
+                <span className="absolute -bottom-2 left-0 w-1/3 h-1 bg-brand-gold rounded-full"></span>
+              </h2>
+              
+              <div className="space-y-6 text-gray-600 text-lg leading-relaxed text-justify">
                 <p>
-                  La <span className="font-semibold">Fundación Evolución Antoniana</span> es una organización sin
-                  fines de lucro fundada en Salta en el año 2020, a partir de la iniciativa de un grupo de
-                  profesionales comprometidos con la realidad social, educativa y deportiva de la región.
+                  La <strong className="text-brand-primary">Fundación Evolución Antoniana</strong> nació en Salta en 2020, fruto de la visión de un grupo de profesionales decididos a transformar la realidad social y deportiva de la región.
                 </p>
                 <p>
-                  Desde nuestra constitución legal en 2022, consolidamos nuestra labor promoviendo la educación, el
-                  deporte, la innovación tecnológica y el acompañamiento social como motores de transformación
-                  durable para jóvenes, familias y comunidades.
+                  Desde nuestra constitución legal en 2022, hemos consolidado un modelo de gestión que une <span className="bg-brand-gold/10 px-1 rounded text-brand-dark font-medium">tradición y modernidad</span>. Promovemos la educación, el deporte y la innovación tecnológica como motores de cambio real.
                 </p>
                 <p>
-                  A lo largo de estos años hemos impulsado acciones solidarias en barrios, comedores y hogares de la
-                  tercera edad; desarrollamos actividades formativas accesibles para distintas edades y articulamos
-                  con instituciones públicas y privadas para acercar herramientas concretas que amplíen las
-                  oportunidades de desarrollo.
+                  Hemos impulsado acciones solidarias en comedores, hogares de ancianos y clubes barriales. Articulamos con el sector público y privado para llevar herramientas concretas donde más se necesitan.
                 </p>
-                <p>
-                  Hoy continuamos creciendo mediante alianzas estratégicas, proyectos de impacto y plataformas
-                  tecnológicas propias, con el objetivo de contribuir a una sociedad más justa, inclusiva, moderna y
-                  preparada para los desafíos del futuro.
+                <p className="font-medium text-brand-dark border-l-4 border-brand-action pl-4 italic">
+                  "Hoy crecemos mediante alianzas estratégicas y plataformas tecnológicas propias, construyendo una sociedad más justa y preparada para el futuro."
                 </p>
               </div>
             </motion.div>
 
+            {/* Imagen Historia */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="relative"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative group"
             >
-              <img
-                className="rounded-2xl shadow-xl w-full h-96 object-cover"
-                alt="Reunión del equipo de la fundación planificando proyectos comunitarios"
-                src="/img/hogar_abuelos.png"
-              />
+              <div className="absolute inset-0 bg-brand-gold/20 rounded-3xl transform rotate-3 group-hover:rotate-6 transition-transform duration-500"></div>
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/20">
+                <img
+                  className="w-full h-[500px] object-cover filter brightness-95 hover:brightness-105 transition-all duration-500"
+                  alt="Equipo de la fundación trabajando"
+                  src="/img/hogar_abuelos.png"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-dark/90 to-transparent p-8">
+                    <p className="text-white font-medium flex items-center gap-2">
+                        <CheckCircle2 className="text-brand-gold h-5 w-5" />
+                        Compromiso en territorio
+                    </p>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* MISIÓN Y VISIÓN */}
-      <section className="py-16 md:py-20 bg-celeste-complementario/10">
+      {/* --- MISIÓN Y VISIÓN (Cards Modernas) --- */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            
+            {/* Misión */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-brand-sand rounded-3xl p-8 md:p-12 border border-brand-primary/5 hover:border-brand-primary/20 transition-colors relative overflow-hidden group"
             >
-              <Card className="h-full border-primary-antoniano/20 shadow-lg bg-blanco-fundacion">
-                <CardHeader className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-antoniano to-celeste-complementario rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                    <Target className="w-8 h-8 text-white" />
-                  </div>
-                  <CardTitle className="text-2xl text-primary-antoniano font-poppins">Nuestra Misión</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-marron-legado/80 text-center leading-relaxed">
-                    Impulsar el desarrollo integral de jóvenes y comunidades a través de la educación, el deporte,
-                    la tecnología y la innovación social, generando oportunidades concretas que transformen vidas y
-                    contribuyan al progreso sostenible de Salta y el norte argentino.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+                <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-brand-primary/5 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                <div className="relative z-10">
+                    <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-primary/20">
+                        <Target className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-3xl font-poppins font-bold text-brand-dark mb-4">Nuestra Misión</h3>
+                    <p className="text-gray-600 leading-relaxed text-lg">
+                        Impulsar el desarrollo integral de jóvenes y comunidades a través de la educación, el deporte, la tecnología y la innovación social. Generamos oportunidades concretas que transforman vidas y contribuyen al progreso sostenible del norte argentino.
+                    </p>
+                </div>
             </motion.div>
 
+            {/* Visión */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-brand-dark rounded-3xl p-8 md:p-12 text-white relative overflow-hidden group"
             >
-              <Card className="h-full border-primary-antoniano/20 shadow-lg bg-blanco-fundacion">
-                <CardHeader className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-marron-legado to-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                    <Eye className="w-8 h-8 text-white" />
-                  </div>
-                  <CardTitle className="text-2xl text-primary-antoniano font-poppins">Nuestra Visión</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-marron-legado/80 text-center leading-relaxed">
-                    Ser una organización referente en Argentina y Latinoamérica por el impacto de nuestros programas
-                    educativos, deportivos y tecnológicos, construyendo comunidades más inclusivas, modernas,
-                    equitativas y preparadas para los desafíos del futuro.
-                  </CardDescription>
-                </CardContent>
-              </Card>
+                <div className="absolute inset-0 bg-hero-glow opacity-50"></div>
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Eye className="w-32 h-32" />
+                </div>
+                
+                <div className="relative z-10">
+                    <div className="w-16 h-16 bg-brand-gold rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-brand-gold/20">
+                        <Eye className="w-8 h-8 text-brand-dark" />
+                    </div>
+                    <h3 className="text-3xl font-poppins font-bold mb-4 text-white">Nuestra Visión</h3>
+                    <p className="text-gray-300 leading-relaxed text-lg">
+                        Ser referentes en Argentina por el impacto de nuestros programas. Aspiramos a construir comunidades más inclusivas, modernas y equitativas, liderando la transformación digital en el ámbito social y deportivo.
+                    </p>
+                </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* FUNDADORES Y AUTORIDADES */}
-      <section className="py-16 md:py-20 bg-blanco-fundacion">
+      {/* --- FUNDADORES Y AUTORIDADES --- */}
+      <section className="py-24 bg-brand-sand">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-primary-antoniano mb-4">
-              Fundadores y Autoridades
+          <motion.div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-brand-dark mb-4">
+              Liderazgo Institucional
             </h2>
-            <p className="text-xl text-marron-legado/80 max-w-3xl mx-auto leading-relaxed">
-              Personas que lideran, impulsan y sostienen la misión de la Fundación Evolución Antoniana.
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+               El equipo humano que impulsa nuestra visión y garantiza la transparencia en cada paso.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-            {/* Fundadores */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            >
-              <h3 className="text-2xl font-poppins font-semibold text-primary-antoniano mb-4">Fundadores</h3>
-              <div className="space-y-6">
-                {founders.map((founder) => (
-                  <Card
-                    key={founder.name}
-                    className="border-celeste-complementario/30 shadow-md bg-white flex flex-col sm:flex-row gap-4 items-center sm:items-start"
-                  >
-                    {founder.image ? (
-                      <div className="p-4">
-                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary-antoniano/40">
-                          <img
-                            src={founder.image}
-                            alt={founder.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-                    <CardContent className="pt-4 sm:pt-6">
-                      <CardTitle className="text-lg font-poppins text-primary-antoniano">
-                        {founder.name}
-                      </CardTitle>
-                      <p className="text-sm font-semibold text-celeste-complementario mt-1">
-                        {founder.role}
-                      </p>
-                      <CardDescription className="text-marron-legado/80 mt-2 leading-relaxed">
-                        {founder.description}
-                      </CardDescription>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Autoridades */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            >
-              <h3 className="text-2xl font-poppins font-semibold text-primary-antoniano mb-4">
-                Comisión Directiva
-              </h3>
-              <Card className="border-primary-antoniano/20 shadow-md bg-white">
-                <CardContent className="pt-6">
-                  <ul className="space-y-3">
-                    {authorities.map((item) => (
-                      <li
-                        key={item.position + item.name}
-                        className="flex justify-between gap-4 border-b border-gray-100 pb-2 last:border-b-0"
-                      >
-                        <span className="font-semibold text-marron-legado/90">
-                          {item.position}
-                        </span>
-                        <span className="text-marron-legado/90 text-right">{item.name}</span>
-                      </li>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            
+            {/* Columna Izquierda: Fundadores */}
+            <div className="space-y-8">
+                <h3 className="text-2xl font-poppins font-bold text-brand-primary border-l-4 border-brand-gold pl-4">
+                    Fundadores
+                </h3>
+                <div className="grid gap-6">
+                    {founders.map((founder, index) => (
+                        <motion.div
+                            key={founder.name}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.1 }}
+                        >
+                            <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden bg-white">
+                                <div className="flex flex-col sm:flex-row">
+                                    <div className="sm:w-32 sm:h-auto h-48 w-full relative bg-gray-200">
+                                        {founder.image ? (
+                                            <img src={founder.image} alt={founder.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-brand-primary text-white text-2xl font-bold">
+                                                {founder.name.charAt(0)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 p-6">
+                                        <h4 className="text-xl font-bold text-brand-dark">{founder.name}</h4>
+                                        <p className="text-sm font-bold text-brand-gold uppercase tracking-wide mb-3">{founder.role}</p>
+                                        <p className="text-gray-600 text-sm leading-relaxed">{founder.description}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
                     ))}
-                  </ul>
-                </CardContent>
-              </Card>
-              <p className="text-sm text-marron-legado/70 mt-3">
-                Información según registro oficial ante la Dirección General de Personas Jurídicas de la
-                provincia de Salta.
-              </p>
-            </motion.div>
+                </div>
+            </div>
+
+            {/* Columna Derecha: Comisión Directiva */}
+            <div className="space-y-8">
+                <h3 className="text-2xl font-poppins font-bold text-brand-primary border-l-4 border-brand-gold pl-4">
+                    Comisión Directiva
+                </h3>
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                >
+                    <Card className="border-none shadow-lg bg-white overflow-hidden">
+                        <div className="bg-brand-dark p-4">
+                            <p className="text-white/80 text-sm text-center">
+                                Autoridades vigentes (Dirección General de Personas Jurídicas - Salta)
+                            </p>
+                        </div>
+                        <CardContent className="p-0">
+                            {authorities.map((item, i) => (
+                                <div 
+                                    key={i} 
+                                    className="flex justify-between items-center p-4 border-b border-gray-100 last:border-0 hover:bg-brand-sand/50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-brand-gold"></div>
+                                        <span className="font-semibold text-gray-700">{item.position}</span>
+                                    </div>
+                                    <span className="text-brand-dark font-bold text-right">{item.name}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* VALORES */}
-      <section className="py-16 md:py-20 bg-blanco-fundacion">
+      {/* --- VALORES (Bento Grid Style) --- */}
+      <section className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-primary-antoniano mb-4">
+          <motion.div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-brand-dark mb-4">
               Nuestros Valores
             </h2>
-            <p className="text-xl text-marron-legado/80 max-w-3xl mx-auto leading-relaxed">
-              Los principios fundamentales que guían nuestro trabajo y definen nuestra identidad como
-              organización.
+            <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-6"></div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+               Principios innegociables que definen nuestra identidad y guían cada acción.
             </p>
           </motion.div>
 
@@ -337,103 +337,49 @@ const About = () => {
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.6, delay: index * 0.08, ease: 'easeOut' }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
               >
-                <Card className="h-full text-center card-hover border-celeste-complementario/30 shadow-lg bg-white hover:bg-celeste-complementario/5 transition-colors">
-                  <CardHeader>
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary-antoniano to-celeste-complementario rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                      <value.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <CardTitle className="text-xl text-primary-antoniano font-poppins">
-                      {value.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-marron-legado/80 leading-relaxed">
-                      {value.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
+                <div className="h-full bg-brand-sand rounded-2xl p-8 hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-transparent hover:border-brand-primary/10 group">
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors text-brand-primary">
+                    <value.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-brand-dark mb-3 group-hover:text-brand-action transition-colors">
+                    {value.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed text-sm">
+                    {value.description}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* RECONOCIMIENTOS */}
-      <section className="py-16 md:py-20 bg-blanco-fundacion">
+      {/* --- RECONOCIMIENTOS --- */}
+      <section className="py-20 bg-brand-dark text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl lg:text-4xl font-poppins font-bold text-primary-antoniano mb-4">
-              Reconocimientos
-            </h2>
-            <p className="text-xl text-marron-legado/80 max-w-3xl mx-auto leading-relaxed">
-              Nuestro trabajo ha sido acompañado y valorado por diversas instituciones y organizaciones a nivel
-              provincial y nacional.
-            </p>
-          </motion.div>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-poppins font-bold mb-4">Reconocimientos</h2>
+            <p className="text-gray-400">Nuestro impacto validado por la comunidad.</p>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="text-center p-6 bg-celeste-complementario/10 rounded-xl shadow-md"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-poppins font-semibold text-primary-antoniano mb-2">
-                Postulación Impacto Social 2022
-              </h3>
-              <p className="text-marron-legado/80 leading-relaxed">
-                Reconocimiento por nuestro trabajo en desarrollo comunitario y acompañamiento territorial.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-              className="text-center p-6 bg-celeste-complementario/10 rounded-xl shadow-md"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-primary-antoniano to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-poppins font-semibold text-primary-antoniano mb-2">
-                Certificación de Transparencia
-              </h3>
-              <p className="text-marron-legado/80 leading-relaxed">
-                Acreditación en buenas prácticas de gestión, administración responsable y rendición de cuentas.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
-              className="text-center p-6 bg-celeste-complementario/10 rounded-xl shadow-md"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-poppins font-semibold text-primary-antoniano mb-2">
-                Mención en Educación Digital
-              </h3>
-              <p className="text-marron-legado/80 leading-relaxed">
-                Destacados por nuestros programas de educación y alfabetización digital con enfoque social.
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             {['Postulación Impacto Social 2022', 'Certificación de Transparencia', 'Mención en Educación Digital'].map((item, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.2 }}
+                    className="bg-brand-primary/30 backdrop-blur-sm border border-white/10 p-6 rounded-xl flex flex-col items-center text-center hover:bg-brand-primary/50 transition-colors"
+                >
+                    <Award className="w-10 h-10 text-brand-gold mb-4" />
+                    <h3 className="font-bold text-lg mb-2">{item}</h3>
+                    <div className="w-8 h-1 bg-brand-action rounded-full mt-2"></div>
+                </motion.div>
+             ))}
           </div>
         </div>
       </section>
