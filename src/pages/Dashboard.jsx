@@ -236,7 +236,7 @@ const Dashboard = () => {
             ) : (
                 <div className="text-center py-16 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
                 <Heart className="w-12 h-12 text-gray-100 mx-auto mb-4" />
-                <Button className="bg-brand-primary text-white font-black rounded-xl h-12 px-8" asChild><Link to="/colaborar">SER PADRINO</Link></Button>
+                <Button className="bg-brand-primary text-white font-black rounded-xl h-12 px-8" asChild><Link to="/collaborate">SER PADRINO</Link></Button>
                 </div>
             )}
           </div>
