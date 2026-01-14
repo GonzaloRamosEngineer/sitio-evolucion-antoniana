@@ -81,7 +81,7 @@ const Footer = () => {
                  <span className="text-brand-primary font-bold text-xl absolute hidden">E</span>
               </div>
               <div>
-                <p className="text-xl font-poppins font-bold leading-none text-brand-gold">Evolución</p>
+                <p className="text-xl font-poppins font-bold leading-none text-white">Evolución</p>
                 <p className="text-xl font-poppins font-bold text-brand-action leading-none">Antoniana</p>
               </div>
             </motion.div>
