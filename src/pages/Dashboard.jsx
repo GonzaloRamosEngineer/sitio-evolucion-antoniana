@@ -14,18 +14,13 @@ import {
   Calendar, Award, LogOut, Loader2, AlertTriangle, Info, 
   CalendarPlus, Heart, CreditCard, User, PauseCircle, 
   PlayCircle, XCircle, Rocket, CheckCircle2, History, Clock,
-  HelpCircle
+  HelpCircle, DollarSign, Users
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+// ⚠️ Tooltip eliminado para evitar error de build
 import SummaryMetrics from '@/components/Dashboard/SummaryMetrics';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
@@ -127,6 +122,14 @@ const Dashboard = () => {
     }
   }
 
+  const statusBadge = (status) => {
+    const s = (status || '').toLowerCase();
+    const common = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 border-none shadow-sm';
+    if (s === 'active') return <Badge className={`${common} bg-green-500/10 text-green-600`}><CheckCircle2 size={12} /> Activa</Badge>;
+    if (s === 'paused') return <Badge className={`${common} bg-amber-500/10 text-amber-600`}><PauseCircle size={12} /> Pausada</Badge>;
+    return <Badge className={`${common} bg-gray-100 text-gray-500`}><XCircle size={12} /> Cancelada</Badge>;
+  };
+
   if (authLoading || pageLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfcfb]">
@@ -139,7 +142,6 @@ const Dashboard = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-[#F8FAFC] pb-20">
       
-      {/* --- HEADER SUPERIOR --- */}
       <section className="bg-brand-dark pt-24 pb-48 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/10 blur-[120px] rounded-full -mr-32 -mt-32" />
@@ -162,58 +164,44 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-6 -mt-32 relative z-20">
         <DashboardHeader user={currentUser} onUpdateSuccess={(data) => { setCurrentUser(data); setAuthUser(data); }} />
 
-        {/* --- MÉTRICAS CON TOOLTIPS EXPLICATIVOS --- */}
+        {/* --- MÉTRICAS GLOBALES (NASA STYLE) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-            <TooltipProvider>
-                {/* Métrica 1 */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                            <Card className="border-none shadow-xl rounded-[2rem] bg-gradient-to-br from-brand-primary to-blue-900 p-8 text-white relative overflow-hidden group">
-                                <DollarSign className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform" />
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-2 mb-4 text-blue-200">
-                                        <Heart size={16} />
-                                        <span className="text-xs font-black uppercase tracking-widest">Inversión Social</span>
-                                        <HelpCircle size={14} className="opacity-50" />
-                                    </div>
-                                    <h3 className="text-5xl font-black font-poppins tracking-tighter">${(metrics.total_donado || 0).toLocaleString('es-AR')}</h3>
-                                </div>
-                            </Card>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-brand-dark text-white border-none p-4 rounded-xl shadow-2xl max-w-xs">
-                        <p className="text-sm">Este monto representa la suma total de tus <strong>donaciones únicas</strong> procesadas a través de nuestra plataforma con este correo electrónico.</p>
-                    </TooltipContent>
-                </Tooltip>
+            {/* Métrica 1: Inversión Social Global */}
+            <Card 
+              title="Suma total de donaciones aprobadas de toda la Fundación"
+              className="border-none shadow-xl rounded-[2rem] bg-gradient-to-br from-brand-primary to-blue-900 p-8 text-white relative overflow-hidden group cursor-help"
+            >
+                <DollarSign className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4 text-blue-200">
+                        <Heart size={16} />
+                        <span className="text-xs font-black uppercase tracking-widest text-blue-100">Inversión Social Global</span>
+                        <HelpCircle size={14} className="opacity-50" />
+                    </div>
+                    <h3 className="text-5xl font-black font-poppins tracking-tighter">${(metrics.total_donado || 0).toLocaleString('es-AR')}</h3>
+                    <p className="text-[10px] text-blue-300 mt-2 font-bold uppercase tracking-tighter">Impacto total de nuestra comunidad</p>
+                </div>
+            </Card>
 
-                {/* Métrica 2 */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className="cursor-help">
-                            <Card className="border-none shadow-xl rounded-[2rem] bg-gradient-to-br from-brand-action to-red-900 p-8 text-white relative overflow-hidden group">
-                                <Users className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform" />
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-2 mb-4 text-red-200">
-                                        <Rocket size={16} />
-                                        <span className="text-xs font-black uppercase tracking-widest">Impactos Directos</span>
-                                        <HelpCircle size={14} className="opacity-50" />
-                                    </div>
-                                    <h3 className="text-5xl font-black font-poppins tracking-tighter">{metrics.total_suscripciones_activas || 0}</h3>
-                                </div>
-                            </Card>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-brand-dark text-white border-none p-4 rounded-xl shadow-2xl max-w-xs">
-                        <p className="text-sm">Indica el número de <strong>suscripciones mensuales (padrinazgos)</strong> que tienes activas actualmente para sostener nuestros programas.</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+            {/* Métrica 2: Impactos Directos Globales */}
+            <Card 
+              title="Cantidad de suscripciones mensuales activas actualmente"
+              className="border-none shadow-xl rounded-[2rem] bg-gradient-to-br from-brand-action to-red-900 p-8 text-white relative overflow-hidden group cursor-help"
+            >
+                <Users className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4 text-red-200">
+                        <Rocket size={16} />
+                        <span className="text-xs font-black uppercase tracking-widest text-red-100">Impactos Directos Activos</span>
+                        <HelpCircle size={14} className="opacity-50" />
+                    </div>
+                    <h3 className="text-5xl font-black font-poppins tracking-tighter">{metrics.total_suscripciones_activas || 0}</h3>
+                    <p className="text-[10px] text-red-300 mt-2 font-bold uppercase tracking-tighter">Padrinos sosteniendo la misión hoy</p>
+                </div>
+            </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-12">
-          
-          {/* COLUMNA IZQUIERDA: BITÁCORA DE DONACIONES */}
           <div className="lg:col-span-1 space-y-8">
             <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white overflow-hidden">
               <CardHeader className="p-8 bg-gray-50 border-b border-gray-100">
@@ -228,7 +216,7 @@ const Dashboard = () => {
                     <div key={m.id} className="p-6 rounded-3xl border border-gray-100 bg-white hover:border-brand-primary/20 transition-all">
                       <div className="flex justify-between items-start mb-4">
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Suscripción</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Suscripción Personal</p>
                             <p className="font-black text-brand-dark text-lg leading-tight">{m.plan}</p>
                             <p className="text-2xl font-poppins font-black text-brand-primary">${Number(m.amount).toLocaleString('es-AR')}</p>
                         </div>
@@ -257,7 +245,6 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* COLUMNA DERECHA: MIS ACTIVIDADES (TIMELINE) */}
           <div className="lg:col-span-2 space-y-8">
             <div className="flex items-center justify-between px-4">
                 <h2 className="text-2xl font-black text-brand-dark font-poppins flex items-center gap-4 tracking-tight uppercase">
@@ -285,7 +272,7 @@ const Dashboard = () => {
                           <div className="flex flex-col md:flex-row">
                               <div className="p-8 flex-1 space-y-5">
                                   <div className="flex justify-between items-center">
-                                      <Badge className={`px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border-none ${reg.activity.modality === 'presencial' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                                      <Badge className={`px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border-none ${reg.activity.modality === 'presencial' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
                                           {reg.activity.modality}
                                       </Badge>
                                       <span className="text-[10px] font-black text-gray-300 uppercase">Inscripción: {formatDate(reg.registered_at)}</span>
@@ -337,8 +324,5 @@ const Dashboard = () => {
     </motion.div>
   );
 };
-
-// Iconos auxiliares para el diseño
-const DollarSign = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
 
 export default Dashboard;
