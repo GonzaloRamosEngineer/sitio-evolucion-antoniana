@@ -91,7 +91,7 @@ const Dashboard = () => {
   }, [authLoading, isAuthenticated, user?.id]);
 
   const handleLogout = async () => {
-    await logout(); //
+    await logout();
     navigate('/');
   };
 
@@ -307,9 +307,7 @@ const Dashboard = () => {
                 <h2 className="text-2xl font-black text-brand-dark font-poppins flex items-center gap-4 tracking-tight uppercase">
                     <CreditCard className="text-brand-primary w-6 h-6" /> Donaciones
                 </h2>
-                <TooltipProvider>
-                  <HelpCircle size={16} className="text-gray-300 cursor-help" />
-                </TooltipProvider>
+                <HelpCircle size={16} className="text-gray-300 cursor-help" />
             </div>
 
             <div className="space-y-6">
@@ -475,7 +473,7 @@ const Dashboard = () => {
                   ) : null
                 ))
               ) : (
-                <div className="text-center py-32 bg-white rounded-[5rem] shadow-inner border border-gray-50 flex flex-col items-center gap-10">
+                <div className="text-center py-32 bg-white rounded-[5rem] shadow-inner border border-gray-100 flex flex-col items-center gap-10">
                     <div className="relative">
                         <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="absolute -inset-8 bg-brand-sand/50 rounded-full blur-2xl" />
                         <History size={80} className="text-gray-100 relative z-10" />
@@ -497,7 +495,7 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* --- FOOTER DEL DASHBOARD: SEGURIDAD Y SOPORTE --- */}
