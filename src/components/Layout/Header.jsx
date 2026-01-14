@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,8 +19,7 @@ import {
   LayoutDashboard,
   FileText,
   ChevronDown,
-  User,
-  ShieldCheck
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
@@ -64,7 +63,7 @@ const Header = () => {
 
   // Activo para enlaces simples
   const isActive = (path) =>
-    location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+    location.pathname === path || location.pathname.startsWith(path + '/');
 
   // Activo para grupos (padres)
   const isGroupActive = (item) => {
@@ -92,7 +91,7 @@ const Header = () => {
     ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
 
-  const logoUrl = '/img/transparente.png';
+  const logoUrl = '/img/transparente.png'; // Asegúrate de que esta ruta sea correcta o usa un placeholder si falla
 
   // helpers hover-intent
   const clearTimer = (ref) => {
@@ -110,16 +109,16 @@ const Header = () => {
     timerRef.current = setTimeout(() => setOpen(false), delay);
   };
 
-  // 🔒 Cerrar menús en cambio de ruta
-  useEffect(() => {
+  // 🔒 Ajuste: cerrar menús en cambio de ruta
+  React.useEffect(() => {
     setOpenNos(false);
     setOpenColab(false);
     setIsMenuOpen(false);
     setOpenMob({ nosotros: false, colabora: false });
   }, [location.pathname]);
 
-  // 🔒 Cerrar en scroll / click fuera / cambio de orientación
-  useEffect(() => {
+  // 🔒 Ajuste: cerrar en scroll / click fuera / cambio de orientación
+  React.useEffect(() => {
     const close = () => { setOpenNos(false); setOpenColab(false); };
     const onDocClick = (e) => {
       if (!e.target.closest?.('header')) close();
@@ -134,35 +133,29 @@ const Header = () => {
     };
   }, []);
 
-  // --- SUBMENÚ DE ESCRITORIO ---
+  // Submenú de escritorio (custom)
   const DesktopSubmenu = ({ item, open, setOpen, timerRef }) => (
     <div
       className="relative h-full flex items-center"
       onMouseEnter={() => openWithIntent(setOpen, timerRef)}
       onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
     >
+      {/* Click al padre: navega. Hover: abre submenú */}
       <Link
         to={item.href}
         className={`
-            px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1 group relative
+            px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1 group
             ${isGroupActive(item) 
-                ? 'text-brand-primary font-bold' 
+                ? 'text-brand-primary bg-brand-sand font-semibold' 
                 : 'text-gray-600 hover:text-brand-action hover:bg-gray-50'
             }
         `}
       >
         {item.name}
         <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${open ? 'rotate-180 text-brand-action' : 'text-gray-400'}`} />
-        
-        {/* Indicador activo sutil */}
-        {isGroupActive(item) && (
-             <motion.div 
-                layoutId="nav-underline"
-                className="absolute bottom-1 left-3 right-3 h-0.5 bg-brand-primary rounded-full" 
-             />
-        )}
       </Link>
 
+      {/* Submenú Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -170,14 +163,16 @@ const Header = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute left-0 top-full pt-2 z-50 w-56"
+            className="absolute left-0 top-full pt-4 z-50 w-48"
+            onMouseEnter={() => openWithIntent(setOpen, timerRef)}
+            onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
           >
-            <div className="bg-white rounded-xl border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden p-1.5">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden p-1">
                 {item.subitems.map((sub) => (
                 <Link
                     key={sub.href}
                     to={sub.href}
-                    className="block px-4 py-2.5 text-sm rounded-lg text-gray-600 hover:text-brand-primary hover:bg-brand-sand transition-colors font-medium relative overflow-hidden"
+                    className="block px-4 py-2.5 text-sm rounded-lg text-gray-600 hover:text-brand-primary hover:bg-brand-sand transition-colors font-medium"
                 >
                     {sub.name}
                 </Link>
@@ -194,40 +189,27 @@ const Header = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]"
+      className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)]"
       onMouseLeave={() => { setOpenNos(false); setOpenColab(false); }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
-          {/* --- LOGO (Imagen + Texto) --- */}
+          {/* --- LOGO --- */}
           <Link to="/" className="flex items-center space-x-3 group">
-            {/* Contenedor de Imagen */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              className="relative w-12 h-12 flex-shrink-0"
+              className="w-10 h-10 flex items-center justify-center bg-brand-primary rounded-lg text-white font-bold text-xl shadow-lg shadow-brand-primary/30"
             >
-               {/* Imagen Real */}
-               <img 
-                 src={logoUrl} 
-                 alt="Fundación Evolución Antoniana" 
-                 className="w-full h-full object-contain drop-shadow-md"
-                 onError={(e) => { e.target.style.display = 'none'; }} // Fallback visual si falla
-               />
-               
-               {/* Fallback por si la imagen no carga: un círculo con la E */}
-               <div className="absolute inset-0 bg-brand-primary rounded-full flex items-center justify-center -z-10">
-                  <span className="text-white font-bold text-xl">E</span>
-               </div>
+               {/* Si tienes logo imagen, usa esto, sino la inicial */}
+               <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
             </motion.div>
-
-            {/* Texto del Logo */}
-            <div className="hidden sm:flex flex-col">
-              <span className="text-lg md:text-xl font-poppins font-bold text-brand-primary leading-none tracking-tight">
+            <div className="flex flex-col">
+              <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
                 Evolución <span className="text-brand-action">Antoniana</span>
               </span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none mt-1.5 ml-0.5">
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest leading-none mt-1">
                 Fundación
               </span>
             </div>
@@ -270,7 +252,7 @@ const Header = () => {
 
           {/* --- USUARIO / AUTH --- */}
           <div className="flex items-center gap-3">
-            {/* ThemeSwitch (Opcional, descomentar si se usa) */}
+            {/* ThemeSwitch (Si lo usas, descomentar) */}
             {/* <ThemeSwitch /> */}
             
             {isAuthenticated ? (
@@ -278,9 +260,9 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    className="relative p-0.5 rounded-full ring-2 ring-brand-gold/50 hover:ring-brand-gold transition-all outline-none"
+                    className="relative p-0.5 rounded-full ring-2 ring-brand-gold/50 hover:ring-brand-gold transition-all"
                   >
-                    <Avatar className="h-9 w-9 border-2 border-white bg-white">
+                    <Avatar className="h-9 w-9 border-2 border-white">
                       <AvatarFallback className="bg-brand-primary text-white font-bold text-xs">
                         {initials}
                       </AvatarFallback>
@@ -288,54 +270,51 @@ const Header = () => {
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-60 mt-3 border-gray-100 shadow-xl rounded-xl bg-white p-2"
+                  className="w-56 mt-3 border-gray-100 shadow-xl rounded-xl bg-white p-2"
                   align="end"
                   forceMount
                 >
-                  <div className="flex items-center gap-3 p-3 mb-2 bg-brand-sand rounded-lg border border-brand-primary/5">
-                    <div className="bg-white p-2 rounded-full text-brand-primary shadow-sm">
+                  <div className="flex items-center gap-3 p-3 mb-2 bg-brand-sand rounded-lg">
+                    <div className="bg-white p-1.5 rounded-full text-brand-primary">
                         <User className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col space-y-0.5 overflow-hidden">
                       <p className="font-bold text-sm text-brand-dark truncate">
                         {user?.name || 'Usuario'}
                       </p>
-                      <p className="text-[10px] text-gray-500 truncate font-medium">
+                      <p className="text-xs text-gray-500 truncate">
                         {user?.email}
                       </p>
                     </div>
                   </div>
 
-                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary my-1">
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
                     <Link to="/dashboard" className="flex items-center py-2.5 px-3">
-                      <LayoutDashboard className="mr-2 h-4 w-4 opacity-70" />
-                      <span className="font-medium">Mi Panel</span>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Mi Panel</span>
                     </Link>
                   </DropdownMenuItem>
 
                   {isAdmin && (
                     <>
                       <DropdownMenuSeparator className="bg-gray-100 my-1" />
-                      <div className="px-3 py-1.5 flex items-center gap-2">
-                         <ShieldCheck className="w-3 h-3 text-brand-gold" />
-                         <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Administración</p>
-                      </div>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">Administración</p>
                       
                       <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
                         <Link to="/admin" className="flex items-center py-2 px-3">
-                          <Settings className="mr-2 h-4 w-4 opacity-70" />
+                          <Settings className="mr-2 h-4 w-4" />
                           <span>Panel General</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
                         <Link to="/admin?tab=activities" className="flex items-center py-2 px-3">
-                          <CalendarDays className="mr-2 h-4 w-4 opacity-70" />
+                          <CalendarDays className="mr-2 h-4 w-4" />
                           <span>Actividades</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
                         <Link to="/admin?tab=legal_documents" className="flex items-center py-2 px-3">
-                          <FileText className="mr-2 h-4 w-4 opacity-70" />
+                          <FileText className="mr-2 h-4 w-4" />
                           <span>Documentos</span>
                         </Link>
                       </DropdownMenuItem>
@@ -346,7 +325,7 @@ const Header = () => {
 
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="rounded-lg cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2.5 px-3 font-medium"
+                    className="rounded-lg cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2.5 px-3"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar Sesión</span>
@@ -391,7 +370,7 @@ const Header = () => {
               exit={{ opacity: 0, height: 0 }}
               className="lg:hidden border-t border-gray-100 bg-white overflow-hidden shadow-inner"
             >
-              <div className="px-4 pt-4 pb-8 space-y-2">
+              <div className="px-4 pt-4 pb-6 space-y-2">
                 {navigation.map((item) =>
                   !item.subitems ? (
                     <Link
@@ -457,11 +436,11 @@ const Header = () => {
 
                 {/* Mobile Auth Buttons */}
                 {!isAuthenticated && (
-                    <div className="pt-6 mt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="w-full border-gray-300 text-gray-700 h-12 rounded-xl" asChild>
+                    <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+                        <Button variant="outline" className="w-full border-gray-300 text-gray-700" asChild>
                             <Link to="/login" onClick={() => setIsMenuOpen(false)}>Ingresar</Link>
                         </Button>
-                        <Button className="w-full bg-brand-action text-white h-12 rounded-xl font-bold" asChild>
+                        <Button className="w-full bg-brand-action text-white" asChild>
                             <Link to="/register" onClick={() => setIsMenuOpen(false)}>Registrarse</Link>
                         </Button>
                     </div>
