@@ -3,11 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Gift, CheckCircle, AlertTriangle, Loader2, UserX } from 'lucide-react';
+import { 
+  Gift, CheckCircle2, AlertCircle, Loader2, UserX, 
+  Search, Landmark, Calendar, DollarSign, Fingerprint 
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { motion } from 'framer-motion';
 
 const DonationList = () => {
   const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   const fetchDonations = useCallback(async () => {
@@ -16,24 +23,17 @@ const DonationList = () => {
       const { data, error } = await supabase
         .from('donations')
         .select(`
-          id,
-          amount,
-          donation_type,
-          payment_provider,
-          status,
-          created_at,
-          users (
-            id,
-            name,
-            email
-          )
+          id, amount, donation_type, payment_provider, payment_id, status, created_at,
+          users ( id, name, email )
         `)
         .order('created_at', { ascending: false });
+
       if (error) throw error;
       setDonations(data || []);
+      setFilteredDonations(data || []);
     } catch (error) {
       console.error('Error fetching donations:', error);
-      toast({ title: "Error", description: "No se pudieron cargar las donaciones únicas.", variant: "destructive" });
+      toast({ title: "Error", description: "No se pudieron cargar las donaciones.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -41,102 +41,144 @@ const DonationList = () => {
 
   useEffect(() => {
     fetchDonations();
-    
-    const channel = supabase.channel('realtime:public:donations')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => {
-        fetchDonations();
-      })
+    const channel = supabase.channel('realtime:donations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, fetchDonations)
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, [fetchDonations]);
 
+  useEffect(() => {
+    const filtered = donations.filter(d => 
+      d.users?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.payment_id?.includes(searchTerm) ||
+      d.amount.toString().includes(searchTerm)
+    );
+    setFilteredDonations(filtered);
+  }, [searchTerm, donations]);
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'Fecha no disponible';
     return new Date(dateString).toLocaleDateString('es-AR', {
-      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   };
 
-  const getStatusBadge = (status) => {
-    status = status ? status.toLowerCase() : 'desconocido';
-    switch (status) {
-      case 'completed':
-      case 'approved':
-      case 'succeeded':
-        return <Badge variant="default" className="bg-green-500 text-white dark:bg-green-600 dark:text-primary-foreground flex items-center text-xs py-1 px-2.5 shadow-sm"><CheckCircle className="w-3.5 h-3.5 mr-1.5" />Completada</Badge>;
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-500 text-black dark:bg-yellow-600 dark:text-primary-foreground flex items-center text-xs py-1 px-2.5 shadow-sm"><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Pendiente</Badge>;
-      case 'failed':
-      case 'cancelled':
-      case 'rejected':
-        return <Badge variant="destructive" className="bg-red-500 text-white dark:bg-red-600 dark:text-primary-foreground flex items-center text-xs py-1 px-2.5 shadow-sm"><AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Fallida</Badge>;
-      default:
-        return <Badge variant="outline" className="text-xs py-1 px-2.5 shadow-sm">{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
-    }
+  const getStatusConfig = (status) => {
+    const s = status?.toLowerCase() || '';
+    if (['completed', 'approved', 'succeeded'].includes(s)) 
+      return { label: 'Aprobado', bg: 'bg-green-50 text-green-700 border-green-100', icon: CheckCircle2 };
+    if (['pending'].includes(s)) 
+      return { label: 'Pendiente', bg: 'bg-amber-50 text-amber-700 border-amber-100', icon: Loader2 };
+    return { label: 'Fallido', bg: 'bg-red-50 text-red-700 border-red-100', icon: AlertCircle };
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-antoniano" />
-        <p className="ml-2 text-marron-legado dark:text-muted-foreground">Cargando donaciones únicas...</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center p-20 space-y-4">
+      <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
+      <p className="text-gray-500 font-medium">Cargando registros financieros...</p>
+    </div>
+  );
 
   return (
-    <Card className="border-0 shadow-lg bg-white dark:bg-card">
-      <CardHeader>
-        <CardTitle className="text-2xl font-poppins text-primary-antoniano dark:text-primary">Gestión de Donaciones Únicas</CardTitle>
-        <CardDescription className="text-marron-legado/90 dark:text-muted-foreground">Lista de todas las donaciones únicas y su estado.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {donations.length === 0 ? (
-          <div className="text-center py-12">
-            <Gift className="w-16 h-16 text-marron-legado/30 dark:text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-marron-legado/70 dark:text-muted-foreground text-lg">No hay donaciones únicas registradas aún.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {donations.map((donation) => (
-              <div 
-                key={donation.id} 
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 border border-celeste-complementario dark:border-accent rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 ease-in-out bg-celeste-complementario/10 dark:bg-accent/20"
-              >
-                <div className="flex-1 mb-4 sm:mb-0">
-                  <h3 className="font-semibold text-xl text-primary-antoniano dark:text-primary mb-1">
-                    {donation.users?.name || <span className="italic text-marron-legado/70 dark:text-muted-foreground/70 flex items-center"><UserX className="w-4 h-4 mr-1.5"/>Donante Anónimo</span>}
-                  </h3>
-                  {donation.users?.email && (
-                    <p className="text-sm text-marron-legado dark:text-muted-foreground mb-0.5">
-                      {donation.users.email}
-                    </p>
-                  )}
-                  {donation.users?.id && (
-                     <p className="text-xs text-marron-legado/70 dark:text-muted-foreground/80">
-                      ID Usuario: {donation.users.id}
-                    </p>
-                  )}
-                  <p className="text-xs text-marron-legado/70 dark:text-muted-foreground/80 mt-1">
-                    Fecha: {formatDate(donation.created_at)}
-                  </p>
-                  <p className="text-xs text-marron-legado/70 dark:text-muted-foreground/80">
-                    Tipo: <span className="font-medium">{donation.donation_type}</span> - Proveedor: <span className="font-medium">{donation.payment_provider || 'N/A'}</span>
-                  </p>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl shadow-sm border">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input 
+            placeholder="Buscar por donante, monto o ID de pago..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 rounded-xl"
+          />
+        </div>
+        <div className="text-sm font-bold text-brand-dark px-4 py-2 bg-brand-sand rounded-xl border">
+          Recaudación Total: <span className="text-brand-primary">
+            ${donations.reduce((acc, curr) => acc + (curr.status === 'approved' ? Number(curr.amount) : 0), 0).toLocaleString('es-AR')}
+          </span>
+        </div>
+      </div>
+
+      <Card className="border-none shadow-2xl rounded-3xl overflow-hidden bg-white">
+        <CardHeader className="bg-brand-dark text-white p-8">
+            <div className="flex items-center gap-4">
+                <div className="bg-brand-action p-3 rounded-2xl shadow-lg">
+                    <Gift className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex flex-col sm:items-end space-y-2 sm:space-y-1.5 flex-shrink-0">
-                  <span className="text-lg font-bold text-primary-antoniano dark:text-primary">${donation.amount}</span>
-                  {getStatusBadge(donation.status)}
+                <div>
+                    <CardTitle className="text-2xl font-poppins font-bold uppercase tracking-tight">Donaciones Únicas</CardTitle>
+                    <CardDescription className="text-gray-300">Monitoreo de ingresos directos y aportes extraordinarios.</CardDescription>
                 </div>
-              </div>
-            ))}
+            </div>
+        </CardHeader>
+        
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-brand-sand border-b border-gray-100 text-brand-dark text-[10px] font-black uppercase tracking-widest">
+                  <th className="px-6 py-4">Donante</th>
+                  <th className="px-6 py-4">Información de Pago</th>
+                  <th className="px-6 py-4 text-right">Monto</th>
+                  <th className="px-6 py-4 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredDonations.length === 0 ? (
+                  <tr><td colSpan="4" className="p-12 text-center text-gray-400 italic">No se registran movimientos.</td></tr>
+                ) : (
+                  filteredDonations.map((d, i) => {
+                    const status = getStatusConfig(d.status);
+                    return (
+                      <motion.tr 
+                        key={d.id} 
+                        initial={{ opacity: 0, x: -5 }} 
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="hover:bg-brand-sand/20 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${d.users ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'}`}>
+                                {d.users ? <DollarSign size={18}/> : <UserX size={18}/>}
+                            </div>
+                            <div>
+                                <p className="font-bold text-brand-dark">{d.users?.name || 'Donante Anónimo'}</p>
+                                <p className="text-[10px] text-gray-400 font-mono tracking-tighter">{d.users?.email || 'Aporte directo sin cuenta'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                    <Landmark size={12} className="text-brand-gold"/> 
+                                    <span className="capitalize">{d.payment_provider}</span>
+                                    {d.payment_id && <span className="text-[10px] bg-gray-100 px-1.5 rounded font-mono">ID: {d.payment_id}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
+                                    <Calendar size={10}/> {formatDate(d.created_at)}
+                                </div>
+                            </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                           <span className="text-xl font-black text-brand-dark font-poppins">${Number(d.amount).toLocaleString('es-AR')}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="flex justify-center">
+                            <Badge className={`${status.bg} border px-3 py-1 rounded-full text-[10px] font-bold uppercase flex gap-1.5 items-center shadow-none`}>
+                                <status.icon size={12} className={d.status === 'pending' ? 'animate-spin' : ''}/>
+                                {status.label}
+                            </Badge>
+                           </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
