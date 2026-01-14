@@ -70,11 +70,16 @@ const Footer = () => {
               viewport={{ once: true }}
               className="flex items-center space-x-3"
             >
+              {/* Logo con fondo blanco para contraste */}
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5">
-                 {/* Logo imagen o inicial */}
-                 <img src="/img/transparente.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => e.target.style.display = 'none'} />
-                 {/* Fallback si no carga imagen */}
-                 <span className="text-brand-primary font-bold text-xl absolute">E</span>
+                 <img 
+                    src="/img/transparente.png" 
+                    alt="Logo" 
+                    className="w-full h-full object-contain p-1.5" 
+                    onError={(e) => e.target.style.display = 'none'} 
+                 />
+                 {/* Fallback */}
+                 <span className="text-brand-primary font-bold text-xl absolute hidden">E</span>
               </div>
               <div>
                 <p className="text-xl font-poppins font-bold leading-none text-white">Fundación</p>
