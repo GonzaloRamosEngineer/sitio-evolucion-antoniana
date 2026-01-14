@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2 } from 'lucide-react';
+import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
 import { Link } from 'react-router-dom';
@@ -27,9 +27,9 @@ const Collaborate = () => {
   const [isProcessingSubscription, setIsProcessingSubscription] = useState(false);
 
   const subscriptionPlans = [
-    { value: '50', label: '$50 ARS / mes' },
-    { value: '5000', label: '$5000 ARS / mes' },
-    { value: '7500', label: '$7500 ARS / mes' },
+    { value: '50', label: '$50 ARS / mes' }, // Test value kept just in case
+    { value: '5000', label: '$5.000 ARS / mes' },
+    { value: '7500', label: '$7.500 ARS / mes' },
     { value: '10000', label: '$10.000 ARS / mes' },
   ];
 
@@ -109,51 +109,54 @@ const Collaborate = () => {
     {
       id: 'donation',
       icon: Gift,
-      title: 'Hacé una donación única',
+      iconBg: 'bg-red-100 text-brand-action',
+      title: 'Donación Única',
+      subtitle: 'Campaña: Becá a la Novena',
       description: (
         <>
-          <p className="text-base text-marron-legado/90 text-center mb-4 leading-relaxed">
-            Campaña Especial · Becá a la Novena
+          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+            Tu aporte puntual nos ayuda a comprar materiales urgentes para el entrenamiento diario.
           </p>
-          <p className="text-base text-marron-legado/90 text-center mb-4 leading-relaxed">
-            Cada aporte suma. Tu aporte se destina a:
-          </p>
-          <ul className="list-disc list-inside text-left text-marron-legado/80 space-y-1 text-sm mx-auto max-w-xs">
-            <li>Materiales de entrenamiento</li>
-            <li>Evaluaciones físicas profesionales</li>
-            <li>Apoyo nutricional mensual</li>
-            <li>Talleres de motivación y valores</li>
+          <ul className="space-y-2 mb-6">
+            <li className="flex items-start text-sm text-gray-600">
+               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+               Materiales deportivos
+            </li>
+            <li className="flex items-start text-sm text-gray-600">
+               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+               Evaluaciones físicas
+            </li>
+            <li className="flex items-start text-sm text-gray-600">
+               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+               Apoyo nutricional
+            </li>
           </ul>
         </>
       ),
       content: (
-        <div className="space-y-4 mt-6" data-theme="light">
+        <div className="space-y-4 mt-auto" data-theme="light">
           <div>
-            <Label htmlFor="donation-amount" className="text-marron-legado">Monto a donar (ARS)</Label>
-            <Input
-              id="donation-amount"
-              type="number"
-              placeholder="Ej: 5000"
-              value={donationAmount}
-              onChange={(e) => setDonationAmount(e.target.value)}
-              className="
-                bg-blanco-fundacion border-border
-                text-marron-legado
-                placeholder:text-marron-legado/60
-                caret-primary-antoniano
-                [color-scheme:light]
-              "
-            />
+            <Label htmlFor="donation-amount" className="text-brand-dark font-semibold">Monto a donar (ARS)</Label>
+            <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                <Input
+                id="donation-amount"
+                type="number"
+                placeholder="Ej: 5000"
+                value={donationAmount}
+                onChange={(e) => setDonationAmount(e.target.value)}
+                className="pl-8 bg-gray-50 border-gray-200 text-brand-dark focus:border-brand-action focus:ring-brand-action rounded-xl h-12 text-lg"
+                />
+            </div>
           </div>
 
           <Button
             onClick={handleOneTimeDonation}
-            variant="antoniano"
             size="lg"
             disabled={isProcessingDonation}
-            className="w-full font-semibold py-3 text-lg text-white transition-all duration-300 transform hover:scale-105"
+            className="w-full font-bold h-12 text-white bg-brand-action hover:bg-red-800 shadow-md hover:shadow-lg transition-all rounded-xl"
           >
-            {isProcessingDonation ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+            {isProcessingDonation ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Heart className="mr-2 h-5 w-5" />}
             Donar Ahora
           </Button>
         </div>
@@ -162,33 +165,28 @@ const Collaborate = () => {
     {
       id: 'subscription',
       icon: HandshakeIcon,
-      title: 'Sumate como padrino o madrina',
-      description:
-        'Con tu suscripción mensual, ayudás a cubrir la cuota deportiva de uno o más chicos. Podrás ver cómo tu ayuda transforma su vida. ¡Podés elegir el monto y sumar más de una beca!',
+      iconBg: 'bg-blue-100 text-brand-primary',
+      title: 'Suscripción Mensual',
+      subtitle: 'Convertite en Padrino/Madrina',
+      description: 'Con tu aporte recurrente, garantizás la continuidad deportiva de un chico durante todo el año. Es la forma más efectiva de ayudar a largo plazo.',
       content: (
-        <div className="space-y-4 mt-4" data-theme="light">
+        <div className="space-y-4 mt-auto" data-theme="light">
           <div>
-            <Label htmlFor="subscription-plan" className="text-marron-legado">Seleccioná tu aporte mensual</Label>
+            <Label htmlFor="subscription-plan" className="text-brand-dark font-semibold">Tu aporte mensual</Label>
             <Select value={subscriptionAmount} onValueChange={setSubscriptionAmount}>
               <SelectTrigger
                 id="subscription-plan"
-                className="
-                  w-full bg-blanco-fundacion border-border
-                  text-marron-legado
-                  focus:ring-primary-antoniano focus:border-primary-antoniano
-                  [color-scheme:light]
-                  [&_[data-placeholder]]:text-marron-legado/60
-                "
+                className="w-full bg-gray-50 border-gray-200 text-brand-dark focus:ring-brand-primary focus:border-brand-primary rounded-xl h-12 text-lg"
               >
                 <SelectValue placeholder="Elige un plan" />
               </SelectTrigger>
 
-              <SelectContent className="bg-card border-border text-marron-legado">
+              <SelectContent className="bg-white border-gray-100">
                 {subscriptionPlans.map(plan => (
                   <SelectItem
                     key={plan.value}
                     value={plan.value}
-                    className="hover:bg-accent focus:bg-accent text-marron-legado"
+                    className="hover:bg-gray-50 cursor-pointer py-3"
                   >
                     {plan.label}
                   </SelectItem>
@@ -199,13 +197,12 @@ const Collaborate = () => {
 
           <Button
             onClick={handleSubscription}
-            variant="antoniano"
             size="lg"
             disabled={isProcessingSubscription}
-            className="w-full font-semibold py-3 text-lg text-white transition-all duration-300 transform hover:scale-105"
+            className="w-full font-bold h-12 text-white bg-brand-primary hover:bg-brand-dark shadow-md hover:shadow-lg transition-all rounded-xl"
           >
-            {isProcessingSubscription ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-            Suscribirme Mensualmente
+            {isProcessingSubscription ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <HandshakeIcon className="mr-2 h-5 w-5" />}
+            Suscribirme
           </Button>
         </div>
       )
@@ -213,19 +210,20 @@ const Collaborate = () => {
     {
       id: 'volunteer',
       icon: Building,
-      title: 'Colaborá con tu tiempo o tu empresa',
-      description:
-        '¿Sos empresa, organización o querés dar tu tiempo como voluntario? Sumate con tu experiencia, recursos o energía. ¡Te necesitamos!',
+      iconBg: 'bg-brand-gold/20 text-brand-dark',
+      title: 'Voluntariado / Empresas',
+      subtitle: 'Doná tu tiempo o recursos',
+      description: '¿Tenés experiencia profesional, insumos o querés sumar a tu empresa como sponsor? Tu capital humano es invaluable para nosotros.',
       content: (
-        <div className="mt-4" data-theme="light">
+        <div className="mt-auto pt-4" data-theme="light">
           <Button
             onClick={() => {
               setContactModalCollaborationType('Voluntariado / Colaboración Institucional');
               setIsModalOpen(true);
             }}
-            variant="antoniano"
+            variant="outline"
             size="lg"
-            className="w-full font-semibold py-3 text-lg text-white transition-all duración-300 transform hover:scale-105"
+            className="w-full font-bold h-12 border-2 border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white transition-all rounded-xl"
           >
             Quiero ser parte
           </Button>
@@ -236,69 +234,82 @@ const Collaborate = () => {
 
   return (
     <>
-      {/* Fix global para autofill y visibilidad de texto en inputs (Chrome/Safari) */}
+      {/* Estilo para evitar el fondo amarillo del autofill de Chrome */}
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus {
-          -webkit-text-fill-color: var(--marron-legado, #2f2a26);
-          box-shadow: 0 0 0px 1000px var(--blanco-fundacion, #ffffff) inset;
-          transition: background-color 9999s ease-out 0s;
+          -webkit-text-fill-color: var(--brand-dark, #0F294A);
+          -webkit-box-shadow: 0 0 0px 1000px #f9fafb inset;
+          transition: background-color 5000s ease-in-out 0s;
         }
       `}</style>
 
-      <div className="min-h-screen bg-blanco-fundacion text-marron-legado">
-        <section className="py-20 md:py-28 text-center bg-gradient-to-b from-celeste-complementario/30 via-blanco-fundacion to-blanco-fundacion hero-pattern">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-              className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano mb-6 text-balance"
-            >
-              Sumá tu ayuda, multiplicá oportunidades
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-              className="text-lg md:text-xl text-marron-legado/90 max-w-3xl mx-auto leading-relaxed text-balance"
-            >
-              Cada aporte cuenta. Ya sea económico o con tu tiempo, te invitamos a ser parte de una transformación real y transparente.
-            </motion.p>
-          </div>
+      <div className="min-h-screen bg-brand-sand font-sans">
+        
+        {/* --- HERO SECTION --- */}
+        <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
+            {/* Fondo Tech Sutil */}
+            <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+                <div className="absolute inset-0 opacity-10" 
+                        style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+                </div>
+            </div>
+
+            <div className="relative max-w-6xl mx-auto text-center z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
+                        <Heart className="w-4 h-4 text-brand-gold fill-brand-gold" />
+                        <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Colaboración</span>
+                    </div>
+                    
+                    <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6 leading-tight">
+                        Sumá tu ayuda, <br/>
+                        <span className="text-brand-gold">Multiplicá oportunidades.</span>
+                    </h1>
+                    
+                    <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
+                        Cada aporte cuenta. Ya sea económico o con tu tiempo, te invitamos a ser parte de una transformación real, transparente y tecnológica.
+                    </p>
+                </motion.div>
+            </div>
         </section>
 
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+        {/* --- OPCIONES DE COLABORACIÓN --- */}
+        <section className="py-16 md:py-20 px-4 -mt-10 relative z-20">
+          <div className="container mx-auto max-w-7xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {collaborationOptions.map((option, index) => (
                 <motion.div
                   key={option.id}
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.6, delay: index * 0.15, ease: 'easeOut' }}
-                  className="h-full flex"
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                  className="h-full"
                 >
-                  <Card className="w-full flex flex-col bg-white rounded-xl border border-marron-legado/10 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden card-hover">
-                    <CardHeader className="p-6 md:p-8 items-center">
-                      <motion.div
-                        className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-celeste-complementario/40"
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        transition={{ type: 'spring', stiffness: 300 }}
-                      >
-                        <option.icon className="w-10 h-10 text-primary-antoniano" />
-                      </motion.div>
-                      <CardTitle className="text-2xl md:text-3xl font-poppins font-bold text-center text-primary-antoniano">
+                  <Card className="h-full w-full flex flex-col bg-white rounded-3xl border border-transparent hover:border-brand-primary/10 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+                    <CardHeader className="p-8 pb-4">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${option.iconBg} transition-transform group-hover:scale-110 duration-300`}>
+                        <option.icon className="w-8 h-8" />
+                      </div>
+                      <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">
                         {option.title}
                       </CardTitle>
+                      <p className="text-sm font-bold text-gray-400 uppercase tracking-wide mt-1">
+                          {option.subtitle}
+                      </p>
                     </CardHeader>
 
-                    <CardContent className="p-6 md:p-8 flex-grow flex flex-col">
-                      <CardDescription className="text-base text-marron-legado/90 text-center mb-6 leading-relaxed flex-grow">
+                    <CardContent className="p-8 pt-2 flex-grow flex flex-col">
+                      <div className="text-gray-600 mb-8 leading-relaxed">
                         {option.description}
-                      </CardDescription>
+                      </div>
                       {option.content}
                     </CardContent>
                   </Card>
@@ -308,59 +319,47 @@ const Collaborate = () => {
           </div>
         </section>
 
-        <section className="py-16 bg-celeste-complementario/20">
+        {/* --- MERCADO LIBRE SOLIDARIO / TRUST --- */}
+        <section className="py-16 bg-white mb-12">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-primary-antoniano text-center mb-12">
-              Confianza y Seguridad
-            </h2>
-
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-                className="text-center md:text-left"
-              >
-                <h3 className="text-2xl lg:text-3xl font-poppins font-semibold text-primary-antoniano mb-4 text-center md:text-left">
-                  💛 Tu ayuda, en buenas manos.
-                </h3>
-
-                <div className="space-y-4 text-marron-legado/80 leading-relaxed">
-                  <p>
-                    Todas las donaciones se procesan de forma segura a través de Mercado Pago, con el respaldo oficial del programa{' '}
-                    <a
-                      href="https://sustentabilidadmercadolibre.com/iniciativas/mercado-libre-solidario"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-antoniano font-semibold hover:underline"
-                    >
-                      Mercado Libre Solidario
-                    </a>
-                    , del cual la Fundación Evolución Antoniana forma parte.
-                  </p>
-                  <p>🧾 Recibís un comprobante oficial por cada colaboración.</p>
-                  <p>📊 Nos comprometemos con la transparencia absoluta: publicamos informes claros y accesibles sobre el uso de los fondos, el impacto generado y los resultados de cada campaña.</p>
+            <div className="max-w-5xl mx-auto bg-brand-sand rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 border border-gray-100">
+                
+                <div className="md:w-1/2 text-center md:text-left">
+                    <div className="inline-flex items-center gap-2 mb-4">
+                         <ShieldCheck className="w-6 h-6 text-green-600" />
+                         <span className="font-bold text-green-700 uppercase tracking-wide text-sm">Transparencia Garantizada</span>
+                    </div>
+                    <h3 className="text-3xl font-poppins font-bold text-brand-dark mb-4">
+                        Tu ayuda, en buenas manos.
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed mb-6">
+                        Todas las donaciones se procesan de forma segura a través de <strong className="text-brand-primary">Mercado Pago</strong>, con el respaldo oficial del programa <strong>Mercado Libre Solidario</strong>, del cual la Fundación Evolución Antoniana forma parte.
+                    </p>
+                    <ul className="space-y-2 mb-6 text-left inline-block">
+                        <li className="flex items-center text-sm text-gray-700">
+                            <CheckCircle2 className="w-4 h-4 text-brand-primary mr-2" />
+                            Recibís comprobante oficial.
+                        </li>
+                        <li className="flex items-center text-sm text-gray-700">
+                            <CheckCircle2 className="w-4 h-4 text-brand-primary mr-2" />
+                            Reportes de impacto trimestrales.
+                        </li>
+                    </ul>
+                    <Button variant="link" className="text-brand-action font-bold p-0 h-auto hover:text-brand-dark" asChild>
+                        <Link to="/contact">Conocé más sobre nuestra gestión financiera →</Link>
+                    </Button>
                 </div>
 
-                <Button asChild variant="link" className="text-primary-antoniano hover:text-marron-legado mt-4 px-0 font-semibold">
-                  <Link to="/contact">🔎 Conocé cómo transformamos tu ayuda en acciones reales.</Link>
-                </Button>
-              </motion.div>
+                <div className="md:w-1/2 flex justify-center">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                         <img
+                            className="w-full max-w-[250px] object-contain"
+                            alt="Logo de Mercado Pago Solidario"
+                            src="/img/mercadolibre_solidario.png"
+                        />
+                    </div>
+                </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
-                className="flex justify-center"
-              >
-                <img
-                  className="rounded-xl shadow-lg w-full max-w-md object-contain h-auto"
-                  alt="Logo de Mercado Pago Solidario"
-                  src="/img/mercadolibre_solidario.png"
-                />
-              </motion.div>
             </div>
           </div>
         </section>
