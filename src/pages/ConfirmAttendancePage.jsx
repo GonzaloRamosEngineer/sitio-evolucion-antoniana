@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, Info, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -14,164 +14,144 @@ const ConfirmAttendancePage = () => {
   const { toast } = useToast();
   
   const [status, setStatus] = useState('loading'); 
-  const [message, setMessage] = useState('Procesando tu confirmación...');
+  const [message, setMessage] = useState('Verificando tu asistencia...');
 
   useEffect(() => {
     if (!token || typeof token !== 'string' || token.trim() === '') {
       setStatus('invalid_token');
-      setMessage('Token de confirmación no proporcionado o inválido. Por favor, utiliza el enlace de tu correo.');
-      console.warn("ConfirmAttendancePage: No token found in URL or token is invalid.");
-      toast({
-        title: "Enlace Inválido",
-        description: "El token de confirmación no es válido o no se encontró.",
-        variant: "destructive",
-      });
+      setMessage('El enlace de confirmación no es válido o ha expirado. Por favor, verifica tu correo.');
       return;
     }
 
     const confirmRegistration = async () => {
       setStatus('loading'); 
-      setMessage('Procesando tu confirmación...');
-      console.log(`ConfirmAttendancePage: Intentando invocar 'confirm-registration' con token: ${token}`);
       
       try {
         const { data, error: invokeError } = await supabase.functions.invoke('confirm-registration', {
           body: { token }
         });
 
-        console.log('RESPUESTA de confirm-registration →', { data, invokeError });
-        console.log('data:', data); 
-
         if (invokeError) {
-          toast({ title: "Error", description: invokeError.message || 'Error invocando confirmación.', variant: "destructive" });
+          console.error("Error invocando función:", invokeError);
           setStatus('error');
-          setMessage(invokeError.message || 'Error invocando confirmación.');
+          setMessage('Hubo un problema técnico al confirmar. Intenta nuevamente.');
           return;
         }
 
         if (data?.message?.toLowerCase().includes('exitosamente')) {
-          toast({ title: "¡Confirmación Exitosa!", description: data.message, className: "bg-green-500 text-white" });
           setStatus('success');
           setMessage(data.message);
-          setTimeout(() => navigate('/dashboard', { replace: true }), 3000);
+          setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
           return;
         }
 
         if (data?.message?.toLowerCase().includes('ya ha sido confirmada')) {
-          toast({ title: "Asistencia ya Registrada", description: data.message, className: "bg-blue-500 text-white" });
           setStatus('already_confirmed');
           setMessage(data.message);
-          setTimeout(() => navigate('/dashboard', { replace: true }), 3000);
+          setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
           return;
         }
 
         if (data?.error) {
-          toast({ title: "Error", description: data.error, variant: "destructive" });
           setStatus('error');
           setMessage(data.error);
-          if (data.error.toLowerCase().includes('inválido') || data.error.toLowerCase().includes('expirado') || data.error.toLowerCase().includes("token no encontrado")) {
+          if (data.error.toLowerCase().includes('inválido') || data.error.toLowerCase().includes('expirado')) {
             setStatus('invalid_token');
           }
           return;
         }
         
-        // Fallback si la estructura de 'data' no es la esperada pero no hay error de invocación
-        console.warn('ConfirmAttendancePage: Estructura de respuesta inesperada pero sin error de invocación.', data);
+        // Fallback exitoso
         setStatus('success'); 
-        setMessage(data?.message || 'Confirmación procesada. Redirigiendo...');
-        toast({
-          title: "Confirmación Procesada",
-          description: data?.message || 'Tu asistencia ha sido procesada.',
-        });
-        setTimeout(() => navigate('/dashboard', { replace: true }), 3000);
+        setMessage(data?.message || 'Tu asistencia ha sido confirmada correctamente.');
+        setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
 
       } catch (e) {
-        console.error('ConfirmAttendancePage: Excepción general en el proceso de confirmación:', e);
+        console.error('Excepción al confirmar:', e);
         setStatus('error');
-        setMessage('Ocurrió un error inesperado. Por favor, intenta de nuevo o contacta soporte.');
-        toast({
-            title: "Error Inesperado",
-            description: "Ocurrió una excepción durante la confirmación.",
-            variant: "destructive",
-        });
+        setMessage('Ocurrió un error inesperado. Por favor contacta a soporte.');
       }
     };
 
     confirmRegistration();
-  }, [token, navigate, toast]); 
+  }, [token, navigate]); 
 
-  const renderIcon = () => {
+  const getStatusConfig = () => {
     switch (status) {
       case 'loading':
-        return <Loader2 className="h-16 w-16 animate-spin text-primary-antoniano" />;
+        return { icon: Loader2, color: 'text-brand-primary', bg: 'bg-brand-sand', title: 'Confirmando...', spin: true };
       case 'success':
-        return <CheckCircle className="h-16 w-16 text-green-500" />;
+        return { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', title: '¡Asistencia Confirmada!' };
       case 'already_confirmed':
-        return <Info className="h-16 w-16 text-blue-500" />;
+        return { icon: CalendarCheck, color: 'text-blue-600', bg: 'bg-blue-50', title: 'Ya estás registrado' };
       case 'invalid_token':
-        return <AlertTriangle className="h-16 w-16 text-yellow-500" />;
+        return { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', title: 'Enlace no válido' };
       case 'error':
       default:
-        return <XCircle className="h-16 w-16 text-destructive" />;
+        return { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', title: 'Error en la confirmación' };
     }
   };
   
-  const cardTitle = () => {
-    switch (status) {
-      case 'loading': return "Confirmando Asistencia...";
-      case 'success': return "¡Confirmación Exitosa!";
-      case 'already_confirmed': return "Asistencia ya Registrada";
-      case 'invalid_token': return "Enlace Inválido o Expirado";
-      case 'error': default: return "Error en la Confirmación";
-    }
-  }
+  const config = getStatusConfig();
+  const Icon = config.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-gradient-to-br from-blanco-fundacion to-celeste-complementario/30 p-4"
-    >
-      <Card className="w-full max-w-lg shadow-2xl border-border bg-card/90 backdrop-blur-sm">
-        <CardHeader className="text-center pb-4">
-          <motion.div 
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
-            className="mx-auto mb-6"
-          >
-            {renderIcon()}
-          </motion.div>
-          <CardTitle className="text-3xl font-poppins font-bold text-primary-antoniano">
-            {cardTitle()}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          <CardDescription className="text-lg text-marron-legado/90 mb-8">
-            {message}
-            {(status === 'success' || status === 'already_confirmed') && " Serás redirigido al dashboard en unos segundos..."}
-          </CardDescription>
-          {(status === 'success' || status === 'already_confirmed') && (
-            <motion.div initial={{ opacity: 0, y:10 }} animate={{ opacity: 1, y:0 }} transition={{delay: 0.4}}>
-              <Button asChild variant="antoniano" className="text-white" onClick={() => navigate('/dashboard', { replace: true })}>
-                Ir al Dashboard Ahora
-              </Button>
+    <div className="min-h-screen flex items-center justify-center bg-brand-sand p-4 font-sans relative overflow-hidden">
+        {/* Fondo decorativo */}
+        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <Card className="border-none shadow-2xl rounded-3xl overflow-hidden bg-white">
+          <CardHeader className="text-center pt-10 pb-6">
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, type: "spring" }}
+              className={`mx-auto w-20 h-20 flex items-center justify-center rounded-full ${config.bg} mb-6`}
+            >
+              <Icon className={`h-10 w-10 ${config.color} ${config.spin ? 'animate-spin' : ''}`} />
             </motion.div>
-          )}
-          {(status === 'error' || status === 'invalid_token') && (
-             <motion.div initial={{ opacity: 0, y:10 }} animate={{ opacity: 1, y:0 }} transition={{delay: 0.4}}>
-              <Button asChild variant="outline" className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario">
-                <Link to="/">Volver al Inicio</Link>
+            
+            <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">
+              {config.title}
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="text-center px-8 pb-10">
+            <CardDescription className="text-gray-600 text-base mb-8">
+              {message}
+              {(status === 'success' || status === 'already_confirmed') && (
+                  <span className="block mt-2 text-sm text-gray-400 font-medium">Te redirigiremos a tu panel en unos segundos...</span>
+              )}
+            </CardDescription>
+            
+            {(status === 'success' || status === 'already_confirmed') ? (
+              <Button 
+                asChild 
+                className="w-full bg-brand-primary text-white hover:bg-brand-dark font-bold rounded-xl h-12 shadow-lg hover:shadow-xl transition-all"
+              >
+                <Link to="/dashboard" replace>Ir a Mi Panel</Link>
               </Button>
-            </motion.div>
-          )}
-           {status === 'loading' && (
-            <p className="text-sm text-muted-foreground">Por favor, espera un momento...</p>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+            ) : (
+                status !== 'loading' && (
+                    <Button 
+                        asChild 
+                        variant="outline" 
+                        className="w-full border-brand-primary text-brand-primary hover:bg-brand-sand font-bold rounded-xl h-12"
+                    >
+                        <Link to="/">Volver al Inicio</Link>
+                    </Button>
+                )
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 };
 
