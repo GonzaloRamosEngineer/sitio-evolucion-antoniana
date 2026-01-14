@@ -82,7 +82,7 @@ const Home = () => {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-5xl lg:text-7xl font-bold font-poppins text-white leading-[1.1]">
-                Construyendo un 
+                Construyendo un{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-yellow-200">
                   Futuro Mejor
                 </span>
