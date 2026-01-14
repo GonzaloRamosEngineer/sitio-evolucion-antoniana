@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Send, User, Mail, MessageSquare } from 'lucide-react';
 
 const ContactModal = ({ open, onOpenChange, collaborationType }) => {
   const [name, setName] = useState('');
@@ -43,7 +43,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
       toast({
         title: "¡Mensaje Enviado!",
         description: "Gracias por tu interés. Nos pondremos en contacto contigo pronto.",
-        variant: "default",
+        className: "bg-green-600 text-white border-none"
       });
       setName('');
       setEmail('');
@@ -53,7 +53,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
       console.error("Error sending contact email:", error);
       toast({
         title: "Error al enviar mensaje",
-        description: "Hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo más tarde o contáctanos directamente.",
+        description: "Hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo más tarde.",
         variant: "destructive",
       });
     } finally {
@@ -63,63 +63,83 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-blanco-fundacion border-celeste-complementario">
-        <DialogHeader>
-          <DialogTitle className="text-primary-antoniano text-2xl font-poppins">Contacto para Colaborar</DialogTitle>
-          <DialogDescription className="text-marron-legado">
-            Dejanos tus datos y mensaje. Nos comunicaremos a la brevedad.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right text-marron-legado">
-                Nombre
-              </Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="col-span-3 border-celeste-complementario focus:ring-primary-antoniano"
-                required
-              />
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-2xl shadow-2xl border-none p-0 overflow-hidden">
+        
+        {/* Header con estilo de marca */}
+        <div className="bg-brand-sand p-6 border-b border-gray-100">
+            <DialogHeader>
+            <DialogTitle className="text-2xl font-bold font-poppins text-brand-dark flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-brand-primary" />
+                Hablemos
+            </DialogTitle>
+            <DialogDescription className="text-gray-500 text-base">
+                ¿Te interesa colaborar como {collaborationType?.toLowerCase() || 'partner'}? Déjanos tus datos y te contactaremos.
+            </DialogDescription>
+            </DialogHeader>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <div className="space-y-2">
+                <Label htmlFor="name" className="text-brand-dark font-semibold">Nombre Completo</Label>
+                <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-10 h-11 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        placeholder="Tu nombre"
+                        required
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right text-marron-legado">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="col-span-3 border-celeste-complementario focus:ring-primary-antoniano"
-                required
-              />
+
+            <div className="space-y-2">
+                <Label htmlFor="email" className="text-brand-dark font-semibold">Email de Contacto</Label>
+                <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-11 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        placeholder="tu@email.com"
+                        required
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="message" className="text-right text-marron-legado">
-                Mensaje
-              </Label>
-              <Textarea
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="col-span-3 border-celeste-complementario focus:ring-primary-antoniano"
-                rows={4}
-                required
-              />
+
+            <div className="space-y-2">
+                <Label htmlFor="message" className="text-brand-dark font-semibold">Tu Mensaje</Label>
+                <Textarea
+                    id="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl p-4 min-h-[120px]"
+                    placeholder="Cuéntanos cómo te gustaría participar o qué dudas tienes..."
+                    required
+                />
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario/50">
-              Cancelar
-            </Button>
-            <Button type="submit" variant="antoniano" disabled={isLoading} className="text-white">
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Enviar Mensaje
-            </Button>
-          </DialogFooter>
+
+            <DialogFooter className="pt-2 gap-2 sm:gap-0">
+                <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => onOpenChange(false)} 
+                    className="text-gray-500 hover:text-brand-dark hover:bg-gray-100"
+                >
+                    Cancelar
+                </Button>
+                <Button 
+                    type="submit" 
+                    className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-6 rounded-xl shadow-md transition-all"
+                    disabled={isLoading}
+                >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Enviar Mensaje
+                </Button>
+            </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
