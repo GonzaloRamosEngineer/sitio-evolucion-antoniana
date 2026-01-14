@@ -5,9 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
+// AQUÍ ESTÁ EL CAMBIO: Agregamos Users a la lista
 import { 
-  UserCheck, UserX, ShieldCheck, Mail, Phone, Calendar, 
-  Search, Filter, Loader2, Fingerprint 
+  Users, 
+  UserCheck, 
+  UserX, 
+  ShieldCheck, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Search, 
+  Loader2, 
+  Fingerprint,
+  Clock 
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -50,12 +60,11 @@ const UserList = () => {
     };
   }, [fetchUsers]);
 
-  // Buscador local
   useEffect(() => {
     const filtered = users.filter(u => 
-      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.dni?.includes(searchTerm)
+      (u.name?.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (u.email?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (u.dni?.includes(searchTerm))
     );
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
@@ -80,7 +89,6 @@ const UserList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Barra de Herramientas del Listado */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -126,7 +134,7 @@ const UserList = () => {
                 {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
-                      No se encontraron usuarios con esos criterios.
+                      No se encontraron usuarios.
                     </td>
                   </tr>
                 ) : (
@@ -134,15 +142,13 @@ const UserList = () => {
                     <tr key={u.id} className="hover:bg-brand-sand/30 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                          <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
                             <AvatarFallback className="bg-brand-primary text-white text-xs font-bold">
                               {getInitials(u.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-bold text-brand-dark group-hover:text-brand-primary transition-colors">
-                              {u.name || 'Sin Nombre'}
-                            </p>
+                            <p className="font-bold text-brand-dark">{u.name || 'Sin Nombre'}</p>
                             <p className="text-xs text-gray-400">Desde {formatDate(u.created_at)}</p>
                           </div>
                         </div>
@@ -187,7 +193,7 @@ const UserList = () => {
                             variant="outline" 
                             className={`flex items-center justify-center gap-1.5 px-2 py-1 ${u.is_verified ? 'border-green-200 text-green-700 bg-green-50' : 'border-amber-200 text-amber-700 bg-amber-50'}`}
                           >
-                            {u.is_verified ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {u.is_verified ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                             <span>{u.is_verified ? 'Verificado' : 'Pendiente'}</span>
                           </Badge>
                         </div>
