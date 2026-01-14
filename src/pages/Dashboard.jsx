@@ -13,8 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Calendar, Award, LogOut, Loader2, AlertTriangle, 
   CalendarPlus, Heart, CreditCard, PauseCircle, 
-  XCircle, Rocket, CheckCircle2, History, Clock,
-  HelpCircle, DollarSign, Users, ShieldCheck, Globe
+  PlayCircle, XCircle, Rocket, CheckCircle2, History, Clock,
+  HelpCircle, DollarSign, Users, ShieldCheck, Globe,
+  ArrowDownRight, ExternalLink, Gem
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,7 +25,6 @@ import SummaryMetrics from '@/components/Dashboard/SummaryMetrics';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
 
-// Variantes para animar el Footer y otros elementos
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState(user);
   const [userRegistrations, setUserRegistrations] = useState([]);
   const [userMemberships, setUserMemberships] = useState([]);
+  const [userDonations, setUserDonations] = useState([]); // Nueva Bitácora de Pagos
   const [pageLoading, setPageLoading] = useState(true);
   const [metrics, setMetrics] = useState({ total_donado: 0, total_suscripciones_activas: 0 });
   const [metricsLoading, setMetricsLoading] = useState(true);
@@ -52,14 +53,17 @@ const Dashboard = () => {
   const fetchDashboardData = async (userId) => {
     if (!userId) { setPageLoading(false); return; }
     try {
-      const [registrationsData, membershipsResult, metricsDataResult] = await Promise.all([
+      const [registrationsData, membershipsResult, metricsDataResult, donationsResult] = await Promise.all([
         getUserRegistrations(userId),
         getUserMemberships(userId, { onlyActive: false }),
-        supabase.from('fundacion_metrics').select('*').single()
+        supabase.from('fundacion_metrics').select('*').single(),
+        supabase.from('donations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
       ]);
 
       setUserRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
       setUserMemberships(Array.isArray(membershipsResult) ? membershipsResult : []);
+      setUserDonations(donationsResult.data || []);
+      
       if (metricsDataResult.data) setMetrics(metricsDataResult.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -121,7 +125,7 @@ const Dashboard = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-[#FDFDFD] pb-24 font-sans">
       
-      {/* --- HERO SECTION: MÁXIMA SEGURIDAD --- */}
+      {/* --- HERO SECTION --- */}
       <section className="bg-brand-dark pt-32 pb-56 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] mix-blend-overlay"></div>
         <div className="absolute -top-24 -right-24 w-[600px] h-[600px] bg-brand-primary/10 blur-[150px] rounded-full" />
@@ -148,7 +152,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-6 -mt-36 relative z-20">
         <DashboardHeader user={currentUser} onUpdateSuccess={(data) => { setCurrentUser(data); setAuthUser(data); }} />
 
-        {/* --- MÉTRICAS COMUNITARIAS (Transparencia Total) --- */}
+        {/* --- MÉTRICAS COMUNITARIAS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16">
             <Card className="border-none shadow-2xl rounded-[3rem] bg-white p-10 relative overflow-hidden group border border-gray-100">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
@@ -169,7 +173,7 @@ const Dashboard = () => {
                     </h3>
                     <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
                         <HelpCircle size={14} className="text-brand-gold" />
-                        <p className="text-[10px] text-gray-400 font-medium">Suma auditada de todas las donaciones únicas aprobadas en la plataforma.</p>
+                        <p className="text-[10px] text-gray-400 font-medium italic">Suma auditada de todas las donaciones únicas aprobadas.</p>
                     </div>
                 </div>
             </Card>
@@ -191,15 +195,14 @@ const Dashboard = () => {
                     </h3>
                     <div className="flex items-center gap-2 pt-4 border-t border-white/10 text-blue-100">
                         <Rocket size={14} className="text-brand-gold animate-pulse" />
-                        <p className="text-[10px] font-medium uppercase tracking-wider italic">Padrinos y Madrinas sosteniendo la misión en este ciclo.</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider italic">Padrinos sosteniendo la misión en este ciclo.</p>
                     </div>
                 </div>
             </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-16">
-          
-          {/* BITÁCORA DE DONACIONES PERSONALIZADA */}
+          {/* BITÁCORA DE DONACIONES */}
           <div className="lg:col-span-1 space-y-8">
             <div className="flex items-center gap-3 px-2 mb-6">
                 <CreditCard className="text-brand-primary" />
@@ -216,30 +219,29 @@ const Dashboard = () => {
                         {statusBadge(m.status)}
                     </div>
                     <div className="flex gap-2">
-                    {m.status === 'active' && (
-                        <Button size="sm" variant="outline" className="flex-1 rounded-xl font-bold border-amber-200 text-amber-700 h-11" onClick={() => performAction('pause', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>
-                        {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Pausar"}
-                        </Button>
-                    )}
-                    {m.status === 'paused' && (
-                        <Button size="sm" variant="outline" className="flex-1 rounded-xl font-bold bg-green-50 text-green-700 h-11 border-green-200" onClick={() => performAction('resume', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>
-                        {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Reanudar"}
-                        </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="text-red-400 font-bold h-11 hover:bg-red-50 rounded-xl" onClick={() => performAction('cancel', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>Cancelar</Button>
+                      {m.status === 'active' && (
+                          <Button size="sm" variant="outline" className="flex-1 rounded-xl font-bold border-amber-200 text-amber-700 h-11" onClick={() => performAction('pause', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>
+                          {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Pausar"}
+                          </Button>
+                      )}
+                      {m.status === 'paused' && (
+                          <Button size="sm" variant="outline" className="flex-1 rounded-xl font-bold bg-green-50 text-green-700 h-11 border-green-200" onClick={() => performAction('resume', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>
+                          {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Reanudar"}
+                          </Button>
+                      )}
+                      <Button size="sm" variant="ghost" className="text-red-400 font-bold h-11 hover:bg-red-50 rounded-xl" onClick={() => performAction('cancel', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>Cancelar</Button>
                     </div>
                 </motion.div>
                 ))
             ) : (
                 <div className="text-center py-16 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
                 <Heart className="w-12 h-12 text-gray-100 mx-auto mb-4" />
-                <p className="text-gray-400 text-sm italic mb-6">Iniciá tu camino de impacto hoy.</p>
                 <Button className="bg-brand-primary text-white font-black rounded-xl h-12 px-8" asChild><Link to="/colaborar">SER PADRINO</Link></Button>
                 </div>
             )}
           </div>
 
-          {/* MIS ACTIVIDADES: EL CORAZÓN DEL DASHBOARD */}
+          {/* MIS ACTIVIDADES */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between px-2 mb-10">
                 <div className="flex items-center gap-4">
@@ -259,7 +261,6 @@ const Dashboard = () => {
                       <div className="absolute left-0 w-12 h-12 bg-white rounded-2xl shadow-2xl flex items-center justify-center z-10 group-hover:bg-brand-primary group-hover:scale-110 transition-all duration-500 ring-8 ring-[#FDFDFD]">
                           <Rocket size={20} className="text-brand-primary group-hover:text-white" />
                       </div>
-
                       <div className="p-10 rounded-[3rem] bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-500 group-hover:translate-x-2">
                           <div className="flex flex-col md:flex-row gap-8 items-center">
                               <div className="flex-1 space-y-6">
@@ -305,7 +306,95 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* --- FOOTER DEL DASHBOARD: SEGURIDAD Y SOPORTE --- */}
+        {/* --- NUEVA BITÁCORA DE TRANSACCIONES CONSOLIDADA --- */}
+        <div className="mt-20">
+          <Card className="border-none shadow-[0_30px_100px_rgba(0,0,0,0.06)] rounded-[3rem] bg-white overflow-hidden border border-gray-50">
+            <CardHeader className="p-8 md:p-12 bg-brand-dark text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/10 rounded-full blur-[80px] -mr-20 -mt-20" />
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-brand-gold">
+                    <ShieldCheck size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Protocolo de Transparencia</span>
+                  </div>
+                  <CardTitle className="text-3xl font-black font-poppins tracking-tighter uppercase">Historial de Impacto</CardTitle>
+                  <p className="text-gray-400 text-sm font-light italic">Registro auditado de tus aportes únicos y membresías.</p>
+                </div>
+                <div className="h-14 w-14 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center">
+                  <History className="text-brand-gold w-6 h-6" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
+                      <th className="px-10 py-6">Operación</th>
+                      <th className="px-10 py-6">Identificador</th>
+                      <th className="px-10 py-6">Monto</th>
+                      <th className="px-10 py-6 text-right">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {[...userDonations.map(d => ({...d, type: 'donation'})), ...userMemberships.map(m => ({...m, type: 'membership'}))]
+                      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                      .map((item) => (
+                        <tr key={item.id} className="group hover:bg-brand-sand/5 transition-all duration-300">
+                          <td className="px-10 py-8">
+                            <div className="flex items-center gap-4">
+                              <div className={`p-2 rounded-lg ${item.type === 'donation' ? 'bg-blue-50 text-blue-600' : 'bg-brand-gold/10 text-brand-gold'}`}>
+                                {item.type === 'donation' ? <Heart size={16}/> : <Gem size={16}/>}
+                              </div>
+                              <div>
+                                <p className="text-sm font-black text-brand-dark uppercase tracking-tight">{item.type === 'donation' ? 'Donación Única' : 'Aporte Mensual'}</p>
+                                <p className="text-[10px] text-gray-400 font-medium tracking-wide">{new Date(item.created_at).toLocaleDateString('es-AR')}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-10 py-8">
+                            <div className="flex flex-col gap-1">
+                                <code className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 w-fit">{item.payment_id || item.preapproval_id || 'PROCESANDO'}</code>
+                                <span className="text-[9px] text-gray-300 uppercase font-bold tracking-tighter">Mercado Pago Ref.</span>
+                            </div>
+                          </td>
+                          <td className="px-10 py-8">
+                            <div className="flex items-center gap-1">
+                                <span className="text-xl font-black font-poppins text-brand-dark">${Number(item.amount).toLocaleString('es-AR')}</span>
+                                <ArrowDownRight size={14} className="text-green-500 opacity-0 group-hover:opacity-100" />
+                            </div>
+                          </td>
+                          <td className="px-10 py-8 text-right">
+                            {item.status === 'approved' || item.status === 'active' ? (
+                                <Badge className="bg-green-50 text-green-600 border border-green-100 text-[10px] font-black uppercase px-4 py-1 rounded-full">Validado</Badge>
+                            ) : (
+                                <Badge className="bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-black uppercase px-4 py-1 rounded-full">{item.status}</Badge>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    }
+                    {userDonations.length === 0 && userMemberships.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="px-10 py-24 text-center">
+                          <p className="text-gray-400 italic text-sm">No se registran movimientos validados.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-8 bg-gray-50/50 border-t border-gray-100 flex items-start gap-4">
+                  <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100 text-brand-primary"><ExternalLink size={16} /></div>
+                  <p className="text-[10px] text-gray-400 font-medium leading-relaxed italic">
+                    Verificación externa: Los cobros son procesados por Mercado Pago. Puedes verificar cada ID en tu cuenta personal de la pasarela de pagos.
+                  </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* --- FOOTER DEL DASHBOARD --- */}
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={itemVariants} className="mt-32 pt-16 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
             <div className="space-y-4">
                 <div className="flex items-center justify-center md:justify-start gap-3 text-brand-primary font-black uppercase text-[10px] tracking-widest">
