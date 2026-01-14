@@ -294,11 +294,11 @@ const Dashboard = () => {
                 <div className="text-center py-24 bg-white rounded-[4rem] shadow-inner border border-gray-100 flex flex-col items-center gap-8">
                     <History size={64} className="text-gray-100 animate-pulse" />
                     <div className="space-y-3">
-                        <p className="text-brand-dark font-black text-2xl tracking-tighter uppercase">Tu bitácora está vacía</p>
+                        <p className="text-brand-dark font-black text-2xl tracking-tighter uppercase">¿Estás listo para evolucionar?</p>
                         <p className="text-gray-400 font-medium italic text-sm">Tu historia de impacto comienza con tu primer registro.</p>
                     </div>
                     <Button className="h-14 px-10 bg-brand-dark hover:bg-brand-primary text-white font-black rounded-2xl shadow-xl transition-all" asChild>
-                        <a href="https://www.evolucionantoniana.com/activities">EXPLORAR CRONOGRAMA OFICIAL</a>
+                        <a href="https://www.evolucionantoniana.com/activities">EXPLORAR CRONOGRAMA</a>
                     </Button>
                 </div>
               )}
@@ -317,7 +317,7 @@ const Dashboard = () => {
                     <ShieldCheck size={18} />
                     <span className="text-[10px] font-black uppercase tracking-[0.3em]">Protocolo de Transparencia</span>
                   </div>
-                  <CardTitle className="text-3xl font-black font-poppins tracking-tighter uppercase">Historial de Impacto</CardTitle>
+                  <CardTitle className="text-3xl font-black font-poppins tracking-tighter uppercase">Tu bitácora de donaciones</CardTitle>
                   <p className="text-gray-400 text-sm font-light italic">Registro auditado de tus aportes únicos y membresías.</p>
                 </div>
                 <div className="h-14 w-14 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center">
