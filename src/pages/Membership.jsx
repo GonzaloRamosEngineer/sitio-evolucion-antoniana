@@ -1,32 +1,47 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Users, Briefcase, BarChart2, CreditCard } from 'lucide-react';
+import { Heart, ArrowRight, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 const Membership = () => {
-  // This page is now Collaborate.jsx. This file can be considered deprecated or for future use if "Membership" concept is reintroduced.
-  // For now, it will render a simple message.
+  // Esta página es un placeholder para redireccionar a la nueva sección "Colaborá"
+  
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-brand-sand flex items-center justify-center p-4 font-sans">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="text-center p-8"
+        transition={{ duration: 0.5 }}
+        className="text-center max-w-lg bg-white p-10 rounded-3xl shadow-xl border border-gray-100"
       >
-        <Heart className="w-16 h-16 text-blue-600 mx-auto mb-6" />
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-          Página de Membresía
+        <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart className="w-10 h-10 text-brand-primary" />
+        </div>
+        
+        <h1 className="text-2xl md:text-3xl font-poppins font-bold text-brand-dark mb-4">
+          Sección Actualizada
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-          Esta sección está actualmente en desarrollo o ha sido reemplazada.
-          Para opciones de colaboración, por favor visita nuestra sección <Link to="/collaborate" className="text-blue-600 hover:underline font-semibold">Colaborá</Link>.
+        
+        <p className="text-gray-600 leading-relaxed mb-8">
+          Hemos mudado toda la información sobre membresías y donaciones a nuestra nueva sección de <strong>Colaboración</strong>. Allí encontrarás todas las formas de apoyar a la fundación.
         </p>
-        <Button asChild size="lg">
-          <Link to="/">Volver al Inicio</Link>
-        </Button>
+        
+        <div className="flex flex-col gap-3">
+            <Button asChild size="lg" className="w-full bg-brand-action hover:bg-red-800 text-white font-bold h-12 rounded-xl shadow-md">
+                <Link to="/collaborate">
+                    Ir a Colaborá 
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+            </Button>
+            
+            <Button asChild variant="ghost" className="w-full text-gray-500 hover:text-brand-dark">
+                <Link to="/">
+                    <Home className="mr-2 h-4 w-4" />
+                    Volver al Inicio
+                </Link>
+            </Button>
+        </div>
       </motion.div>
     </div>
   );

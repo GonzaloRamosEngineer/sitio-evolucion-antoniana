@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const RegisterPage = () => {
@@ -69,7 +69,7 @@ const RegisterPage = () => {
       toast({
         title: "¡Registro Exitoso!",
         description: "Tu cuenta ha sido creada. Por favor, revisa tu email para verificarla.",
-        className: "bg-celeste-complementario border-primary-antoniano text-primary-antoniano"
+        className: "bg-green-600 text-white border-none"
       });
       navigate('/login');
     } catch (error) {
@@ -86,180 +86,185 @@ const RegisterPage = () => {
   const buttonText = formDisabled ? 'Creando cuenta...' : 'Crear Cuenta';
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-gradient-to-br from-blanco-fundacion to-celeste-complementario/30 px-4 py-12"
-    >
-      {/* CONTRASTE: fondo claro dentro de la card + bordes definidos */}
-      <Card className="w-full max-w-lg shadow-2xl border border-slate-200 bg-white/95 backdrop-blur-sm dark:bg-slate-900 dark:border-slate-800">
-        <CardHeader className="space-y-1 text-center">
-          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-            {/* CONTRASTE: título bien oscuro en light, claro en dark por el tema tailwind */}
-            <CardTitle className="text-3xl font-poppins font-bold text-gray-900 dark:text-slate-100">
-              Crear Cuenta
+    <div className="min-h-screen flex items-center justify-center bg-brand-sand relative overflow-hidden p-4 font-sans py-12">
+      
+      {/* Fondo Decorativo Tech */}
+      <div className="absolute inset-0">
+         <div className="absolute inset-0 bg-brand-primary opacity-5"></div>
+         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+         
+         {/* Orbes de luz */}
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-brand-action/5 rounded-full blur-3xl -ml-32 -mb-32"></div>
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-lg relative z-10"
+      >
+        <Card className="shadow-2xl border-none bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden">
+          
+          {/* Header con Marca */}
+          <CardHeader className="space-y-2 text-center pt-10 pb-6 bg-white/50 border-b border-gray-100">
+            <div className="mx-auto w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/30 mb-4 text-white">
+                <UserPlus className="w-8 h-8" />
+            </div>
+            <CardTitle className="text-3xl font-poppins font-bold text-brand-dark">
+              Únete a la Comunidad
             </CardTitle>
-          </motion.div>
-          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
-            {/* CONTRASTE: texto secundario más legible */}
-            <CardDescription className="text-gray-600 dark:text-slate-300">
-              Únete a nuestra comunidad y accede a todas las actividades.
+            <CardDescription className="text-gray-500 text-base">
+              Crea tu cuenta para acceder a beneficios y actividades exclusivas.
             </CardDescription>
-          </motion.div>
-        </CardHeader>
+          </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-brand-dark font-semibold">Nombre Completo</Label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+                      <Input
+                        id="name"
+                        name="name"
+                        type="text"
+                        placeholder="Juan Pérez"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        required
+                        disabled={formDisabled}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-brand-dark font-semibold">Teléfono</Label>
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+54 9 ..."
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        disabled={formDisabled}
+                      />
+                    </div>
+                  </div>
+              </div>
+              
               <div className="space-y-2">
-                {/* CONTRASTE: labels más oscuros */}
-                <Label htmlFor="name" className="text-gray-800 dark:text-slate-200">Nombre Completo</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
-                  {/* CONTRASTE: fondo input claro, texto oscuro */}
+                <Label htmlFor="email" className="text-brand-dark font-semibold">Email</Label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
                   <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Tu nombre completo"
-                    value={formData.name}
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={formData.email}
                     onChange={handleChange}
-                    className="pl-10 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-slate-400 border-slate-300 focus:border-primary-antoniano focus:ring-primary-antoniano"
+                    className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
                     required
                     disabled={formDisabled}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-gray-800 dark:text-slate-200">Teléfono</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="+54 387 XXXXXXX"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="pl-10 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-slate-400 border-slate-300 focus:border-primary-antoniano focus:ring-primary-antoniano"
-                    disabled={formDisabled}
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-brand-dark font-semibold">Contraseña</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="pl-12 pr-10 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        required
+                        disabled={formDisabled}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={formDisabled}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-brand-dark font-semibold">Confirmar</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="••••••"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="pl-12 pr-10 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        required
+                        disabled={formDisabled}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={formDisabled}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
               </div>
-            </motion.div>
-            
-            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }} className="space-y-2">
-              <Label htmlFor="email" className="text-gray-800 dark:text-slate-200">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="pl-10 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-slate-400 border-slate-300 focus:border-primary-antoniano focus:ring-primary-antoniano"
-                  required
+
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform active:scale-95"
                   disabled={formDisabled}
-                />
+                >
+                  {isSubmitting ? (
+                    <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Creando cuenta...
+                    </>
+                  ) : (
+                    buttonText
+                  )}
+                </Button>
               </div>
-            </motion.div>
+            </form>
 
-            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.5 }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-800 dark:text-slate-200">Contraseña</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="pl-10 pr-10 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-slate-400 border-slate-300 focus:border-primary-antoniano focus:ring-primary-antoniano"
-                    required
-                    disabled={formDisabled}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-slate-600 dark:text-slate-300 hover:bg-celeste-complementario"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    disabled={formDisabled}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-gray-800 dark:text-slate-200">Confirmar Contraseña</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" />
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="pl-10 pr-10 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-slate-400 border-slate-300 focus:border-primary-antoniano focus:ring-primary-antoniano"
-                    required
-                    disabled={formDisabled}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-slate-600 dark:text-slate-300 hover:bg-celeste-complementario"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    disabled={formDisabled}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}>
-              <Button
-                type="submit"
-                className="w-full bg-primary-antoniano text-white hover:bg-primary-antoniano/90 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center"
-                disabled={formDisabled}
-              >
-                {formDisabled && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {buttonText}
-              </Button>
-            </motion.div>
-          </form>
-
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="mt-8 text-center">
-            <p className="text-sm text-gray-600 dark:text-slate-300">
-              ¿Ya tienes una cuenta?{' '}
-              <Link
-                to="/login"
-                className="font-medium text-primary-antoniano hover:underline"
-              >
-                Inicia sesión aquí
-              </Link>
-            </p>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
+            <div className="mt-8 text-center border-t border-gray-100 pt-6">
+              <p className="text-sm text-gray-500">
+                ¿Ya tienes una cuenta?{' '}
+                <Link
+                  to="/login"
+                  className="font-bold text-brand-action hover:text-brand-dark transition-colors underline decoration-brand-action/30 underline-offset-4"
+                >
+                  Inicia sesión aquí
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 };
 
