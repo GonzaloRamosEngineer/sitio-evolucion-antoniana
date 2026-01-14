@@ -18,6 +18,8 @@ import {
   CalendarDays,
   LayoutDashboard,
   FileText,
+  ChevronDown,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
@@ -46,7 +48,6 @@ const Header = () => {
       href: '/about',
       key: 'nosotros',
       subitems: [
-        
         { name: 'Partners', href: '/partners' },
       ],
     },
@@ -58,7 +59,6 @@ const Header = () => {
       subitems: [{ name: 'Beneficios', href: '/beneficios' }],
     },
     { name: 'Transparencia', href: '/legal-documents' },
-    
   ];
 
   // Activo para enlaces simples
@@ -91,7 +91,7 @@ const Header = () => {
     ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
 
-  const logoUrl = '/img/transparente.png';
+  const logoUrl = '/img/transparente.png'; // Asegúrate de que esta ruta sea correcta o usa un placeholder si falla
 
   // helpers hover-intent
   const clearTimer = (ref) => {
@@ -109,7 +109,7 @@ const Header = () => {
     timerRef.current = setTimeout(() => setOpen(false), delay);
   };
 
-  // 🔒 Ajuste mínimo 1: cerrar menús en cambio de ruta
+  // 🔒 Ajuste: cerrar menús en cambio de ruta
   React.useEffect(() => {
     setOpenNos(false);
     setOpenColab(false);
@@ -117,7 +117,7 @@ const Header = () => {
     setOpenMob({ nosotros: false, colabora: false });
   }, [location.pathname]);
 
-  // 🔒 Ajuste mínimo 2: cerrar en scroll / click fuera / cambio de orientación
+  // 🔒 Ajuste: cerrar en scroll / click fuera / cambio de orientación
   React.useEffect(() => {
     const close = () => { setOpenNos(false); setOpenColab(false); };
     const onDocClick = (e) => {
@@ -136,54 +136,48 @@ const Header = () => {
   // Submenú de escritorio (custom)
   const DesktopSubmenu = ({ item, open, setOpen, timerRef }) => (
     <div
-      className="relative"
+      className="relative h-full flex items-center"
       onMouseEnter={() => openWithIntent(setOpen, timerRef)}
       onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
     >
       {/* Click al padre: navega. Hover: abre submenú */}
-      <Button
-        variant="ghost"
-        asChild
-        className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
+      <Link
+        to={item.href}
+        className={`
+            px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1 group
+            ${isGroupActive(item) 
+                ? 'text-brand-primary bg-brand-sand font-semibold' 
+                : 'text-gray-600 hover:text-brand-action hover:bg-gray-50'
+            }
+        `}
       >
-        <Link
-          to={item.href}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-            isGroupActive(item) ? 'text-primary-antoniano dark:text-primary' : ''
-          }`}
-        >
-          {item.name}
-          <span
-            className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
-              isGroupActive(item) ? 'scale-x-100' : ''
-            }`}
-          />
-        </Link>
-      </Button>
+        {item.name}
+        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${open ? 'rotate-180 text-brand-action' : 'text-gray-400'}`} />
+      </Link>
 
-      {/* Submenú */}
+      {/* Submenú Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.12 }}
-            // ✅ Ajuste mínimo 3: quitar mt-1 para evitar “gap” de hover
-            className="absolute left-0 top-full z-50 min-w-[220px] rounded-md border border-border bg-white dark:bg-card text-foreground shadow-lg p-1"
-            // mantener abierto mientras el mouse está encima
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="absolute left-0 top-full pt-4 z-50 w-48"
             onMouseEnter={() => openWithIntent(setOpen, timerRef)}
             onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
           >
-            {item.subitems.map((sub) => (
-              <Link
-                key={sub.href}
-                to={sub.href}
-                className="block w-full px-3 py-2 text-sm rounded-md hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
-              >
-                {sub.name}
-              </Link>
-            ))}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden p-1">
+                {item.subitems.map((sub) => (
+                <Link
+                    key={sub.href}
+                    to={sub.href}
+                    className="block px-4 py-2.5 text-sm rounded-lg text-gray-600 hover:text-brand-primary hover:bg-brand-sand transition-colors font-medium"
+                >
+                    {sub.name}
+                </Link>
+                ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -195,37 +189,35 @@ const Header = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="bg-blanco-fundacion/80 dark:bg-card/80 backdrop-blur-lg border-b border-border sticky top-0 z-50 shadow-sm"
-      // ✅ Ajuste mínimo 4: cerrar al salir del header (desktop)
+      className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)]"
       onMouseLeave={() => { setOpenNos(false); setOpenColab(false); }}
     >
-      <nav className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
+          
+          {/* --- LOGO --- */}
+          <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              className="w-12 h-12 flex items-center justify-center"
+              className="w-10 h-10 flex items-center justify-center bg-brand-primary rounded-lg text-white font-bold text-xl shadow-lg shadow-brand-primary/30"
             >
-              <img
-                src={logoUrl}
-                alt="Fundación Evolución Antoniana Logo"
-                className="w-full h-full object-contain"
-              />
+               {/* Si tienes logo imagen, usa esto, sino la inicial */}
+               {/* <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" /> */}
+               E
             </motion.div>
-            <div className="hidden sm:block">
-              <span className="text-2xl font-poppins font-bold text-primary-antoniano dark:text-primary">
-                Fundación
+            <div className="flex flex-col">
+              <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
+                Evolución <span className="text-brand-action">Antoniana</span>
               </span>
-              <span className="text-2xl font-poppins font-semibold text-marron-legado/80 dark:text-foreground/80 ml-1">
-                Evolución Antoniana
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest leading-none mt-1">
+                Fundación
               </span>
             </div>
           </Link>
 
-          {/* Menú Desktop */}
-          <div className="hidden lg:flex items-center space-x-1">
+          {/* --- MENÚ DESKTOP --- */}
+          <div className="hidden lg:flex items-center gap-1">
             {navigation.map((item) =>
               item.subitems ? (
                 <DesktopSubmenu
@@ -236,121 +228,122 @@ const Header = () => {
                   timerRef={item.key === 'nosotros' ? nosTimer : colabTimer}
                 />
               ) : (
-                <motion.div key={item.name} whileTap={{ scale: 0.97 }}>
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="text-marron-legado dark:text-foreground/80 hover:bg-celeste-complementario dark:hover:bg-accent hover:text-primary-antoniano dark:hover:text-primary"
-                  >
-                    <Link
-                      to={item.href}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 relative group ${
-                        isActive(item.href) ? 'text-primary-antoniano dark:text-primary' : ''
-                      }`}
-                    >
-                      {item.name}
-                      <span
-                        className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-antoniano dark:bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
-                          isActive(item.href) ? 'scale-x-100' : ''
-                        }`}
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`
+                    px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 relative
+                    ${isActive(item.href) 
+                        ? 'text-brand-primary font-bold' 
+                        : 'text-gray-600 hover:text-brand-action hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  {item.name}
+                  {isActive(item.href) && (
+                      <motion.div 
+                        layoutId="nav-underline"
+                        className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-brand-primary rounded-full" 
                       />
-                    </Link>
-                  </Button>
-                </motion.div>
+                  )}
+                </Link>
               )
             )}
           </div>
 
-          {/* Usuario / Auth */}
-          <div className="flex items-center space-x-2">
-            <ThemeSwitch />
+          {/* --- USUARIO / AUTH --- */}
+          <div className="flex items-center gap-3">
+            {/* ThemeSwitch (Si lo usas, descomentar) */}
+            {/* <ThemeSwitch /> */}
+            
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    className="relative h-10 w-10 rounded-full p-0 focus-visible:ring-primary-antoniano focus:outline-none"
+                    className="relative p-0.5 rounded-full ring-2 ring-brand-gold/50 hover:ring-brand-gold transition-all"
                   >
-                    <Avatar className="h-10 w-10 border-2 border-primary-antoniano/50 hover:border-primary-antoniano dark:border-primary/50 dark:hover:border-primary transition-all">
-                      <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary font-semibold text-sm">
+                    <Avatar className="h-9 w-9 border-2 border-white">
+                      <AvatarFallback className="bg-brand-primary text-white font-bold text-xs">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-56 mt-2 border-border shadow-xl rounded-lg bg-card"
+                  className="w-56 mt-3 border-gray-100 shadow-xl rounded-xl bg-white p-2"
                   align="end"
                   forceMount
                 >
-                  <div className="flex items-center justify-start gap-2 p-3 border-b border-border">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary font-semibold">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col space-y-0.5 leading-none">
-                      <p className="font-poppins font-medium text-sm text-foreground">
+                  <div className="flex items-center gap-3 p-3 mb-2 bg-brand-sand rounded-lg">
+                    <div className="bg-white p-1.5 rounded-full text-brand-primary">
+                        <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col space-y-0.5 overflow-hidden">
+                      <p className="font-bold text-sm text-brand-dark truncate">
                         {user?.name || 'Usuario'}
                       </p>
-                      <p className="w-[150px] truncate text-xs text-muted-foreground">
+                      <p className="text-xs text-gray-500 truncate">
                         {user?.email}
                       </p>
                     </div>
                   </div>
 
-                  <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                    <Link to="/dashboard" className="flex items-center text-sm py-2 px-3">
-                      <LayoutDashboard className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                      <span className="text-foreground">Mi Panel</span>
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
+                    <Link to="/dashboard" className="flex items-center py-2.5 px-3">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Mi Panel</span>
                     </Link>
                   </DropdownMenuItem>
 
                   {isAdmin && (
                     <>
-                      <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <Link to="/admin" className="flex items-center text-sm py-2 px-3">
-                          <Settings className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                          <span className="text-foreground">Panel Admin</span>
+                      <DropdownMenuSeparator className="bg-gray-100 my-1" />
+                      <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">Administración</p>
+                      
+                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
+                        <Link to="/admin" className="flex items-center py-2 px-3">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Panel General</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <Link to="/admin?tab=activities" className="flex items-center text-sm py-2 px-3">
-                          <CalendarDays className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                          <span className="text-foreground">Gestionar Actividades</span>
+                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
+                        <Link to="/admin?tab=activities" className="flex items-center py-2 px-3">
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          <span>Actividades</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="hover:bg-accent cursor-pointer">
-                        <Link to="/admin?tab=legal_documents" className="flex items-center text-sm py-2 px-3">
-                          <FileText className="mr-2 h-4 w-4 text-primary-antoniano dark:text-primary" />
-                          <span className="text-foreground">Documentos Legales</span>
+                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
+                        <Link to="/admin?tab=legal_documents" className="flex items-center py-2 px-3">
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Documentos</span>
                         </Link>
                       </DropdownMenuItem>
                     </>
                   )}
 
-                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuSeparator className="bg-gray-100 my-1" />
 
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="hover:bg-accent cursor-pointer text-sm py-2 px-3"
+                    className="rounded-lg cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 py-2.5 px-3"
                   >
-                    <LogOut className="mr-2 h-4 w-4 text-destructive" />
-                    <span className="text-destructive">Cerrar Sesión</span>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="hidden lg:flex items-center space-x-2">
+              <div className="hidden lg:flex items-center gap-3">
                 <Button
                   variant="ghost"
                   asChild
-                  className="text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent px-4"
+                  className="text-brand-dark hover:text-brand-action hover:bg-transparent font-medium"
                 >
-                  <Link to="/login">Iniciar Sesión</Link>
+                  <Link to="/login">Ingresar</Link>
                 </Button>
                 <Button
-                  className="bg-primary-antoniano text-white dark:bg-primary rounded-full px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
+                  className="bg-brand-action text-white hover:bg-red-800 rounded-full px-5 font-bold shadow-md hover:shadow-lg transition-all"
                   asChild
                 >
                   <Link to="/register">Registrarse</Link>
@@ -358,61 +351,59 @@ const Header = () => {
               </div>
             )}
 
-            {/* Botón menú móvil */}
+            {/* BOTÓN MENÚ MÓVIL */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              className="lg:hidden text-primary-antoniano dark:text-primary hover:bg-celeste-complementario dark:hover:bg-accent p-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-antoniano"
+              className="lg:hidden text-brand-dark p-2 rounded-md hover:bg-gray-100 focus:outline-none"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Abrir menú de navegación"
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </motion.button>
           </div>
         </div>
 
-        {/* Menú móvil */}
+        {/* --- MENÚ MÓVIL --- */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-border bg-blanco-fundacion/95 dark:bg-card/95"
+              className="lg:hidden border-t border-gray-100 bg-white overflow-hidden shadow-inner"
             >
-              <div className="px-2 pt-2 pb-3 space-y-1">
+              <div className="px-4 pt-4 pb-6 space-y-2">
                 {navigation.map((item) =>
                   !item.subitems ? (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                      className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${
                         isActive(item.href)
-                          ? 'text-primary-antoniano dark:text-primary bg-celeste-complementario dark:bg-accent font-semibold'
-                          : 'text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70'
+                          ? 'bg-brand-primary text-white shadow-md'
+                          : 'text-gray-600 hover:bg-gray-50'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {item.name}
                     </Link>
                   ) : (
-                    <div key={item.name} className="rounded-md">
-                      <div className="flex items-stretch">
+                    <div key={item.name} className="rounded-xl bg-gray-50/50 border border-gray-100 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3">
                         <Link
                           to={item.href}
-                          className="flex-1 px-3 py-3 rounded-l-md text-base font-medium text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
+                          className="font-medium text-brand-dark flex-1"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           {item.name}
                         </Link>
                         <button
                           type="button"
-                          aria-label={`Abrir submenú de ${item.name}`}
-                          className="px-3 py-3 rounded-r-md text-base font-medium text-marron-legado/80 dark:text-foreground/80 hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/70 dark:hover:bg-accent/70"
+                          className="p-2 text-brand-primary"
                           onClick={() =>
                             setOpenMob((s) => ({ ...s, [item.key]: !s[item.key] }))
                           }
                         >
-                          <span className="text-sm">{openMob[item.key] ? '－' : '＋'}</span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${openMob[item.key] ? 'rotate-180' : ''}`} />
                         </button>
                       </div>
 
@@ -422,19 +413,19 @@ const Header = () => {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="pl-4"
+                            className="bg-white border-t border-gray-100"
                           >
                             {item.subitems.map((sub) => (
                               <Link
                                 key={sub.href}
                                 to={sub.href}
-                                className="block px-5 py-2 text-sm rounded-md text-marron-legado dark:text-foreground hover:text-primary-antoniano dark:hover:text-primary hover:bg-celeste-complementario/60 dark:hover:bg-accent/60"
+                                className="block px-8 py-3 text-sm text-gray-600 hover:text-brand-action hover:bg-gray-50 border-l-4 border-transparent hover:border-brand-action transition-all"
                                 onClick={() => {
                                   setIsMenuOpen(false);
                                   setOpenMob({ nosotros: false, colabora: false });
                                 }}
                               >
-                                ↳ {sub.name}
+                                {sub.name}
                               </Link>
                             ))}
                           </motion.div>
@@ -442,6 +433,18 @@ const Header = () => {
                       </AnimatePresence>
                     </div>
                   )
+                )}
+
+                {/* Mobile Auth Buttons */}
+                {!isAuthenticated && (
+                    <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+                        <Button variant="outline" className="w-full border-gray-300 text-gray-700" asChild>
+                            <Link to="/login" onClick={() => setIsMenuOpen(false)}>Ingresar</Link>
+                        </Button>
+                        <Button className="w-full bg-brand-action text-white" asChild>
+                            <Link to="/register" onClick={() => setIsMenuOpen(false)}>Registrarse</Link>
+                        </Button>
+                    </div>
                 )}
               </div>
             </motion.div>
