@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Instagram, Facebook, Linkedin, Instagram as TwitterIcon } from 'lucide-react';
+import { 
+  Loader2, Instagram, Facebook, Linkedin, 
+  Twitter, Info, Calendar, Clock, Users, 
+  ImageIcon, Globe, Save, X 
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
   const [formState, setFormState] = useState({
@@ -51,19 +63,10 @@ const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
         setUnlimitedParticipants(isUnlimited);
       } else {
         setFormState({
-          title: '',
-          description: '',
-          date: '',
-          duration: '',
-          modality: 'presencial',
-          max_participants: '',
-          image_url: '',
-          image_detail_url: '',
-          status: 'Abierta',
-          instagram_url: '',
-          facebook_url: '',
-          linkedin_url: '',
-          twitter_url: '',
+          title: '', description: '', date: '', duration: '',
+          modality: 'presencial', max_participants: '', image_url: '',
+          image_detail_url: '', status: 'Abierta', instagram_url: '',
+          facebook_url: '', linkedin_url: '', twitter_url: '',
         });
         setUnlimitedParticipants(false);
       }
@@ -86,12 +89,7 @@ const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
     }
   };
 
-  const validateUrl = (url) => {
-    if (url && !url.startsWith('https://')) {
-      return false;
-    }
-    return true;
-  };
+  const validateUrl = (url) => url ? url.startsWith('https://') : true;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,21 +115,7 @@ const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
     }
 
     if (!formState.title || !formState.description || !formState.date || !formState.duration || (!unlimitedParticipants && !formState.max_participants) || !formState.status) {
-        toast({
-            title: "Campos incompletos",
-            description: "Por favor, completa todos los campos requeridos.",
-            variant: "destructive",
-        });
-        setLoading(false);
-        return;
-    }
-    
-    if (!unlimitedParticipants && parseInt(formState.max_participants) <= 0) {
-        toast({
-            title: "Valor inválido",
-            description: "Los cupos máximos deben ser un número positivo.",
-            variant: "destructive",
-        });
+        toast({ title: "Campos incompletos", description: "Por favor completa los requeridos.", variant: "destructive" });
         setLoading(false);
         return;
     }
@@ -139,7 +123,6 @@ const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
     const activityData = {
       ...formState,
       max_participants: unlimitedParticipants ? null : parseInt(formState.max_participants),
-      date: formState.date,
       image_url: formState.image_url || null,
       image_detail_url: formState.image_detail_url || null,
       instagram_url: formState.instagram_url || null,
@@ -157,158 +140,154 @@ const ActivityFormDialog = ({ isOpen, onClose, onSave, activity }) => {
     try {
       let error;
       if (activity && activity.id) {
-        const { error: updateError } = await supabase
-          .from('activities')
-          .update(activityData)
-          .eq('id', activity.id);
+        const { error: updateError } = await supabase.from('activities').update(activityData).eq('id', activity.id);
         error = updateError;
       } else {
-        const { error: insertError } = await supabase
-          .from('activities')
-          .insert([{ ...activityData, created_at: new Date().toISOString() }]);
+        const { error: insertError } = await supabase.from('activities').insert([{ ...activityData, created_at: new Date().toISOString() }]);
         error = insertError;
       }
 
       if (error) throw error;
 
-      toast({
-        title: `Actividad ${activity ? 'actualizada' : 'creada'}`,
-        description: `La actividad "${activityData.title}" ha sido ${activity ? 'actualizada' : 'creada'} exitosamente.`,
-        className: "bg-green-500 text-white dark:bg-green-600 dark:text-white"
-      });
+      toast({ title: `¡Éxito!`, description: `Cambios guardados correctamente.`, className: "bg-green-600 text-white border-none" });
       onSave(); 
       onClose(); 
     } catch (error) {
-      console.error('Error saving activity:', error);
-      toast({
-        title: "Error al Guardar",
-        description: error.message || "Hubo un problema al guardar la actividad.",
-        variant: "destructive",
-      });
+      toast({ title: "Error al Guardar", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  const SectionHeader = ({ icon: Icon, text }) => (
+    <div className="flex items-center gap-2 mb-4 mt-6 first:mt-0">
+        <div className="p-1.5 bg-brand-sand rounded-lg text-brand-primary">
+            <Icon size={14} />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{text}</span>
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-lg bg-blanco-fundacion dark:bg-gray-800">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-poppins text-primary-antoniano dark:text-primary">
+      <DialogContent className="sm:max-w-2xl rounded-[2rem] border-none p-0 bg-white shadow-2xl overflow-hidden">
+        <DialogHeader className="bg-brand-dark p-8 text-white">
+          <DialogTitle className="text-2xl font-poppins font-bold">
             {activity ? 'Editar Actividad' : 'Nueva Actividad'}
           </DialogTitle>
-          <DialogDescription className="text-marron-legado/90 dark:text-gray-400">
-            {activity ? 'Modifica los datos de la actividad.' : 'Completa los datos para crear una nueva actividad.'}
+          <DialogDescription className="text-gray-300">
+            {activity ? 'Modifica los parámetros del evento seleccionado.' : 'Crea un nuevo evento para los miembros de la fundación.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto pr-2">
-          <div>
-            <Label htmlFor="title" className="text-marron-legado dark:text-gray-300">Título</Label>
-            <Input id="title" name="title" value={formState.title} onChange={handleChange} required className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-          </div>
-          <div>
-            <Label htmlFor="description" className="text-marron-legado dark:text-gray-300">Descripción</Label>
-            <textarea
-              id="description"
-              name="description"
-              className="flex w-full rounded-md border border-marron-legado/30 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-antoniano focus-visible:ring-offset-2 min-h-[100px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              value={formState.description}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="date" className="text-marron-legado dark:text-gray-300">Fecha</Label>
-              <Input id="date" name="date" type="date" value={formState.date} onChange={handleChange} required className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          
+          <SectionHeader icon={Info} text="Contenido Principal" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="title" className="font-bold text-brand-dark">Título *</Label>
+                <Input id="title" name="title" value={formState.title} onChange={handleChange} required className="h-11 rounded-xl border-gray-200 focus:border-brand-primary" />
             </div>
-            <div>
-              <Label htmlFor="duration" className="text-marron-legado dark:text-gray-300">Duración</Label>
-              <Input id="duration" name="duration" placeholder="Ej: 2 horas" value={formState.duration} onChange={handleChange} required className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+            <div className="space-y-2">
+                <Label htmlFor="description" className="font-bold text-brand-dark">Descripción *</Label>
+                <textarea
+                  id="description"
+                  name="description"
+                  className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary min-h-[120px]"
+                  value={formState.description}
+                  onChange={handleChange}
+                  required
+                />
             </div>
           </div>
+
+          <SectionHeader icon={Calendar} text="Logística y Estado" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="modality" className="text-marron-legado dark:text-gray-300">Modalidad</Label>
-              <Select name="modality" value={formState.modality} onValueChange={(value) => handleSelectChange('modality', value)}>
-                <SelectTrigger className="w-full border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                  <SelectValue placeholder="Selecciona modalidad" />
+            <div className="space-y-2">
+              <Label className="font-bold text-brand-dark">Fecha *</Label>
+              <Input name="date" type="date" value={formState.date} onChange={handleChange} required className="h-11 rounded-xl border-gray-200" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-brand-dark">Duración *</Label>
+              <Input name="duration" placeholder="Ej: 2 horas" value={formState.duration} onChange={handleChange} required className="h-11 rounded-xl border-gray-200" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-brand-dark">Modalidad</Label>
+              <Select value={formState.modality} onValueChange={(v) => handleSelectChange('modality', v)}>
+                <SelectTrigger className="h-11 rounded-xl border-gray-200">
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-gray-700 dark:text-white">
+                <SelectContent className="rounded-xl">
                   <SelectItem value="presencial">Presencial</SelectItem>
                   <SelectItem value="virtual">Virtual</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="max_participants" className="text-marron-legado dark:text-gray-300">Cupos Máximos</Label>
-              <Input id="max_participants" name="max_participants" type="number" min="1" value={formState.max_participants} onChange={handleChange} required={!unlimitedParticipants} disabled={unlimitedParticipants} className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="unlimitedParticipantsDialog"
-              checked={unlimitedParticipants}
-              onCheckedChange={handleCheckboxChange}
-              className="border-marron-legado data-[state=checked]:bg-primary-antoniano data-[state=checked]:text-white dark:border-gray-600 dark:data-[state=checked]:bg-primary"
-            />
-            <Label htmlFor="unlimitedParticipantsDialog" className="text-sm font-medium text-marron-legado dark:text-gray-300">
-              Sin límite de participantes
-            </Label>
-          </div>
-           <div>
-            <Label htmlFor="status" className="text-marron-legado dark:text-gray-300">Estado</Label>
-            <Select name="status" value={formState.status} onValueChange={(value) => handleSelectChange('status', value)}>
-                <SelectTrigger className="w-full border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                  <SelectValue placeholder="Selecciona un estado" />
+            <div className="space-y-2">
+              <Label className="font-bold text-brand-dark">Estado Público</Label>
+              <Select value={formState.status} onValueChange={(v) => handleSelectChange('status', v)}>
+                <SelectTrigger className="h-11 rounded-xl border-gray-200">
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-gray-700 dark:text-white">
+                <SelectContent className="rounded-xl">
                   <SelectItem value="Próximamente">Próximamente</SelectItem>
-                  <SelectItem value="Abierta">Abierta (Inscripciones Abiertas)</SelectItem>
-                  <SelectItem value="Cerrada">Cerrada (Inscripciones Cerradas)</SelectItem>
+                  <SelectItem value="Abierta">Abierta</SelectItem>
+                  <SelectItem value="Cerrada">Cerrada</SelectItem>
                   <SelectItem value="Finalizada">Finalizada</SelectItem>
                 </SelectContent>
               </Select>
-          </div>
-          <div>
-            <Label htmlFor="image_url" className="text-marron-legado dark:text-gray-300">URL Imagen Tarjeta (Opcional)</Label>
-            <Input id="image_url" name="image_url" placeholder="https://ejemplo.com/imagen.jpg" value={formState.image_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-            <p className="text-xs text-muted-foreground pt-1 dark:text-gray-400">Ideal: 382x224px.</p>
-          </div>
-          <div>
-            <Label htmlFor="image_detail_url" className="text-marron-legado dark:text-gray-300">URL Imagen Detalle (Opcional)</Label>
-            <Input id="image_detail_url" name="image_detail_url" placeholder="https://ejemplo.com/detalle.jpg" value={formState.image_detail_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-             <p className="text-xs text-muted-foreground pt-1 dark:text-gray-400">Ideal para imagen grande.</p>
-          </div>
-
-          <div className="pt-2">
-            <h4 className="text-sm font-medium text-marron-legado dark:text-gray-300 mb-2">Enlaces a Redes Sociales (Opcional)</h4>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="instagram_url" className="text-xs text-marron-legado dark:text-gray-400 flex items-center"><Instagram className="w-3.5 h-3.5 mr-1.5 text-pink-500"/>Instagram</Label>
-                <Input id="instagram_url" name="instagram_url" placeholder="https://instagram.com/..." value={formState.instagram_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              </div>
-              <div>
-                <Label htmlFor="facebook_url" className="text-xs text-marron-legado dark:text-gray-400 flex items-center"><Facebook className="w-3.5 h-3.5 mr-1.5 text-blue-600"/>Facebook</Label>
-                <Input id="facebook_url" name="facebook_url" placeholder="https://facebook.com/..." value={formState.facebook_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              </div>
-              <div>
-                <Label htmlFor="linkedin_url" className="text-xs text-marron-legado dark:text-gray-400 flex items-center"><Linkedin className="w-3.5 h-3.5 mr-1.5 text-blue-700"/>LinkedIn</Label>
-                <Input id="linkedin_url" name="linkedin_url" placeholder="https://linkedin.com/..." value={formState.linkedin_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              </div>
-              <div>
-                <Label htmlFor="twitter_url" className="text-xs text-marron-legado dark:text-gray-400 flex items-center"><TwitterIcon className="w-3.5 h-3.5 mr-1.5 text-sky-500"/>X / Twitter</Label>
-                <Input id="twitter_url" name="twitter_url" placeholder="https://x.com/..." value={formState.twitter_url} onChange={handleChange} className="border-marron-legado/30 focus:border-primary-antoniano text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-5">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+          <div className="p-4 bg-brand-sand/50 rounded-2xl border border-brand-primary/5 flex flex-col sm:flex-row gap-4 items-center mt-4">
+            <div className="flex-1 w-full space-y-1">
+                <Label className="text-[10px] font-black text-gray-500 uppercase">Cupos Máximos</Label>
+                <Input name="max_participants" type="number" value={formState.max_participants} onChange={handleChange} required={!unlimitedParticipants} disabled={unlimitedParticipants} className="h-10 rounded-lg bg-white border-gray-200" />
+            </div>
+            <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm self-end sm:self-center">
+              <Checkbox id="unlimitedDialog" checked={unlimitedParticipants} onCheckedChange={handleCheckboxChange} className="border-gray-300" />
+              <Label htmlFor="unlimitedDialog" className="text-xs font-bold text-brand-dark cursor-pointer">Ilimitados</Label>
+            </div>
+          </div>
+
+          <SectionHeader icon={ImageIcon} text="Imágenes" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase">URL Portada</Label>
+                <Input name="image_url" value={formState.image_url} onChange={handleChange} className="h-10 rounded-lg border-gray-200" placeholder="https://..." />
+            </div>
+            <div className="space-y-1">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase">URL Detalle</Label>
+                <Input name="image_detail_url" value={formState.image_detail_url} onChange={handleChange} className="h-10 rounded-lg border-gray-200" placeholder="https://..." />
+            </div>
+          </div>
+
+          <SectionHeader icon={Globe} text="Redes Sociales" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="relative group">
+                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-pink-500 transition-colors" />
+                  <Input name="instagram_url" value={formState.instagram_url} onChange={handleChange} className="pl-10 h-10 rounded-lg border-gray-200 text-xs" placeholder="URL Instagram" />
+              </div>
+              <div className="relative group">
+                  <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-blue-600 transition-colors" />
+                  <Input name="facebook_url" value={formState.facebook_url} onChange={handleChange} className="pl-10 h-10 rounded-lg border-gray-200 text-xs" placeholder="URL Facebook" />
+              </div>
+              <div className="relative group">
+                  <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-blue-700 transition-colors" />
+                  <Input name="linkedin_url" value={formState.linkedin_url} onChange={handleChange} className="pl-10 h-10 rounded-lg border-gray-200 text-xs" placeholder="URL LinkedIn" />
+              </div>
+              <div className="relative group">
+                  <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-sky-500 transition-colors" />
+                  <Input name="twitter_url" value={formState.twitter_url} onChange={handleChange} className="pl-10 h-10 rounded-lg border-gray-200 text-xs" placeholder="URL X/Twitter" />
+              </div>
+          </div>
+
+          <DialogFooter className="pt-8 gap-2 border-t border-gray-50 mt-6">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={loading} className="font-bold text-gray-400">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="bg-primary-antoniano text-white hover:bg-primary-antoniano/90 dark:bg-primary dark:hover:bg-primary/90">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (activity ? 'Actualizar Actividad' : 'Crear Actividad')}
+            <Button type="submit" disabled={loading} className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-8 rounded-xl shadow-lg transition-all h-12 min-w-[160px]">
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4"/> Guardar</>}
             </Button>
           </DialogFooter>
         </form>
