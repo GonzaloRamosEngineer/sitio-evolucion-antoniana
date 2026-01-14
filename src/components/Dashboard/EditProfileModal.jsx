@@ -21,10 +21,10 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { updateUserProfile } from '@/api/userApi';
 import { 
-  Loader2, Edit3, Save, X, User, 
-  Fingerprint, Phone, Calendar, VenusMars, ShieldCheck 
+  Loader2, Edit3, Save, User, 
+  Fingerprint, Phone, Calendar, UserCircle2, ShieldCheck 
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -119,18 +119,16 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
         </DialogHeader>
 
         <div className="p-8 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
-          {/* EMAIL - READ ONLY */}
           <div className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
             <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck size={12} /> Cuenta Vinculada (No editable)
             </Label>
             <div className="flex items-center gap-2 text-brand-dark font-medium">
-                <Mail size={16} className="text-gray-400" />
+                <User size={16} className="text-gray-400" />
                 {user?.email}
             </div>
           </div>
 
-          {/* SECCIÓN IDENTIDAD */}
           <div className="space-y-4">
             <SectionLabel icon={User} text="Identidad" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -141,7 +139,6 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                   value={formData.name} 
                   onChange={handleChange} 
                   disabled={!isEditing} 
-                  placeholder="Tu nombre"
                   className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                 />
               </div>
@@ -154,7 +151,6 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                       value={formData.dni} 
                       onChange={handleChange} 
                       disabled={!isEditing}
-                      placeholder="Sin puntos"
                       className={`h-11 pl-10 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                     />
                 </div>
@@ -162,7 +158,6 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
             </div>
           </div>
 
-          {/* SECCIÓN CONTACTO Y PERSONAL */}
           <div className="space-y-4">
             <SectionLabel icon={Phone} text="Contacto y Personal" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,14 +168,13 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                   value={formData.phone} 
                   onChange={handleChange} 
                   disabled={!isEditing}
-                  placeholder="+54..."
                   className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="birth_date" className="text-xs font-bold text-brand-dark ml-1">Fecha de Nacimiento</Label>
                 <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input 
                       id="birth_date" 
                       type="date" 
@@ -202,11 +196,11 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                 >
                     <SelectTrigger className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}>
                         <div className="flex items-center gap-2">
-                            <VenusMars size={16} className="text-gray-400" />
+                            <UserCircle2 size={16} className="text-gray-400" />
                             <SelectValue placeholder="Selecciona una opción" />
                         </div>
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl shadow-2xl border-gray-100">
+                    <SelectContent>
                         <SelectItem value="masculino">Masculino</SelectItem>
                         <SelectItem value="femenino">Femenino</SelectItem>
                         <SelectItem value="otro">Otro / Prefiero no decir</SelectItem>
@@ -220,25 +214,16 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
           {!isEditing ? (
             <Button 
                 onClick={() => setIsEditing(true)} 
-                className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-lg transition-all transform active:scale-95"
+                className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-lg transition-all"
             >
               <Edit3 className="w-4 h-4 mr-2" /> Habilitar Edición
             </Button>
           ) : (
             <>
-              <Button 
-                variant="ghost" 
-                onClick={() => setIsEditing(false)} 
-                disabled={isLoading} 
-                className="w-full sm:w-auto text-gray-400 font-bold hover:text-brand-dark order-2 sm:order-1"
-              >
+              <Button variant="ghost" onClick={() => setIsEditing(false)} disabled={isLoading} className="text-gray-500">
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSave} 
-                disabled={isLoading} 
-                className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-xl shadow-brand-primary/20 order-1 sm:order-2"
-              >
+              <Button onClick={handleSave} disabled={isLoading} className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-xl">
                 {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
                 Guardar Cambios
               </Button>
