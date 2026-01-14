@@ -40,7 +40,7 @@ const NewsDetailPage = () => {
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
 
   // URL estable para scrapers/preview
-  const shareUrl = `${origin}/api/share/news/${slugOrId}`;
+  const shareUrl = `${origin}/s/novedades/${slugOrId}.html`;
 
   if (loading) {
     return (
