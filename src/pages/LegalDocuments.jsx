@@ -1,9 +1,10 @@
+// src/pages/LegalDocuments.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -54,8 +55,8 @@ const LegalDocuments = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center bg-blanco-fundacion dark:bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-primary-antoniano dark:text-primary" />
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center bg-brand-sand">
+        <Loader2 className="h-16 w-16 animate-spin text-brand-primary" />
       </div>
     );
   }
@@ -67,40 +68,85 @@ const LegalDocuments = () => {
       exit="out"
       variants={pageVariants}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-blanco-fundacion dark:bg-background font-inter py-8 md:py-12"
+      className="min-h-screen bg-brand-sand font-sans"
     >
-      <section className="py-20 md:py-28 text-center bg-gradient-to-b from-celeste-complementario/30 via-blanco-fundacion to-blanco-fundacion hero-pattern">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-azul-profundo dark:text-white mb-6 text-balance"
-          >
-            Transparencia
-          </motion.h1>
-          <motion.p
+      {/* --- HERO SECTION (Tech-Institucional) --- */}
+      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
+        {/* Fondo Tech Sutil */}
+        <div className="absolute inset-0">
+           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+           <div className="absolute inset-0 opacity-10" 
+                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+           </div>
+        </div>
+
+        <div className="relative max-w-6xl mx-auto text-center z-10">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl text-marron-legado/90 dark:text-white/80 max-w-3xl mx-auto leading-relaxed text-balance"
+            transition={{ duration: 0.6 }}
           >
-            Accede a nuestra documentación oficial para conocer más sobre nuestra estructura, operaciones y políticas.
-          </motion.p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
+               <ShieldCheck className="w-4 h-4 text-brand-gold" />
+               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Transparencia Institucional</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
+              Documentación <span className="text-brand-gold">Oficial</span>
+            </h1>
+            
+            <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Accede a nuestros estatutos, balances y reportes de gestión. La transparencia es la base de nuestra confianza.
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      <div className="max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* --- CONTENIDO --- */}
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        {/* Resumen (Stats) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                <div className="bg-brand-sand p-3 rounded-full text-brand-primary">
+                    <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                    <p className="text-2xl font-bold text-brand-dark">{documents.length}</p>
+                    <p className="text-sm text-gray-500">Documentos Publicados</p>
+                </div>
+            </div>
+            {/* Puedes agregar más stats aquí si tienes la data, por ahora placeholders visuales */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                <div className="bg-green-50 p-3 rounded-full text-green-600">
+                    <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                    <p className="text-lg font-bold text-brand-dark">Verificado</p>
+                    <p className="text-sm text-gray-500">Estado Legal</p>
+                </div>
+            </div>
+             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                <div className="bg-blue-50 p-3 rounded-full text-blue-600">
+                    <Calendar className="w-6 h-6" />
+                </div>
+                <div>
+                    <p className="text-lg font-bold text-brand-dark">2024</p>
+                    <p className="text-sm text-gray-500">Periodo Actual</p>
+                </div>
+            </div>
+        </div>
+
         {error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/30 text-destructive dark:text-destructive-foreground p-6 rounded-lg flex items-center space-x-3 mb-8"
+            className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl flex items-center space-x-4 mb-8"
           >
-            <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+            <AlertTriangle className="w-8 h-8 flex-shrink-0 text-red-500" />
             <div>
-              <p className="font-semibold">Error al cargar documentos</p>
-              <p className="text-sm">{error}</p>
+              <p className="font-bold text-lg">Error al cargar documentos</p>
+              <p className="text-sm opacity-90">{error}</p>
             </div>
           </motion.div>
         )}
@@ -109,19 +155,21 @@ const LegalDocuments = () => {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12"
+            className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200"
           >
-            <FileText className="w-24 h-24 text-marron-legado/30 dark:text-muted-foreground/30 mx-auto mb-6" />
-            <p className="text-xl text-marron-legado/70 dark:text-muted-foreground">
-              No hay documentos legales disponibles en este momento.
+            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FileText className="w-10 h-10 text-gray-300" />
+            </div>
+            <p className="text-xl font-bold text-brand-dark mb-2">
+              No hay documentos públicos disponibles.
             </p>
-            <p className="text-sm text-marron-legado/50 dark:text-muted-foreground/50 mt-2">
-              Por favor, vuelve a consultar más tarde.
+            <p className="text-gray-500">
+              Estamos actualizando nuestro repositorio. Por favor, vuelve a consultar pronto.
             </p>
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {documents.map((doc, index) => (
             <motion.div
               key={doc.id}
@@ -130,39 +178,47 @@ const LegalDocuments = () => {
               animate="in"
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="h-full flex flex-col border-marron-legado/10 dark:border-border shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-card">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <CardTitle className="text-2xl font-poppins text-primary-antoniano dark:text-primary leading-tight">
-                      {doc.title}
-                    </CardTitle>
-                    <Badge 
-                      variant="outline" 
-                      className="capitalize border-primary-antoniano/50 text-primary-antoniano dark:border-primary/50 dark:text-primary whitespace-nowrap text-xs py-1 px-2.5"
-                    >
-                      {doc.category}
-                    </Badge>
+              <Card className="h-full flex flex-col bg-white border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl group">
+                <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
+                  <div className="flex gap-4">
+                      <div className="mt-1 bg-brand-sand p-2.5 rounded-xl text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-colors">
+                          <FileText className="w-6 h-6" />
+                      </div>
+                      <div>
+                          <CardTitle className="text-xl font-poppins font-bold text-brand-dark leading-tight mb-2 group-hover:text-brand-action transition-colors">
+                            {doc.title}
+                          </CardTitle>
+                          <Badge 
+                            variant="secondary" 
+                            className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-0 font-medium px-2.5"
+                          >
+                            {doc.category}
+                          </Badge>
+                      </div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                
+                <CardContent className="flex-grow pl-[5.5rem]">
                   {doc.description && (
-                    <CardDescription className="text-marron-legado/80 dark:text-muted-foreground text-sm leading-relaxed mb-4">
+                    <CardDescription className="text-gray-600 text-sm leading-relaxed mb-3">
                       {doc.description}
                     </CardDescription>
                   )}
-                  <p className="text-xs text-marron-legado/60 dark:text-muted-foreground/70">
-                    Publicado: {new Date(doc.created_at).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  <p className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Publicado el {new Date(doc.created_at).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                 </CardContent>
-                <CardFooter className="pt-4 border-t border-marron-legado/10 dark:border-border/20">
+
+                <CardFooter className="pt-4 border-t border-gray-50 pl-[5.5rem]">
                   <Button
-                    variant="antoniano"
+                    variant="ghost"
                     asChild
-                    className="w-full text-white dark:text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
+                    className="p-0 h-auto font-bold text-brand-primary hover:text-brand-action hover:bg-transparent transition-colors group/btn"
                   >
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                      Ver / Descargar Documento
-                      <ExternalLink className="w-4 h-4 ml-2" />
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      Ver Documento
+                      <ArrowRight className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" />
                     </a>
                   </Button>
                 </CardFooter>
@@ -174,5 +230,8 @@ const LegalDocuments = () => {
     </motion.div>
   );
 };
+
+// Importamos ArrowRight que faltaba en el destructuring original
+import { ArrowRight } from 'lucide-react'; 
 
 export default LegalDocuments;
