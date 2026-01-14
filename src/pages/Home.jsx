@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
-  Heart, Users, BookOpen, Award, ArrowRight, 
-  CheckCircle2, Star, Sparkles, ShieldCheck 
-} from "lucide-react";
+import { Heart, Users, BookOpen, Award, ArrowRight, CheckCircle2} from "lucide-react";
 import { motion } from "framer-motion";
 
 const Home = () => {
@@ -19,180 +17,178 @@ const Home = () => {
     {
       icon: Heart,
       title: "Compromiso Social",
-      description: "Trabajamos por el desarrollo integral de nuestra comunidad con pasión y dedicación.",
+      description:
+        "Trabajamos por el desarrollo integral de nuestra comunidad con pasión y dedicación.",
     },
     {
       icon: Users,
       title: "Trabajo en Equipo",
-      description: "Fomentamos la colaboración y el trabajo conjunto para lograr objetivos comunes.",
+      description:
+        "Fomentamos la colaboración y el trabajo conjunto para lograr objetivos comunes.",
     },
     {
       icon: BookOpen,
       title: "Educación Continua",
-      description: "Ofrecemos talleres, cursos y actividades formativas para el crecimiento personal.",
+      description:
+        "Ofrecemos talleres, cursos y actividades formativas para el crecimiento personal.",
     },
     {
       icon: Award,
       title: "Excelencia",
-      description: "Servicios de calidad con impacto medible y gestión moderna.",
+      description:
+        "Servicios de calidad con impacto medible y gestión moderna.",
     },
   ];
 
   const stats = [
-    { number: "305+", label: "Almas Impactadas", desc: "Beneficiarios directos." },
-    { number: "7+", label: "Proyectos Activos", desc: "Innovación social." },
-    { number: "6+", label: "Años de Trayectoria", desc: "Gestión de impacto." },
-    { number: "4+", label: "Reconocimientos", desc: "Premios nacionales." },
+    {
+      number: "305+",
+      label: "Almas Impactadas",
+      desc: "Beneficiarios directos de programas.",
+    },
+    {
+      number: "7+",
+      label: "Proyectos Activos",
+      desc: "Iniciativas tecnológicas y sociales.",
+    },
+    {
+      number: "6+",
+      label: "Años de Trayectoria",
+      desc: "Experiencia en gestión de impacto.",
+    },
+    {
+      number: "4+",
+      label: "Reconocimientos",
+      desc: "Premios a la innovación social.",
+    },
   ];
-
-  // Variantes de animación Premium
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.2 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
-    }
-  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="bg-white dark:bg-background overflow-hidden"
+      transition={{ duration: 0.5 }}
+      className="bg-blanco-fundacion dark:bg-background"
     >
-      {/* --- HERO SECTION INMERSIVO --- */}
-      <section className="relative min-h-[95vh] flex items-center justify-center bg-brand-dark overflow-hidden">
-        
-        {/* Fondo Animado (Mesh Gradient) */}
-        <div className="absolute inset-0 z-0">
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], x: [0, 100, 0], y: [0, 50, 0] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-[10%] -left-[10%] w-[70%] h-[70%] rounded-full bg-brand-primary/20 blur-[130px]"
-          />
-          <motion.div 
-            animate={{ scale: [1.2, 1, 1.2], x: [0, -80, 0], y: [0, -40, 0] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-brand-gold/10 blur-[100px]"
-          />
-        </div>
-
-        {/* Textura de grano sutil */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-
-        <div className="relative max-w-7xl mx-auto px-6 z-10 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            
+      {/* Hero Section */}
+      <section className="relative bg-azul-profundo dark:bg-primary-antoniano/90 text-white overflow-hidden">
+        <div className="absolute inset-0 hero-pattern opacity-30 dark:opacity-10" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
             >
-              {/* Badge Superior */}
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8">
-                <Sparkles size={14} className="text-brand-gold" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-sand">Fundación Antoniana</span>
-              </motion.div>
-
-              <motion.h1 variants={itemVariants} className="text-6xl lg:text-[5.5rem] font-black font-poppins text-white leading-[0.9] tracking-tighter mb-8">
-                Construyendo un <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-sand via-brand-gold to-brand-sand">
+              <h1 className="text-5xl lg:text-7xl font-bold font-poppins text-white leading-[1.1]">
+                Construyendo un 
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-yellow-200">
                   Futuro Mejor
                 </span>
-              </motion.h1>
-
-              <motion.p variants={itemVariants} className="text-xl text-gray-400 font-light leading-relaxed mb-10 max-w-xl italic">
-                Impulsamos el desarrollo social y tecnológico en Salta, fusionando compromiso humano con innovación digital.
-              </motion.p>
-
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-5">
-                <Button size="lg" className="h-16 px-10 rounded-2xl bg-brand-primary hover:bg-white hover:text-brand-dark text-white font-bold text-lg shadow-[0_20px_50px_rgba(30,58,138,0.3)] transition-all duration-500 group" asChild>
+              </h1>
+              <p className="text-lg text-white/80 dark:text-foreground/80 mb-8 leading-relaxed text-balance">
+                Somos una organización sin fines de lucro enfocada en el
+                desarrollo social, educativo, deportivo y tecnológico.
+                <br />
+                <br />
+                Impulsamos iniciativas que combinan el compromiso comunitario
+                con la innovación digital, creando oportunidades reales para
+                transformar vidas.
+                <br />
+                <br />
+                También formamos parte del programa Mercado Libre Solidario, y
+                trabajamos con principios de transparencia, impacto medible y
+                gestión moderna.
+                <br />
+                <br />
+                Unite a nuestra misión y se parte del cambio.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  size="lg"
+                  className="bg-celeste-complementario text-azul-profundo dark:bg-primary dark:text-primary-foreground font-bold hover:bg-white dark:hover:bg-primary/80"
+                  asChild
+                >
                   <Link to="/activities">
                     Ver Actividades
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
 
-                <Button size="lg" variant="outline" className="h-16 px-10 rounded-2xl border-white/20 text-white bg-transparent hover:bg-white/10 backdrop-blur-sm transition-all text-lg font-bold" asChild>
+                {/* FIX: botón outline visible en reposo */}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="
+                    border-white/50 text-white
+                    bg-transparent
+                    hover:bg-white hover:text-azul-profundo
+                    dark:border-primary/50 dark:text-primary
+                    dark:hover:bg-primary dark:hover:text-primary-foreground
+                    transition-all duration-300 font-semibold
+                  "
+                  asChild
+                >
                   <Link to="/contact">Contáctanos</Link>
                 </Button>
-              </motion.div>
+              </div>
 
-              {/* Alianzas Trust-Bar */}
-              <motion.div variants={itemVariants} className="mt-16 pt-8 border-t border-white/10">
-                <p className="text-[10px] text-gray-500 mb-6 uppercase tracking-[0.2em] font-black">Nuestros Aliados Estratégicos</p>
-                <div className="flex flex-wrap gap-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-700 items-center">
-                  <span className="text-white font-bold text-2xl tracking-tighter">Google</span>
-                  <span className="text-white font-bold text-2xl tracking-tighter">Canva</span>
-                  <div className="h-4 w-[1px] bg-white/20" />
-                  <span className="text-white font-black text-[10px] uppercase border border-white/20 px-2 py-1">Min. Educación</span>
+              {/* Alianzas Mini */}
+              <div className="pt-8 border-t border-white/10">
+                <p className="text-xs text-brand-gold/80 mb-4 uppercase tracking-wider font-semibold">
+                  En alianza estratégica con
+                </p>
+                <div className="flex gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500 items-center">
+                  {/* Textos placeholders - Reemplazar con logos SVG reales luego */}
+                  <span className="text-white font-bold text-lg">Google</span>
+                  <span className="text-white font-bold text-lg">Canva</span>
+                  <span className="text-white font-bold text-xs uppercase">
+                    Min. Educación Salta
+                  </span>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
 
-            {/* Imagen Hero Decorativa */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.8, delay: 0.2 }}
               className="relative hidden lg:block"
             >
-              <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-white/10 group aspect-[4/5] max-h-[600px]">
-                <div className="absolute inset-0 bg-brand-primary/10 group-hover:bg-transparent transition-colors duration-700 z-10" />
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 group">
+                <div className="absolute inset-0 bg-brand-primary/20 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
                 <img
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-[2s]"
+                  className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700"
                   src="/img/donativo_cancha.png"
                   alt="Impacto Social"
                 />
               </div>
-              {/* Elemento Flotante de Lujo */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 z-20 border border-gray-100">
-                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600">
-                  <CheckCircle2 size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase">Estado Solidario</p>
-                  <p className="text-sm font-bold text-brand-dark">Impacto Verificado</p>
-                </div>
-              </div>
+              <div className="absolute -top-4 -right-4 w-full h-full bg-celeste-complementario/20 dark:bg-primary/20 rounded-2xl opacity-20 transform -rotate-3" />
             </motion.div>
-
           </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
-          <div className="w-[1px] h-12 bg-gradient-to-b from-brand-gold to-transparent" />
         </div>
       </section>
 
-      {/* --- STATS SECTION (Estilo Bento Flotante) --- */}
-      <section className="relative z-20 -mt-16 pb-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.08)] border border-gray-50 p-10 lg:p-16 grid grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* --- STATS SECTION (Bento Style Light) --- */}
+      <section className="py-20 bg-brand-white relative z-10 -mt-8 rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <motion.div
                 key={index}
-                whileHover={{ y: -5 }}
-                className="text-center space-y-2 border-r last:border-0 border-gray-100 px-4"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="text-center group p-6 hover:bg-brand-sand rounded-2xl transition-colors duration-300"
               >
-                <div className="text-5xl lg:text-6xl font-black font-poppins text-brand-primary tracking-tighter">
+                <div className="text-4xl lg:text-5xl font-extrabold font-poppins text-brand-primary mb-2 group-hover:scale-110 transition-transform duration-300">
                   {stat.number}
                 </div>
-                <div className="text-brand-gold font-black text-xs uppercase tracking-widest">
+                <div className="text-brand-action font-bold text-sm uppercase tracking-wide mb-2">
                   {stat.label}
                 </div>
-                <p className="text-gray-400 text-[11px] font-medium leading-tight">
+                <p className="text-gray-500 text-sm leading-relaxed">
                   {stat.desc}
                 </p>
               </motion.div>
@@ -201,45 +197,45 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- NUESTROS PILARES (Estilo Luxury Grid) --- */}
-      <section className="py-32 bg-brand-sand/20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-24">
-            <motion.span 
-              initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
-              className="text-brand-primary font-black text-xs uppercase tracking-[0.4em] mb-4 block"
-            >
-              Nuestra esencia
-            </motion.span>
-            <h2 className="text-4xl lg:text-5xl font-black font-poppins text-brand-dark mb-6">
-              Los Pilares de la Evolución
+      {/* --- VALUES SECTION --- */}
+      <section className="py-24 bg-brand-sand">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold font-poppins text-brand-dark mb-4">
+              Nuestros Pilares
             </h2>
-            <p className="text-lg text-gray-500 font-light">
-              Principios que fusionan la tradición solidaria con la innovación moderna para crear cambios reales.
+            <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-6"></div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Principios que fusionan la tradición franciscana con la innovación
+              moderna.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="h-full"
               >
-                <Card className="h-full border-none shadow-[0_10px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-500 bg-white rounded-[2.5rem] group overflow-hidden">
-                  <CardHeader className="pt-10">
-                    <div className="w-16 h-16 bg-brand-sand/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-primary group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
-                      <feature.icon className="w-8 h-8 text-brand-primary group-hover:text-white transition-colors" />
+                <Card className="h-full border-none shadow-md hover:shadow-xl transition-all duration-300 bg-white group hover:-translate-y-2">
+                  <CardHeader className="text-center pt-8">
+                    <div className="w-14 h-14 bg-brand-sand rounded-2xl rotate-3 flex items-center justify-center mx-auto mb-4 group-hover:rotate-6 group-hover:bg-brand-primary transition-all duration-300">
+                      <feature.icon className="w-7 h-7 text-brand-primary group-hover:text-brand-gold transition-colors" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-brand-dark group-hover:text-brand-primary transition-colors">
+                    <CardTitle className="text-lg font-bold text-brand-dark">
                       {feature.title}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pb-10">
-                    <p className="text-gray-500 leading-relaxed text-sm">
+                  <CardContent className="text-center pb-8">
+                    <p className="text-gray-500 text-sm leading-relaxed">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -250,44 +246,42 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- CTA FINAL DE IMPACTO --- */}
-      <section className="py-32 bg-brand-dark relative">
-        <div className="absolute inset-0 bg-brand-primary/5" />
-        
-        <div className="relative max-w-5xl mx-auto px-6 text-center">
+      {/* --- CTA SECTION --- */}
+      <section className="py-24 bg-brand-dark relative overflow-hidden">
+        {/* Decoración de fondo */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-brand-primary rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-brand-action rounded-full blur-3xl opacity-20"></div>
+
+        <div className="relative max-w-4xl mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
           >
-            <div className="bg-brand-gold/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-10 border border-brand-gold/20 shadow-[0_0_50px_rgba(212,175,55,0.2)]">
-                <Star className="text-brand-gold fill-brand-gold" />
-            </div>
-            
-            <h2 className="text-5xl lg:text-7xl font-black font-poppins text-white mb-10 tracking-tighter leading-none">
-              ¿Listo para ser parte de la <br />
+            <h2 className="text-3xl lg:text-5xl font-bold font-poppins text-white mb-8">
+              ¿Listo para ser parte de la{" "}
               <span className="text-brand-gold">Evolución</span>?
             </h2>
-            
-            <p className="text-xl text-gray-400 font-light mb-12 max-w-2xl mx-auto">
-              Únete a nuestra red de impacto. Accede a beneficios exclusivos y contribuye al desarrollo de Salta.
+            <p className="text-xl text-gray-300 mb-10 leading-relaxed">
+              Únete a nuestra comunidad. Accede a beneficios exclusivos de
+              nuestros partners y contribuye al desarrollo tecnológico de Salta.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
-                className="h-16 px-12 bg-brand-gold text-brand-dark font-black hover:bg-white rounded-2xl text-xl shadow-2xl transition-all duration-500 transform hover:-translate-y-1 active:scale-95"
+                className="h-14 px-10 bg-brand-gold text-brand-dark font-bold hover:bg-yellow-400 rounded-full text-lg shadow-lg hover:shadow-yellow-400/20 transition-all"
                 asChild
               >
                 <Link to="/collaborate">
-                  <Heart className="mr-3 h-6 w-6 fill-brand-dark" />
-                  QUIERO SUMARME
+                  <Heart className="mr-2 h-5 w-5 fill-brand-dark" />
+                  Quiero Colaborar
                 </Link>
               </Button>
 
-              <div className="flex items-center gap-3 px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <ShieldCheck className="w-5 h-5 text-green-500" />
-                <span className="text-xs font-bold text-white uppercase tracking-widest">Transparencia Garantizada</span>
+              <div className="flex items-center gap-2 text-sm text-gray-400 mt-4 sm:mt-0">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span>Transparencia Garantizada</span>
               </div>
             </div>
           </motion.div>
