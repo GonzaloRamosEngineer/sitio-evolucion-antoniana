@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Users, Calendar, Heart, Plus, MailWarning, UserCog, UserCheck, Gift,
-  FileText as FileTextIcon, CheckCircle, Clock
+  FileText as FileTextIcon, CheckCircle, Clock, ShieldCheck, Activity, LayoutDashboard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -23,7 +23,7 @@ import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
 import NewsAdmin from '@/components/Admin/NewsAdmin';
 import { Helmet } from 'react-helmet';
 
-// Para stats de partners/beneficios sin depender de StatsOverview.jsx
+// Para stats de partners/beneficios
 import { getPartners, getBenefits } from '@/lib/storage';
 
 const AdminPanel = () => {
@@ -38,7 +38,6 @@ const AdminPanel = () => {
     totalLegalDocuments: 0,
   });
 
-  // Stats extra de Partners/Beneficios (equivalente a StatsOverview)
   const [ecoStats, setEcoStats] = useState({
     totalPartners: 0,
     approvedPartners: 0,
@@ -146,7 +145,6 @@ const AdminPanel = () => {
       });
     } catch (err) {
       console.error('Error fetching ecosystem stats:', err);
-      // No rompemos el panel si storage no está disponible
     }
   };
 
@@ -160,7 +158,6 @@ const AdminPanel = () => {
     if (currentTab !== activeTab) {
       setActiveTab(currentTab);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   const handleTabChange = (newTab) => {
@@ -181,27 +178,27 @@ const AdminPanel = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blanco-fundacion dark:bg-background">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-antoniano dark:border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-sand">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
 
   const TABS_CONFIG = [
-    { value: 'overview', label: 'Resumen' },
-    { value: 'activities', label: 'Actividades' },
-    { value: 'pending', label: 'Pendientes' },
-    { value: 'users', label: 'Usuarios' },
-    { value: 'memberships', label: 'Colaboraciones' },
-    { value: 'donations', label: 'Donaciones' },
-    { value: 'legal_documents', label: 'Legales' },
-    { value: 'partners', label: 'Partners' },
-    { value: 'benefits', label: 'Beneficios' },
-    { value: 'news', label: 'Novedades' },
+    { value: 'overview', label: 'Resumen', icon: LayoutDashboard },
+    { value: 'activities', label: 'Actividades', icon: Calendar },
+    { value: 'pending', label: 'Pendientes', icon: MailWarning },
+    { value: 'users', label: 'Usuarios', icon: Users },
+    { value: 'memberships', label: 'Colaboraciones', icon: Heart },
+    { value: 'donations', label: 'Donaciones', icon: Gift },
+    { value: 'legal_documents', label: 'Legales', icon: FileTextIcon },
+    { value: 'partners', label: 'Partners', icon: UserCheck },
+    { value: 'benefits', label: 'Beneficios', icon: Gift },
+    { value: 'news', label: 'Novedades', icon: FileTextIcon },
   ];
 
   return (
-    <div className="min-h-screen bg-blanco-fundacion dark:bg-background font-inter">
+    <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
         <title>Panel de Administración - Fundación Evolución Antoniana</title>
         <meta
@@ -210,54 +207,88 @@ const AdminPanel = () => {
         />
       </Helmet>
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary-antoniano/95 to-blue-700/95 dark:from-primary-antoniano/80 dark:to-blue-800/80 text-blanco-fundacion dark:text-primary-foreground py-16 shadow-lg hero-pattern">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="text-4xl lg:text-5xl font-poppins font-bold mb-3 text-balance text-white dark:text-primary-foreground">
-              Panel de Administración
-            </h1>
-            <p className="text-lg lg:text-xl text-celeste-complementario/90 dark:text-primary-foreground/80 max-w-3xl text-balance">
-              Gestiona actividades, usuarios, colaboraciones, donaciones, documentos legales, partners, beneficios y novedades.
-            </p>
+      {/* --- HERO DASHBOARD --- */}
+      <section className="relative bg-brand-primary overflow-hidden pt-12 pb-20 px-4">
+        {/* Fondo Tech Sutil */}
+        <div className="absolute inset-0">
+           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+           <div className="absolute inset-0 opacity-10" 
+                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+           </div>
+        </div>
+
+        <div className="relative max-w-screen-2xl mx-auto z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.6 }}
+            className="flex flex-col md:flex-row justify-between items-center gap-6"
+          >
+            <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-4">
+                    <ShieldCheck className="w-4 h-4 text-brand-gold" />
+                    <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Área Restringida</span>
+                </div>
+                <h1 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-2">
+                    Panel de Control
+                </h1>
+                <p className="text-gray-300">
+                    Bienvenido de nuevo. Aquí tienes el resumen de la fundación hoy.
+                </p>
+            </div>
+            
+            {/* Quick Actions (Opcional) */}
+            <div className="flex gap-3">
+               <Link to="/">
+                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white">
+                     Ver Sitio Web
+                  </Button>
+               </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      <section className="py-12">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* --- MAIN CONTENT --- */}
+      <section className="-mt-10 px-4 pb-12 relative z-20">
+        <div className="max-w-screen-2xl mx-auto">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
-            <TabsList
-              className="grid w-full mx-auto bg-celeste-complementario/30 dark:bg-muted p-1 rounded-lg
-                         grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 xl:grid-cols-10 gap-1 max-w-full"
-            >
-              {TABS_CONFIG.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="data-[state=active]:bg-primary-antoniano data-[state=active]:text-blanco-fundacion
-                             dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground
-                             data-[state=active]:shadow-md rounded-md py-2.5 capitalize text-xs sm:text-sm
-                             text-primary-antoniano dark:text-muted-foreground"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            
+            {/* Barra de Tabs Modernizada (Scrollable Pills) */}
+            <div className="bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-lg border border-white/50 sticky top-24 z-30 overflow-x-auto no-scrollbar">
+                <TabsList className="inline-flex h-auto p-0 bg-transparent gap-2 w-max min-w-full md:min-w-0 md:justify-center">
+                {TABS_CONFIG.map((tab) => (
+                    <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="
+                        rounded-xl px-4 py-2.5 text-sm font-medium transition-all
+                        data-[state=active]:bg-brand-primary data-[state=active]:text-white data-[state=active]:shadow-md
+                        text-gray-600 hover:text-brand-primary hover:bg-brand-sand
+                        flex items-center gap-2
+                    "
+                    >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                    </TabsTrigger>
+                ))}
+                </TabsList>
+            </div>
 
-            {/* RESUMEN */}
-            <TabsContent value="overview" className="space-y-8">
-              {/* Tus cards clásicas */}
+            {/* --- RESUMEN (DASHBOARD) --- */}
+            <TabsContent value="overview" className="space-y-8 mt-6">
+              
+              {/* Stats Grid Principal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[
-                  { title: 'Total Usuarios', value: stats.totalUsers, icon: Users, desc: 'Usuarios registrados' },
-                  { title: 'Usuarios Admin', value: stats.adminUsers, icon: UserCog, desc: 'Con rol Administrador' },
-                  { title: 'Usuarios Miembro', value: stats.memberUsers, icon: UserCheck, desc: 'Con rol Miembro' },
-                  { title: 'Actividades', value: stats.totalActivities, icon: Calendar, desc: 'Actividades disponibles' },
-                  { title: 'Colaboraciones Activas', value: stats.activeMemberships, icon: Heart, desc: 'Suscripciones activas' },
-                  { title: 'Donaciones Únicas', value: stats.totalDonations, icon: Gift, desc: 'Donaciones únicas exitosas' },
-                  { title: 'Documentos Legales', value: stats.totalLegalDocuments, icon: FileTextIcon, desc: 'Documentos publicados' },
-                  { title: 'Pendientes Confirmar', value: stats.pendingConfirmations, icon: MailWarning, desc: 'Inscripciones no confirmadas' },
+                  { title: 'Total Usuarios', value: stats.totalUsers, icon: Users, color: 'bg-blue-50 text-blue-600' },
+                  { title: 'Actividades', value: stats.totalActivities, icon: Calendar, color: 'bg-purple-50 text-purple-600' },
+                  { title: 'Colaboraciones', value: stats.activeMemberships, icon: Heart, color: 'bg-red-50 text-red-600' },
+                  { title: 'Donaciones', value: stats.totalDonations, icon: Gift, color: 'bg-green-50 text-green-600' },
+                  { title: 'Pendientes', value: stats.pendingConfirmations, icon: MailWarning, color: 'bg-amber-50 text-amber-600' },
+                  { title: 'Legales', value: stats.totalLegalDocuments, icon: FileTextIcon, color: 'bg-gray-50 text-gray-600' },
+                  { title: 'Administradores', value: stats.adminUsers, icon: UserCog, color: 'bg-indigo-50 text-indigo-600' },
+                  { title: 'Miembros', value: stats.memberUsers, icon: UserCheck, color: 'bg-cyan-50 text-cyan-600' },
                 ].map((item, index) => (
                   <motion.div
                     key={item.title}
@@ -265,173 +296,172 @@ const AdminPanel = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.05 }}
                   >
-                    <Card className="border-marron-legado/10 dark:border-border shadow-lg hover:shadow-xl transition-shadow bg-card text-card-foreground">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-primary-antoniano dark:text-primary">{item.title}</CardTitle>
-                        <item.icon
-                          className={`h-5 w-5 ${
-                            item.title === 'Pendientes Confirmar'
-                              ? 'text-amber-500 dark:text-amber-400'
-                              : 'text-marron-legado/70 dark:text-muted-foreground'
-                          }`}
-                        />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-primary-antoniano dark:text-foreground">{item.value}</div>
-                        <p className="text-xs text-marron-legado/80 dark:text-muted-foreground">{item.desc}</p>
+                    <Card className="border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white rounded-2xl overflow-hidden group">
+                      <CardContent className="p-6 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 mb-1">{item.title}</p>
+                            <div className="text-3xl font-bold font-poppins text-brand-dark group-hover:text-brand-primary transition-colors">
+                                {item.value}
+                            </div>
+                        </div>
+                        <div className={`p-3 rounded-xl ${item.color} group-hover:scale-110 transition-transform duration-300`}>
+                            <item.icon className="h-6 w-6" />
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Mini StatsOverview (partners/beneficios) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { title: 'Total Partners', value: ecoStats.totalPartners, icon: Users, color: 'from-blue-500 to-blue-600' },
-                  { title: 'Partners Aprobados', value: ecoStats.approvedPartners, icon: CheckCircle, color: 'from-green-500 to-green-600' },
-                  { title: 'Partners Pendientes', value: ecoStats.pendingPartners, icon: Clock, color: 'from-amber-500 to-amber-600' },
-                  { title: 'Beneficios Activos', value: ecoStats.activeBenefits, icon: Gift, color: 'from-purple-500 to-purple-600' },
-                ].map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
-                    <motion.div
-                      key={stat.title}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className="bg-white rounded-xl shadow-lg p-6 border border-gray-100"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center`}>
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
-                      </div>
-                      <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                      <p className="text-sm text-gray-600">{stat.title}</p>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Actividades recientes */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-                <Card className="border-marron-legado/10 dark:border-border shadow-lg bg-card text-card-foreground">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-poppins text-primary-antoniano dark:text-primary">Actividades Recientes</CardTitle>
-                    <CardDescription className="text-marron-legado/90 dark:text-muted-foreground">Las últimas 3 actividades creadas.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {recentActivitiesData.length > 0 ? (
-                        recentActivitiesData.map((activity) => (
-                          <div
-                            key={activity.id}
-                            className="flex items-center justify-between p-4 border border-celeste-complementario dark:border-accent rounded-lg bg-celeste-complementario/20 dark:bg-accent/30 hover:bg-celeste-complementario/30 dark:hover:bg-accent/40 transition-colors"
-                          >
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Stats Secundarios (Ecosistema) */}
+                  <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="md:col-span-2">
+                        <h3 className="text-lg font-bold text-brand-dark mb-4 flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-brand-gold" /> Ecosistema
+                        </h3>
+                     </motion.div>
+                     
+                     {[
+                        { title: 'Partners Totales', value: ecoStats.totalPartners, icon: Users, color: 'border-l-4 border-blue-500' },
+                        { title: 'Partners Pendientes', value: ecoStats.pendingPartners, icon: Clock, color: 'border-l-4 border-amber-500' },
+                        { title: 'Partners Aprobados', value: ecoStats.approvedPartners, icon: CheckCircle, color: 'border-l-4 border-green-500' },
+                        { title: 'Beneficios Activos', value: ecoStats.activeBenefits, icon: Gift, color: 'border-l-4 border-purple-500' },
+                     ].map((stat, i) => (
+                        <div key={i} className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 ${stat.color} flex items-center justify-between`}>
                             <div>
-                              <p className="font-semibold text-primary-antoniano dark:text-primary">{activity.title}</p>
-                              <p className="text-sm text-marron-legado/80 dark:text-muted-foreground">{formatDate(activity.date)}</p>
+                                <p className="text-gray-500 text-sm mb-1">{stat.title}</p>
+                                <p className="text-2xl font-bold text-brand-dark">{stat.value}</p>
                             </div>
-                            <Badge
-                              variant={activity.modality === 'presencial' ? 'default' : 'secondary'}
-                              className={`capitalize shadow-sm ${
-                                activity.modality === 'presencial'
-                                  ? 'bg-primary-antoniano text-white dark:bg-primary dark:text-primary-foreground'
-                                  : 'bg-green-600 text-white dark:bg-green-700 dark:text-primary-foreground'
-                              }`}
-                            >
-                              {activity.modality}
-                            </Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-marron-legado/80 dark:text-muted-foreground">No hay actividades recientes.</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-
-            {/* ACTIVIDADES */}
-            <TabsContent value="activities">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                {isAdmin && (
-                  <div className="flex justify-end mb-6">
-                    <motion.div whileTap={{ scale: 0.95 }}>
-                      <Link to="/admin/activities/new">
-                        <Button
-                          variant="antoniano"
-                          className="text-white dark:text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
-                          aria-label="Crear Nueva Actividad"
-                        >
-                          <Plus className="w-5 h-5 mr-2" />
-                          Crear Nueva Actividad
-                        </Button>
-                      </Link>
-                    </motion.div>
+                            <stat.icon className="w-8 h-8 text-gray-200" />
+                        </div>
+                     ))}
                   </div>
-                )}
-                <ActivityList onAddRequest={() => navigate('/admin/activities/new')} />
-              </motion.div>
+
+                  {/* Actividades Recientes */}
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+                    <Card className="h-full border-none shadow-lg bg-white rounded-2xl overflow-hidden">
+                      <CardHeader className="bg-brand-dark text-white p-5">
+                        <CardTitle className="text-lg font-poppins flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-brand-gold" />
+                            Últimas Actividades
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="divide-y divide-gray-100">
+                          {recentActivitiesData.length > 0 ? (
+                            recentActivitiesData.map((activity) => (
+                              <div
+                                key={activity.id}
+                                className="p-4 hover:bg-brand-sand/50 transition-colors flex items-center justify-between group"
+                              >
+                                <div>
+                                  <p className="font-semibold text-brand-dark text-sm group-hover:text-brand-primary transition-colors">{activity.title}</p>
+                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" /> {formatDate(activity.date)}
+                                  </p>
+                                </div>
+                                <Badge
+                                  variant={activity.modality === 'presencial' ? 'default' : 'secondary'}
+                                  className={`text-[10px] px-2 py-0.5 capitalize ${
+                                    activity.modality === 'presencial'
+                                      ? 'bg-brand-primary text-white'
+                                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  }`}
+                                >
+                                  {activity.modality}
+                                </Badge>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-8 text-center text-gray-400 text-sm">
+                                No hay actividades recientes.
+                            </div>
+                          )}
+                        </div>
+                        {isAdmin && (
+                            <div className="p-4 bg-gray-50 text-center">
+                                <Link to="/admin/activities/new">
+                                    <Button variant="outline" size="sm" className="w-full border-dashed border-brand-primary/30 text-brand-primary hover:bg-brand-primary/5">
+                                        <Plus className="w-4 h-4 mr-2" /> Crear Nueva
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+              </div>
             </TabsContent>
 
-            {/* PENDIENTES */}
-            <TabsContent value="pending">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <PendingConfirmationsList />
-              </motion.div>
-            </TabsContent>
+            {/* --- CONTENIDO DE OTRAS TABS --- */}
+            {/* Wrapper genérico para las demás secciones para darles animación */}
+            <div className="min-h-[500px]">
+                <TabsContent value="activities">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    {isAdmin && (
+                    <div className="flex justify-end mb-6">
+                        <Link to="/admin/activities/new">
+                            <Button className="bg-brand-action hover:bg-red-800 text-white font-bold shadow-md">
+                                <Plus className="w-5 h-5 mr-2" />
+                                Crear Nueva Actividad
+                            </Button>
+                        </Link>
+                    </div>
+                    )}
+                    <ActivityList onAddRequest={() => navigate('/admin/activities/new')} />
+                </motion.div>
+                </TabsContent>
 
-            {/* USUARIOS */}
-            <TabsContent value="users">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <UserList />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="pending">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <PendingConfirmationsList />
+                    </motion.div>
+                </TabsContent>
 
-            {/* COLABORACIONES */}
-            <TabsContent value="memberships">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <MembershipList />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="users">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <UserList />
+                    </motion.div>
+                </TabsContent>
 
-            {/* DONACIONES */}
-            <TabsContent value="donations">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <DonationList />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="memberships">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <MembershipList />
+                    </motion.div>
+                </TabsContent>
 
-            {/* DOCUMENTOS LEGALES */}
-            <TabsContent value="legal_documents">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <LegalDocumentList />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="donations">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <DonationList />
+                    </motion.div>
+                </TabsContent>
 
-            {/* PARTNERS */}
-            <TabsContent value="partners">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <PartnersAdmin />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="legal_documents">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <LegalDocumentList />
+                    </motion.div>
+                </TabsContent>
 
-            {/* BENEFICIOS */}
-            <TabsContent value="benefits">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <BenefitsAdmin />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="partners">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <PartnersAdmin />
+                    </motion.div>
+                </TabsContent>
 
-            {/* NOVEDADES */}
-            <TabsContent value="news">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <NewsAdmin />
-              </motion.div>
-            </TabsContent>
+                <TabsContent value="benefits">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <BenefitsAdmin />
+                    </motion.div>
+                </TabsContent>
+
+                <TabsContent value="news">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <NewsAdmin />
+                    </motion.div>
+                </TabsContent>
+            </div>
+
           </Tabs>
         </div>
       </section>
