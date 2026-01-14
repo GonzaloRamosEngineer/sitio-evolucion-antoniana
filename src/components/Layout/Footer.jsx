@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Heart, 
   Mail, 
   Phone, 
   MapPin, 
@@ -59,7 +58,8 @@ const Footer = () => {
       {/* Fondo sutil */}
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 relative z-10">
+      {/* Aumentamos pb-12 para dar aire en mobile */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
           {/* Columna 1: Marca */}
@@ -70,7 +70,6 @@ const Footer = () => {
               viewport={{ once: true }}
               className="flex items-center space-x-3"
             >
-              {/* Logo con fondo blanco para contraste */}
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5">
                  <img 
                     src="/img/transparente.png" 
@@ -162,29 +161,31 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* --- BARRA INFERIOR --- */}
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-xs text-gray-500 text-center md:text-left">
+        {/* --- BARRA INFERIOR (Con Firma Visible) --- */}
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6 pb-4 md:pb-0">
+          <p className="text-xs text-gray-500 text-center md:text-left order-2 md:order-1">
             © {new Date().getFullYear()} Fundación Evolución Antoniana. Todos los derechos reservados.
           </p>
 
-          {/* --- FIRMA DIGITAL MATCH GLOBAL (Estilo Matukana) --- */}
+          {/* --- FIRMA DIGITAL MATCH GLOBAL --- */}
+          {/* Ajuste: 'flex' explícito, colores más claros para texto oscuro */}
           <a 
             href="https://www.digitalmatchglobal.com/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/20 border border-white/5 hover:border-[#2563EB]/50 transition-all duration-500 overflow-hidden"
+            className="group relative flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-[#2563EB]/50 transition-all duration-500 overflow-hidden order-1 md:order-2"
           >
             {/* Efecto de brillo en background */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2563EB]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
             
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-hover:text-gray-300 transition-colors">Made by</span>
+            {/* Texto más claro para contraste */}
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium group-hover:text-gray-200 transition-colors">Made by</span>
             
             <span className="text-xs font-bold bg-gradient-to-r from-[#2563EB] to-[#6D5DFE] bg-clip-text text-transparent transition-all duration-300 group-hover:brightness-125">
                 DigitalMatchGlobal
             </span>
             
-            <Zap size={12} className="text-gray-600 group-hover:text-[#6D5DFE] group-hover:fill-[#6D5DFE] transition-all duration-300" />
+            <Zap size={12} className="text-gray-400 group-hover:text-[#6D5DFE] group-hover:fill-[#6D5DFE] transition-all duration-300" />
           </a>
         </div>
       </div>
