@@ -59,7 +59,7 @@ const Home = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 1, ease: [0.22, 1, 0.36, 1] }
+      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
     }
   };
 
@@ -104,11 +104,8 @@ const Home = () => {
                 <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-sand">Fundación Antoniana</span>
               </motion.div>
 
-              {/* TÍTULO CON AJUSTE DE ESPACIADO */}
-              <motion.h1 variants={itemVariants} className="text-6xl lg:text-[5.5rem] font-black font-poppins text-white leading-[0.9] tracking-tight mb-8">
-                Construyendo{" "}
-                <br className="hidden md:block" />
-                un{" "}
+              <motion.h1 variants={itemVariants} className="text-6xl lg:text-[5.5rem] font-black font-poppins text-white leading-[0.9] tracking-tighter mb-8">
+                Construyendo un <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-sand via-brand-gold to-brand-sand">
                   Futuro Mejor
                 </span>
@@ -158,7 +155,7 @@ const Home = () => {
                   alt="Impacto Social"
                 />
               </div>
-              {/* Elemento Flotante */}
+              {/* Elemento Flotante de Lujo */}
               <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-[2rem] shadow-2xl flex items-center gap-4 z-20 border border-gray-100">
                 <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600">
                   <CheckCircle2 size={24} />
@@ -179,7 +176,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- STATS SECTION (Bento Flotante) --- */}
+      {/* --- STATS SECTION (Estilo Bento Flotante) --- */}
       <section className="relative z-20 -mt-16 pb-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.08)] border border-gray-50 p-10 lg:p-16 grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -204,7 +201,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- NUESTROS PILARES --- */}
+      {/* --- NUESTROS PILARES (Estilo Luxury Grid) --- */}
       <section className="py-32 bg-brand-sand/20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-24">
@@ -217,9 +214,8 @@ const Home = () => {
             <h2 className="text-4xl lg:text-5xl font-black font-poppins text-brand-dark mb-6">
               Los Pilares de la Evolución
             </h2>
-            <div className="w-20 h-1 bg-brand-gold mx-auto rounded-full mb-6"></div>
             <p className="text-lg text-gray-500 font-light">
-              Principios que fusionan la tradición solidaria con la innovación moderna.
+              Principios que fusionan la tradición solidaria con la innovación moderna para crear cambios reales.
             </p>
           </div>
 
@@ -234,15 +230,15 @@ const Home = () => {
                 className="h-full"
               >
                 <Card className="h-full border-none shadow-[0_10px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-500 bg-white rounded-[2.5rem] group overflow-hidden">
-                  <CardHeader className="pt-10 text-center lg:text-left">
-                    <div className="w-16 h-16 bg-brand-sand/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-primary group-hover:scale-110 transition-all duration-500 group-hover:rotate-6 mx-auto lg:mx-0">
+                  <CardHeader className="pt-10">
+                    <div className="w-16 h-16 bg-brand-sand/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-primary group-hover:scale-110 transition-all duration-500 group-hover:rotate-6">
                       <feature.icon className="w-8 h-8 text-brand-primary group-hover:text-white transition-colors" />
                     </div>
                     <CardTitle className="text-2xl font-bold text-brand-dark group-hover:text-brand-primary transition-colors">
                       {feature.title}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pb-10 text-center lg:text-left">
+                  <CardContent className="pb-10">
                     <p className="text-gray-500 leading-relaxed text-sm">
                       {feature.description}
                     </p>
@@ -254,9 +250,10 @@ const Home = () => {
         </div>
       </section>
 
-      {/* --- CTA FINAL --- */}
+      {/* --- CTA FINAL DE IMPACTO --- */}
       <section className="py-32 bg-brand-dark relative">
         <div className="absolute inset-0 bg-brand-primary/5" />
+        
         <div className="relative max-w-5xl mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -272,13 +269,17 @@ const Home = () => {
               <span className="text-brand-gold">Evolución</span>?
             </h2>
             
+            <p className="text-xl text-gray-400 font-light mb-12 max-w-2xl mx-auto">
+              Únete a nuestra red de impacto. Accede a beneficios exclusivos y contribuye al desarrollo de Salta.
+            </p>
+
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Button
                 size="lg"
-                className="h-16 px-12 bg-brand-gold text-brand-dark font-black hover:bg-white rounded-2xl text-xl shadow-2xl transition-all duration-500 transform hover:-translate-y-1"
+                className="h-16 px-12 bg-brand-gold text-brand-dark font-black hover:bg-white rounded-2xl text-xl shadow-2xl transition-all duration-500 transform hover:-translate-y-1 active:scale-95"
                 asChild
               >
-                <Link to="/colaborar">
+                <Link to="/collaborate">
                   <Heart className="mr-3 h-6 w-6 fill-brand-dark" />
                   QUIERO SUMARME
                 </Link>
