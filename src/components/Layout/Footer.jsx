@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, MessageSquare as MessageSquareText, X } from 'lucide-react';
+import { 
+  Heart, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Facebook, 
+  Instagram, 
+  Linkedin, 
+  Twitter, 
+  MessageSquare, 
+  Zap 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Footer = () => {
@@ -29,8 +40,8 @@ const Footer = () => {
     { icon: Facebook, href: 'https://www.facebook.com/FundacionEvolucionAntoniana/', name: 'Facebook' },
     { icon: Instagram, href: 'https://www.instagram.com/evolucionantoniana', name: 'Instagram' },
     { icon: Linkedin, href: 'https://www.linkedin.com/company/fundacionevolucionantoniana', name: 'LinkedIn' },
-    { icon: X, href: 'https://x.com/evoluantoniana', name: 'X (Twitter)' },
-    { icon: MessageSquareText, href: 'https://wa.me/543872131916?text=Hola%2C%20quiero%20sumarme%20a%20la%20red%20solidaria', name: 'WhatsApp' },
+    { icon: Twitter, href: 'https://x.com/evoluantoniana', name: 'X (Twitter)' },
+    { icon: MessageSquare, href: 'https://wa.me/543872131916?text=Hola%2C%20quiero%20sumarme%20a%20la%20red%20solidaria', name: 'WhatsApp' },
   ];
 
   const contactInfo = [
@@ -40,135 +51,137 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-marron-legado text-blanco-fundacion">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-12">
-          <div className="md:col-span-4">
+    <footer className="bg-brand-dark text-white relative overflow-hidden font-sans">
+      
+      {/* Decoración superior (Línea de marca) */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-primary via-brand-gold to-brand-action"></div>
+
+      {/* Fondo sutil */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          
+          {/* Columna 1: Marca */}
+          <div className="space-y-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex items-center space-x-3 mb-6"
+              viewport={{ once: true }}
+              className="flex items-center space-x-3"
             >
-              <div className="w-14 h-14 bg-gradient-to-br from-azul-antoniano to-celeste-complementario rounded-xl flex items-center justify-center shadow-lg">
-                <img src="/img/fondo_blanco_logo.png" alt="Logo Fundación" className="w-10 h-10 rounded-md object-cover" />
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5">
+                 {/* Logo imagen o inicial */}
+                 <img src="/img/transparente.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => e.target.style.display = 'none'} />
+                 {/* Fallback si no carga imagen */}
+                 <span className="text-brand-primary font-bold text-xl absolute">E</span>
               </div>
               <div>
-                <p className="text-2xl font-poppins font-bold leading-tight text-blanco-fundacion">Fundación</p>
-                <p className="text-2xl font-poppins font-bold text-celeste-complementario leading-tight">Evolución Antoniana</p>
+                <p className="text-xl font-poppins font-bold leading-none text-white">Fundación</p>
+                <p className="text-xl font-poppins font-bold text-brand-gold leading-none">Evolución</p>
               </div>
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-sm text-blanco-fundacion/80 mb-6 max-w-md leading-relaxed"
-            >
-              Organización sin fines de lucro legalmente constituida en Salta, Argentina, dedicada a impulsar oportunidades y transformar vidas.
-            </motion.p>
+            
+            <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
+              Organización sin fines de lucro legalmente constituida en Salta, Argentina. Impulsamos oportunidades y transformamos vidas a través de la tecnología y el deporte.
+            </p>
+
+            <div className="flex gap-3">
+               {socialLinks.map((social) => (
+                 <a 
+                   key={social.name}
+                   href={social.href}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="w-10 h-10 rounded-full bg-white/5 hover:bg-brand-primary/20 flex items-center justify-center text-gray-400 hover:text-brand-gold transition-all duration-300 hover:scale-110 border border-white/5 hover:border-brand-primary/30"
+                   aria-label={social.name}
+                 >
+                   <social.icon size={18} />
+                 </a>
+               ))}
+            </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="md:col-span-2"
-          >
-            <p className="text-lg font-poppins font-semibold mb-5 uppercase tracking-wider text-celeste-complementario">{footerSections[0].title}</p>
+          {/* Columna 2: Navegación */}
+          <div>
+            <h3 className="text-lg font-poppins font-bold mb-6 text-white border-l-4 border-brand-action pl-3">Explorar</h3>
             <ul className="space-y-3">
               {footerSections[0].links.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-blanco-fundacion/80 hover:text-celeste-complementario transition-colors duration-300 text-sm hover:underline"
+                    className="text-gray-400 hover:text-brand-gold transition-colors duration-300 text-sm flex items-center gap-2 group"
                   >
+                    <span className="w-1 h-1 bg-brand-gold rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
                     {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="md:col-span-3"
-          >
-            <p className="text-lg font-poppins font-semibold mb-5 uppercase tracking-wider text-celeste-complementario">{footerSections[1].title}</p>
-            <ul className="space-y-3 mb-8">
+          {/* Columna 3: Legal */}
+          <div>
+            <h3 className="text-lg font-poppins font-bold mb-6 text-white border-l-4 border-brand-gold pl-3">Legal</h3>
+            <ul className="space-y-3">
               {footerSections[1].links.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-blanco-fundacion/80 hover:text-celeste-complementario transition-colors duration-300 text-sm hover:underline"
+                    className="text-gray-400 hover:text-white transition-colors duration-300 text-sm hover:underline decoration-brand-gold/50 underline-offset-4"
                   >
                     {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
-            <p className="text-lg font-poppins font-semibold mb-5 uppercase tracking-wider text-celeste-complementario">Contacto</p>
+          </div>
+
+          {/* Columna 4: Contacto */}
+          <div>
+            <h3 className="text-lg font-poppins font-bold mb-6 text-white border-l-4 border-brand-primary pl-3">Contacto</h3>
             <ul className="space-y-4">
-              {contactInfo.map((item) => (
-                <li key={item.text} className="flex items-start space-x-3">
-                  <item.icon className="w-5 h-5 text-celeste-complementario mt-0.5 flex-shrink-0" />
+              {contactInfo.map((item, idx) => (
+                <li key={idx} className="flex items-start gap-3 text-sm text-gray-400 group">
+                  <item.icon className="w-5 h-5 text-brand-gold mt-0.5 group-hover:text-white transition-colors" />
                   {item.href ? (
-                    <a href={item.href} className="text-sm text-blanco-fundacion/80 hover:text-celeste-complementario transition-colors duration-300 hover:underline">
+                    <a href={item.href} className="hover:text-white transition-colors border-b border-transparent hover:border-gray-500">
                       {item.text}
                     </a>
                   ) : (
-                    <span className="text-sm text-blanco-fundacion/80">{item.text}</span>
+                    <span>{item.text}</span>
                   )}
                 </li>
               ))}
             </ul>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="md:col-span-3"
-          >
-            <p className="text-lg font-poppins font-semibold mb-5 uppercase tracking-wider text-celeste-complementario">Seguinos</p>
-            <div className="flex flex-wrap gap-4">
-              {socialLinks.map((social) => (
-                <motion.a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blanco-fundacion/80 hover:text-celeste-complementario transition-colors duration-300 p-2 bg-blanco-fundacion/10 hover:bg-blanco-fundacion/20 rounded-lg flex items-center justify-center"
-                  whileHover={{ scale: 1.1, rotate: 3 }}
-                  whileTap={{ scale: 0.95 }}
-                  title={social.name}
-                >
-                  <social.icon className="w-6 h-6" />
-                </motion.a>
-              ))}
-            </div>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="border-t border-blanco-fundacion/20 mt-16 pt-8"
-        >
-          <div className="flex justify-center items-center">
-            <a 
-              href="https://digitalmatchglobal.com/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-xs text-blanco-fundacion/60 hover:text-celeste-complementario transition-colors duration-300 text-center"
-            >
-              <p>© Copyright DigitalMatchGlobal. All Rights Reserved</p>
-              <p className="mt-1">Designed by DigitalMatchGlobal</p>
-            </a>
-          </div>
-        </motion.div>
+        {/* --- BARRA INFERIOR --- */}
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-xs text-gray-500 text-center md:text-left">
+            © {new Date().getFullYear()} Fundación Evolución Antoniana. Todos los derechos reservados.
+          </p>
+
+          {/* --- FIRMA DIGITAL MATCH GLOBAL (Estilo Matukana) --- */}
+          <a 
+            href="https://www.digitalmatchglobal.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/20 border border-white/5 hover:border-[#2563EB]/50 transition-all duration-500 overflow-hidden"
+          >
+            {/* Efecto de brillo en background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2563EB]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+            
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-hover:text-gray-300 transition-colors">Made by</span>
+            
+            <span className="text-xs font-bold bg-gradient-to-r from-[#2563EB] to-[#6D5DFE] bg-clip-text text-transparent transition-all duration-300 group-hover:brightness-125">
+                DigitalMatchGlobal
+            </span>
+            
+            <Zap size={12} className="text-gray-600 group-hover:text-[#6D5DFE] group-hover:fill-[#6D5DFE] transition-all duration-300" />
+          </a>
+        </div>
       </div>
     </footer>
   );
