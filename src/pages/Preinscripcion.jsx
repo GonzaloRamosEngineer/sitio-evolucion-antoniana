@@ -54,4 +54,4 @@ const Preinscription = () => {
   );
 };
 
-export default Preinscripcion;
+export default Preinscription;
