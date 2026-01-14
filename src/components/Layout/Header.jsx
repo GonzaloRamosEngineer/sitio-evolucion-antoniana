@@ -20,6 +20,7 @@ import {
   FileText,
   ChevronDown,
   User,
+  GraduationCap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
