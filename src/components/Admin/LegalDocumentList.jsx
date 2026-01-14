@@ -3,14 +3,24 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  Dialog, DialogContent, DialogDescription, DialogHeader, 
+  DialogTitle, DialogFooter, DialogClose 
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, PlusCircle, Edit, Trash2, ExternalLink, AlertTriangle, FileText } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { 
+  Loader2, PlusCircle, Edit, Trash2, ExternalLink, 
+  AlertTriangle, FileText, ShieldCheck, Calendar, Search
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const CATEGORIES = ["Estatuto", "Balance", "Política", "Términos de Uso", "Informe", "Otro"];
 
 const LegalDocumentForm = ({ isOpen, onClose, onSave, documentData, isLoading }) => {
   const [title, setTitle] = useState('');
@@ -18,8 +28,6 @@ const LegalDocumentForm = ({ isOpen, onClose, onSave, documentData, isLoading })
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
   const { toast } = useToast();
-
-  const CATEGORIES = ["Estatuto", "Balance", "Política", "Términos de Uso", "Informe", "Otro"];
 
   useEffect(() => {
     if (documentData) {
@@ -50,46 +58,73 @@ const LegalDocumentForm = ({ isOpen, onClose, onSave, documentData, isLoading })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-blanco-fundacion dark:bg-gray-800">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-poppins text-primary-antoniano dark:text-primary">
-            {documentData ? 'Editar Documento Legal' : 'Nuevo Documento Legal'}
+      <DialogContent className="sm:max-w-xl rounded-3xl border-none p-0 bg-white shadow-2xl overflow-hidden">
+        <DialogHeader className="bg-brand-sand p-8 border-b border-gray-100">
+          <DialogTitle className="text-2xl font-poppins font-bold text-brand-dark flex items-center gap-2">
+            <FileText className="w-6 h-6 text-brand-primary" />
+            {documentData ? 'Editar Documento' : 'Nuevo Documento Legal'}
           </DialogTitle>
-          <DialogDescription className="text-marron-legado/90 dark:text-gray-400">
-            {documentData ? 'Modifica los detalles del documento.' : 'Completa los campos para agregar un nuevo documento.'}
+          <DialogDescription className="text-gray-500">
+            Administra la transparencia institucional cargando archivos oficiales.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto pr-2">
-          <div>
-            <Label htmlFor="doc-title" className="text-marron-legado dark:text-gray-300">Título</Label>
-            <Input id="doc-title" value={title} onChange={(e) => setTitle(e.target.value)} required className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="doc-title" className="font-bold text-brand-dark">Título del Documento *</Label>
+              <Input 
+                id="doc-title" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                placeholder="Ej: Balance General Anual 2025"
+                required 
+                className="h-11 border-gray-200 focus:border-brand-primary rounded-xl" 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="doc-category" className="font-bold text-brand-dark">Categoría *</Label>
+              <Select value={category} onValueChange={setCategory} required>
+                <SelectTrigger className="h-11 border-gray-200 rounded-xl">
+                  <SelectValue placeholder="Selecciona..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl shadow-xl border-gray-100">
+                  {CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc-url" className="font-bold text-brand-dark">URL del PDF/Drive *</Label>
+              <Input 
+                id="doc-url" 
+                type="url" 
+                value={url} 
+                onChange={(e) => setUrl(e.target.value)} 
+                placeholder="https://drive.google.com/..." 
+                required 
+                className="h-11 border-gray-200 focus:border-brand-primary rounded-xl" 
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="doc-description" className="text-marron-legado dark:text-gray-300">Descripción (Opcional)</Label>
-            <Textarea id="doc-description" value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-[80px] border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+
+          <div className="space-y-2">
+            <Label htmlFor="doc-description" className="font-bold text-brand-dark">Descripción (Opcional)</Label>
+            <Textarea 
+              id="doc-description" 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)} 
+              placeholder="Detalles adicionales sobre el documento..."
+              className="min-h-[100px] border-gray-200 focus:border-brand-primary rounded-xl p-4" 
+            />
           </div>
-          <div>
-            <Label htmlFor="doc-url" className="text-marron-legado dark:text-gray-300">URL del Documento</Label>
-            <Input id="doc-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://ejemplo.com/documento.pdf" required className="border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-          </div>
-          <div>
-            <Label htmlFor="doc-category" className="text-marron-legado dark:text-gray-300">Categoría</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger className="w-full border-marron-legado/30 focus:border-primary-antoniano dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-700 dark:text-white">
-                {CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="pt-5">
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isLoading} className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                Cancelar
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isLoading} className="bg-primary-antoniano text-white hover:bg-primary-antoniano/90 dark:bg-primary dark:hover:bg-primary/90">
+
+          <DialogFooter className="pt-6 gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="text-gray-400 font-bold">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading} className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-10 rounded-xl shadow-lg transition-all">
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (documentData ? 'Guardar Cambios' : 'Crear Documento')}
             </Button>
           </DialogFooter>
@@ -107,6 +142,7 @@ const LegalDocumentList = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { toast } = useToast();
 
@@ -150,119 +186,144 @@ const LegalDocumentList = () => {
 
       if (error) throw error;
       toast({
-        title: `Documento ${editingDocument ? 'actualizado' : 'creado'}`,
-        className: "bg-green-500 text-white dark:bg-green-600 dark:text-white"
+        title: `¡Documento ${editingDocument ? 'actualizado' : 'creado'}!`,
+        className: "bg-green-600 text-white border-none"
       });
       fetchDocuments();
       setIsFormOpen(false);
       setEditingDocument(null);
     } catch (error) {
-      console.error('Error saving document:', error);
-      toast({ title: "Error al Guardar", description: error.message, variant: "destructive" });
+      toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
     } finally {
       setFormLoading(false);
     }
   };
-  
-  const openEditForm = (doc) => {
-    setEditingDocument(doc);
-    setIsFormOpen(true);
-  };
 
-  const openNewForm = () => {
-    setEditingDocument(null);
-    setIsFormOpen(true);
-  };
-  
-  const confirmDelete = (doc) => {
-    setDocumentToDelete(doc);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDeleteDocument = async () => {
-    if (!documentToDelete) return;
-    setFormLoading(true);
-    try {
-      const { error } = await supabase
-        .from('legal_documents')
-        .delete()
-        .eq('id', documentToDelete.id);
-      if (error) throw error;
-      toast({ title: "Documento eliminado", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
-      fetchDocuments();
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      toast({ title: "Error al Eliminar", description: error.message, variant: "destructive" });
-    } finally {
-      setFormLoading(false);
-      setShowDeleteConfirm(false);
-      setDocumentToDelete(null);
-    }
-  };
+  const filteredDocs = documents.filter(doc => 
+    doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-antoniano" />
-        <p className="ml-2 text-marron-legado dark:text-muted-foreground">Cargando documentos legales...</p>
+      <div className="flex flex-col items-center justify-center p-12 space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
+        <p className="text-sm text-gray-500 font-medium italic">Sincronizando archivos legales...</p>
       </div>
     );
   }
 
   return (
-    <Card className="border-0 shadow-lg bg-white dark:bg-card">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
-          <CardTitle className="text-2xl font-poppins text-primary-antoniano dark:text-primary">Gestión de Documentos Legales</CardTitle>
-          <CardDescription className="text-marron-legado/90 dark:text-muted-foreground">Administra los documentos legales de la fundación.</CardDescription>
+    <div className="space-y-6">
+      {/* HEADER DE SECCIÓN */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="bg-brand-sand p-2 rounded-xl">
+            <ShieldCheck className="w-6 h-6 text-brand-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-brand-dark font-poppins">Documentos Legales</h2>
+            <p className="text-sm text-gray-500">Módulo de transparencia y legalidad institucional.</p>
+          </div>
         </div>
-        <Button onClick={openNewForm} variant="antoniano" className="text-white dark:text-primary-foreground">
-          <PlusCircle className="w-5 h-5 mr-2" /> Nuevo Documento
+        <Button onClick={() => { setEditingDocument(null); setIsFormOpen(true); }} className="bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-md transition-all">
+          <PlusCircle className="mr-2 h-5 w-5" />
+          Nuevo Documento
         </Button>
-      </CardHeader>
-      <CardContent>
-        {documents.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 text-marron-legado/30 dark:text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-marron-legado/70 dark:text-muted-foreground text-lg">No hay documentos legales cargados.</p>
-            <Button onClick={openNewForm} variant="link" className="mt-2 text-primary-antoniano dark:text-primary">
-              Crear el primer documento
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {documents.map((doc) => (
-              <motion.div 
-                key={doc.id} 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-celeste-complementario dark:border-accent rounded-lg shadow-sm hover:shadow-md transition-all duration-300 bg-celeste-complementario/10 dark:bg-accent/20"
-              >
-                <div className="flex-1 mb-3 sm:mb-0">
-                  <h3 className="font-semibold text-lg text-primary-antoniano dark:text-primary">{doc.title}</h3>
-                  <p className="text-xs text-marron-legado/80 dark:text-muted-foreground/80 max-w-xl truncate" title={doc.description}>{doc.description || "Sin descripción"}</p>
-                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center mt-1">
-                    <ExternalLink className="w-3 h-3 mr-1" /> {doc.url}
-                  </a>
-                  <p className="text-xs text-marron-legado/60 dark:text-muted-foreground/70 mt-1">
-                    Publicado: {new Date(doc.created_at).toLocaleDateString('es-AR')}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  <Badge variant="outline" className="capitalize border-primary-antoniano/50 text-primary-antoniano dark:border-primary/50 dark:text-primary">{doc.category}</Badge>
-                  <Button variant="ghost" size="sm" onClick={() => openEditForm(doc)} className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1.5 h-auto">
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => confirmDelete(doc)} className="text-destructive hover:text-destructive/80 dark:hover:text-destructive/90 p-1.5 h-auto">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </CardContent>
+      </div>
+
+      {/* BUSCADOR */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input 
+            placeholder="Filtrar por nombre o categoría..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-11 border-gray-200 focus:border-brand-primary rounded-xl bg-white"
+        />
+      </div>
+
+      {/* TABLA DE CONTENIDO */}
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-brand-sand border-b border-gray-100">
+                <th className="px-6 py-4 text-left text-xs font-bold text-brand-dark uppercase tracking-widest">Documento</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-brand-dark uppercase tracking-widest">Categoría</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-brand-dark uppercase tracking-widest">Publicación</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-brand-dark uppercase tracking-widest">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredDocs.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-6 py-12 text-center text-gray-400 italic">
+                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                    No se encontraron documentos legales.
+                  </td>
+                </tr>
+              ) : (
+                filteredDocs.map((doc, index) => (
+                  <motion.tr 
+                    key={doc.id} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="hover:bg-brand-sand/30 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
+                            <FileText size={20} />
+                        </div>
+                        <div className="max-w-md">
+                          <p className="font-bold text-brand-dark group-hover:text-brand-primary transition-colors">{doc.title}</p>
+                          <p className="text-xs text-gray-400 line-clamp-1">{doc.description || "Sin descripción adicional."}</p>
+                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-mono uppercase tracking-tighter">
+                            <ExternalLink className="w-2.5 h-2.5" /> Abrir Archivo Original
+                          </a>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant="secondary" className="bg-white border border-gray-200 text-gray-600 px-3 py-1 font-medium shadow-sm">
+                        {doc.category}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                            <Calendar size={14} className="text-brand-gold" />
+                            {new Date(doc.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-9 w-9 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white border border-gray-100 shadow-sm transition-all" 
+                          onClick={() => { setEditingDocument(doc); setIsFormOpen(true); }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm transition-all" 
+                          onClick={() => { setDocumentToDelete(doc); setShowDeleteConfirm(true); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <LegalDocumentForm
         isOpen={isFormOpen}
@@ -272,27 +333,38 @@ const LegalDocumentList = () => {
         isLoading={formLoading}
       />
 
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-md bg-blanco-fundacion dark:bg-gray-800">
+        <DialogContent className="sm:max-w-md rounded-3xl border-none bg-white p-8 text-center shadow-2xl">
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
           <DialogHeader>
-            <DialogTitle className="text-xl font-poppins text-destructive flex items-center">
-              <AlertTriangle className="mr-2 h-5 w-5" /> Confirmar Eliminación
-            </DialogTitle>
-            <DialogDescription className="text-marron-legado/90 dark:text-gray-400 pt-2">
-              ¿Estás seguro de que deseas eliminar el documento "<strong>{documentToDelete?.title}</strong>"? Esta acción no se puede deshacer.
+            <DialogTitle className="text-2xl font-poppins font-bold text-brand-dark">Eliminar Documento</DialogTitle>
+            <DialogDescription className="text-gray-500 text-base mt-2">
+              ¿Estás seguro de que deseas eliminar <strong>"{documentToDelete?.title}"</strong>?<br/>Esta acción no se puede revertir.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="pt-4">
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={formLoading} className="border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+          <div className="flex flex-col gap-3 mt-8">
+            <Button variant="destructive" onClick={async () => {
+                 setFormLoading(true);
+                 const { error } = await supabase.from('legal_documents').delete().eq('id', documentToDelete.id);
+                 if (!error) {
+                    toast({ title: "Documento eliminado", className: "bg-green-600 text-white border-none" });
+                    fetchDocuments();
+                    setShowDeleteConfirm(false);
+                 }
+                 setFormLoading(false);
+            }} disabled={formLoading} className="h-12 rounded-xl font-bold text-lg shadow-lg">
+              {formLoading ? <Loader2 className="animate-spin mr-2" /> : "Sí, Eliminar Archivo"}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)} disabled={formLoading} className="text-gray-400 font-bold">
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteDocument} disabled={formLoading} className="bg-destructive text-white hover:bg-destructive/90">
-              {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Eliminar Documento"}
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 };
 
