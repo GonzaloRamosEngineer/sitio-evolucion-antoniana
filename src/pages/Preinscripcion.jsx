@@ -4,7 +4,7 @@ import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EducationForm from '@/components/Forms/EducationForm';
 
-const Preinscription = () => {
+const Preinscripcion = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (isSuccess) {
@@ -15,7 +15,7 @@ const Preinscription = () => {
             <CheckCircle2 size={40} />
           </div>
           <h2 className="text-3xl font-black text-brand-dark mb-4 uppercase tracking-tighter">¡Preinscripción Exitosa!</h2>
-          <p className="text-gray-500 mb-8 italic">Tus datos han sido enviados al sistema del Ministerio de Educación. Pronto recibirás novedades en tu teléfono o correo.</p>
+          <p className="text-gray-500 mb-8 italic">Tus datos han sido enviados correctamente. Pronto recibirás novedades en tu teléfono o correo.</p>
           <Button className="bg-brand-dark rounded-xl h-12 px-8 font-black text-white hover:bg-brand-primary transition-colors" onClick={() => window.location.href = '/'}>VOLVER AL INICIO</Button>
         </motion.div>
       </div>
@@ -54,4 +54,4 @@ const Preinscription = () => {
   );
 };
 
-export default Preinscription;
+export default Preinscripcion;
