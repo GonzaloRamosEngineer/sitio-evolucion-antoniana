@@ -1,7 +1,7 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit3, ShieldCheck, User } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 
 const DashboardHeader = ({ user, onUpdateSuccess }) => {
@@ -14,26 +14,42 @@ const DashboardHeader = ({ user, onUpdateSuccess }) => {
   };
 
   return (
-    <div className="mb-10 p-6 bg-gradient-to-r from-primary-antoniano to-azul-antoniano dark:from-primary dark:to-primary/80 rounded-xl shadow-lg text-white">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-16 w-16 border-2 border-celeste-complementario dark:border-primary/70">
-            <AvatarImage src={user?.avatar_url || ''} alt={user?.name || 'Usuario'} />
-            <AvatarFallback className="bg-celeste-complementario dark:bg-accent text-primary-antoniano dark:text-primary text-2xl font-semibold">
+    <div className="mb-8 p-8 bg-gradient-to-br from-brand-primary to-blue-700 rounded-3xl shadow-xl text-white relative overflow-hidden">
+      {/* Decoración de fondo */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+          <Avatar className="h-24 w-24 border-4 border-white/20 shadow-2xl">
+            <AvatarImage src={user?.avatar_url || ''} alt={user?.name || 'Usuario'} className="object-cover" />
+            <AvatarFallback className="bg-brand-sand text-brand-primary text-3xl font-bold">
               {getInitials(user?.name)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <h2 className="text-2xl font-poppins font-semibold text-white">{user?.name || user?.email || 'Usuario'}</h2>
-            <p className="text-sm text-celeste-complementario/90 dark:text-primary/90">
-              {user?.role === 'admin' ? 'Administrador/a' : 'Miembro'}
-            </p>
+          
+          <div className="space-y-1">
+            <h2 className="text-3xl font-poppins font-bold text-white tracking-tight">
+                {user?.name || user?.email?.split('@')[0] || 'Usuario'}
+            </h2>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-blue-100">
+                {user?.role === 'admin' ? <ShieldCheck className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                <span className="text-sm font-medium uppercase tracking-wider">
+                    {user?.role === 'admin' ? 'Administrador' : 'Miembro Activo'}
+                </span>
+            </div>
+            {user?.email && (
+                <p className="text-sm text-blue-200/80">{user.email}</p>
+            )}
           </div>
         </div>
+
         <EditProfileModal user={user} onUpdateSuccess={onUpdateSuccess}>
-          <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/30 dark:bg-primary/20 dark:hover:bg-primary/30 dark:text-primary-foreground dark:border-primary/50">
-            <Edit className="w-4 h-4 mr-2" />
-            Editar Datos del Perfil
+          <Button 
+            variant="outline" 
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 transition-all backdrop-blur-sm"
+          >
+            <Edit3 className="w-4 h-4 mr-2" />
+            Editar Perfil
           </Button>
         </EditProfileModal>
       </div>
