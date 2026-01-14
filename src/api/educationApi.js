@@ -55,3 +55,32 @@ export const createPreinscription = async (formData) => {
     throw error;
   }
 };
+
+
+// Agregá esto al final de tu educationApi.js
+
+/**
+ * Obtiene todas las preinscripciones (solo para administradores)
+ */
+export const getPreinscriptions = async () => {
+  const { data, error } = await supabase
+    .from('education_preinscriptions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Actualiza el estado de una preinscripción
+ */
+export const updatePreinscriptionStatus = async (id, newStatus) => {
+  const { data, error } = await supabase
+    .from('education_preinscriptions')
+    .update({ status: newStatus })
+    .eq('id', id);
+
+  if (error) throw error;
+  return data;
+};
