@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ActivityForm from '@/components/Admin/ActivityForm'; // Reutilizar el formulario
+import ActivityForm from '@/components/Admin/ActivityForm';
 import { useActivities } from '@/hooks/useActivities';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Edit3, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
@@ -14,8 +14,8 @@ const EditActivityPage = () => {
   const { getActivityById, updateActivity, loading: activitiesHookLoading } = useActivities();
   const { toast } = useToast();
   const [activity, setActivity] = useState(null);
-  const [formLoading, setFormLoading] = useState(false); // Loading específico para el guardado
-  const [pageLoading, setPageLoading] = useState(true); // Loading para cargar la actividad
+  const [formLoading, setFormLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchActivity = async () => {
@@ -46,8 +46,8 @@ const EditActivityPage = () => {
       await updateActivity(id, activityData);
       toast({
         title: "Actividad Actualizada",
-        description: `La actividad "${activityData.title}" ha sido actualizada.`,
-        className: "bg-green-500 text-white",
+        description: `Los cambios en "${activityData.title}" se han guardado correctamente.`,
+        className: "bg-blue-600 text-white border-none",
       });
       navigate('/admin?tab=activities');
     } catch (error) {
@@ -61,57 +61,82 @@ const EditActivityPage = () => {
     }
   };
 
-  if (pageLoading || activitiesHookLoading && !activity) { // Muestra spinner si está cargando la actividad o el hook está ocupado y no hay datos
+  if (pageLoading || (activitiesHookLoading && !activity)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blanco-fundacion">
-        <Loader2 className="h-16 w-16 animate-spin text-primary-antoniano" />
+      <div className="min-h-screen flex items-center justify-center bg-brand-sand">
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
+            <p className="text-gray-500 font-medium">Cargando datos de la actividad...</p>
+        </div>
       </div>
     );
   }
 
   if (!activity) {
-    // Esto no debería alcanzarse si la lógica de fetchActivity es correcta, pero es un fallback.
     return (
-      <div className="min-h-screen flex items-center justify-center text-center p-4">
-        <p className="text-xl text-destructive">No se pudo cargar la actividad para editar.</p>
-        <Button onClick={() => navigate('/admin?tab=activities')} className="mt-4">Volver</Button>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-brand-sand">
+        <div className="bg-red-50 p-4 rounded-full mb-4">
+            <Calendar className="w-10 h-10 text-red-400" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">No se encontró la actividad</h2>
+        <p className="text-gray-500 mb-6">Es posible que haya sido eliminada o el enlace sea incorrecto.</p>
+        <Button onClick={() => navigate('/admin?tab=activities')} variant="outline">
+            Volver al Panel
+        </Button>
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-screen bg-gradient-to-br from-celeste-complementario/20 via-blanco-fundacion to-blanco-fundacion py-8 md:py-12"
-    >
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Button variant="outline" onClick={() => navigate('/admin?tab=activities')} className="text-primary-antoniano border-primary-antoniano hover:bg-celeste-complementario">
+    <div className="min-h-screen bg-brand-sand font-sans py-12 px-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-4xl mx-auto"
+      >
+        {/* Header de Navegación */}
+        <div className="mb-8 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/admin?tab=activities')} 
+            className="text-gray-500 hover:text-brand-primary hover:bg-white/50"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver a Actividades
+            Cancelar Edición
           </Button>
+          <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">Modo Edición</span>
         </div>
-        <Card className="shadow-xl border-marron-legado/10">
-          <CardHeader className="bg-primary-antoniano text-blanco-fundacion rounded-t-lg p-6">
-            <CardTitle className="text-2xl font-poppins">Editar Actividad</CardTitle>
-            <CardDescription className="text-celeste-complementario/80">
-              Modifica los detalles de la actividad "{activity.title}".
-            </CardDescription>
+
+        <Card className="border-none shadow-2xl bg-white overflow-hidden rounded-3xl">
+          <div className="bg-brand-gold p-1"> {/* Borde superior dorado para indicar edición */}</div>
+          
+          <CardHeader className="bg-white border-b border-gray-100 p-8">
+            <div className="flex items-center gap-4">
+                <div className="bg-brand-sand p-3 rounded-full">
+                    <Edit3 className="w-8 h-8 text-brand-gold" />
+                </div>
+                <div>
+                    <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">Editar Actividad</CardTitle>
+                    <CardDescription className="text-gray-500 mt-1">
+                      Modificando: <span className="font-semibold text-brand-primary">"{activity.title}"</span>
+                    </CardDescription>
+                </div>
+            </div>
           </CardHeader>
-          <CardContent className="p-6 md:p-8">
+
+          <CardContent className="p-8">
             <ActivityForm 
               onSave={handleSave} 
               onCancel={() => navigate('/admin?tab=activities')} 
               initialData={activity}
-              isLoading={formLoading || activitiesHookLoading} // Combina loading del hook y del form
+              isLoading={formLoading || activitiesHookLoading}
             />
           </CardContent>
         </Card>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 
