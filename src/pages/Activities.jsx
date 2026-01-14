@@ -1,3 +1,5 @@
+// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\Activities.jsx
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
-import { Calendar, MapPin, Clock, Filter, Loader2, AlertTriangle, Info, MailCheck, LogIn, Hourglass, CheckCircle, XCircle, Archive, ImageOff } from 'lucide-react';
+import { Calendar, MapPin, Clock, Filter, Loader2, AlertTriangle, Info, MailCheck, LogIn, Hourglass, CheckCircle2, XCircle, Archive, ImageOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Activities = () => {
@@ -53,9 +55,9 @@ const Activities = () => {
         title: "¡Pre-Inscripción Exitosa!",
         description: "Hemos enviado un correo para que confirmes tu asistencia. ¡Revisa tu bandeja de entrada!",
         variant: "default",
-        className: "bg-blue-500 text-white",
+        className: "bg-brand-primary text-white border-none",
         duration: 7000,
-        action: <MailCheck className="h-5 w-5" />
+        action: <MailCheck className="h-5 w-5 text-brand-gold" />
       });
       refreshActivities(); 
     } catch (error) {
@@ -94,38 +96,38 @@ const Activities = () => {
 
   const getStatusBadge = (status) => {
     let badgeProps = {
-      className: 'text-white dark:text-primary-foreground shadow-md flex items-center gap-1.5',
+      className: 'shadow-sm flex items-center gap-1.5 border px-3 py-1',
       icon: null,
       text: status,
     };
   
     switch (status) {
       case 'Próximamente':
-        badgeProps.className += ' bg-amber-500 dark:bg-amber-600';
+        badgeProps.className += ' bg-amber-50 text-amber-700 border-amber-200';
         badgeProps.icon = <Hourglass className="w-3 h-3" />;
         break;
       case 'Abierta':
-        badgeProps.className += ' bg-green-600 dark:bg-green-700';
-        badgeProps.icon = <CheckCircle className="w-3 h-3" />;
+        badgeProps.className += ' bg-green-50 text-green-700 border-green-200';
+        badgeProps.icon = <CheckCircle2 className="w-3 h-3" />;
         break;
       case 'Cerrada':
-        badgeProps.className += ' bg-red-600 dark:bg-red-700';
+        badgeProps.className += ' bg-red-50 text-red-700 border-red-200';
         badgeProps.icon = <XCircle className="w-3 h-3" />;
         break;
       case 'Finalizada':
-        badgeProps.className += ' bg-gray-500 dark:bg-gray-600';
+        badgeProps.className += ' bg-gray-100 text-gray-600 border-gray-200';
         badgeProps.icon = <Archive className="w-3 h-3" />;
         break;
       default:
-        badgeProps.className += ' bg-gray-400 dark:bg-gray-500';
+        badgeProps.className += ' bg-gray-100 text-gray-600 border-gray-200';
         badgeProps.text = 'Estado desc.';
         break;
     }
   
     return (
-      <Badge className={badgeProps.className}>
+      <Badge variant="outline" className={badgeProps.className}>
         {badgeProps.icon}
-        <span className="hidden sm:inline">{badgeProps.text}</span>
+        <span className="hidden sm:inline font-semibold">{badgeProps.text}</span>
       </Badge>
     );
   };
@@ -134,23 +136,22 @@ const Activities = () => {
     const isFull = (activity.current_participants || 0) >= activity.max_participants;
   
     if (activity.status === 'Finalizada') {
-      return <Button variant="outline" className="w-full cursor-not-allowed" disabled>Actividad Finalizada</Button>;
+      return <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>Actividad Finalizada</Button>;
     }
     if (activity.status === 'Cerrada') {
-      return <Button variant="outline" className="w-full cursor-not-allowed" disabled>Inscripciones Cerradas</Button>;
+      return <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>Inscripciones Cerradas</Button>;
     }
     if (activity.status === 'Próximamente') {
-      return <Button variant="outline" className="w-full cursor-not-allowed" disabled>Próximamente</Button>;
+      return <Button variant="outline" className="w-full cursor-not-allowed border-brand-gold/50 text-brand-gold" disabled>Próximamente</Button>;
     }
     
     if (isFull) {
-      return <Button variant="destructive" className="w-full cursor-not-allowed" disabled>Cupos Agotados</Button>;
+      return <Button variant="destructive" className="w-full cursor-not-allowed opacity-80" disabled>Cupos Agotados</Button>;
     }
   
     return (
       <Button
-        variant="antoniano"
-        className="w-full text-white dark:text-primary-foreground flex items-center justify-center"
+        className="w-full flex items-center justify-center font-bold bg-brand-action hover:bg-red-800 text-white shadow-md hover:shadow-lg transition-all"
         onClick={() => handleUserRegister(activity.id)}
         disabled={authLoading}
       >
@@ -178,8 +179,8 @@ const Activities = () => {
 
   if (showInitialLoader) { 
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-160px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary-antoniano dark:text-primary" />
+      <div className="flex justify-center items-center min-h-[calc(100vh-160px)] bg-brand-sand">
+        <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
       </div>
     );
   }
@@ -191,44 +192,59 @@ const Activities = () => {
       exit="out"
       variants={pageVariants}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-blanco-fundacion dark:bg-background font-inter"
+      className="min-h-screen bg-brand-sand font-sans"
     >
-      <section className="py-20 md:py-28 text-center bg-gradient-to-b from-celeste-complementario/30 via-blanco-fundacion to-blanco-fundacion dark:from-primary/20 dark:via-background dark:to-background hero-pattern">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="text-4xl md:text-5xl lg:text-6xl font-poppins font-extrabold text-primary-antoniano dark:text-primary mb-6 text-balance"
-          >
-            Nuestras Actividades
-          </motion.h1>
-          <motion.p
+      {/* --- HERO SECTION (Tech-Institucional) --- */}
+      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
+        {/* Fondo Tech Sutil */}
+        <div className="absolute inset-0">
+           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+           <div className="absolute inset-0 opacity-10" 
+                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+           </div>
+        </div>
+
+        <div className="relative max-w-6xl mx-auto text-center z-10">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl text-marron-legado/90 dark:text-muted-foreground max-w-3xl mx-auto leading-relaxed text-balance"
+            transition={{ duration: 0.6 }}
           >
-            Explora talleres, cursos y eventos diseñados para impulsar tu desarrollo. ¡Súmate a la comunidad de Evolución Antoniana!
-          </motion.p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
+               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
+              Nuestras <span className="text-brand-gold">Actividades</span>
+            </h1>
+            
+            <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Explora talleres, cursos y eventos diseñados para impulsar el desarrollo tecnológico y social de nuestra comunidad.
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      <section className="py-8 bg-blanco-fundacion dark:bg-background border-b border-marron-legado/10 dark:border-border sticky top-[80px] z-40 shadow-sm">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* --- FILTERS --- */}
+      <section className="sticky top-[80px] z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-3 text-marron-legado dark:text-foreground">
-              <Filter className="w-5 h-5 text-primary-antoniano dark:text-primary" />
-              <span className="font-medium">Filtrar por modalidad:</span>
+            <div className="flex items-center space-x-2 text-brand-dark">
+              <Filter className="w-5 h-5 text-brand-primary" />
+              <span className="font-semibold font-poppins">Filtrar por modalidad:</span>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 bg-gray-100 p-1 rounded-full">
               {['all', 'presencial', 'virtual'].map((modalityFilter) => (
                 <Button
                   key={modalityFilter}
-                  variant={filter === modalityFilter ? 'antoniano' : 'outline'}
+                  variant="ghost"
                   size="sm"
                   onClick={() => setFilter(modalityFilter)}
-                  className={`capitalize transition-all duration-200 ${filter === modalityFilter ? 'text-white dark:text-primary-foreground' : 'text-primary-antoniano dark:text-primary border-primary-antoniano dark:border-primary hover:bg-celeste-complementario dark:hover:bg-accent'}`}
+                  className={`capitalize rounded-full px-6 transition-all duration-300 ${
+                    filter === modalityFilter 
+                    ? 'bg-white text-brand-primary shadow-sm font-bold' 
+                    : 'text-gray-500 hover:text-brand-dark hover:bg-gray-200'
+                  }`}
                 >
                   {modalityFilter === 'all' ? 'Todas' : modalityFilter}
                 </Button>
@@ -238,32 +254,33 @@ const Activities = () => {
         </div>
       </section>
 
-      <section className="py-12 md:py-20">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* --- GRID DE ACTIVIDADES --- */}
+      <section className="py-12 md:py-20 px-4">
+        <div className="max-w-7xl mx-auto">
           {activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded') ? ( 
             <div className="flex justify-center items-center min-h-[300px]">
-              <Loader2 className="h-12 w-12 animate-spin text-primary-antoniano dark:text-primary" />
+              <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
             </div>
           ) : activitiesError ? (
              <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12 bg-red-100/50 dark:bg-destructive/10 rounded-lg shadow border border-red-300 dark:border-destructive/30"
+              className="text-center py-12 bg-red-50 rounded-3xl border border-red-100"
             >
-              <AlertTriangle className="w-16 h-16 text-red-500 dark:text-destructive mx-auto mb-6" />
-              <p className="text-xl text-red-700 dark:text-destructive mb-2">Error al cargar actividades</p>
-              <p className="text-muted-foreground">{activitiesError || "Ocurrió un error inesperado."}</p>
-              <Button onClick={refreshActivities} variant="destructive" className="mt-4">Intentar de nuevo</Button>
+              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <p className="text-xl text-red-700 font-bold mb-2">Error al cargar actividades</p>
+              <p className="text-gray-600 mb-6">{activitiesError || "Ocurrió un error inesperado."}</p>
+              <Button onClick={refreshActivities} variant="destructive">Intentar de nuevo</Button>
             </motion.div>
           ) : filteredActivities.length === 0 ? (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12 bg-celeste-complementario/20 dark:bg-accent/30 rounded-lg shadow"
+              className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300"
             >
-              <Info className="w-16 h-16 text-primary-antoniano/50 dark:text-primary/50 mx-auto mb-6" />
-              <p className="text-xl text-marron-legado dark:text-foreground mb-2">No hay actividades disponibles con el filtro actual.</p>
-              <p className="text-muted-foreground">Intenta seleccionar otro filtro o vuelve más tarde.</p>
+              <Info className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-xl text-brand-dark font-bold mb-2">No hay actividades disponibles.</p>
+              <p className="text-gray-500">Intenta cambiar el filtro o vuelve más tarde para ver nuevas propuestas.</p>
             </motion.div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -275,71 +292,78 @@ const Activities = () => {
                     initial="initial"
                     animate="animate"
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="h-full flex"
+                    className="h-full"
                   >
-                    <Card className="w-full flex flex-col bg-white dark:bg-card rounded-xl border border-marron-legado/10 dark:border-border shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden card-hover">
-                      <Link to={`/activities/${activity.id}`} className="block group">
-                        <div className="relative aspect-[382/224] overflow-hidden bg-gray-200 dark:bg-gray-700">
-                          {activity.image_url ? (
-                            <img 
-                              alt={activity.title || 'Imagen de actividad'}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              src={activity.image_url} 
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageOff className="w-16 h-16 text-gray-400 dark:text-gray-500" />
-                            </div>
-                          )}
-                          <div className="absolute top-3 left-3">
-                            <Badge 
-                              variant={activity.modality === 'presencial' ? 'default' : 'secondary'}
-                              className={`capitalize shadow-md ${activity.modality === 'presencial' ? 'bg-primary-antoniano text-white dark:bg-primary dark:text-primary-foreground' : 'bg-green-600 text-white dark:bg-green-700 dark:text-green-100'}`}
-                            >
-                              {activity.modality}
-                            </Badge>
+                    <Card className="h-full flex flex-col bg-white rounded-2xl border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+                      {/* Imagen Card */}
+                      <Link to={`/activities/${activity.id}`} className="block relative overflow-hidden aspect-[16/10]">
+                        {activity.image_url ? (
+                          <img 
+                            alt={activity.title || 'Imagen de actividad'}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            src={activity.image_url} 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-brand-dark">
+                             <div className="text-center">
+                                <ImageOff className="w-12 h-12 text-brand-gold mx-auto mb-2 opacity-50" />
+                                <span className="text-brand-gold/30 text-sm font-bold uppercase">Sin imagen</span>
+                             </div>
                           </div>
-                          <div className="absolute top-3 right-3">
-                            {getStatusBadge(activity.status)}
-                          </div>
+                        )}
+                        
+                        {/* Overlay Gradiente */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+
+                        <div className="absolute top-3 left-3">
+                          <Badge 
+                            className={`capitalize shadow-md border-0 ${activity.modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}
+                          >
+                            {activity.modality}
+                          </Badge>
+                        </div>
+                        <div className="absolute top-3 right-3">
+                          {getStatusBadge(activity.status)}
                         </div>
                       </Link>
                       
-                      <CardHeader className="pt-5 pb-3">
+                      <CardHeader className="pt-6 pb-2 px-6">
                         <Link to={`/activities/${activity.id}`}>
-                          <CardTitle className="text-xl font-poppins text-primary-antoniano dark:text-primary hover:text-blue-700 dark:hover:text-blue-400 transition-colors duration-200 leading-tight">
+                          <CardTitle className="text-xl font-poppins font-bold text-brand-dark group-hover:text-brand-action transition-colors duration-200 leading-tight line-clamp-2">
                             {activity.title}
                           </CardTitle>
                         </Link>
                       </CardHeader>
                       
-                      <CardContent className="flex-grow space-y-3 text-sm">
-                        <div className="flex items-center text-marron-legado/80 dark:text-muted-foreground">
-                          <Calendar className="w-4 h-4 mr-2.5 text-primary-antoniano/70 dark:text-primary/70" />
-                          {formatDate(activity.date)}
-                        </div>
-                        <div className="flex items-center text-marron-legado/80 dark:text-muted-foreground">
-                          <Clock className="w-4 h-4 mr-2.5 text-primary-antoniano/70 dark:text-primary/70" />
-                          {activity.duration}
-                        </div>
-                        <div className="flex items-center text-marron-legado/80 dark:text-muted-foreground">
-                          <MapPin className="w-4 h-4 mr-2.5 text-primary-antoniano/70 dark:text-primary/70" />
-                          {activity.modality === 'presencial' ? 'Salta, Argentina' : 'Virtual'}
+                      <CardContent className="flex-grow space-y-4 px-6 text-sm">
+                        <div className="space-y-2">
+                            <div className="flex items-center text-gray-600">
+                                <Calendar className="w-4 h-4 mr-2.5 text-brand-gold" />
+                                {formatDate(activity.date)}
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                                <Clock className="w-4 h-4 mr-2.5 text-brand-gold" />
+                                {activity.duration}
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                                <MapPin className="w-4 h-4 mr-2.5 text-brand-gold" />
+                                {activity.modality === 'presencial' ? 'Salta, Argentina' : 'Virtual'}
+                            </div>
                         </div>
                         
-                        <div className="pt-1">
-                          <div className="flex justify-between items-center mb-1 text-xs text-marron-legado/70 dark:text-muted-foreground/80">
-                            <span>Cupos Confirmados:</span>
-                            <span>{activity.current_participants || 0} / {activity.max_participants}</span>
+                        <div className="pt-2">
+                          <div className="flex justify-between items-center mb-1.5 text-xs font-medium text-gray-500">
+                            <span>Cupos Ocupados</span>
+                            <span className="text-brand-primary">{activity.current_participants || 0} / {activity.max_participants}</span>
                           </div>
                           <Progress 
                             value={getParticipantPercentage(activity.current_participants, activity.max_participants)} 
-                            className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-primary-antoniano [&>div]:to-blue-500 dark:[&>div]:from-primary dark:[&>div]:to-blue-600" 
+                            className="h-2 bg-gray-100 [&>div]:bg-brand-primary" 
                           />
                         </div>
                       </CardContent>
 
-                      <CardFooter className="p-4 border-t border-marron-legado/10 dark:border-border">
+                      <CardFooter className="p-6 pt-0 mt-auto">
                         {getActionButton(activity)}
                       </CardFooter>
                     </Card>
