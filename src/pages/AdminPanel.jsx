@@ -48,9 +48,20 @@ const AdminPanel = () => {
 
   const [recentActivitiesData, setRecentActivitiesData] = useState([]);
   const { toast } = useToast();
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // 🛡️ PROTECCIÓN DE RUTA: Redirección por rol
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAdmin && user?.role === 'educacion_manager') {
+        navigate('/admin/education');
+      } else if (!isAdmin) {
+        navigate('/');
+      }
+    }
+  }, [isAdmin, user, authLoading, navigate]);
 
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'overview';
@@ -241,7 +252,7 @@ const AdminPanel = () => {
             <div className="flex gap-3">
                <Link to="/">
                   <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 hover:text-white">
-                     Ver Sitio Web
+                      Ver Sitio Web
                   </Button>
                </Link>
             </div>

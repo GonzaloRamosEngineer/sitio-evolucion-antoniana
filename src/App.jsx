@@ -1,51 +1,56 @@
-// src/App.jsx 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from '@/hooks/useAuth';
-import { Toaster } from '@/components/ui/toaster';
-import Header from '@/components/Layout/Header';
-import Footer from '@/components/Layout/Footer';
-import BottomNavBar from '@/components/Layout/BottomNavBar';
-import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider } from '@/providers/ThemeProvider';
+// src/App.jsx
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/toaster";
+import Header from "@/components/Layout/Header";
+import Footer from "@/components/Layout/Footer";
+import BottomNavBar from "@/components/Layout/BottomNavBar";
+import { AnimatePresence } from "framer-motion";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
 // Pages
-import Home from '@/pages/Home';
-import About from '@/pages/About';
-import Activities from '@/pages/Activities';
-import ActivityDetailPage from '@/pages/ActivityDetailPage';
-import ConfirmAttendancePage from '@/pages/ConfirmAttendancePage';
-import Collaborate from '@/pages/Collaborate';
-import Contact from '@/pages/Contact';
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
-import RequestPasswordResetForm from '@/components/Auth/RequestPasswordResetForm';
-import UpdatePasswordForm from '@/components/Auth/UpdatePasswordForm';
-import Dashboard from '@/pages/Dashboard';
-import AdminPanel from '@/pages/AdminPanel';
-import ProtectedRoute from '@/components/Auth/ProtectedRoute';
-import CreateActivityPage from '@/pages/CreateActivityPage';
-import EditActivityPage from '@/pages/EditActivityPage';
-import Agradecimiento from '@/pages/Agradecimiento';
-import LegalDocuments from '@/pages/LegalDocuments';
-import Preinscription from './pages/Preinscripcion';
+import Home from "@/pages/Home";
+import About from "@/pages/About";
+import Activities from "@/pages/Activities";
+import ActivityDetailPage from "@/pages/ActivityDetailPage";
+import ConfirmAttendancePage from "@/pages/ConfirmAttendancePage";
+import Collaborate from "@/pages/Collaborate";
+import Contact from "@/pages/Contact";
+import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
+import RequestPasswordResetForm from "@/components/Auth/RequestPasswordResetForm";
+import UpdatePasswordForm from "@/components/Auth/UpdatePasswordForm";
+import Dashboard from "@/pages/Dashboard";
+import AdminPanel from "@/pages/AdminPanel";
+import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import CreateActivityPage from "@/pages/CreateActivityPage";
+import EditActivityPage from "@/pages/EditActivityPage";
+import Agradecimiento from "@/pages/Agradecimiento";
+import LegalDocuments from "@/pages/LegalDocuments";
+import Preinscription from "./pages/Preinscripcion";
 
 // Partners / Novedades
-import PartnersPage from '@/pages/PartnersPage';
-import PartnerDetailPage from '@/pages/PartnerDetailPage';
-import BenefitsPage from '@/pages/BenefitsPage';
-import BenefitDetailPage from '@/pages/BenefitDetailPage';
-import ApplyPartnerPage from '@/pages/ApplyPartnerPage';
-import NewsPage from '@/pages/NewsPage';
-import NewsDetailPage from '@/pages/NewsDetailPage';
+import PartnersPage from "@/pages/PartnersPage";
+import PartnerDetailPage from "@/pages/PartnerDetailPage";
+import BenefitsPage from "@/pages/BenefitsPage";
+import BenefitDetailPage from "@/pages/BenefitDetailPage";
+import ApplyPartnerPage from "@/pages/ApplyPartnerPage";
+import NewsPage from "@/pages/NewsPage";
+import NewsDetailPage from "@/pages/NewsDetailPage";
 
 // NUEVO: Legal
-import PrivacyPolicy from '@/pages/PrivacyPolicy';
-import TermsOfUse from '@/pages/TermsOfUse';
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfUse from "@/pages/TermsOfUse";
 
 // NUEVO: helpers de navegación/scroll
-import ScrollToTop from '@/components/Layout/ScrollToTop';
-import BackToTop from '@/components/Layout/BackToTop';
+import ScrollToTop from "@/components/Layout/ScrollToTop";
+import BackToTop from "@/components/Layout/BackToTop";
 
 const PageRoutes = () => {
   const location = useLocation();
@@ -65,7 +70,10 @@ const PageRoutes = () => {
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/request-password-reset" element={<RequestPasswordResetForm />} />
+        <Route
+          path="/request-password-reset"
+          element={<RequestPasswordResetForm />}
+        />
         <Route path="/update-password" element={<UpdatePasswordForm />} />
 
         {/* Legal */}
@@ -94,9 +102,17 @@ const PageRoutes = () => {
 
         <Route path="/preinscripcion" element={<Preinscription />} />
 
-
-
         {/* Áreas protegidas */}
+
+        <Route
+          path="/admin/education"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "educacion_manager"]}>
+              <EducationAdmin />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard"
           element={
@@ -136,9 +152,16 @@ const PageRoutes = () => {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       <AuthProvider>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Router
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
           {/* Reset de scroll en cada navegación */}
           <ScrollToTop behavior="smooth" />
 

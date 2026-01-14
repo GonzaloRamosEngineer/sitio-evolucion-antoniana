@@ -1,15 +1,15 @@
-import React, { useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useAuth } from '@/hooks/useAuth';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Menu,
   X,
@@ -19,10 +19,10 @@ import {
   LayoutDashboard,
   FileText,
   ChevronDown,
-  User
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ThemeSwitch } from '@/components/ThemeSwitch';
+  User,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,40 +41,38 @@ const Header = () => {
   const navigate = useNavigate();
 
   const navigation = [
-    { name: 'Inicio', href: '/' },
-    { name: 'Novedades', href: '/novedades' },
+    { name: "Inicio", href: "/" },
+    { name: "Novedades", href: "/novedades" },
     {
-      name: 'Nosotros',
-      href: '/about',
-      key: 'nosotros',
-      subitems: [
-        { name: 'Partners', href: '/partners' },
-      ],
+      name: "Nosotros",
+      href: "/about",
+      key: "nosotros",
+      subitems: [{ name: "Partners", href: "/partners" }],
     },
-    { name: 'Actividades', href: '/activities' },
+    { name: "Actividades", href: "/activities" },
     {
-      name: 'Colaborá',
-      href: '/collaborate',
-      key: 'colabora',
-      subitems: [{ name: 'Beneficios', href: '/beneficios' }],
+      name: "Colaborá",
+      href: "/collaborate",
+      key: "colabora",
+      subitems: [{ name: "Beneficios", href: "/beneficios" }],
     },
-    { name: 'Transparencia', href: '/legal-documents' },
+    { name: "Transparencia", href: "/legal-documents" },
   ];
 
   // Activo para enlaces simples
   const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(path + '/');
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   // Activo para grupos (padres)
   const isGroupActive = (item) => {
     if (!item.subitems) return isActive(item.href);
-    if (item.key === 'nosotros') {
-      return ['/about', '/activities', '/partners'].some((p) =>
+    if (item.key === "nosotros") {
+      return ["/about", "/activities", "/partners"].some((p) =>
         location.pathname.startsWith(p)
       );
     }
-    if (item.key === 'colabora') {
-      return ['/collaborate', '/beneficios'].some((p) =>
+    if (item.key === "colabora") {
+      return ["/collaborate", "/beneficios"].some((p) =>
         location.pathname.startsWith(p)
       );
     }
@@ -84,14 +82,19 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
-    navigate('/');
+    navigate("/");
   };
 
   const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
-    : user?.email?.charAt(0).toUpperCase() || 'U';
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() || "U";
 
-  const logoUrl = '/img/transparente.png'; // Asegúrate de que esta ruta sea correcta o usa un placeholder si falla
+  const logoUrl = "/img/transparente.png"; // Asegúrate de que esta ruta sea correcta o usa un placeholder si falla
 
   // helpers hover-intent
   const clearTimer = (ref) => {
@@ -119,17 +122,20 @@ const Header = () => {
 
   // 🔒 Ajuste: cerrar en scroll / click fuera / cambio de orientación
   React.useEffect(() => {
-    const close = () => { setOpenNos(false); setOpenColab(false); };
-    const onDocClick = (e) => {
-      if (!e.target.closest?.('header')) close();
+    const close = () => {
+      setOpenNos(false);
+      setOpenColab(false);
     };
-    window.addEventListener('scroll', close, { passive: true });
-    window.addEventListener('orientationchange', close);
-    document.addEventListener('click', onDocClick);
+    const onDocClick = (e) => {
+      if (!e.target.closest?.("header")) close();
+    };
+    window.addEventListener("scroll", close, { passive: true });
+    window.addEventListener("orientationchange", close);
+    document.addEventListener("click", onDocClick);
     return () => {
-      window.removeEventListener('scroll', close);
-      window.removeEventListener('orientationchange', close);
-      document.removeEventListener('click', onDocClick);
+      window.removeEventListener("scroll", close);
+      window.removeEventListener("orientationchange", close);
+      document.removeEventListener("click", onDocClick);
     };
   }, []);
 
@@ -145,14 +151,19 @@ const Header = () => {
         to={item.href}
         className={`
             px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-1 group
-            ${isGroupActive(item) 
-                ? 'text-brand-primary bg-brand-sand font-semibold' 
-                : 'text-gray-600 hover:text-brand-action hover:bg-gray-50'
+            ${
+              isGroupActive(item)
+                ? "text-brand-primary bg-brand-sand font-semibold"
+                : "text-gray-600 hover:text-brand-action hover:bg-gray-50"
             }
         `}
       >
         {item.name}
-        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${open ? 'rotate-180 text-brand-action' : 'text-gray-400'}`} />
+        <ChevronDown
+          className={`w-3 h-3 transition-transform duration-300 ${
+            open ? "rotate-180 text-brand-action" : "text-gray-400"
+          }`}
+        />
       </Link>
 
       {/* Submenú Dropdown */}
@@ -168,15 +179,15 @@ const Header = () => {
             onMouseLeave={() => closeWithIntent(setOpen, timerRef)}
           >
             <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden p-1">
-                {item.subitems.map((sub) => (
+              {item.subitems.map((sub) => (
                 <Link
-                    key={sub.href}
-                    to={sub.href}
-                    className="block px-4 py-2.5 text-sm rounded-lg text-gray-600 hover:text-brand-primary hover:bg-brand-sand transition-colors font-medium"
+                  key={sub.href}
+                  to={sub.href}
+                  className="block px-4 py-2.5 text-sm rounded-lg text-gray-600 hover:text-brand-primary hover:bg-brand-sand transition-colors font-medium"
                 >
-                    {sub.name}
+                  {sub.name}
                 </Link>
-                ))}
+              ))}
             </div>
           </motion.div>
         )}
@@ -188,13 +199,15 @@ const Header = () => {
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)]"
-      onMouseLeave={() => { setOpenNos(false); setOpenColab(false); }}
+      onMouseLeave={() => {
+        setOpenNos(false);
+        setOpenColab(false);
+      }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          
           {/* --- LOGO --- */}
           <Link to="/" className="flex items-center space-x-3 group">
             <motion.div
@@ -202,8 +215,12 @@ const Header = () => {
               transition={{ duration: 0.3 }}
               className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
             >
-               {/* Si tienes logo imagen, usa esto, sino la inicial */}
-               <img src={logoUrl} alt="Fundación Evolución Antoniana" className="w-full h-full object-contain p-1" />
+              {/* Si tienes logo imagen, usa esto, sino la inicial */}
+              <img
+                src={logoUrl}
+                alt="Fundación Evolución Antoniana"
+                className="w-full h-full object-contain p-1"
+              />
             </motion.div>
             <div className="flex flex-col">
               <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
@@ -222,9 +239,9 @@ const Header = () => {
                 <DesktopSubmenu
                   key={item.name}
                   item={item}
-                  open={item.key === 'nosotros' ? openNos : openColab}
-                  setOpen={item.key === 'nosotros' ? setOpenNos : setOpenColab}
-                  timerRef={item.key === 'nosotros' ? nosTimer : colabTimer}
+                  open={item.key === "nosotros" ? openNos : openColab}
+                  setOpen={item.key === "nosotros" ? setOpenNos : setOpenColab}
+                  timerRef={item.key === "nosotros" ? nosTimer : colabTimer}
                 />
               ) : (
                 <Link
@@ -232,18 +249,19 @@ const Header = () => {
                   to={item.href}
                   className={`
                     px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 relative
-                    ${isActive(item.href) 
-                        ? 'text-brand-primary font-bold' 
-                        : 'text-gray-600 hover:text-brand-action hover:bg-gray-50'
+                    ${
+                      isActive(item.href)
+                        ? "text-brand-primary font-bold"
+                        : "text-gray-600 hover:text-brand-action hover:bg-gray-50"
                     }
                   `}
                 >
                   {item.name}
                   {isActive(item.href) && (
-                      <motion.div 
-                        layoutId="nav-underline"
-                        className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-brand-primary rounded-full" 
-                      />
+                    <motion.div
+                      layoutId="nav-underline"
+                      className="absolute bottom-1.5 left-4 right-4 h-0.5 bg-brand-primary rounded-full"
+                    />
                   )}
                 </Link>
               )
@@ -254,7 +272,7 @@ const Header = () => {
           <div className="flex items-center gap-3">
             {/* ThemeSwitch (Si lo usas, descomentar) */}
             {/* <ThemeSwitch /> */}
-            
+
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -276,11 +294,11 @@ const Header = () => {
                 >
                   <div className="flex items-center gap-3 p-3 mb-2 bg-brand-sand rounded-lg">
                     <div className="bg-white p-1.5 rounded-full text-brand-primary">
-                        <User className="w-4 h-4" />
+                      <User className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col space-y-0.5 overflow-hidden">
                       <p className="font-bold text-sm text-brand-dark truncate">
-                        {user?.name || 'Usuario'}
+                        {user?.name || "Usuario"}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
                         {user?.email}
@@ -288,36 +306,56 @@ const Header = () => {
                     </div>
                   </div>
 
-                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
-                    <Link to="/dashboard" className="flex items-center py-2.5 px-3">
+                  <DropdownMenuItem
+                    asChild
+                    className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
+                  >
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center py-2.5 px-3"
+                    >
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       <span>Mi Panel</span>
                     </Link>
                   </DropdownMenuItem>
 
-                  {isAdmin && (
+                  {/* --- SECCIÓN DE ADMINISTRACIÓN DINÁMICA --- */}
+                  {(isAdmin || user?.role === "educacion_manager") && (
                     <>
                       <DropdownMenuSeparator className="bg-gray-100 my-1" />
-                      <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">Administración</p>
-                      
-                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
-                        <Link to="/admin" className="flex items-center py-2 px-3">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Panel General</span>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">
+                        Gestión
+                      </p>
+
+                      {/* Este lo ven ambos: Admin y Manager */}
+                      <DropdownMenuItem
+                        asChild
+                        className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
+                      >
+                        <Link
+                          to="/admin/education"
+                          className="flex items-center py-2 px-3"
+                        >
+                          <GraduationCap className="mr-2 h-4 w-4" />
+                          <span>Preinscripciones</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
-                        <Link to="/admin?tab=activities" className="flex items-center py-2 px-3">
-                          <CalendarDays className="mr-2 h-4 w-4" />
-                          <span>Actividades</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary">
-                        <Link to="/admin?tab=legal_documents" className="flex items-center py-2 px-3">
-                          <FileText className="mr-2 h-4 w-4" />
-                          <span>Documentos</span>
-                        </Link>
-                      </DropdownMenuItem>
+
+                      {/* Este SOLO lo ve el Admin (Panel General) */}
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          asChild
+                          className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
+                        >
+                          <Link
+                            to="/admin"
+                            className="flex items-center py-2 px-3"
+                          >
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Panel General</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
 
@@ -356,7 +394,11 @@ const Header = () => {
               className="lg:hidden text-brand-dark p-2 rounded-md hover:bg-gray-100 focus:outline-none"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </motion.button>
           </div>
         </div>
@@ -366,7 +408,7 @@ const Header = () => {
           {isMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="lg:hidden border-t border-gray-100 bg-white overflow-hidden shadow-inner"
             >
@@ -378,15 +420,18 @@ const Header = () => {
                       to={item.href}
                       className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${
                         isActive(item.href)
-                          ? 'bg-brand-primary text-white shadow-md'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? "bg-brand-primary text-white shadow-md"
+                          : "text-gray-600 hover:bg-gray-50"
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {item.name}
                     </Link>
                   ) : (
-                    <div key={item.name} className="rounded-xl bg-gray-50/50 border border-gray-100 overflow-hidden">
+                    <div
+                      key={item.name}
+                      className="rounded-xl bg-gray-50/50 border border-gray-100 overflow-hidden"
+                    >
                       <div className="flex items-center justify-between px-4 py-3">
                         <Link
                           to={item.href}
@@ -399,10 +444,17 @@ const Header = () => {
                           type="button"
                           className="p-2 text-brand-primary"
                           onClick={() =>
-                            setOpenMob((s) => ({ ...s, [item.key]: !s[item.key] }))
+                            setOpenMob((s) => ({
+                              ...s,
+                              [item.key]: !s[item.key],
+                            }))
                           }
                         >
-                          <ChevronDown className={`w-4 h-4 transition-transform ${openMob[item.key] ? 'rotate-180' : ''}`} />
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform ${
+                              openMob[item.key] ? "rotate-180" : ""
+                            }`}
+                          />
                         </button>
                       </div>
 
@@ -410,7 +462,7 @@ const Header = () => {
                         {openMob[item.key] && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
+                            animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             className="bg-white border-t border-gray-100"
                           >
@@ -421,7 +473,10 @@ const Header = () => {
                                 className="block px-8 py-3 text-sm text-gray-600 hover:text-brand-action hover:bg-gray-50 border-l-4 border-transparent hover:border-brand-action transition-all"
                                 onClick={() => {
                                   setIsMenuOpen(false);
-                                  setOpenMob({ nosotros: false, colabora: false });
+                                  setOpenMob({
+                                    nosotros: false,
+                                    colabora: false,
+                                  });
                                 }}
                               >
                                 {sub.name}
@@ -436,14 +491,25 @@ const Header = () => {
 
                 {/* Mobile Auth Buttons */}
                 {!isAuthenticated && (
-                    <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
-                        <Button variant="outline" className="w-full border-gray-300 text-gray-700" asChild>
-                            <Link to="/login" onClick={() => setIsMenuOpen(false)}>Ingresar</Link>
-                        </Button>
-                        <Button className="w-full bg-brand-action text-white" asChild>
-                            <Link to="/register" onClick={() => setIsMenuOpen(false)}>Registrarse</Link>
-                        </Button>
-                    </div>
+                  <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+                    <Button
+                      variant="outline"
+                      className="w-full border-gray-300 text-gray-700"
+                      asChild
+                    >
+                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                        Ingresar
+                      </Link>
+                    </Button>
+                    <Button
+                      className="w-full bg-brand-action text-white"
+                      asChild
+                    >
+                      <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                        Registrarse
+                      </Link>
+                    </Button>
+                  </div>
                 )}
               </div>
             </motion.div>
