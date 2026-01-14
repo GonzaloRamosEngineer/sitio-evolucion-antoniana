@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Mail, Globe, FileText, Send } from 'lucide-react';
+import { Building2, Mail, Globe, FileText, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,7 @@ const ApplyPartnerPage = () => {
     toast({
       title: '¡Solicitud enviada! 🎉',
       description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
+      className: 'bg-green-600 text-white border-none'
     });
 
     setTimeout(() => navigate('/partners'), 2000);
@@ -49,7 +50,7 @@ const ApplyPartnerPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
         <title>Postularse como Partner - Fundación Evolución Antoniana</title>
         <meta
@@ -58,7 +59,7 @@ const ApplyPartnerPage = () => {
         />
       </Helmet>
 
-      {/* Fix autofill (Chrome/Safari) para que no invierta colores */}
+      {/* Fix autofill colors */}
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
@@ -66,133 +67,129 @@ const ApplyPartnerPage = () => {
         textarea:-webkit-autofill,
         textarea:-webkit-autofill:hover,
         textarea:-webkit-autofill:focus {
-          -webkit-text-fill-color: var(--marron-legado, #2f2a26);
-          box-shadow: 0 0 0px 1000px var(--blanco-fundacion, #ffffff) inset;
+          -webkit-text-fill-color: var(--brand-dark);
+          -webkit-box-shadow: 0 0 0px 1000px #fff inset;
           transition: background-color 9999s ease-out 0s;
         }
       `}</style>
 
       <main className="flex-1">
-        <section className="bg-gradient-to-br from-sky-600 via-blue-600 to-blue-700 text-white py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center"
-            >
-              <h1 className="text-5xl font-bold mb-4">Postularse como Partner</h1>
-              <p className="text-xl text-blue-100">
-                Únete a nuestra red de aliados y contribuye al desarrollo de la comunidad
-              </p>
-            </motion.div>
-          </div>
+        {/* --- HERO SECTION --- */}
+        <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
+            <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+            </div>
+
+            <div className="relative max-w-4xl mx-auto text-center z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
+                        <Building2 className="w-4 h-4 text-brand-gold" />
+                        <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Únete a la Red</span>
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-poppins font-bold text-white mb-6">
+                        Postular como <span className="text-brand-gold">Partner</span>
+                    </h1>
+                    <p className="text-xl text-gray-200 leading-relaxed max-w-2xl mx-auto">
+                        Suma a tu organización a nuestra misión y colabora directamente con el desarrollo tecnológico y social de la comunidad.
+                    </p>
+                </motion.div>
+            </div>
         </section>
 
-        <section className="py-16 px-4">
+        {/* --- FORMULARIO --- */}
+        <section className="py-16 px-4 -mt-10 relative z-20">
           <div className="max-w-2xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100"
-              data-theme="light"
+              className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 border border-gray-100"
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="nombre" className="flex items-center gap-2 mb-2 text-marron-legado">
-                    <Building2 className="h-4 w-4" />
+                  <Label htmlFor="nombre" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     Nombre de la Organización *
                   </Label>
-                  <Input
-                    id="nombre"
-                    name="nombre"
-                    type="text"
-                    required
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    placeholder="Ej: Empresa ABC S.A."
-                    className="
-                      bg-blanco-fundacion border-gray-300
-                      text-marron-legado placeholder:text-marron-legado/60
-                      caret-primary-antoniano
-                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
-                      [color-scheme:light]
-                    "
-                  />
+                  <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="nombre"
+                        name="nombre"
+                        type="text"
+                        required
+                        value={formData.nombre}
+                        onChange={handleChange}
+                        placeholder="Ej: Empresa ABC S.A."
+                        className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                      />
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="descripcion" className="flex items-center gap-2 mb-2 text-marron-legado">
-                    <FileText className="h-4 w-4" />
+                  <Label htmlFor="descripcion" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     Descripción *
                   </Label>
-                  <Textarea
-                    id="descripcion"
-                    name="descripcion"
-                    required
-                    value={formData.descripcion}
-                    onChange={handleChange}
-                    placeholder="Cuéntanos sobre tu organización y cómo deseas colaborar..."
-                    rows={5}
-                    className="
-                      bg-blanco-fundacion border-gray-300
-                      text-marron-legado placeholder:text-marron-legado/60
-                      caret-primary-antoniano
-                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
-                      [color-scheme:light]
-                    "
-                  />
+                  <div className="relative">
+                      <Textarea
+                        id="descripcion"
+                        name="descripcion"
+                        required
+                        value={formData.descripcion}
+                        onChange={handleChange}
+                        placeholder="Cuéntanos brevemente sobre tu organización y qué tipo de alianza te interesa..."
+                        rows={5}
+                        className="bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl p-4"
+                      />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <Label htmlFor="contacto_email" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                            Email de Contacto *
+                        </Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Input
+                                id="contacto_email"
+                                name="contacto_email"
+                                type="email"
+                                required
+                                value={formData.contacto_email}
+                                onChange={handleChange}
+                                placeholder="contacto@empresa.com"
+                                className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <Label htmlFor="sitio_web" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                            Sitio Web
+                        </Label>
+                        <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Input
+                                id="sitio_web"
+                                name="sitio_web"
+                                type="url"
+                                value={formData.sitio_web}
+                                onChange={handleChange}
+                                placeholder="https://www.empresa.com"
+                                className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="contacto_email" className="flex items-center gap-2 mb-2 text-marron-legado">
-                    <Mail className="h-4 w-4" />
-                    Email de Contacto *
-                  </Label>
-                  <Input
-                    id="contacto_email"
-                    name="contacto_email"
-                    type="email"
-                    required
-                    value={formData.contacto_email}
-                    onChange={handleChange}
-                    placeholder="contacto@empresa.com"
-                    className="
-                      bg-blanco-fundacion border-gray-300
-                      text-marron-legado placeholder:text-marron-legado/60
-                      caret-primary-antoniano
-                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
-                      [color-scheme:light]
-                    "
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="sitio_web" className="flex items-center gap-2 mb-2 text-marron-legado">
-                    <Globe className="h-4 w-4" />
-                    Sitio Web
-                  </Label>
-                  <Input
-                    id="sitio_web"
-                    name="sitio_web"
-                    type="url"
-                    value={formData.sitio_web}
-                    onChange={handleChange}
-                    placeholder="https://www.empresa.com"
-                    className="
-                      bg-blanco-fundacion border-gray-300
-                      text-marron-legado placeholder:text-marron-legado/60
-                      caret-primary-antoniano
-                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
-                      [color-scheme:light]
-                    "
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="logo_url" className="mb-2 block text-marron-legado">
-                    URL del Logo (opcional)
+                  <Label htmlFor="logo_url" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                    URL del Logo (Opcional)
                   </Label>
                   <Input
                     id="logo_url"
@@ -201,29 +198,26 @@ const ApplyPartnerPage = () => {
                     value={formData.logo_url}
                     onChange={handleChange}
                     placeholder="https://ejemplo.com/logo.png"
-                    className="
-                      bg-blanco-fundacion border-gray-300
-                      text-marron-legado placeholder:text-marron-legado/60
-                      caret-primary-antoniano
-                      focus:ring-2 focus:ring-primary-antoniano focus:border-primary-antoniano
-                      [color-scheme:light]
-                    "
+                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
                   />
-                  <p className="text-sm text-marron-legado/70 mt-1">
-                    Proporciona un enlace a tu logo en formato PNG o JPG
+                  <p className="text-xs text-gray-500 mt-2 ml-1">
+                    Recomendamos un enlace directo a una imagen PNG o JPG cuadrada.
                   </p>
                 </div>
 
-                <div className="pt-4">
-                  <Button type="submit" size="lg" className="w-full">
+                <div className="pt-6">
+                  <Button type="submit" size="lg" className="w-full h-14 text-lg font-bold bg-brand-action hover:bg-red-800 text-white shadow-lg hover:shadow-xl transition-all rounded-xl">
                     <Send className="mr-2 h-5 w-5" />
                     Enviar Postulación
                   </Button>
                 </div>
 
-                <p className="text-sm text-marron-legado/70 text-center">
-                  * Campos obligatorios. Tu solicitud será revisada en un plazo de 5 días hábiles.
-                </p>
+                <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-800 leading-tight">
+                        Tu solicitud será revisada por nuestro equipo institucional. Nos pondremos en contacto vía email en un plazo máximo de 5 días hábiles.
+                    </p>
+                </div>
               </form>
             </motion.div>
           </div>
