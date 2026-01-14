@@ -34,6 +34,7 @@ import EditActivityPage from "@/pages/EditActivityPage";
 import Agradecimiento from "@/pages/Agradecimiento";
 import LegalDocuments from "@/pages/LegalDocuments";
 import Preinscription from "./pages/Preinscripcion";
+import EducationAdmin from './pages/EducationAdmin';
 
 // Partners / Novedades
 import PartnersPage from "@/pages/PartnersPage";
