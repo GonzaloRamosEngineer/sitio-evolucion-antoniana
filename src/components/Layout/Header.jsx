@@ -200,10 +200,10 @@ const Header = () => {
             <motion.div
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              className="w-10 h-10 flex items-center justify-center bg-brand-primary rounded-lg text-white font-bold text-xl shadow-lg shadow-brand-primary/30"
+              className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
             >
                {/* Si tienes logo imagen, usa esto, sino la inicial */}
-               <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+               <img src={logoUrl} alt="Fundación Evolución Antoniana" className="w-full h-full object-contain p-1" />
             </motion.div>
             <div className="flex flex-col">
               <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
