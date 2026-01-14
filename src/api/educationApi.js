@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
  * * @param {Object} formData - Los datos validados provenientes del EducationForm.
  * @returns {Promise<Object>} - Retorna los datos insertados o lanza un error.
  */
-export const createPreinscripcion = async (formData) => {
+export const createPreinscription = async (formData) => {
   try {
     // 1. Intentamos obtener la sesión actual por si el usuario está logueado
     const { data: { session } } = await supabase.auth.getSession();
@@ -38,7 +38,7 @@ export const createPreinscripcion = async (formData) => {
 
     // 3. Inserción en la tabla oficial
     const { data, error } = await supabase
-      .from('education_preinscripcions')
+      .from('education_preinscriptions')
       .insert([payload])
       .select();
 

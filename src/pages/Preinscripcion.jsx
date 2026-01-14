@@ -4,7 +4,7 @@ import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EducationForm from '@/components/Forms/EducationForm';
 
-const Preinscripcion = () => {
+const Preinscription = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (isSuccess) {

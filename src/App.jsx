@@ -28,7 +28,7 @@ import CreateActivityPage from '@/pages/CreateActivityPage';
 import EditActivityPage from '@/pages/EditActivityPage';
 import Agradecimiento from '@/pages/Agradecimiento';
 import LegalDocuments from '@/pages/LegalDocuments';
-import Preinscripcion from './pages/Preinscripcion';
+import Preinscription from './pages/Preinscripcion';
 
 // Partners / Novedades
 import PartnersPage from '@/pages/PartnersPage';
@@ -92,7 +92,7 @@ const PageRoutes = () => {
         <Route path="/novedades/id/:id" element={<NewsDetailPage />} />
         <Route path="/novedades/uuid/:id" element={<NewsDetailPage />} />
 
-        <Route path="/preinscripcion" element={<Preinscripcion />} />
+        <Route path="/preinscripcion" element={<Preinscription />} />
 
 
 

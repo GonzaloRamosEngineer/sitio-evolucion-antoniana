@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { createPreinscripcion } from '@/api/educationApi';
+import { createPreinscription } from '@/api/educationApi';
 import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -68,7 +68,7 @@ const EducationForm = ({ onSuccess }) => {
       delete payload.location_custom;
       delete payload.interest_custom;
 
-      await createPreinscripcion(payload);
+      await createPreinscription(payload);
       
       toast({ 
         title: "¡Formulario Recibido!", 
