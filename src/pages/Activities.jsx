@@ -24,8 +24,7 @@ import {
   XCircle,
   Archive,
   ImageOff,
-  Layers3,
-  ChevronRight
+  Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -33,7 +32,8 @@ const Activities = () => {
   const [filter, setFilter] = useState('all'); // modalidad: all | presencial | virtual
   const [cycleFilter, setCycleFilter] = useState('all'); // ciclo: all | A | B | C
 
-  const { activities, loading: activitiesLoading, error: activitiesError, registerForActivity, refreshActivities } = useActivities();
+  const { activities, loading: activitiesLoading, error: activitiesError, registerForActivity, refreshActivities } =
+    useActivities();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -55,21 +55,91 @@ const Activities = () => {
     }
   }, [isAuthenticated, authLoading]);
 
+  // -----------------------------
+  // Helpers: ciclo desde el title
+  // -----------------------------
+  const getCycleFromTitle = (title) => {
+    if (!title) return null;
+    const t = String(title);
+
+    // Soporta:
+    // "[Ciclo A · ...] — ..."
+    // "CICLO A · ..."
+    // "Ciclo A - ..."
+    // "CICLO A — ..."
+    const m = t.match(/\bCICLO\s*([ABC])\b/i);
+    if (m?.[1]) return m[1].toUpperCase();
+
+    // Si viene "[Ciclo A"
+    const m2 = t.match(/\[\s*Ciclo\s*([ABC])\b/i);
+    if (m2?.[1]) return m2[1].toUpperCase();
+
+    return null;
+  };
+
+  // -----------------------------
+  // Meta fija de los ciclos (Opción 1)
+  // -----------------------------
+  const cycleMeta = useMemo(
+    () => ({
+      A: {
+        key: 'A',
+        title: 'Tecnología para la vida cotidiana',
+        desc: 'IA, productividad y herramientas aplicables al día a día.',
+        pill: 'CICLO A',
+        pillBg: 'bg-brand-primary/10',
+        pillText: 'text-brand-primary',
+        border: 'border-brand-primary/20',
+        hover: 'hover:border-brand-primary/35',
+        dot: 'bg-brand-primary',
+        shadow: 'shadow-sm',
+      },
+      B: {
+        key: 'B',
+        title: 'Educación y futuro laboral',
+        desc: 'Datos, perfiles y oportunidades en el mundo digital.',
+        pill: 'CICLO B',
+        pillBg: 'bg-green-600/10',
+        pillText: 'text-green-700',
+        border: 'border-green-600/20',
+        hover: 'hover:border-green-600/35',
+        dot: 'bg-green-600',
+        shadow: 'shadow-sm',
+      },
+      C: {
+        key: 'C',
+        title: 'Comunidad y valores',
+        desc: 'Acción solidaria, presencia territorial e impacto real.',
+        pill: 'CICLO C',
+        pillBg: 'bg-amber-500/10',
+        pillText: 'text-amber-700',
+        border: 'border-amber-500/20',
+        hover: 'hover:border-amber-500/35',
+        dot: 'bg-amber-500',
+        shadow: 'shadow-sm',
+      },
+    }),
+    []
+  );
+
+  const handleCycleClick = (cycleKey) => {
+    setCycleFilter((prev) => (prev === cycleKey ? 'all' : cycleKey));
+    // UX: cuando el usuario selecciona un ciclo, mantenemos el filtro de modalidad tal cual.
+    // Si quisieras resetear modalidad, descomentá:
+    // setFilter('all');
+  };
+
   const handleUserRegister = async (activityId) => {
     if (!isAuthenticated || !user) {
       toast({
-        title: "Inicio de Sesión Requerido",
-        description: "Debes iniciar sesión para inscribirte en una actividad.",
-        variant: "destructive",
+        title: 'Inicio de Sesión Requerido',
+        description: 'Debes iniciar sesión para inscribirte en una actividad.',
+        variant: 'destructive',
         action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/login', { state: { from: location } })}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate('/login', { state: { from: location } })}>
             Iniciar Sesión
           </Button>
-        )
+        ),
       });
       navigate('/login', { state: { from: location } });
       return;
@@ -78,24 +148,39 @@ const Activities = () => {
     try {
       await registerForActivity(activityId, user.id, user.email, user.name || user.user_metadata?.name || 'Usuario');
       toast({
-        title: "¡Pre-Inscripción Exitosa!",
-        description: "Hemos enviado un correo para que confirmes tu asistencia. ¡Revisa tu bandeja de entrada!",
-        variant: "default",
-        className: "bg-brand-primary text-white border-none",
+        title: '¡Pre-Inscripción Exitosa!',
+        description: 'Hemos enviado un correo para que confirmes tu asistencia. ¡Revisa tu bandeja de entrada!',
+        variant: 'default',
+        className: 'bg-brand-primary text-white border-none',
         duration: 7000,
-        action: <MailCheck className="h-5 w-5 text-brand-gold" />
+        action: <MailCheck className="h-5 w-5 text-brand-gold" />,
       });
       refreshActivities();
     } catch (error) {
       toast({
-        title: "Error de Pre-Inscripción",
-        description: error.message || "No se pudo completar la pre-inscripción.",
-        variant: "destructive",
+        title: 'Error de Pre-Inscripción',
+        description: error.message || 'No se pudo completar la pre-inscripción.',
+        variant: 'destructive',
       });
     }
   };
 
-  // --- helpers ---
+  // -----------------------------
+  // Filtering
+  // -----------------------------
+  const filteredActivities = useMemo(() => {
+    return activities.filter((activity) => {
+      // filtro modalidad
+      const modalityOk = filter === 'all' ? true : String(activity.modality || '').toLowerCase() === filter;
+
+      // filtro ciclo
+      const c = getCycleFromTitle(activity.title);
+      const cycleOk = cycleFilter === 'all' ? true : c === cycleFilter;
+
+      return modalityOk && cycleOk;
+    });
+  }, [activities, filter, cycleFilter]);
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
     try {
@@ -103,7 +188,7 @@ const Activities = () => {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        timeZone: 'UTC'
+        timeZone: 'UTC',
       });
     } catch (e) {
       return 'Fecha inválida';
@@ -158,17 +243,33 @@ const Activities = () => {
     const isFull = (activity.current_participants || 0) >= activity.max_participants;
 
     if (activity.status === 'Finalizada') {
-      return <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>Actividad Finalizada</Button>;
+      return (
+        <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>
+          Actividad Finalizada
+        </Button>
+      );
     }
     if (activity.status === 'Cerrada') {
-      return <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>Inscripciones Cerradas</Button>;
+      return (
+        <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>
+          Inscripciones Cerradas
+        </Button>
+      );
     }
     if (activity.status === 'Próximamente') {
-      return <Button variant="outline" className="w-full cursor-not-allowed border-brand-gold/50 text-brand-gold" disabled>Próximamente</Button>;
+      return (
+        <Button variant="outline" className="w-full cursor-not-allowed border-brand-gold/50 text-brand-gold" disabled>
+          Próximamente
+        </Button>
+      );
     }
 
     if (isFull) {
-      return <Button variant="destructive" className="w-full cursor-not-allowed opacity-80" disabled>Cupos Agotados</Button>;
+      return (
+        <Button variant="destructive" className="w-full cursor-not-allowed opacity-80" disabled>
+          Cupos Agotados
+        </Button>
+      );
     }
 
     return (
@@ -177,84 +278,21 @@ const Activities = () => {
         onClick={() => handleUserRegister(activity.id)}
         disabled={authLoading}
       >
-        {isAuthenticated
-          ? 'Quiero Participar'
-          : <> <LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión para Participar</>
-        }
+        {isAuthenticated ? (
+          'Quiero Participar'
+        ) : (
+          <>
+            <LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión para Participar
+          </>
+        )}
       </Button>
     );
-  };
-
-  // --- NUEVO: detectar ciclo desde el título ---
-  // Espera formatos tipo:
-  // "[Ciclo A · Tecnología para la vida cotidiana] — ..."
-  // "CICLO A · ..." etc.
-  const getCycleFromTitle = (title = '') => {
-    const t = String(title).toLowerCase();
-
-    // Match de "ciclo a" / "ciclo b" / "ciclo c"
-    const match = t.match(/ciclo\s*([abc])/i);
-    if (match?.[1]) return match[1].toUpperCase();
-
-    // Match de "[Ciclo A" al inicio
-    const matchBracket = t.match(/\[\s*ciclo\s*([abc])/i);
-    if (matchBracket?.[1]) return matchBracket[1].toUpperCase();
-
-    return null;
-  };
-
-  // --- filtros combinados (modalidad + ciclo) ---
-  const filteredActivities = useMemo(() => {
-    return activities.filter((activity) => {
-      const modalityOk = filter === 'all' ? true : String(activity.modality || '').toLowerCase() === filter;
-      const cycle = getCycleFromTitle(activity.title);
-      const cycleOk = cycleFilter === 'all' ? true : cycle === cycleFilter;
-      return modalityOk && cycleOk;
-    });
-  }, [activities, filter, cycleFilter]);
-
-  // --- NUEVO: data de cards de ciclo ---
-  const cycles = [
-    {
-      key: 'A',
-      labelTop: 'CICLO A',
-      title: 'Tecnología para la vida cotidiana',
-      desc: 'IA, productividad y herramientas aplicables al día a día.',
-      cardClass: 'bg-white border-gray-100',
-      accent: 'text-brand-dark',
-      subtle: 'text-gray-600',
-      selectedRing: 'ring-2 ring-brand-primary/30'
-    },
-    {
-      key: 'B',
-      labelTop: 'CICLO B',
-      title: 'Educación y futuro laboral',
-      desc: 'Datos, perfiles y oportunidades en el mundo digital.',
-      cardClass: 'bg-green-50/60 border-green-100',
-      accent: 'text-brand-dark',
-      subtle: 'text-gray-600',
-      selectedRing: 'ring-2 ring-green-500/25'
-    },
-    {
-      key: 'C',
-      labelTop: 'CICLO C',
-      title: 'Comunidad y valores',
-      desc: 'Acción solidaria, presencia territorial e impacto real.',
-      cardClass: 'bg-amber-50/60 border-amber-100',
-      accent: 'text-brand-dark',
-      subtle: 'text-gray-600',
-      selectedRing: 'ring-2 ring-amber-500/25'
-    },
-  ];
-
-  const toggleCycleFilter = (cycleKey) => {
-    setCycleFilter((prev) => (prev === cycleKey ? 'all' : cycleKey));
   };
 
   const pageVariants = {
     initial: { opacity: 0 },
     in: { opacity: 1 },
-    out: { opacity: 0 }
+    out: { opacity: 0 },
   };
 
   const cardVariants = {
@@ -262,7 +300,8 @@ const Activities = () => {
     animate: { opacity: 1, y: 0 },
   };
 
-  const showInitialLoader = authLoading || (activitiesLoading && (activities.length === 0 && !sessionStorage.getItem('activities_loaded')));
+  const showInitialLoader =
+    authLoading || (activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded'));
 
   if (showInitialLoader) {
     return (
@@ -293,11 +332,7 @@ const Activities = () => {
         </div>
 
         <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
             </div>
@@ -307,19 +342,39 @@ const Activities = () => {
             </h1>
 
             <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Explora talleres, cursos y eventos diseñados para impulsar el desarrollo tecnológico y social de nuestra comunidad.
+              Explora talleres, cursos y eventos diseñados para impulsar el desarrollo tecnológico y social de nuestra
+              comunidad.
             </p>
 
-            {/* NUEVO: mini caption de ciclos (se ve premium y guía) */}
-            <div className="flex items-center justify-center gap-2 text-white/80 text-sm">
-              <Layers3 className="w-4 h-4 text-brand-gold" />
-              <span>Actividades organizadas por ciclos · Tecnología · Educación · Comunidad</span>
+            {/* ✅ Mini-guía + estado del ciclo seleccionado */}
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
+                <Sparkles className="w-4 h-4 text-brand-gold" />
+                <span className="text-sm text-gray-100">
+                  Actividades organizadas por ciclos: <span className="text-brand-gold font-bold">Tecnología</span> ·{' '}
+                  <span className="text-brand-gold font-bold">Educación</span> ·{' '}
+                  <span className="text-brand-gold font-bold">Comunidad</span>
+                </span>
+              </div>
+
+              {cycleFilter !== 'all' && (
+                <div className="text-sm text-gray-100">
+                  Filtrando por: <span className="font-bold text-brand-gold">Ciclo {cycleFilter}</span>{' '}
+                  <button
+                    className="ml-2 underline underline-offset-4 text-gray-200 hover:text-white"
+                    onClick={() => setCycleFilter('all')}
+                    type="button"
+                  >
+                    limpiar
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* --- FILTERS (Modalidad) --- */}
+      {/* --- FILTERS (sticky) --- */}
       <section className="sticky top-[80px] z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -327,6 +382,7 @@ const Activities = () => {
               <Filter className="w-5 h-5 text-brand-primary" />
               <span className="font-semibold font-poppins">Filtrar por modalidad:</span>
             </div>
+
             <div className="flex space-x-2 bg-gray-100 p-1 rounded-full">
               {['all', 'presencial', 'virtual'].map((modalityFilter) => (
                 <Button
@@ -334,10 +390,11 @@ const Activities = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilter(modalityFilter)}
-                  className={`capitalize rounded-full px-6 transition-all duration-300 ${filter === modalityFilter
+                  className={`capitalize rounded-full px-6 transition-all duration-300 ${
+                    filter === modalityFilter
                       ? 'bg-white text-brand-primary shadow-sm font-bold'
                       : 'text-gray-500 hover:text-brand-dark hover:bg-gray-200'
-                    }`}
+                  }`}
                 >
                   {modalityFilter === 'all' ? 'Todas' : modalityFilter}
                 </Button>
@@ -347,64 +404,57 @@ const Activities = () => {
         </div>
       </section>
 
-      {/* --- NUEVO: CICLOS (Opción 1 + click para filtrar) --- */}
+      {/* --- CYCLES (Opción 1) --- */}
       <section className="pt-10 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-xl md:text-2xl font-poppins font-bold text-brand-dark">
-                Roadmap por ciclos
-              </h2>
-              <p className="text-gray-500 text-sm mt-1">
-                Elegí un ciclo para ver rápidamente el enfoque de las actividades.
-              </p>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCycleFilter('all')}
-              className={`rounded-full px-4 ${cycleFilter === 'all' ? 'bg-white shadow-sm text-brand-primary font-bold' : 'text-gray-500 hover:text-brand-dark'
-                }`}
-            >
-              Ver todas
-              <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
-            </Button>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {cycles.map((c) => {
-              const selected = cycleFilter === c.key;
+            {['A', 'B', 'C'].map((k) => {
+              const meta = cycleMeta[k];
+              const isActive = cycleFilter === k;
+
               return (
                 <button
-                  key={c.key}
+                  key={k}
                   type="button"
-                  onClick={() => toggleCycleFilter(c.key)}
-                  className={`text-left rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all ${c.cardClass} ${selected ? c.selectedRing : ''
-                    }`}
+                  onClick={() => handleCycleClick(k)}
+                  className={`
+                    text-left w-full
+                    rounded-2xl p-6
+                    border ${meta.border} ${meta.hover}
+                    bg-white
+                    transition-all duration-300
+                    hover:shadow-lg
+                    ${isActive ? 'ring-2 ring-brand-primary/30 shadow-lg' : meta.shadow}
+                  `}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black tracking-widest uppercase text-gray-500">
-                      {c.labelTop}
-                    </span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div
+                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black tracking-widest uppercase ${meta.pillBg} ${meta.pillText}`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                        {meta.pill}
+                      </div>
 
-                    {selected && (
-                      <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-brand-primary/10 text-brand-primary">
-                        Filtrando
-                      </span>
-                    )}
+                      <div className="mt-3">
+                        <h3 className="text-xl font-poppins font-bold text-brand-dark leading-tight">{meta.title}</h3>
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{meta.desc}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-1">
+                      <div
+                        className={`h-10 w-10 rounded-2xl flex items-center justify-center border ${
+                          isActive ? 'border-brand-primary/30 bg-brand-primary/5' : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <span className={`h-2.5 w-2.5 rounded-full ${meta.dot}`} />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className={`mt-2 text-xl font-poppins font-bold ${c.accent}`}>
-                    {c.title}
-                  </div>
-
-                  <div className={`mt-2 leading-relaxed ${c.subtle}`}>
-                    {c.desc}
-                  </div>
-
-                  <div className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400">
-                    {selected ? 'Tocar para mostrar todas' : 'Tocar para filtrar'}
+                  <div className="mt-4 text-xs text-gray-500">
+                    {isActive ? 'Seleccionado · tocá para ver todo' : 'Tocá para filtrar por este ciclo'}
                   </div>
                 </button>
               );
@@ -428,8 +478,10 @@ const Activities = () => {
             >
               <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
               <p className="text-xl text-red-700 font-bold mb-2">Error al cargar actividades</p>
-              <p className="text-gray-600 mb-6">{activitiesError || "Ocurrió un error inesperado."}</p>
-              <Button onClick={refreshActivities} variant="destructive">Intentar de nuevo</Button>
+              <p className="text-gray-600 mb-6">{activitiesError || 'Ocurrió un error inesperado.'}</p>
+              <Button onClick={refreshActivities} variant="destructive">
+                Intentar de nuevo
+              </Button>
             </motion.div>
           ) : filteredActivities.length === 0 ? (
             <motion.div
@@ -439,25 +491,38 @@ const Activities = () => {
             >
               <Info className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-xl text-brand-dark font-bold mb-2">No hay actividades disponibles.</p>
-              <p className="text-gray-500">
-                Proba cambiando el filtro de modalidad o el ciclo, o volvé más tarde para ver nuevas propuestas.
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-2">
-                <Button variant="outline" onClick={() => { setFilter('all'); setCycleFilter('all'); }}>
-                  Limpiar filtros
-                </Button>
-              </div>
+              <p className="text-gray-500">Intenta cambiar el filtro o vuelve más tarde para ver nuevas propuestas.</p>
+
+              {(filter !== 'all' || cycleFilter !== 'all') && (
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <Button variant="outline" onClick={() => setFilter('all')}>
+                    Limpiar modalidad
+                  </Button>
+                  <Button variant="outline" onClick={() => setCycleFilter('all')}>
+                    Limpiar ciclo
+                  </Button>
+                </div>
+              )}
             </motion.div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredActivities.map((activity, index) => {
+                const cycle = getCycleFromTitle(activity.title);
+                const cycleChip = cycle
+                  ? {
+                      A: { label: 'CICLO A · Tecnología', dot: 'bg-brand-primary' },
+                      B: { label: 'CICLO B · Educación', dot: 'bg-green-600' },
+                      C: { label: 'CICLO C · Comunidad', dot: 'bg-amber-500' },
+                    }[cycle] || { label: `CICLO ${cycle}`, dot: 'bg-gray-300' }
+                  : null;
+
                 return (
                   <motion.div
                     key={activity.id}
                     variants={cardVariants}
                     initial="initial"
                     animate="animate"
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    transition={{ duration: 0.5, delay: index * 0.08 }}
                     className="h-full"
                   >
                     <Card className="h-full flex flex-col bg-white rounded-2xl border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group">
@@ -479,19 +544,45 @@ const Activities = () => {
                         )}
 
                         {/* Overlay Gradiente */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
 
-                        <div className="absolute top-3 left-3">
+                        {/* Badge Modalidad */}
+                        <div className="absolute top-3 left-3 z-20">
                           <Badge
-                            className={`capitalize shadow-md border-0 ${String(activity.modality || '').toLowerCase() === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'
-                              }`}
+                            className={`capitalize shadow-md border-0 ${
+                              String(activity.modality || '').toLowerCase() === 'presencial'
+                                ? 'bg-brand-primary text-white'
+                                : 'bg-green-600 text-white'
+                            }`}
                           >
                             {activity.modality}
                           </Badge>
                         </div>
-                        <div className="absolute top-3 right-3">
-                          {getStatusBadge(activity.status)}
-                        </div>
+
+                        {/* Badge Estado */}
+                        <div className="absolute top-3 right-3 z-20">{getStatusBadge(activity.status)}</div>
+
+                        {/* ✅ Chip premium de Ciclo (Nivel Dios) */}
+                        {cycleChip && (
+                          <div className="absolute bottom-3 left-3 z-20">
+                            <div
+                              className="
+                                inline-flex items-center gap-2
+                                rounded-full px-3 py-1.5
+                                bg-white/85 backdrop-blur-md
+                                border border-white/70
+                                shadow-lg
+                                transition-transform duration-300
+                                group-hover:-translate-y-0.5
+                              "
+                            >
+                              <span className={`w-2 h-2 rounded-full ${cycleChip.dot}`} />
+                              <span className="text-[11px] font-black tracking-widest uppercase text-brand-dark">
+                                {cycleChip.label}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </Link>
 
                       <CardHeader className="pt-6 pb-2 px-6">
@@ -521,7 +612,9 @@ const Activities = () => {
                         <div className="pt-2">
                           <div className="flex justify-between items-center mb-1.5 text-xs font-medium text-gray-500">
                             <span>Cupos Ocupados</span>
-                            <span className="text-brand-primary">{activity.current_participants || 0} / {activity.max_participants}</span>
+                            <span className="text-brand-primary">
+                              {activity.current_participants || 0} / {activity.max_participants}
+                            </span>
                           </div>
                           <Progress
                             value={getParticipantPercentage(activity.current_participants, activity.max_participants)}
@@ -530,12 +623,10 @@ const Activities = () => {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="p-6 pt-0 mt-auto">
-                        {getActionButton(activity)}
-                      </CardFooter>
+                      <CardFooter className="p-6 pt-0 mt-auto">{getActionButton(activity)}</CardFooter>
                     </Card>
                   </motion.div>
-                )
+                );
               })}
             </div>
           )}
