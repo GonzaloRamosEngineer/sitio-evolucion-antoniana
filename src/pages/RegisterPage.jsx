@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const RegisterPage = () => {
@@ -18,7 +18,6 @@ const RegisterPage = () => {
     confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { register, loading: authLoading, user } = useAuth();
@@ -26,14 +25,8 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
+    if (user) navigate('/dashboard', { replace: true });
   }, [user, navigate]);
-
-  useEffect(() => {
-    if (!authLoading) setIsSubmitting(false);
-  }, [authLoading]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -42,222 +35,128 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error de Registro",
-        description: "Las contraseñas no coinciden.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (formData.password.length < 6) {
-      toast({
-        title: "Error de Registro",
-        description: "La contraseña debe tener al menos 6 caracteres.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Las contraseñas no coinciden.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Normalización NASA de teléfono antes del envío
+      let cleanPhone = formData.phone.replace(/\D/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+      if (!cleanPhone.startsWith('54')) cleanPhone = `549${cleanPhone}`;
+
       await register({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: cleanPhone,
         password: formData.password
       });
       toast({
-        title: "¡Registro Exitoso!",
-        description: "Tu cuenta ha sido creada. Por favor, revisa tu email para verificarla.",
-        className: "bg-green-600 text-white border-none"
+        title: "¡Registro Completado!",
+        description: "Verifica tu casilla de email para activar tu cuenta.",
+        className: "bg-brand-dark text-white border-none rounded-2xl"
       });
       navigate('/login');
     } catch (error) {
-      toast({
-        title: "Error de Registro",
-        description: error.message || "No se pudo completar el registro.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
       setIsSubmitting(false);
     }
   };
   
-  const formDisabled = isSubmitting || authLoading;
-  const buttonText = formDisabled ? 'Creando cuenta...' : 'Crear Cuenta';
+  const inputStyle = "pl-12 h-11 bg-gray-50/50 border-gray-100 focus:bg-white focus:ring-brand-primary/20 text-brand-dark rounded-xl transition-all";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-sand relative overflow-hidden p-4 font-sans py-12">
-      
-      {/* Fondo Decorativo Tech */}
+    <div className="min-h-screen flex items-center justify-center bg-brand-sand relative overflow-hidden py-16 px-4">
       <div className="absolute inset-0">
          <div className="absolute inset-0 bg-brand-primary opacity-5"></div>
          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-         
-         {/* Orbes de luz */}
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-brand-action/5 rounded-full blur-3xl -ml-32 -mb-32"></div>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-lg relative z-10"
       >
-        <Card className="shadow-2xl border-none bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden">
-          
-          {/* Header con Marca */}
-          <CardHeader className="space-y-2 text-center pt-10 pb-6 bg-white/50 border-b border-gray-100">
-            <div className="mx-auto w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/30 mb-4 text-white">
-                <UserPlus className="w-8 h-8" />
+        <Card className="shadow-2xl border-none bg-white/90 backdrop-blur-xl rounded-[3rem] overflow-hidden">
+          <CardHeader className="space-y-4 text-center pt-10 pb-6 border-b border-gray-50">
+            <img 
+              src="/img/logotransparente.png" 
+              alt="Logo" 
+              className="mx-auto w-20 h-20 object-contain"
+            />
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-black text-brand-dark uppercase tracking-tight">
+                Nueva Cuenta
+              </CardTitle>
+              <CardDescription className="text-[10px] font-black text-brand-gold uppercase tracking-[0.3em]">
+                Comunidad Digital Evolución Antoniana
+              </CardDescription>
             </div>
-            <CardTitle className="text-3xl font-poppins font-bold text-brand-dark">
-              Únete a la Comunidad
-            </CardTitle>
-            <CardDescription className="text-gray-500 text-base">
-              Crea tu cuenta para acceder a beneficios y actividades exclusivas.
-            </CardDescription>
           </CardHeader>
 
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-brand-dark font-semibold">Nombre Completo</Label>
-                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        placeholder="Juan Pérez"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
-                        required
-                        disabled={formDisabled}
-                      />
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Nombre Completo</Label>
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
+                    <Input name="name" placeholder="Ej: Juan Pérez" value={formData.name} onChange={handleChange} className={inputStyle} required />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-brand-dark font-semibold">Teléfono</Label>
-                    <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="+54 9 ..."
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
-                        disabled={formDisabled}
-                      />
-                    </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">WhatsApp</Label>
+                  <div className="relative group">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
+                    <Input name="phone" placeholder="387..." value={formData.phone} onChange={handleChange} className={inputStyle} />
                   </div>
+                </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-brand-dark font-semibold">Email</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Email</Label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="pl-12 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
-                    required
-                    disabled={formDisabled}
-                  />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
+                  <Input name="email" type="email" placeholder="tu@email.com" value={formData.email} onChange={handleChange} className={inputStyle} required />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-brand-dark font-semibold">Contraseña</Label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
-                      <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="pl-12 pr-10 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
-                        required
-                        disabled={formDisabled}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={formDisabled}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Contraseña</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
+                    <Input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={formData.password} onChange={handleChange} className={inputStyle + " pr-10"} required />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-brand-dark font-semibold">Confirmar</Label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors" />
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="••••••"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className="pl-12 pr-10 h-11 bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
-                        required
-                        disabled={formDisabled}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        disabled={formDisabled}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Confirmar</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
+                    <Input name="confirmPassword" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={formData.confirmPassword} onChange={handleChange} className={inputStyle} required />
                   </div>
+                </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-6">
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform active:scale-95"
-                  disabled={formDisabled}
+                  disabled={authLoading}
+                  className="w-full h-14 bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl shadow-xl shadow-brand-primary/20 transition-all uppercase tracking-widest text-xs"
                 >
-                  {isSubmitting ? (
-                    <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creando cuenta...
-                    </>
-                  ) : (
-                    buttonText
-                  )}
+                  {authLoading ? <Loader2 className="animate-spin" /> : "Finalizar Registro"}
                 </Button>
               </div>
             </form>
 
-            <div className="mt-8 text-center border-t border-gray-100 pt-6">
-              <p className="text-sm text-gray-500">
-                ¿Ya tienes una cuenta?{' '}
-                <Link
-                  to="/login"
-                  className="font-bold text-brand-action hover:text-brand-dark transition-colors underline decoration-brand-action/30 underline-offset-4"
-                >
-                  Inicia sesión aquí
+            <div className="mt-8 text-center pt-6 border-t border-gray-50">
+              <p className="text-[11px] font-bold text-gray-400 uppercase">
+                ¿Ya eres parte?{' '}
+                <Link to="/login" className="text-brand-action hover:text-brand-dark transition-colors underline underline-offset-4 decoration-brand-action/20">
+                  Iniciar Sesión
                 </Link>
               </p>
             </div>
