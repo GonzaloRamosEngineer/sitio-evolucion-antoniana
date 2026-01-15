@@ -230,17 +230,36 @@ const ActivityDetailPage = () => {
                 </Badge>
               </div>
 
-              {/* ✅ Ciclo pill abajo (NIVEL DIOS, sin competir con modalidad) */}
-              {cycleCode && cycleName && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-3">
-                  <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold bg-white/90 backdrop-blur-md shadow-lg ${pill.pill}`}>
-                    <span className={`w-2.5 h-2.5 rounded-full ${pill.dot}`} />
-                    <span className="uppercase tracking-wide">{cycleCode}</span>
-                    <span className="opacity-70">·</span>
-                    <span className="max-w-[240px] truncate">{cycleName}</span>
-                  </div>
-                </div>
-              )}
+              {/* ✅ Ciclo pill abajo (compacta + legible + no salta) */}
+{cycleCode && cycleName && (
+  <div className="absolute bottom-4 left-4 z-20">
+    <div
+      className="
+        inline-flex items-center gap-2
+        rounded-full px-3 py-1.5
+        bg-white/85 backdrop-blur-md
+        border border-white/70
+        shadow-lg
+        max-w-[calc(100%-2rem)]
+      "
+    >
+      <span className={`w-2 h-2 rounded-full ${pill.dot}`} />
+
+      {/* Parte fija: CICLO B */}
+      <span className="text-[11px] font-black tracking-widest uppercase text-brand-dark whitespace-nowrap">
+        {cycleCode}
+      </span>
+
+      <span className="text-brand-dark/40">·</span>
+
+      {/* Parte variable: nombre del ciclo (sin salto, truncado) */}
+      <span className="text-[12px] font-semibold text-brand-dark truncate">
+        {cycleName}
+      </span>
+    </div>
+  </div>
+)}
+
             </div>
 
             {socialLinks.length > 0 && (
