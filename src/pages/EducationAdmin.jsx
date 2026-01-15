@@ -136,17 +136,20 @@ const EducationAdmin = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 md:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
         {/* HEADER ESTRATÉGICO */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
           <div className="space-y-3">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3 text-brand-primary"
             >
-              <div className="p-2 bg-brand-primary/10 rounded-xl"><GraduationCap size={24} /></div>
-              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Gestión Ministerial v2.0</span>
+              <div className="p-2 bg-brand-primary/10 rounded-xl">
+                <GraduationCap size={24} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em]">
+                Gestión Ministerial v2.0
+              </span>
             </motion.div>
             <h1 className="text-5xl md:text-7xl font-black text-brand-dark tracking-tighter leading-none uppercase">
               Admin<span className="text-brand-primary">Edu</span>
@@ -154,15 +157,15 @@ const EducationAdmin = () => {
           </div>
 
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
-            <Button 
+            <Button
               onClick={exportToExcelFriendly}
               className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white rounded-2xl h-14 px-8 shadow-xl shadow-green-600/20 font-bold flex gap-2 transition-all active:scale-95"
             >
               <Download size={18} /> EXPORTAR EXCEL
             </Button>
-            <Button 
-              onClick={fetchList} 
-              variant="outline" 
+            <Button
+              onClick={fetchList}
+              variant="outline"
               className="rounded-2xl h-14 w-14 bg-white border-gray-200 hover:bg-gray-50 shadow-sm transition-all"
             >
               <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
@@ -172,18 +175,41 @@ const EducationAdmin = () => {
 
         {/* DASHBOARD RÁPIDO */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard title="Total Registros" value={stats.total} icon={Users} color="blue" />
-          <MetricCard title="Por Contactar" value={stats.pending} icon={Clock} color="amber" />
-          <MetricCard title="Gestión Exitosa" value={stats.contacted} icon={UserCheck} color="green" />
-          <MetricCard title="Descartados" value={stats.rejected} icon={XCircle} color="red" />
+          <MetricCard
+            title="Total Registros"
+            value={stats.total}
+            icon={Users}
+            color="blue"
+          />
+          <MetricCard
+            title="Por Contactar"
+            value={stats.pending}
+            icon={Clock}
+            color="amber"
+          />
+          <MetricCard
+            title="Gestión Exitosa"
+            value={stats.contacted}
+            icon={UserCheck}
+            color="green"
+          />
+          <MetricCard
+            title="Descartados"
+            value={stats.rejected}
+            icon={XCircle}
+            color="red"
+          />
         </div>
 
         {/* CONTROLES DE FILTRADO */}
         <Card className="border-none shadow-2xl shadow-brand-dark/5 rounded-[2.5rem] bg-white p-6">
           <div className="flex flex-col md:flex-row gap-6 justify-between items-center">
             <div className="relative w-full md:w-96 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-primary transition-colors" size={20} />
-              <Input 
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-primary transition-colors"
+                size={20}
+              />
+              <Input
                 placeholder="Nombre, DNI, Email o Localidad..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -191,12 +217,36 @@ const EducationAdmin = () => {
               />
             </div>
 
-            <Tabs value={activeFilter} className="w-full md:w-auto" onValueChange={setActiveFilter}>
+            <Tabs
+              value={activeFilter}
+              className="w-full md:w-auto"
+              onValueChange={setActiveFilter}
+            >
               <TabsList className="bg-gray-100 p-1 rounded-2xl h-14 w-full flex overflow-x-auto no-scrollbar">
-                <TabsTrigger value="all" className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase">TODOS</TabsTrigger>
-                <TabsTrigger value="pending" className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-amber-500">PENDIENTES</TabsTrigger>
-                <TabsTrigger value="contacted" className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-green-600">CONTACTADOS</TabsTrigger>
-                <TabsTrigger value="rejected" className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-red-600">DESCARTADOS</TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase"
+                >
+                  TODOS
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pending"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-amber-500"
+                >
+                  PENDIENTES
+                </TabsTrigger>
+                <TabsTrigger
+                  value="contacted"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-green-600"
+                >
+                  CONTACTADOS
+                </TabsTrigger>
+                <TabsTrigger
+                  value="rejected"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-red-600"
+                >
+                  DESCARTADOS
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -211,94 +261,162 @@ const EducationAdmin = () => {
                   <th className="px-8 py-6">Aspirante</th>
                   <th className="px-8 py-6">Canales de Contacto</th>
                   <th className="px-8 py-6">Perfil Académico</th>
+                  <th className="px-8 py-6">Nivel Previo</th>
                   <th className="px-8 py-6">Estado Actual</th>
                   <th className="px-8 py-6 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 <AnimatePresence mode="popLayout">
-                  {filteredList.length > 0 ? filteredList.map((item) => (
-                    <motion.tr 
-                      layout
-                      key={item.id} 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }} 
-                      exit={{ opacity: 0 }}
-                      className="hover:bg-brand-sand/5 transition-all group"
-                    >
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col">
-                          <span className="font-black text-brand-dark uppercase tracking-tight text-sm">{item.full_name}</span>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">DNI {item.dni}</span>
-                            <span className="text-[10px] font-bold text-brand-gold uppercase tracking-tighter">{item.age} Años</span>
+                  {filteredList.length > 0 ? (
+                    filteredList.map((item) => (
+                      <motion.tr
+                        layout
+                        key={item.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="hover:bg-brand-sand/5 transition-all group"
+                      >
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col">
+                            <span className="font-black text-brand-dark uppercase tracking-tight text-sm">
+                              {item.full_name}
+                            </span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                DNI {item.dni}
+                              </span>
+                              <span className="text-[10px] font-bold text-brand-gold uppercase tracking-tighter">
+                                {item.age} Años
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col gap-1">
-                          <a 
-                            href={`https://wa.me/${item.phone}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-xs text-brand-primary font-black hover:text-green-600 transition-colors group/link"
-                          >
-                            <MessageSquare size={14} className="text-green-500 group-hover/link:scale-110 transition-transform" /> 
-                            {item.phone}
-                          </a>
-                          <span className="text-[10px] text-gray-400 lowercase font-medium flex items-center gap-1">
-                            <Mail size={12} /> {item.email}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-none text-[9px] font-black px-2 py-0.5 w-fit">
-                            {item.level_to_start}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
-                            <MapPin size={10} className="text-brand-gold" /> {item.location}
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col gap-1">
+                            <a
+                              href={`https://wa.me/${item.phone}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-xs text-brand-primary font-black hover:text-green-600 transition-colors group/link"
+                            >
+                              <MessageSquare
+                                size={14}
+                                className="text-green-500 group-hover/link:scale-110 transition-transform"
+                              />
+                              {item.phone}
+                            </a>
+                            <span className="text-[10px] text-gray-400 lowercase font-medium flex items-center gap-1">
+                              <Mail size={12} /> {item.email}
+                            </span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <StatusBadge status={item.status} />
-                      </td>
-                      <td className="px-8 py-6 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-11 w-11 p-0 rounded-2xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200 shadow-sm hover:shadow-none">
-                              <MoreVertical size={20} className="text-brand-dark" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-64 rounded-[1.5rem] p-3 shadow-2xl border-gray-100 bg-white/95 backdrop-blur-sm">
-                            <DropdownMenuLabel className="text-[9px] uppercase font-black text-gray-400 px-3 py-2 tracking-widest">FLUJO DE TRABAJO</DropdownMenuLabel>
-                            
-                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'contacted')} className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-blue-600 focus:bg-blue-50 focus:text-blue-700 transition-all">
-                              <Phone className="mr-3 h-4 w-4" /> Marcar como Contactado
-                            </DropdownMenuItem>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 border-none text-[9px] font-black px-2 py-0.5 w-fit"
+                            >
+                              {item.level_to_start}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
+                              <MapPin size={10} className="text-brand-gold" />{" "}
+                              {item.location}
+                            </div>
+                          </div>
+                        </td>
 
-                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'inscrito')} className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-green-600 focus:bg-green-50 focus:text-green-700 transition-all">
-                              <CheckCircle2 className="mr-3 h-4 w-4" /> Finalizar Inscripción
-                            </DropdownMenuItem>
+                        {/* ... después de la celda de contacto ... */}
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-brand-dark uppercase tracking-tight">
+                              Cursó hasta:
+                            </span>
+                            <Badge
+                              variant="secondary"
+                              className="bg-gray-100 text-gray-600 border-none text-[9px] font-bold px-2 py-0.5 w-fit uppercase"
+                            >
+                              {item.last_year_completed.replace(/-/g, " ")}
+                            </Badge>
+                          </div>
+                        </td>
+                        {/* ... antes de la celda de Nivel / Localidad ... */}
 
-                            <DropdownMenuSeparator className="my-2 bg-gray-50" />
+                        <td className="px-8 py-6">
+                          <StatusBadge status={item.status} />
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-11 w-11 p-0 rounded-2xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200 shadow-sm hover:shadow-none"
+                              >
+                                <MoreVertical
+                                  size={20}
+                                  className="text-brand-dark"
+                                />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-64 rounded-[1.5rem] p-3 shadow-2xl border-gray-100 bg-white/95 backdrop-blur-sm"
+                            >
+                              <DropdownMenuLabel className="text-[9px] uppercase font-black text-gray-400 px-3 py-2 tracking-widest">
+                                FLUJO DE TRABAJO
+                              </DropdownMenuLabel>
 
-                            <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'rejected')} className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-red-500 focus:bg-red-50 focus:text-red-600 transition-all">
-                              <XCircle className="mr-3 h-4 w-4" /> No aplica / Descartar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </motion.tr>
-                  )) : (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(item.id, "contacted")
+                                }
+                                className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-blue-600 focus:bg-blue-50 focus:text-blue-700 transition-all"
+                              >
+                                <Phone className="mr-3 h-4 w-4" /> Marcar como
+                                Contactado
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(item.id, "inscrito")
+                                }
+                                className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-green-600 focus:bg-green-50 focus:text-green-700 transition-all"
+                              >
+                                <CheckCircle2 className="mr-3 h-4 w-4" />{" "}
+                                Finalizar Inscripción
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator className="my-2 bg-gray-50" />
+
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(item.id, "rejected")
+                                }
+                                className="rounded-xl py-3 cursor-pointer font-bold text-xs uppercase text-red-500 focus:bg-red-50 focus:text-red-600 transition-all"
+                              >
+                                <XCircle className="mr-3 h-4 w-4" /> No aplica /
+                                Descartar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </motion.tr>
+                    ))
+                  ) : (
                     <tr>
-                      <td colSpan="5" className="py-32 text-center">
+                      <td colSpan="6" className="py-32 text-center">
                         <div className="flex flex-col items-center gap-4">
-                          <div className="p-6 bg-gray-50 rounded-full text-gray-300"><FilterX size={48} /></div>
+                          <div className="p-6 bg-gray-50 rounded-full text-gray-300">
+                            <FilterX size={48} />
+                          </div>
                           <div className="space-y-1">
-                            <h4 className="text-brand-dark font-black uppercase text-sm tracking-widest">Sin coincidencias</h4>
-                            <p className="text-gray-400 text-xs font-medium">Probá ajustando los filtros o el buscador.</p>
+                            <h4 className="text-brand-dark font-black uppercase text-sm tracking-widest">
+                              Sin coincidencias
+                            </h4>
+                            <p className="text-gray-400 text-xs font-medium">
+                              Probá ajustando los filtros o el buscador.
+                            </p>
                           </div>
                         </div>
                       </td>
