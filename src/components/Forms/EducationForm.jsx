@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Send, ShieldCheck, GraduationCap, MapPin, Users, Clock } from 'lucide-react';
+import { Loader2, Send, ShieldCheck, GraduationCap, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,16 +12,13 @@ import { createPreinscription } from '@/api/educationApi';
 import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Esquema de validación estricto con Zod
 const educationSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   full_name: z.string().min(5, "Ingresa nombre y apellido completo"),
   dni: z.string().min(7, "DNI debe tener al menos 7 dígitos"),
   age: z.string().refine((val) => !isNaN(val) && parseInt(val) >= 14, "Debes ser mayor de 14 años"),
   last_year_completed: z.string().min(1, "Selecciona tu último nivel cursado"),
-  phone: z.string()
-    .min(8, "Ingresa un teléfono o WhatsApp válido")
-    .max(20, "Número demasiado largo"),
+  phone: z.string().min(8, "Ingresa un teléfono o WhatsApp válido").max(20, "Número demasiado largo"),
   location: z.string().min(1, "Selecciona tu localidad"),
   location_custom: z.string().optional(), 
   level_to_start: z.string().min(1, "Selecciona el nivel que deseas iniciar"),
@@ -40,13 +37,8 @@ const EducationForm = ({ onSuccess }) => {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(educationSchema),
     defaultValues: {
-      last_year_completed: "",
-      location: "",
-      level_to_start: "",
-      relationship_club: "",
-      preferred_modality: "",
-      preferred_schedule: "",
-      interest_area: ""
+      last_year_completed: "", location: "", level_to_start: "",
+      relationship_club: "", preferred_modality: "", preferred_schedule: "", interest_area: ""
     }
   });
 
@@ -56,14 +48,11 @@ const EducationForm = ({ onSuccess }) => {
   const onFormSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      // 🧠 LÓGICA DE NORMALIZACIÓN DE TELÉFONO PARA WHATSAPP (Mantenida)
       let cleanPhone = data.phone.replace(/\D/g, ''); 
       if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-      
-      if (!cleanPhone.startsWith('54')) {
-        cleanPhone = `549${cleanPhone}`;
-      } else if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
-        cleanPhone = `549${cleanPhone.substring(2)}`;
-      }
+      if (!cleanPhone.startsWith('54')) cleanPhone = `549${cleanPhone}`;
+      else if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) cleanPhone = `549${cleanPhone.substring(2)}`;
 
       const payload = {
         ...data,
@@ -77,32 +66,22 @@ const EducationForm = ({ onSuccess }) => {
       delete payload.interest_custom;
 
       await createPreinscription(payload);
-      
-      toast({ 
-        title: "¡Formulario Recibido!", 
-        description: "Tus datos han sido registrados correctamente.",
-        className: "bg-brand-dark text-white rounded-2xl"
-      });
-
+      toast({ title: "¡Formulario Recibido!", description: "Tus datos han sido registrados correctamente.", className: "bg-brand-dark text-white rounded-2xl" });
       if (onSuccess) onSuccess();
     } catch (error) {
-      toast({ 
-        title: "Error al enviar", 
-        description: "No pudimos procesar la preinscripción. Por favor, intenta más tarde.",
-        variant: "destructive" 
-      });
+      toast({ title: "Error al enviar", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Estilo común para los inputs dinámicos "Otros" para asegurar contraste
-  const customInputStyle = "rounded-xl border-gray-200 h-12 bg-white text-brand-dark focus:ring-brand-primary focus:border-brand-primary shadow-sm mt-2";
+  // ✨ ESTILO MINIMALISTA: Gris clarito de fondo, letras en azul de la fundación
+  const inputBaseStyle = "rounded-xl border-gray-100 bg-gray-50/50 text-brand-dark placeholder:text-gray-400 focus:bg-white focus:ring-brand-primary/20 transition-all h-12";
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
       
-      {/* SECCIÓN 1: IDENTIDAD Y CONTACTO */}
+      {/* SECCIÓN 1: IDENTIDAD */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <Users size={16} className="text-brand-primary" />
@@ -111,40 +90,38 @@ const EducationForm = ({ onSuccess }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Nombre y Apellido *</Label>
-            <Input placeholder="Ej: Juan Pérez" {...register('full_name')} className="rounded-xl border-gray-200 h-12" />
-            {errors.full_name && <p className="text-red-500 text-[10px] font-bold px-2">{errors.full_name.message}</p>}
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Nombre Completo *</Label>
+            <Input placeholder="Ej: Juan Pérez" {...register('full_name')} className={inputBaseStyle} />
+            {errors.full_name && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.full_name.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-500 ml-1">DNI *</Label>
-                <Input placeholder="Sin puntos" {...register('dni')} className="rounded-xl border-gray-200 h-12" />
-                {errors.dni && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.dni.message}</p>}
+                <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">DNI *</Label>
+                <Input placeholder="Sin puntos" {...register('dni')} className={inputBaseStyle} />
+                {errors.dni && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.dni.message}</p>}
             </div>
             <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-500 ml-1">Edad *</Label>
-                <Input placeholder="Años" {...register('age')} className="rounded-xl border-gray-200 h-12" />
-                {errors.age && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.age.message}</p>}
+                <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Edad *</Label>
+                <Input placeholder="Años" {...register('age')} className={inputBaseStyle} />
+                {errors.age && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.age.message}</p>}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Correo Electrónico *</Label>
-            <Input placeholder="correo@ejemplo.com" {...register('email')} className="rounded-xl border-gray-200 h-12" />
-            {errors.email && <p className="text-red-500 text-[10px] font-bold px-2">{errors.email.message}</p>}
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Email *</Label>
+            <Input placeholder="correo@ejemplo.com" {...register('email')} className={inputBaseStyle} />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">WhatsApp / Teléfono *</Label>
-            <Input placeholder="387..." {...register('phone')} className="rounded-xl border-gray-200 h-12" />
-            {errors.phone && <p className="text-red-500 text-[10px] font-bold px-2">{errors.phone.message}</p>}
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">WhatsApp *</Label>
+            <Input placeholder="387..." {...register('phone')} className={inputBaseStyle} />
           </div>
         </div>
       </div>
 
-      {/* SECCIÓN 2: TRAYECTORIA EDUCATIVA */}
+      {/* SECCIÓN 2: ACADÉMICA */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <GraduationCap size={16} className="text-brand-primary" />
@@ -153,138 +130,111 @@ const EducationForm = ({ onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-              <Label className="text-xs font-bold text-gray-500 ml-1">Último año cursado de secundaria *</Label>
+              <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Último año cursado *</Label>
               <Select onValueChange={(val) => setValue('last_year_completed', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Seleccionar opción" /></SelectTrigger>
+                <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sin-ingreso">Sin Ingreso a Secundaria</SelectItem>
                   <SelectItem value="egb3">7mo / 8vo / 9no (EGB 3)</SelectItem>
                   <SelectItem value="1-2-polimodal">1ro / 2do Año (Polimodal)</SelectItem>
-                  <SelectItem value="secundaria-incompleta">Secundaria Incompleta (+3 años)</SelectItem>
+                  <SelectItem value="secundaria-incompleta">Secundaria Incompleta</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.last_year_completed && <p className="text-red-500 text-[10px] font-bold">{errors.last_year_completed.message}</p>}
           </div>
 
           <div className="space-y-2">
-              <Label className="text-xs font-bold text-gray-500 ml-1">Nivel que desea iniciar *</Label>
+              <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Nivel a iniciar *</Label>
               <Select onValueChange={(val) => setValue('level_to_start', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Nivel a cursar" /></SelectTrigger>
+                <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir nivel" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="primaria">Primaria</SelectItem>
                   <SelectItem value="secundaria">Secundaria</SelectItem>
-                  <SelectItem value="asesoramiento">No estoy seguro/a (Quiero asesoramiento)</SelectItem>
+                  <SelectItem value="asesoramiento">Asesoramiento</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.level_to_start && <p className="text-red-500 text-[10px] font-bold">{errors.level_to_start.message}</p>}
           </div>
         </div>
 
-        <div className="space-y-1">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Orientación de interés</Label>
+        <div className="space-y-2">
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Orientación</Label>
             <Select onValueChange={(val) => setValue('interest_area', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Elegir orientación (opcional)" /></SelectTrigger>
+                <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="economia">Economía y Administración</SelectItem>
+                  <SelectItem value="economia">Economía</SelectItem>
                   <SelectItem value="humanidades">Humanidades</SelectItem>
                   <SelectItem value="informatica">Informática</SelectItem>
-                  <SelectItem value="naturales">Ciencias Naturales</SelectItem>
-                  <SelectItem value="artes">Artes</SelectItem>
-                  <SelectItem value="otro">Otro (especificar cuál)</SelectItem>
+                  <SelectItem value="otro">Otro (especificar)</SelectItem>
                 </SelectContent>
             </Select>
 
             <AnimatePresence>
               {selectedInterest === 'otro' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }} 
-                  animate={{ opacity: 1, height: 'auto' }} 
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <Input 
-                    placeholder="Escribí aquí tu orientación de interés..." 
-                    {...register('interest_custom')} 
-                    className={customInputStyle}
-                  />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                  <Input placeholder="Escribí aquí la orientación..." {...register('interest_custom')} className={inputBaseStyle + " border-brand-primary/20 bg-white"} />
                 </motion.div>
               )}
             </AnimatePresence>
         </div>
       </div>
 
-      {/* SECCIÓN 3: PREFERENCIAS Y VÍNCULO */}
+      {/* SECCIÓN 3: CONTEXTO */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <MapPin size={16} className="text-brand-primary" />
-            <Label className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em]">Contexto y Preferencias</Label>
+            <Label className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em]">Contexto</Label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Localidad o Zona *</Label>
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Localidad *</Label>
             <Select onValueChange={(val) => setValue('location', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
+              <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="salta-capital">Salta Capital</SelectItem>
-                <SelectItem value="zona-norte">Zona Norte / Sur / Este / Oeste</SelectItem>
-                <SelectItem value="valles">San Lorenzo / Cerrillos / Rosario</SelectItem>
-                <SelectItem value="otro">Otro (especificar cuál)</SelectItem>
+                <SelectItem value="valles">Valles Lerma</SelectItem>
+                <SelectItem value="otro">Otro (especificar)</SelectItem>
               </SelectContent>
             </Select>
-            {errors.location && <p className="text-red-500 text-[10px] font-bold">{errors.location.message}</p>}
 
             <AnimatePresence>
               {selectedLocation === 'otro' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }} 
-                  animate={{ opacity: 1, height: 'auto' }} 
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <Input 
-                    placeholder="Especificá tu zona o localidad..." 
-                    {...register('location_custom')} 
-                    className={customInputStyle}
-                  />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                  <Input placeholder="Especificá tu localidad..." {...register('location_custom')} className={inputBaseStyle + " border-brand-primary/20 bg-white"} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Vínculo con el Club / Fundación *</Label>
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Vínculo con el Club *</Label>
             <Select onValueChange={(val) => setValue('relationship_club', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Tu relación con la institución" /></SelectTrigger>
+              <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Tu relación" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="socio">Socio/a</SelectItem>
-                <SelectItem value="hincha">Hincha/Simpatizante</SelectItem>
-                <SelectItem value="empleado">Empleado</SelectItem>
-                <SelectItem value="vecino">Vecino/a del barrio</SelectItem>
+                <SelectItem value="hincha">Hincha</SelectItem>
+                <SelectItem value="vecino">Vecino/a</SelectItem>
                 <SelectItem value="ninguno">Ninguno</SelectItem>
               </SelectContent>
             </Select>
-            {errors.relationship_club && <p className="text-red-500 text-[10px] font-bold">{errors.relationship_club.message}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Modalidad preferida *</Label>
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Modalidad *</Label>
             <Select onValueChange={(val) => setValue('preferred_modality', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
+              <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="presencial">Presencial (Sede Centro Juventud Antoniana)</SelectItem>
-                <SelectItem value="virtual">Virtual / Distancia</SelectItem>
+                <SelectItem value="presencial">Presencial</SelectItem>
+                <SelectItem value="virtual">Virtual</SelectItem>
               </SelectContent>
             </Select>
-            {errors.preferred_modality && <p className="text-red-500 text-[10px] font-bold">{errors.preferred_modality.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-500 ml-1">Horario preferido</Label>
+            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Horario</Label>
             <Select onValueChange={(val) => setValue('preferred_schedule', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Turno de preferencia" /></SelectTrigger>
+              <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Turno" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="mañana">Mañana</SelectItem>
                 <SelectItem value="tarde">Tarde</SelectItem>
@@ -296,11 +246,11 @@ const EducationForm = ({ onSuccess }) => {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs font-bold text-gray-500 ml-1 text-xs">Mensaje o Consulta adicional</Label>
+        <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Mensaje adicional</Label>
         <Textarea 
-          placeholder="Si tenés alguna duda específica, escribila aquí..." 
+          placeholder="Escribí aquí..." 
           {...register('message')} 
-          className="rounded-2xl border-gray-200 min-h-[120px] text-brand-dark focus:ring-brand-primary focus:border-brand-primary" 
+          className="rounded-xl border-gray-100 bg-gray-50/50 text-brand-dark min-h-[100px] focus:bg-white focus:ring-brand-primary/20 transition-all" 
         />
       </div>
 
@@ -312,12 +262,12 @@ const EducationForm = ({ onSuccess }) => {
         {isSubmitting ? (
           <div className="flex items-center gap-3">
             <Loader2 className="animate-spin h-5 w-5" />
-            <span>PROCESANDO ENLACE...</span>
+            <span>PROCESANDO...</span>
           </div>
         ) : (
           <div className="flex items-center gap-3">
             <Send size={20} />
-            <span>ENVIAR PREINSCRIPCIÓN OFICIAL</span>
+            <span>ENVIAR PREINSCRIPCIÓN</span>
           </div>
         )}
       </Button>
