@@ -36,18 +36,19 @@ const normalizeModality = (modality) => (modality || '').toLowerCase();
 
 const cycleMeta = {
   'Ciclo A': {
-    pill: 'bg-brand-primary/90 text-white border-white/15',
-    dot: 'bg-brand-gold',
+    pill: 'bg-brand-primary/90 text-white border-white/20', // AZUL
+    dot: 'bg-brand-primary',
   },
   'Ciclo B': {
-    pill: 'bg-green-700/90 text-white border-white/15',
-    dot: 'bg-white/80',
+    pill: 'bg-green-600/90 text-white border-white/20', // VERDE
+    dot: 'bg-green-600',
   },
   'Ciclo C': {
-    pill: 'bg-brand-gold/90 text-brand-dark border-white/20',
-    dot: 'bg-brand-dark/70',
+    pill: 'bg-amber-500/90 text-brand-dark border-white/30', // AMARILLO
+    dot: 'bg-amber-500',
   },
 };
+
 
 const getCyclePill = (cycleCode) => cycleMeta[cycleCode] ?? {
   pill: 'bg-black/60 text-white border-white/15',
