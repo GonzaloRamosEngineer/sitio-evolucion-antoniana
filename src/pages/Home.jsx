@@ -9,7 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, Users, BookOpen, Award, ArrowRight, CheckCircle2} from "lucide-react";
+import {
+  Heart,
+  Users,
+  BookOpen,
+  Award,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 const Home = () => {
@@ -135,53 +142,60 @@ const Home = () => {
               </div>
 
               {/* Alianzas Estratégicas - Nivel Institucional */}
-<div className="pt-10 border-t border-white/10">
-  <p className="text-[10px] text-brand-gold/90 mb-6 uppercase tracking-[0.3em] font-black">
-    En alianza estratégica con
-  </p>
-  
-  <div className="flex flex-wrap gap-x-8 gap-y-6 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 items-center">
-    {/* Google */}
-    <div className="flex flex-col">
-      <span className="text-white font-bold text-xl tracking-tight leading-none">Google</span>
-      <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">for NonProfits</span>
-    </div>
+              <div className="pt-10 border-t border-white/10">
+                <p className="text-[10px] text-brand-gold/90 mb-6 uppercase tracking-[0.3em] font-black">
+                  En alianza estratégica con
+                </p>
 
-    {/* Canva */}
-    <div className="flex flex-col">
-    <span className="text-white font-bold text-xl tracking-tight leading-none">Canva</span>
-    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">for NonProfits</span>
-    </div>
-
-    {/* Mercado Libre */}
-    <div className="flex flex-col">
-      <span className="text-white font-bold text-xl tracking-tight leading-none">MercadoLibre</span>
-      <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">Solidario</span>
-    </div>
-
-    {/* Ministerio de Educación */}
-    <div className="h-8 w-px bg-white/8 hidden md:block"></div> {/* Separador elegante */}
-    
-    <div className="flex flex-col">
-      <span className="text-white font-bold text-xl tracking-tight leading-none">
-        Ministerio de Educación
-      </span>
-      <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
-        Provincia de Salta
-      </span>
-    </div>
-
-        <div className="flex flex-col">
-      <span className="text-white font-bold text-xl tracking-tight leading-none">
-        UBA
-      </span>
-      <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
-        Ciencias Economicas
-      </span>
-    </div>
-
-  </div>
-</div>
+                <div className="flex flex-wrap gap-x-8 gap-y-6 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 items-center">
+                  {/* Google */}
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xl tracking-tight leading-none">
+                      Google
+                    </span>
+                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
+                      for NonProfits
+                    </span>
+                  </div>
+                  {/* Canva */}
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xl tracking-tight leading-none">
+                      Canva
+                    </span>
+                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
+                      for NonProfits
+                    </span>
+                  </div>
+                  {/* Mercado Libre */}
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xl tracking-tight leading-none">
+                      MercadoLibre
+                    </span>
+                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
+                      Solidario
+                    </span>
+                  </div>
+                  {/* Separador elegante */}
+                  <div className="h-8 w-px bg-white/8 hidden md:block"></div>{" "}
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xl tracking-tight leading-none">
+                      UBA
+                    </span>
+                    <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
+                      Ciencias Economicas
+                    </span>
+                  </div>
+                  {/* Ministerio de Educación */}
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-xl tracking-tight leading-none">
+                      Ministerio de Educación
+                    </span>
+                    <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
+                      Provincia de Salta
+                    </span>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
             <motion.div
