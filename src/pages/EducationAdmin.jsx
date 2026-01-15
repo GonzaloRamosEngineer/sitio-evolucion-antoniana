@@ -77,23 +77,36 @@ const EducationAdmin = () => {
     }
     
     // Encabezados con formato oficial
-    const headers = ["FECHA REGISTRO", "ASPIRANTE", "DNI", "EDAD", "EMAIL", "WHATSAPP", "LOCALIDAD", "NIVEL A INICIAR", "VINCULO CLUB", "MODALIDAD", "INTERES", "ESTADO", "MENSAJE"];
+    // Encabezados exactos requeridos por el Ministerio
+    const headers = [
+      "APELLIDO Y NOMBRE", 
+      "DNI", 
+      "EDAD", 
+      "ÚLTIMO AÑO CURSADO DE SECUNDARIA", 
+      "SIN INGRESO A SECUNDARIA", 
+      "CONTACTO", 
+      "E-MAIL"
+    ];
     
-    const rows = filteredList.map(item => [
-      new Date(item.created_at).toLocaleDateString('es-AR'),
-      item.full_name.toUpperCase().replace(/;/g, ' '),
-      item.dni,
-      item.age,
-      item.email.toLowerCase(),
-      `'${item.phone}`, // El apostrofe fuerza a Excel a tratarlo como texto para no borrar el 549
-      item.location.replace(/;/g, ' '),
-      item.level_to_start.replace(/;/g, ' '),
-      item.relationship_club,
-      item.preferred_modality,
-      item.interest_area || 'N/A',
-      item.status.toUpperCase(),
-      (item.message || "Sin consulta").replace(/[;\n\r]/g, ' ')
-    ]);
+    const rows = filteredList.map(item => {
+      // Lógica técnica: determinamos si el aspirante nunca ingresó a la secundaria
+      const sinIngreso = item.last_year_completed === 'sin-ingreso' ? "SÍ" : "NO";
+      
+      // Si no ingresó, el "Último año" queda vacío o aclarado según prefieras
+      const ultimoAño = item.last_year_completed === 'sin-ingreso' 
+        ? "N/A" 
+        : item.last_year_completed.replace(/-/g, ' ').toUpperCase();
+
+      return [
+        item.full_name.toUpperCase().replace(/;/g, ' '), // Apellido y Nombre
+        item.dni,                                       // DNI
+        item.age,                                       // EDAD
+        ultimoAño,                                      // ÚLTIMO AÑO CURSADO DE SECUNDARIA
+        sinIngreso,                                     // SIN INGRESO A SECUNDARIA
+        `'${item.phone}`,                               // CONTACTO (con ' para evitar errores de Excel)
+        item.email.toLowerCase()                        // E-MAIL
+      ];
+    });
 
     // CSV con punto y coma + BOM para tildes (Perfecto para Excel en Español)
     const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
