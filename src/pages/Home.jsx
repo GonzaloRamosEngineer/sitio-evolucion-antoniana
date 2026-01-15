@@ -170,6 +170,16 @@ const Home = () => {
         Provincia de Salta
       </span>
     </div>
+
+        <div className="flex flex-col">
+      <span className="text-white font-bold text-xl tracking-tight leading-none">
+        UBA
+      </span>
+      <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
+        Ciencias Economicas
+      </span>
+    </div>
+
   </div>
 </div>
             </motion.div>
