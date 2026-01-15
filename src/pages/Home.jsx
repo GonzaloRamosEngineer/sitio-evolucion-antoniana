@@ -144,26 +144,29 @@ const Home = () => {
     {/* Google */}
     <div className="flex flex-col">
       <span className="text-white font-bold text-xl tracking-tight leading-none">Google</span>
-      <span className="text-[8px] text-white/40 uppercase tracking-tighter">for Education</span>
+      <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">for NonProfits</span>
     </div>
 
     {/* Canva */}
-    <span className="text-white font-extrabold text-xl tracking-tight">Canva</span>
+    <div className="flex flex-col">
+    <span className="text-white font-bold text-xl tracking-tight leading-none">Canva</span>
+    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">for NonProfits</span>
+    </div>
 
     {/* Mercado Libre */}
     <div className="flex flex-col">
-      <span className="text-white font-black text-lg leading-none tracking-tight">mercadolibre</span>
-      <span className="text-[9px] text-brand-gold font-bold uppercase tracking-[0.1em]">Solidario</span>
+      <span className="text-white font-bold text-xl tracking-tight leading-none">MercadoLibre</span>
+      <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">Solidario</span>
     </div>
 
     {/* Ministerio de Educación */}
-    <div className="h-8 w-px bg-white/10 hidden md:block"></div> {/* Separador elegante */}
+    <div className="h-8 w-px bg-white/8 hidden md:block"></div> {/* Separador elegante */}
     
     <div className="flex flex-col">
-      <span className="text-white font-black text-[11px] uppercase leading-tight tracking-tighter">
+      <span className="text-white font-bold text-xl tracking-tight leading-none">
         Ministerio de Educación
       </span>
-      <span className="text-brand-gold font-bold text-[10px] uppercase tracking-widest">
+      <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
         Provincia de Salta
       </span>
     </div>
