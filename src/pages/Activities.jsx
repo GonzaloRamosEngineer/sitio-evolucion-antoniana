@@ -12,6 +12,29 @@ import { useToast } from '@/components/ui/use-toast';
 import { Calendar, MapPin, Clock, Filter, Loader2, AlertTriangle, Info, MailCheck, LogIn, Hourglass, CheckCircle2, XCircle, Archive, ImageOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * Helpers: Ciclos (sin tocar DB)
+ * - Title formato: [Ciclo A · ...] — Título
+ * - Description formato opcional: "CICLO A · ...\n\n..."
+ */
+const parseCycleFromTitle = (title = '') => {
+  const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
+  if (!m) return { cycleCode: null, cycleName: null, cleanTitle: title };
+  return {
+    cycleCode: m[1].replace(/\s+/g, ' ').trim(), // "Ciclo A"
+    cycleName: m[2].trim(), // "Tecnología para la vida cotidiana"
+    cleanTitle: m[3].trim(), // "Introducción a ..."
+  };
+};
+
+const cycleStyles = {
+  'Ciclo A': 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
+  'Ciclo B': 'bg-green-50 text-green-700 border-green-200',
+  'Ciclo C': 'bg-brand-gold/10 text-brand-dark border-brand-gold/20',
+};
+
+const normalizeModality = (modality) => (modality || '').toLowerCase();
+
 const Activities = () => {
   const [filter, setFilter] = useState('all');
   const { activities, loading: activitiesLoading, error: activitiesError, registerForActivity, refreshActivities } = useActivities();
@@ -21,21 +44,20 @@ const Activities = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!authLoading) { 
+    if (!authLoading) {
       const hasLoaded = sessionStorage.getItem('activities_loaded');
       if (!hasLoaded || activities.length === 0) {
         refreshActivities();
         sessionStorage.setItem('activities_loaded', 'true');
       }
     }
-  }, [authLoading, refreshActivities, activities.length]); 
+  }, [authLoading, refreshActivities, activities.length]);
 
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
       sessionStorage.removeItem('activities_loaded');
     }
   }, [isAuthenticated, authLoading]);
-
 
   const handleUserRegister = async (activityId) => {
     if (!isAuthenticated || !user) {
@@ -59,7 +81,7 @@ const Activities = () => {
         duration: 7000,
         action: <MailCheck className="h-5 w-5 text-brand-gold" />
       });
-      refreshActivities(); 
+      refreshActivities();
     } catch (error) {
       toast({
         title: "Error de Pre-Inscripción",
@@ -71,8 +93,8 @@ const Activities = () => {
 
   const filteredActivities = activities.filter(activity => {
     if (filter === 'all') return true;
-    return activity.modality === filter;
-  }); 
+    return normalizeModality(activity.modality) === filter;
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Fecha no disponible';
@@ -81,7 +103,7 @@ const Activities = () => {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        timeZone: 'UTC' 
+        timeZone: 'UTC'
       });
     } catch (e) {
       return 'Fecha inválida';
@@ -91,7 +113,7 @@ const Activities = () => {
   const getParticipantPercentage = (current, max) => {
     if (!max || max === 0) return 0;
     const percentage = (current / max) * 100;
-    return Math.min(100, Math.max(0, percentage)); 
+    return Math.min(100, Math.max(0, percentage));
   };
 
   const getStatusBadge = (status) => {
@@ -100,7 +122,7 @@ const Activities = () => {
       icon: null,
       text: status,
     };
-  
+
     switch (status) {
       case 'Próximamente':
         badgeProps.className += ' bg-amber-50 text-amber-700 border-amber-200';
@@ -123,7 +145,7 @@ const Activities = () => {
         badgeProps.text = 'Estado desc.';
         break;
     }
-  
+
     return (
       <Badge variant="outline" className={badgeProps.className}>
         {badgeProps.icon}
@@ -134,7 +156,7 @@ const Activities = () => {
 
   const getActionButton = (activity) => {
     const isFull = (activity.current_participants || 0) >= activity.max_participants;
-  
+
     if (activity.status === 'Finalizada') {
       return <Button variant="outline" className="w-full cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200" disabled>Actividad Finalizada</Button>;
     }
@@ -144,19 +166,19 @@ const Activities = () => {
     if (activity.status === 'Próximamente') {
       return <Button variant="outline" className="w-full cursor-not-allowed border-brand-gold/50 text-brand-gold" disabled>Próximamente</Button>;
     }
-    
+
     if (isFull) {
       return <Button variant="destructive" className="w-full cursor-not-allowed opacity-80" disabled>Cupos Agotados</Button>;
     }
-  
+
     return (
       <Button
         className="w-full flex items-center justify-center font-bold bg-brand-action hover:bg-red-800 text-white shadow-md hover:shadow-lg transition-all"
         onClick={() => handleUserRegister(activity.id)}
         disabled={authLoading}
       >
-        {isAuthenticated 
-          ? 'Quiero Participar' 
+        {isAuthenticated
+          ? 'Quiero Participar'
           : <> <LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión para Participar</>
         }
       </Button>
@@ -176,8 +198,7 @@ const Activities = () => {
 
   const showInitialLoader = authLoading || (activitiesLoading && (activities.length === 0 && !sessionStorage.getItem('activities_loaded')));
 
-
-  if (showInitialLoader) { 
+  if (showInitialLoader) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-160px)] bg-brand-sand">
         <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
@@ -186,7 +207,7 @@ const Activities = () => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial="initial"
       animate="in"
       exit="out"
@@ -198,10 +219,10 @@ const Activities = () => {
       <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
         {/* Fondo Tech Sutil */}
         <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
+          <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+          </div>
         </div>
 
         <div className="relative max-w-6xl mx-auto text-center z-10">
@@ -211,13 +232,13 @@ const Activities = () => {
             transition={{ duration: 0.6 }}
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
+              <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
               Nuestras <span className="text-brand-gold">Actividades</span>
             </h1>
-            
+
             <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
               Explora talleres, cursos y eventos diseñados para impulsar el desarrollo tecnológico y social de nuestra comunidad.
             </p>
@@ -240,11 +261,10 @@ const Activities = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setFilter(modalityFilter)}
-                  className={`capitalize rounded-full px-6 transition-all duration-300 ${
-                    filter === modalityFilter 
-                    ? 'bg-white text-brand-primary shadow-sm font-bold' 
+                  className={`capitalize rounded-full px-6 transition-all duration-300 ${filter === modalityFilter
+                    ? 'bg-white text-brand-primary shadow-sm font-bold'
                     : 'text-gray-500 hover:text-brand-dark hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {modalityFilter === 'all' ? 'Todas' : modalityFilter}
                 </Button>
@@ -257,12 +277,47 @@ const Activities = () => {
       {/* --- GRID DE ACTIVIDADES --- */}
       <section className="py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          {activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded') ? ( 
+
+          {/* Roadmap 2026 (pro / institucional) */}
+          <div className="mb-10">
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+                <h2 className="text-2xl md:text-3xl font-poppins font-bold text-brand-dark">
+                  Roadmap <span className="text-brand-gold">2026</span>
+                </h2>
+                <span className="text-sm text-gray-500">
+                  Actividades organizadas por ciclos · Tecnología · Educación · Comunidad
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-brand-primary/15 bg-brand-primary/5 p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-brand-primary">Ciclo A</p>
+                  <p className="font-poppins font-bold text-brand-dark mt-1">Tecnología para la vida cotidiana</p>
+                  <p className="text-sm text-gray-600 mt-2">IA, productividad y herramientas aplicables al día a día.</p>
+                </div>
+
+                <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-green-700">Ciclo B</p>
+                  <p className="font-poppins font-bold text-brand-dark mt-1">Educación y futuro laboral</p>
+                  <p className="text-sm text-gray-600 mt-2">Datos, perfiles y oportunidades en el mundo digital.</p>
+                </div>
+
+                <div className="rounded-2xl border border-brand-gold/20 bg-brand-gold/10 p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-brand-dark">Ciclo C</p>
+                  <p className="font-poppins font-bold text-brand-dark mt-1">Comunidad y valores</p>
+                  <p className="text-sm text-gray-600 mt-2">Acción solidaria, presencia territorial e impacto real.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded') ? (
             <div className="flex justify-center items-center min-h-[300px]">
               <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
             </div>
           ) : activitiesError ? (
-             <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-12 bg-red-50 rounded-3xl border border-red-100"
@@ -273,7 +328,7 @@ const Activities = () => {
               <Button onClick={refreshActivities} variant="destructive">Intentar de nuevo</Button>
             </motion.div>
           ) : filteredActivities.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300"
@@ -285,6 +340,10 @@ const Activities = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredActivities.map((activity, index) => {
+                const { cycleCode, cycleName, cleanTitle } = parseCycleFromTitle(activity.title);
+                const chipClass = cycleStyles[cycleCode] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+                const modality = normalizeModality(activity.modality);
+
                 return (
                   <motion.div
                     key={activity.id}
@@ -298,67 +357,76 @@ const Activities = () => {
                       {/* Imagen Card */}
                       <Link to={`/activities/${activity.id}`} className="block relative overflow-hidden aspect-[16/10]">
                         {activity.image_url ? (
-                          <img 
-                            alt={activity.title || 'Imagen de actividad'}
+                          <img
+                            alt={cleanTitle || activity.title || 'Imagen de actividad'}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                            src={activity.image_url} 
+                            src={activity.image_url}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-brand-dark">
-                             <div className="text-center">
-                                <ImageOff className="w-12 h-12 text-brand-gold mx-auto mb-2 opacity-50" />
-                                <span className="text-brand-gold/30 text-sm font-bold uppercase">Sin imagen</span>
-                             </div>
+                            <div className="text-center">
+                              <ImageOff className="w-12 h-12 text-brand-gold mx-auto mb-2 opacity-50" />
+                              <span className="text-brand-gold/30 text-sm font-bold uppercase">Sin imagen</span>
+                            </div>
                           </div>
                         )}
-                        
+
                         {/* Overlay Gradiente */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
 
                         <div className="absolute top-3 left-3">
-                          <Badge 
-                            className={`capitalize shadow-md border-0 ${activity.modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}
+                          <Badge
+                            className={`capitalize shadow-md border-0 ${modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}
                           >
-                            {activity.modality}
+                            {modality || 'modalidad'}
                           </Badge>
                         </div>
                         <div className="absolute top-3 right-3">
                           {getStatusBadge(activity.status)}
                         </div>
                       </Link>
-                      
+
                       <CardHeader className="pt-6 pb-2 px-6">
+                        {/* Chip del ciclo (pro) */}
+                        {cycleCode && cycleName && (
+                          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${chipClass} w-fit mb-3`}>
+                            <span className="uppercase">{cycleCode}</span>
+                            <span className="opacity-60">·</span>
+                            <span className="truncate max-w-[220px]">{cycleName}</span>
+                          </div>
+                        )}
+
                         <Link to={`/activities/${activity.id}`}>
                           <CardTitle className="text-xl font-poppins font-bold text-brand-dark group-hover:text-brand-action transition-colors duration-200 leading-tight line-clamp-2">
-                            {activity.title}
+                            {cleanTitle}
                           </CardTitle>
                         </Link>
                       </CardHeader>
-                      
+
                       <CardContent className="flex-grow space-y-4 px-6 text-sm">
                         <div className="space-y-2">
-                            <div className="flex items-center text-gray-600">
-                                <Calendar className="w-4 h-4 mr-2.5 text-brand-gold" />
-                                {formatDate(activity.date)}
-                            </div>
-                            <div className="flex items-center text-gray-600">
-                                <Clock className="w-4 h-4 mr-2.5 text-brand-gold" />
-                                {activity.duration}
-                            </div>
-                            <div className="flex items-center text-gray-600">
-                                <MapPin className="w-4 h-4 mr-2.5 text-brand-gold" />
-                                {activity.modality === 'presencial' ? 'Salta, Argentina' : 'Virtual'}
-                            </div>
+                          <div className="flex items-center text-gray-600">
+                            <Calendar className="w-4 h-4 mr-2.5 text-brand-gold" />
+                            {formatDate(activity.date)}
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <Clock className="w-4 h-4 mr-2.5 text-brand-gold" />
+                            {activity.duration}
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <MapPin className="w-4 h-4 mr-2.5 text-brand-gold" />
+                            {modality === 'presencial' ? 'Salta, Argentina' : 'Virtual'}
+                          </div>
                         </div>
-                        
+
                         <div className="pt-2">
                           <div className="flex justify-between items-center mb-1.5 text-xs font-medium text-gray-500">
                             <span>Cupos Ocupados</span>
                             <span className="text-brand-primary">{activity.current_participants || 0} / {activity.max_participants}</span>
                           </div>
-                          <Progress 
-                            value={getParticipantPercentage(activity.current_participants, activity.max_participants)} 
-                            className="h-2 bg-gray-100 [&>div]:bg-brand-primary" 
+                          <Progress
+                            value={getParticipantPercentage(activity.current_participants, activity.max_participants)}
+                            className="h-2 bg-gray-100 [&>div]:bg-brand-primary"
                           />
                         </div>
                       </CardContent>
