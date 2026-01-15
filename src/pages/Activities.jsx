@@ -77,6 +77,16 @@ const Activities = () => {
     return null;
   };
 
+  const getCleanTitle = (title) => {
+  if (!title) return '';
+  // Quita prefijos tipo: "[Ciclo A · ...] — " o "CICLO A · ... — "
+  return String(title)
+    .replace(/^\s*\[\s*Ciclo\s*[ABC]\s*[^]]*\]\s*[—-]\s*/i, '')
+    .replace(/^\s*CICLO\s*[ABC]\s*[^—-]*\s*[—-]\s*/i, '')
+    .trim();
+};
+
+
   // -----------------------------
   // Meta fija de los ciclos (Opción 1)
   // -----------------------------
@@ -588,7 +598,7 @@ const Activities = () => {
                       <CardHeader className="pt-6 pb-2 px-6">
                         <Link to={`/activities/${activity.id}`}>
                           <CardTitle className="text-xl font-poppins font-bold text-brand-dark group-hover:text-brand-action transition-colors duration-200 leading-tight line-clamp-2">
-                            {activity.title}
+                            {getCleanTitle(activity.title)}
                           </CardTitle>
                         </Link>
                       </CardHeader>
