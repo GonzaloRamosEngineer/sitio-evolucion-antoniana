@@ -77,14 +77,20 @@ const Activities = () => {
     return null;
   };
 
-  const getCleanTitle = (title) => {
+const getCleanTitle = (title) => {
   if (!title) return '';
-  // Quita prefijos tipo: "[Ciclo A · ...] — " o "CICLO A · ... — "
-  return String(title)
-    .replace(/^\s*\[\s*Ciclo\s*[ABC]\s*[^]]*\]\s*[—-]\s*/i, '')
-    .replace(/^\s*CICLO\s*[ABC]\s*[^—-]*\s*[—-]\s*/i, '')
+  const t = String(title).trim();
+
+  return t
+    // Caso 1: "[Ciclo C · Comunidad y valores] — Título"
+    // (remueve el bloque entre corchetes aunque NO haya guion después)
+    .replace(/^\s*\[\s*Ciclo\s*[ABC]\s*[^\]]*\]\s*(?:[—–-]\s*)?/i, '')
+    // Caso 2: "CICLO C · Comunidad y valores — Título"
+    .replace(/^\s*CICLO\s*[ABC]\s*[^—–-]*\s*[—–-]\s*/i, '')
+    // Limpieza final
     .trim();
 };
+
 
 
   // -----------------------------
