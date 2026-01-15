@@ -19,7 +19,9 @@ const educationSchema = z.object({
   dni: z.string().min(7, "DNI debe tener al menos 7 dígitos"),
   age: z.string().refine((val) => !isNaN(val) && parseInt(val) >= 14, "Debes ser mayor de 14 años"),
   last_year_completed: z.string().min(1, "Selecciona tu último nivel cursado"),
-  phone: z.string().min(8, "Ingresa un teléfono o WhatsApp válido"),
+  phone: z.string()
+    .min(8, "Ingresa un teléfono o WhatsApp válido")
+    .max(20, "Número demasiado largo"),
   location: z.string().min(1, "Selecciona tu localidad"),
   location_custom: z.string().optional(), // Campo dinámico para "Otros"
   level_to_start: z.string().min(1, "Selecciona el nivel que deseas iniciar"),
@@ -55,10 +57,27 @@ const EducationForm = ({ onSuccess }) => {
   const onFormSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      // 🧠 LÓGICA DE NORMALIZACIÓN DE TELÉFONO PARA WHATSAPP
+      // Quitamos todo lo que no sea número
+      let cleanPhone = data.phone.replace(/\D/g, ''); 
+
+      // Si empieza con 0 (ej: 0387), lo quitamos
+      if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+      
+      // Normalización para Argentina (549 + característica sin 0 + número sin 15)
+      if (!cleanPhone.startsWith('54')) {
+        // Si tiene 10 dígitos (característica + número), asumimos local y agregamos 549
+        cleanPhone = `549${cleanPhone}`;
+      } else if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
+        // Si tiene el 54 pero falta el 9 de celular, lo inyectamos
+        cleanPhone = `549${cleanPhone.substring(2)}`;
+      }
+
       // Procesamiento de datos dinámicos antes del envío
       const payload = {
         ...data,
         age: parseInt(data.age),
+        phone: cleanPhone, // Guardamos el número normalizado para el link de WA
         // Si eligió 'otro', usamos el valor del campo de texto personalizado
         location: data.location === 'otro' ? data.location_custom : data.location,
         interest_area: data.interest_area === 'otro' ? data.interest_custom : data.interest_area,
