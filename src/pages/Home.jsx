@@ -134,20 +134,41 @@ const Home = () => {
                 </Button>
               </div>
 
-              {/* Alianzas Mini */}
-              <div className="pt-8 border-t border-white/10">
-                <p className="text-xs text-brand-gold/80 mb-4 uppercase tracking-wider font-semibold">
-                  En alianza estratégica con
-                </p>
-                <div className="flex gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500 items-center">
-                  {/* Textos placeholders - Reemplazar con logos SVG reales luego */}
-                  <span className="text-white font-bold text-lg">Google</span>
-                  <span className="text-white font-bold text-lg">Canva</span>
-                  <span className="text-white font-bold text-xs uppercase">
-                    Min. Educación Salta
-                  </span>
-                </div>
-              </div>
+              {/* Alianzas Estratégicas - Nivel Institucional */}
+<div className="pt-10 border-t border-white/10">
+  <p className="text-[10px] text-brand-gold/90 mb-6 uppercase tracking-[0.3em] font-black">
+    En alianza estratégica con
+  </p>
+  
+  <div className="flex flex-wrap gap-x-8 gap-y-6 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 items-center">
+    {/* Google */}
+    <div className="flex flex-col">
+      <span className="text-white font-bold text-xl tracking-tight leading-none">Google</span>
+      <span className="text-[8px] text-white/40 uppercase tracking-tighter">for Education</span>
+    </div>
+
+    {/* Canva */}
+    <span className="text-white font-extrabold text-xl tracking-tight">Canva</span>
+
+    {/* Mercado Libre */}
+    <div className="flex flex-col">
+      <span className="text-white font-black text-lg leading-none tracking-tight">mercadolibre</span>
+      <span className="text-[9px] text-brand-gold font-bold uppercase tracking-[0.1em]">Solidario</span>
+    </div>
+
+    {/* Ministerio de Educación */}
+    <div className="h-8 w-px bg-white/10 hidden md:block"></div> {/* Separador elegante */}
+    
+    <div className="flex flex-col">
+      <span className="text-white font-black text-[11px] uppercase leading-tight tracking-tighter">
+        Ministerio de Educación
+      </span>
+      <span className="text-brand-gold font-bold text-[10px] uppercase tracking-widest">
+        Provincia de Salta
+      </span>
+    </div>
+  </div>
+</div>
             </motion.div>
 
             <motion.div
