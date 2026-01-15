@@ -27,10 +27,12 @@ const Collaborate = () => {
   const [isProcessingSubscription, setIsProcessingSubscription] = useState(false);
 
   const subscriptionPlans = [
-    { value: '50', label: '$50 ARS / mes' }, // Test value kept just in case
     { value: '5000', label: '$5.000 ARS / mes' },
     { value: '7500', label: '$7.500 ARS / mes' },
     { value: '10000', label: '$10.000 ARS / mes' },
+    { value: '15000', label: '$15.000 ARS / mes' },
+    { value: '25000', label: '$25.000 ARS / mes' },
+    { value: '50000', label: '$50.000 ARS / mes' },
   ];
 
   const handleOneTimeDonation = async () => {
@@ -120,15 +122,15 @@ const Collaborate = () => {
     <ul className="space-y-2 mb-6">
       <li className="flex items-start text-sm text-gray-600">
         <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Evaluaciones generales y acompañamiento formativo
+        Instancias de evaluación y orientación para el desarrollo personal y deportivo
       </li>
       <li className="flex items-start text-sm text-gray-600">
         <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Talleres motivacionales y hábitos saludables
+        Talleres que fortalecen la motivación, el compromiso y los hábitos diarios
       </li>
       <li className="flex items-start text-sm text-gray-600">
         <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Charlas con referentes y material educativo
+        Encuentros con referentes que inspiran y amplían la mirada de los chicos
       </li>
     </ul>
   </>
@@ -168,9 +170,9 @@ const Collaborate = () => {
       icon: HandshakeIcon,
       iconBg: 'bg-blue-100 text-brand-primary',
       title: 'Suscripción Mensual',
-      subtitle: 'Programa de Becas',
+      subtitle: 'Programa de Beca de acompañamiento deportivo',
       description:
-  'Con tu aporte mensual ayudás a sostener becas que reducen barreras económicas y acompañan trayectorias deportivas en contextos vulnerables. Una forma transparente y sostenida de generar oportunidades.',
+  'Las becas permiten acompañar trayectorias deportivas, reducir barreras económicas y generar condiciones para que más chicos puedan sostener su formación en el tiempo.',
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
           <div>
