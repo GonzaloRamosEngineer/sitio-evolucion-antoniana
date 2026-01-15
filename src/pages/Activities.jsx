@@ -9,13 +9,15 @@ import { Progress } from '@/components/ui/progress';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
-import { Calendar, MapPin, Clock, Filter, Loader2, AlertTriangle, Info, MailCheck, LogIn, Hourglass, CheckCircle2, XCircle, Archive, ImageOff } from 'lucide-react';
+import {
+  Calendar, MapPin, Clock, Filter, Loader2, AlertTriangle, Info, MailCheck,
+  LogIn, Hourglass, CheckCircle2, XCircle, Archive, ImageOff
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 /**
  * Helpers: Ciclos (sin tocar DB)
  * - Title formato: [Ciclo A · ...] — Título
- * - Description formato opcional: "CICLO A · ...\n\n..."
  */
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -27,13 +29,31 @@ const parseCycleFromTitle = (title = '') => {
   };
 };
 
-const cycleStyles = {
-  'Ciclo A': 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
-  'Ciclo B': 'bg-green-50 text-green-700 border-green-200',
-  'Ciclo C': 'bg-brand-gold/10 text-brand-dark border-brand-gold/20',
+const normalizeModality = (modality) => (modality || '').toLowerCase();
+
+const cycleMeta = {
+  'Ciclo A': {
+    chip: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
+    overlay: 'bg-brand-primary/90 text-white border-white/15',
+    dot: 'bg-brand-gold',
+  },
+  'Ciclo B': {
+    chip: 'bg-green-50 text-green-700 border-green-200',
+    overlay: 'bg-green-700/90 text-white border-white/15',
+    dot: 'bg-white/80',
+  },
+  'Ciclo C': {
+    chip: 'bg-brand-gold/10 text-brand-dark border-brand-gold/20',
+    overlay: 'bg-brand-gold/90 text-brand-dark border-white/20',
+    dot: 'bg-brand-dark/70',
+  },
 };
 
-const normalizeModality = (modality) => (modality || '').toLowerCase();
+const getCycleClasses = (cycleCode) => cycleMeta[cycleCode] ?? {
+  chip: 'bg-gray-50 text-gray-700 border-gray-200',
+  overlay: 'bg-black/60 text-white border-white/15',
+  dot: 'bg-white/70',
+};
 
 const Activities = () => {
   const [filter, setFilter] = useState('all');
@@ -91,7 +111,14 @@ const Activities = () => {
     }
   };
 
-  const filteredActivities = activities.filter(activity => {
+  // ✅ Orden por fecha ascendente (sin tocar DB)
+  const activitiesSorted = (activities || []).slice().sort((a, b) => {
+    const da = a?.date ? new Date(a.date).getTime() : Number.POSITIVE_INFINITY;
+    const db = b?.date ? new Date(b.date).getTime() : Number.POSITIVE_INFINITY;
+    return da - db;
+  });
+
+  const filteredActivities = activitiesSorted.filter(activity => {
     if (filter === 'all') return true;
     return normalizeModality(activity.modality) === filter;
   });
@@ -185,16 +212,8 @@ const Activities = () => {
     );
   };
 
-  const pageVariants = {
-    initial: { opacity: 0 },
-    in: { opacity: 1 },
-    out: { opacity: 0 }
-  };
-
-  const cardVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-  };
+  const pageVariants = { initial: { opacity: 0 }, in: { opacity: 1 }, out: { opacity: 0 } };
+  const cardVariants = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } };
 
   const showInitialLoader = authLoading || (activitiesLoading && (activities.length === 0 && !sessionStorage.getItem('activities_loaded')));
 
@@ -215,9 +234,8 @@ const Activities = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-brand-sand font-sans"
     >
-      {/* --- HERO SECTION (Tech-Institucional) --- */}
+      {/* --- HERO SECTION --- */}
       <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
           <div className="absolute inset-0 opacity-10"
@@ -226,11 +244,7 @@ const Activities = () => {
         </div>
 
         <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
             </div>
@@ -277,62 +291,19 @@ const Activities = () => {
       {/* --- GRID DE ACTIVIDADES --- */}
       <section className="py-12 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
-
-          {/* Roadmap 2026 (pro / institucional) */}
-          <div className="mb-10">
-            <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-                <h2 className="text-2xl md:text-3xl font-poppins font-bold text-brand-dark">
-                  Roadmap <span className="text-brand-gold">2026</span>
-                </h2>
-                <span className="text-sm text-gray-500">
-                  Actividades organizadas por ciclos · Tecnología · Educación · Comunidad
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-brand-primary/15 bg-brand-primary/5 p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-brand-primary">Ciclo A</p>
-                  <p className="font-poppins font-bold text-brand-dark mt-1">Tecnología para la vida cotidiana</p>
-                  <p className="text-sm text-gray-600 mt-2">IA, productividad y herramientas aplicables al día a día.</p>
-                </div>
-
-                <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-green-700">Ciclo B</p>
-                  <p className="font-poppins font-bold text-brand-dark mt-1">Educación y futuro laboral</p>
-                  <p className="text-sm text-gray-600 mt-2">Datos, perfiles y oportunidades en el mundo digital.</p>
-                </div>
-
-                <div className="rounded-2xl border border-brand-gold/20 bg-brand-gold/10 p-5">
-                  <p className="text-xs font-bold uppercase tracking-widest text-brand-dark">Ciclo C</p>
-                  <p className="font-poppins font-bold text-brand-dark mt-1">Comunidad y valores</p>
-                  <p className="text-sm text-gray-600 mt-2">Acción solidaria, presencia territorial e impacto real.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded') ? (
             <div className="flex justify-center items-center min-h-[300px]">
               <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
             </div>
           ) : activitiesError ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12 bg-red-50 rounded-3xl border border-red-100"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12 bg-red-50 rounded-3xl border border-red-100">
               <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
               <p className="text-xl text-red-700 font-bold mb-2">Error al cargar actividades</p>
               <p className="text-gray-600 mb-6">{activitiesError || "Ocurrió un error inesperado."}</p>
               <Button onClick={refreshActivities} variant="destructive">Intentar de nuevo</Button>
             </motion.div>
           ) : filteredActivities.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300">
               <Info className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-xl text-brand-dark font-bold mb-2">No hay actividades disponibles.</p>
               <p className="text-gray-500">Intenta cambiar el filtro o vuelve más tarde para ver nuevas propuestas.</p>
@@ -341,7 +312,7 @@ const Activities = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredActivities.map((activity, index) => {
                 const { cycleCode, cycleName, cleanTitle } = parseCycleFromTitle(activity.title);
-                const chipClass = cycleStyles[cycleCode] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+                const classes = getCycleClasses(cycleCode);
                 const modality = normalizeModality(activity.modality);
 
                 return (
@@ -350,7 +321,7 @@ const Activities = () => {
                     variants={cardVariants}
                     initial="initial"
                     animate="animate"
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    transition={{ duration: 0.5, delay: index * 0.06 }}
                     className="h-full"
                   >
                     <Card className="h-full flex flex-col bg-white rounded-2xl border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group">
@@ -374,10 +345,20 @@ const Activities = () => {
                         {/* Overlay Gradiente */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
 
+                        {/* ✅ Chip ciclo en overlay (NIVEL DIOS) */}
+                        {cycleCode && cycleName && (
+                          <div className="absolute bottom-3 left-3">
+                            <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-sm ${classes.overlay}`}>
+                              <span className={`w-2 h-2 rounded-full ${classes.dot}`} />
+                              <span className="uppercase tracking-wide">{cycleCode}</span>
+                              <span className="opacity-70">·</span>
+                              <span className="max-w-[220px] truncate">{cycleName}</span>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="absolute top-3 left-3">
-                          <Badge
-                            className={`capitalize shadow-md border-0 ${modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}
-                          >
+                          <Badge className={`capitalize shadow-md border-0 ${modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}>
                             {modality || 'modalidad'}
                           </Badge>
                         </div>
@@ -387,15 +368,6 @@ const Activities = () => {
                       </Link>
 
                       <CardHeader className="pt-6 pb-2 px-6">
-                        {/* Chip del ciclo (pro) */}
-                        {cycleCode && cycleName && (
-                          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${chipClass} w-fit mb-3`}>
-                            <span className="uppercase">{cycleCode}</span>
-                            <span className="opacity-60">·</span>
-                            <span className="truncate max-w-[220px]">{cycleName}</span>
-                          </div>
-                        )}
-
                         <Link to={`/activities/${activity.id}`}>
                           <CardTitle className="text-xl font-poppins font-bold text-brand-dark group-hover:text-brand-action transition-colors duration-200 leading-tight line-clamp-2">
                             {cleanTitle}

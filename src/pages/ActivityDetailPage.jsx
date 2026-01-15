@@ -8,14 +8,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, MapPin, Users, Clock, ArrowLeft, Loader2, AlertTriangle, Info, MailCheck, LogIn, ImageOff, Instagram, Facebook, Linkedin, Twitter as TwitterIcon } from 'lucide-react';
+import {
+  Calendar, MapPin, Users, Clock, ArrowLeft, Loader2, AlertTriangle, Info,
+  MailCheck, LogIn, ImageOff, Instagram, Facebook, Linkedin, Twitter as TwitterIcon
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
-/**
- * Helpers: Ciclos (sin tocar DB)
- * - Title formato: [Ciclo A · ...] — Título
- * - Description formato opcional: "CICLO A · ...\n\n..."
- */
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
   if (!m) return { cycleCode: null, cycleName: null, cleanTitle: title };
@@ -34,13 +32,27 @@ const cleanCycleFromDescription = (description = '') => {
   return rest;
 };
 
-const cycleStyles = {
-  'Ciclo A': 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
-  'Ciclo B': 'bg-green-50 text-green-700 border-green-200',
-  'Ciclo C': 'bg-brand-gold/10 text-brand-dark border-brand-gold/20',
+const normalizeModality = (modality) => (modality || '').toLowerCase();
+
+const cycleMeta = {
+  'Ciclo A': {
+    pill: 'bg-brand-primary/90 text-white border-white/15',
+    dot: 'bg-brand-gold',
+  },
+  'Ciclo B': {
+    pill: 'bg-green-700/90 text-white border-white/15',
+    dot: 'bg-white/80',
+  },
+  'Ciclo C': {
+    pill: 'bg-brand-gold/90 text-brand-dark border-white/20',
+    dot: 'bg-brand-dark/70',
+  },
 };
 
-const normalizeModality = (modality) => (modality || '').toLowerCase();
+const getCyclePill = (cycleCode) => cycleMeta[cycleCode] ?? {
+  pill: 'bg-black/60 text-white border-white/15',
+  dot: 'bg-white/70',
+};
 
 const ActivityDetailPage = () => {
   const { id } = useParams();
@@ -59,11 +71,8 @@ const ActivityDetailPage = () => {
     setError(null);
     try {
       const data = await getActivityById(id);
-      if (data) {
-        setActivity(data);
-      } else {
-        setError('Actividad no encontrada.');
-      }
+      if (data) setActivity(data);
+      else setError('Actividad no encontrada.');
     } catch (err) {
       console.error("Error fetching activity details:", err);
       setError(err.message || 'Error al cargar la actividad.');
@@ -73,9 +82,7 @@ const ActivityDetailPage = () => {
   }, [id, getActivityById]);
 
   useEffect(() => {
-    if (id) {
-      fetchActivityDetails();
-    }
+    if (id) fetchActivityDetails();
   }, [id, fetchActivityDetails]);
 
   const handleUserRegister = async () => {
@@ -179,9 +186,8 @@ const ActivityDetailPage = () => {
   const displayImageUrl = activity.image_detail_url || activity.image_url;
   const percentage = getParticipantPercentage(activity.current_participants, activity.max_participants);
 
-  // Pro: Ciclo + títulos limpios + description sin duplicación
   const { cycleCode, cycleName, cleanTitle } = parseCycleFromTitle(activity.title);
-  const chipClass = cycleStyles[cycleCode] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+  const pill = getCyclePill(cycleCode);
   const descBody = cleanCycleFromDescription(activity.description);
   const modality = normalizeModality(activity.modality);
 
@@ -194,7 +200,6 @@ const ActivityDetailPage = () => {
       className="min-h-screen bg-brand-sand font-sans py-12"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Navegación Back */}
         <div className="mb-8">
           <Link to="/activities" className="inline-flex items-center text-gray-500 hover:text-brand-primary transition-colors font-medium group">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -203,8 +208,7 @@ const ActivityDetailPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-
-          {/* Columna Izquierda: Imagen y Social */}
+          {/* Columna Izquierda */}
           <div className="lg:col-span-1 space-y-8">
             <div className="rounded-3xl overflow-hidden shadow-xl border border-white/50 aspect-[4/5] relative bg-brand-dark group">
               {displayImageUrl ? (
@@ -219,14 +223,24 @@ const ActivityDetailPage = () => {
                   <span className="uppercase font-bold tracking-widest text-sm">Sin Imagen</span>
                 </div>
               )}
-              <div className="absolute top-4 left-4">
+
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
                 <Badge className={`capitalize shadow-lg text-sm px-3 py-1 ${modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}>
                   {modality || 'modalidad'}
                 </Badge>
+
+                {/* ✅ Ciclo pill sobre la imagen (NIVEL DIOS) */}
+                {cycleCode && cycleName && (
+                  <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-sm ${pill.pill}`}>
+                    <span className={`w-2 h-2 rounded-full ${pill.dot}`} />
+                    <span className="uppercase tracking-wide">{cycleCode}</span>
+                    <span className="opacity-70">·</span>
+                    <span className="max-w-[220px] truncate">{cycleName}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Card de Redes Sociales */}
             {socialLinks.length > 0 && (
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h4 className="font-poppins font-bold text-brand-dark mb-4 text-center">¡Compartí esta actividad!</h4>
@@ -247,28 +261,15 @@ const ActivityDetailPage = () => {
             )}
           </div>
 
-          {/* Columna Derecha: Información Detallada */}
+          {/* Columna Derecha */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-bl-full -mr-10 -mt-10"></div>
 
-              {/* Título limpio */}
-              <h1 className="text-3xl md:text-5xl font-poppins font-bold text-brand-dark mb-4 leading-tight relative z-10">
+              <h1 className="text-3xl md:text-5xl font-poppins font-bold text-brand-dark mb-6 leading-tight relative z-10">
                 {cleanTitle}
               </h1>
 
-              {/* Chip del ciclo (pro) */}
-              {cycleCode && cycleName && (
-                <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold ${chipClass} mb-6`}>
-                  <span className="px-2 py-0.5 rounded-full bg-white/60 text-xs font-extrabold uppercase tracking-wide">
-                    {cycleCode}
-                  </span>
-                  <span className="opacity-60">·</span>
-                  <span>{cycleName}</span>
-                </div>
-              )}
-
-              {/* Meta Data Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div className="flex items-start p-4 bg-brand-sand rounded-xl">
                   <Calendar className="w-5 h-5 text-brand-action mr-3 mt-0.5" />
@@ -297,12 +298,11 @@ const ActivityDetailPage = () => {
                 </div>
               </div>
 
-              {/* Descripción: \n como párrafos (pro) + sin “CICLO...” repetido */}
+              {/* ✅ Fix \n (pro) */}
               <div className="text-gray-600 mb-10 whitespace-pre-line leading-relaxed text-base">
                 {descBody}
               </div>
 
-              {/* Sección de Cupos */}
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
                 <h4 className="font-poppins font-bold text-brand-dark mb-4 flex items-center">
                   <Users className="w-5 h-5 mr-2 text-brand-primary" />
@@ -315,22 +315,16 @@ const ActivityDetailPage = () => {
                       <span>Ocupación</span>
                       <span>{activity.current_participants || 0} de {activity.max_participants} confirmados</span>
                     </div>
-                    <Progress
-                      value={percentage}
-                      className="h-3 bg-gray-200 [&>div]:bg-brand-primary"
-                    />
+                    <Progress value={percentage} className="h-3 bg-gray-200 [&>div]:bg-brand-primary" />
                     {isFull && activity.status !== 'Finalizada' && activity.status !== 'Cerrada' && (
                       <p className="text-sm text-red-600 font-bold mt-2">¡Cupos Completos!</p>
                     )}
                   </>
                 ) : (
-                  <p className="text-gray-600">
-                    Esta actividad tiene cupos ilimitados. ¡Invita a tus amigos!
-                  </p>
+                  <p className="text-gray-600">Esta actividad tiene cupos ilimitados. ¡Invita a tus amigos!</p>
                 )}
               </div>
 
-              {/* Botón de Acción Principal */}
               <div className="sticky bottom-4 md:static z-20">
                 <Button
                   size="lg"
@@ -347,6 +341,7 @@ const ActivityDetailPage = () => {
                             : <> <LogIn className="mr-2 h-5 w-5" /> Iniciar Sesión para Participar</>
                   }
                 </Button>
+
                 {!isAuthenticated && (
                   <p className="text-center text-xs text-gray-400 mt-2">
                     Serás redirigido para iniciar sesión de forma segura.
