@@ -1,6 +1,8 @@
 {
   "rewrites": [
-    { "source": "/api/share/news/(.*)", "destination": "/api/share/news/slug?slug=$1" },
+    { "source": "/api/share/news/(.*)", "destination": "/api/share/news/$1" },
+    { "source": "/api/share/partners/(.*)", "destination": "/api/share/partners/$1" },
+
     { "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" },
 
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
@@ -15,7 +17,21 @@
     {
       "source": "/api/share/news/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform" },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
+        },
+        { "key": "Accept-Ranges", "value": "none" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/api/share/partners/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
+        },
         { "key": "Accept-Ranges", "value": "none" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
