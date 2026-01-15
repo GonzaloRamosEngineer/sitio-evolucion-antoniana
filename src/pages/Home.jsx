@@ -141,67 +141,74 @@ const Home = () => {
                 </Button>
               </div>
 
-              {/* Alianzas Estratégicas - Nivel Institucional */}
-              <div className="pt-10 border-t border-white/10">
-                <p className="text-[10px] text-brand-gold/90 mb-6 uppercase tracking-[0.3em] font-black">
-                  En alianza estratégica con
-                </p>
+              {/* Alianzas Estratégicas - Nivel Institucional Élite */}
+<div className="pt-10 border-t border-white/10">
+  <p className="text-[10px] text-brand-gold/90 mb-8 uppercase tracking-[0.3em] font-black">
+    En alianza estratégica con
+  </p>
 
-                <div className="flex flex-wrap gap-x-8 gap-y-6 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 items-center">
-                  {/* Google */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-xl tracking-tight leading-none">
-                      Google
-                    </span>
-                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
-                      for NonProfits
-                    </span>
-                  </div>
-                  {/* Canva */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-xl tracking-tight leading-none">
-                      Canva
-                    </span>
-                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
-                      for NonProfits
-                    </span>
-                  </div>
-                  {/* Mercado Libre */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-xl tracking-tight leading-none">
-                      MercadoLibre
-                    </span>
-                    <span className="text-[8px] text-brand-gold font-bold uppercase tracking-[0.1em]">
-                      Solidario
-                    </span>
-                  </div>
-                  {/* Separador elegante */}
-                  <div className="h-8 w-px bg-white/8 hidden md:block"></div>{" "}
-                  
-                  
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-xl tracking-tight leading-none">
-                      UBA
-                    </span>
-                    <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
-                      Ciencias Economicas
-                    </span>
-                  </div>
+  <div className="flex flex-wrap gap-x-10 gap-y-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700 items-center">
+    
+    {/* Google for NonProfits */}
+    <div className="flex flex-col group cursor-default">
+      <span className="text-white font-bold text-xl tracking-tighter leading-none">
+        Google
+      </span>
+      <span className="text-[7px] text-brand-gold font-black uppercase tracking-[0.2em] mt-1">
+        for NonProfits
+      </span>
+    </div>
 
+    {/* Canva for NonProfits */}
+    <div className="flex flex-col group cursor-default">
+      <span className="text-white font-bold text-xl tracking-tighter leading-none">
+        Canva
+      </span>
+      <span className="text-[7px] text-brand-gold font-black uppercase tracking-[0.2em] mt-1">
+        for NonProfits
+      </span>
+    </div>
 
-                  {/* Ministerio de Educación */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-xl tracking-tight leading-none">
-                      Ministerio de Educación
-                    </span>
-                    <span className="text-brand-gold font-bold text-[8px] uppercase tracking-widest">
-                      Provincia de Salta
-                    </span>
-                  </div>
+    {/* Mercado Libre Solidario */}
+    <div className="flex flex-col group cursor-default">
+      <span className="text-white font-bold text-xl tracking-tighter leading-none">
+        MercadoLibre
+      </span>
+      <span className="text-[7px] text-brand-gold font-black uppercase tracking-[0.2em] mt-1 text-right">
+        Solidario
+      </span>
+    </div>
 
+    {/* Separador vertical Élite */}
+    <div className="h-10 w-px bg-white/10 hidden lg:block mx-2"></div>
 
-                </div>
-              </div>
+    {/* UBA - Económicas */}
+    <div className="flex flex-col group cursor-default">
+      <div className="flex items-baseline gap-1">
+        <span className="text-white font-black text-2xl tracking-tighter leading-none">
+          UBA
+        </span>
+        <span className="text-white/40 font-bold text-[10px] uppercase tracking-tighter">
+          FCE
+        </span>
+      </div>
+      <span className="text-brand-gold font-black text-[8px] uppercase tracking-[0.15em] mt-1">
+        Ciencias Económicas
+      </span>
+    </div>
+
+    {/* Ministerio de Educación */}
+    <div className="flex flex-col group cursor-default">
+      <span className="text-white font-black text-sm md:text-base uppercase tracking-tighter leading-none">
+        Ministerio de Educación
+      </span>
+      <span className="text-brand-gold font-black text-[9px] uppercase tracking-[0.2em] mt-1">
+        Provincia de Salta
+      </span>
+    </div>
+
+  </div>
+</div>
             </motion.div>
 
             <motion.div
