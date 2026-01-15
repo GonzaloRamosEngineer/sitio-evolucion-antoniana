@@ -111,28 +111,29 @@ const Collaborate = () => {
       icon: Gift,
       iconBg: 'bg-red-100 text-brand-action',
       title: 'Donación Única',
-      subtitle: 'Campaña: Becá a la Novena',
+      subtitle: 'Campaña: Experiencias educativas',
       description: (
-        <>
-          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-            Tu aporte puntual nos ayuda a comprar materiales urgentes para el entrenamiento diario.
-          </p>
-          <ul className="space-y-2 mb-6">
-            <li className="flex items-start text-sm text-gray-600">
-               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-               Materiales deportivos
-            </li>
-            <li className="flex items-start text-sm text-gray-600">
-               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-               Evaluaciones físicas
-            </li>
-            <li className="flex items-start text-sm text-gray-600">
-               <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-               Apoyo nutricional
-            </li>
-          </ul>
-        </>
-      ),
+  <>
+    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+      Tu donación hace posible experiencias que amplían la formación de los chicos, dentro y fuera de la cancha.
+    </p>
+    <ul className="space-y-2 mb-6">
+      <li className="flex items-start text-sm text-gray-600">
+        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+        Evaluaciones generales y acompañamiento formativo
+      </li>
+      <li className="flex items-start text-sm text-gray-600">
+        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+        Talleres motivacionales y hábitos saludables
+      </li>
+      <li className="flex items-start text-sm text-gray-600">
+        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
+        Charlas con referentes y material educativo
+      </li>
+    </ul>
+  </>
+),
+
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
           <div>
@@ -167,8 +168,9 @@ const Collaborate = () => {
       icon: HandshakeIcon,
       iconBg: 'bg-blue-100 text-brand-primary',
       title: 'Suscripción Mensual',
-      subtitle: 'Convertite en Padrino/Madrina',
-      description: 'Con tu aporte recurrente, garantizás la continuidad deportiva de un chico durante todo el año. Es la forma más efectiva de ayudar a largo plazo.',
+      subtitle: 'Programa de Becas',
+      description:
+  'Con tu aporte mensual ayudás a sostener becas que reducen barreras económicas y acompañan trayectorias deportivas en contextos vulnerables. Una forma transparente y sostenida de generar oportunidades.',
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
           <div>
@@ -212,8 +214,10 @@ const Collaborate = () => {
       icon: Building,
       iconBg: 'bg-brand-gold/20 text-brand-dark',
       title: 'Voluntariado / Empresas',
-      subtitle: 'Doná tu tiempo o recursos',
-      description: '¿Tenés experiencia profesional, insumos o querés sumar a tu empresa como sponsor? Tu capital humano es invaluable para nosotros.',
+      subtitle: 'Sumate con tu experiencia',
+      description:
+  'Si sos profesional, empresa o institución, podés sumar conocimiento, recursos o apoyo estratégico. Tu colaboración potencia experiencias formativas y proyectos con impacto real.',
+
       content: (
         <div className="mt-auto pt-4" data-theme="light">
           <Button
@@ -274,8 +278,9 @@ const Collaborate = () => {
                     </h1>
                     
                     <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-                        Cada aporte cuenta. Ya sea económico o con tu tiempo, te invitamos a ser parte de una transformación real, transparente y tecnológica.
-                    </p>
+  Cada aporte cuenta. Con una donación puntual o mensual, ayudás a crear experiencias formativas y becas que multiplican oportunidades para los chicos.
+</p>
+
                 </motion.div>
             </div>
         </section>
