@@ -23,10 +23,10 @@ const educationSchema = z.object({
     .min(8, "Ingresa un teléfono o WhatsApp válido")
     .max(20, "Número demasiado largo"),
   location: z.string().min(1, "Selecciona tu localidad"),
-  location_custom: z.string().optional(), // Campo dinámico para "Otros"
+  location_custom: z.string().optional(), 
   level_to_start: z.string().min(1, "Selecciona el nivel que deseas iniciar"),
   interest_area: z.string().optional(),
-  interest_custom: z.string().optional(), // Campo dinámico para "Otros"
+  interest_custom: z.string().optional(), 
   relationship_club: z.string().min(1, "Indica tu vínculo con la institución"),
   preferred_modality: z.string().min(1, "Selecciona una modalidad de cursado"),
   preferred_schedule: z.string().optional(),
@@ -50,40 +50,29 @@ const EducationForm = ({ onSuccess }) => {
     }
   });
 
-  // Observamos los valores para activar los campos "Otros"
   const selectedLocation = watch("location");
   const selectedInterest = watch("interest_area");
 
   const onFormSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      // 🧠 LÓGICA DE NORMALIZACIÓN DE TELÉFONO PARA WHATSAPP
-      // Quitamos todo lo que no sea número
       let cleanPhone = data.phone.replace(/\D/g, ''); 
-
-      // Si empieza con 0 (ej: 0387), lo quitamos
       if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
       
-      // Normalización para Argentina (549 + característica sin 0 + número sin 15)
       if (!cleanPhone.startsWith('54')) {
-        // Si tiene 10 dígitos (característica + número), asumimos local y agregamos 549
         cleanPhone = `549${cleanPhone}`;
       } else if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
-        // Si tiene el 54 pero falta el 9 de celular, lo inyectamos
         cleanPhone = `549${cleanPhone.substring(2)}`;
       }
 
-      // Procesamiento de datos dinámicos antes del envío
       const payload = {
         ...data,
         age: parseInt(data.age),
-        phone: cleanPhone, // Guardamos el número normalizado para el link de WA
-        // Si eligió 'otro', usamos el valor del campo de texto personalizado
+        phone: cleanPhone,
         location: data.location === 'otro' ? data.location_custom : data.location,
         interest_area: data.interest_area === 'otro' ? data.interest_custom : data.interest_area,
       };
 
-      // Limpiamos los campos auxiliares de Zod que no van a la DB
       delete payload.location_custom;
       delete payload.interest_custom;
 
@@ -106,6 +95,9 @@ const EducationForm = ({ onSuccess }) => {
       setIsSubmitting(false);
     }
   };
+
+  // Estilo común para los inputs dinámicos "Otros" para asegurar contraste
+  const customInputStyle = "rounded-xl border-gray-200 h-12 bg-white text-brand-dark focus:ring-brand-primary focus:border-brand-primary shadow-sm mt-2";
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
@@ -163,7 +155,7 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
               <Label className="text-xs font-bold text-gray-500 ml-1">Último año cursado de secundaria *</Label>
               <Select onValueChange={(val) => setValue('last_year_completed', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Seleccionar opción" /></SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Seleccionar opción" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sin-ingreso">Sin Ingreso a Secundaria</SelectItem>
                   <SelectItem value="egb3">7mo / 8vo / 9no (EGB 3)</SelectItem>
@@ -177,7 +169,7 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
               <Label className="text-xs font-bold text-gray-500 ml-1">Nivel que desea iniciar *</Label>
               <Select onValueChange={(val) => setValue('level_to_start', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Nivel a cursar" /></SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Nivel a cursar" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="primaria">Primaria</SelectItem>
                   <SelectItem value="secundaria">Secundaria</SelectItem>
@@ -188,10 +180,10 @@ const EducationForm = ({ onSuccess }) => {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-1">
             <Label className="text-xs font-bold text-gray-500 ml-1">Orientación de interés</Label>
             <Select onValueChange={(val) => setValue('interest_area', val)}>
-                <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Elegir orientación (opcional)" /></SelectTrigger>
+                <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Elegir orientación (opcional)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="economia">Economía y Administración</SelectItem>
                   <SelectItem value="humanidades">Humanidades</SelectItem>
@@ -202,7 +194,6 @@ const EducationForm = ({ onSuccess }) => {
                 </SelectContent>
             </Select>
 
-            {/* Campo dinámico "Otro" para Orientación */}
             <AnimatePresence>
               {selectedInterest === 'otro' && (
                 <motion.div 
@@ -212,9 +203,9 @@ const EducationForm = ({ onSuccess }) => {
                   className="overflow-hidden"
                 >
                   <Input 
-                    placeholder="¿Qué otra orientación te interesa? *" 
+                    placeholder="Escribí aquí tu orientación de interés..." 
                     {...register('interest_custom')} 
-                    className="rounded-xl border-brand-primary/30 h-12 bg-brand-primary/5 focus:ring-brand-primary"
+                    className={customInputStyle}
                   />
                 </motion.div>
               )}
@@ -230,10 +221,10 @@ const EducationForm = ({ onSuccess }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
+          <div className="space-y-1">
             <Label className="text-xs font-bold text-gray-500 ml-1">Localidad o Zona *</Label>
             <Select onValueChange={(val) => setValue('location', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="salta-capital">Salta Capital</SelectItem>
                 <SelectItem value="zona-norte">Zona Norte / Sur / Este / Oeste</SelectItem>
@@ -243,7 +234,6 @@ const EducationForm = ({ onSuccess }) => {
             </Select>
             {errors.location && <p className="text-red-500 text-[10px] font-bold">{errors.location.message}</p>}
 
-            {/* Campo dinámico "Otro" para Localidad */}
             <AnimatePresence>
               {selectedLocation === 'otro' && (
                 <motion.div 
@@ -253,9 +243,9 @@ const EducationForm = ({ onSuccess }) => {
                   className="overflow-hidden"
                 >
                   <Input 
-                    placeholder="Especificá tu zona o localidad *" 
+                    placeholder="Especificá tu zona o localidad..." 
                     {...register('location_custom')} 
-                    className="rounded-xl border-brand-primary/30 h-12 bg-brand-primary/5 focus:ring-brand-primary"
+                    className={customInputStyle}
                   />
                 </motion.div>
               )}
@@ -265,7 +255,7 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-xs font-bold text-gray-500 ml-1">Vínculo con el Club / Fundación *</Label>
             <Select onValueChange={(val) => setValue('relationship_club', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Tu relación con la institución" /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Tu relación con la institución" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="socio">Socio/a</SelectItem>
                 <SelectItem value="hincha">Hincha/Simpatizante</SelectItem>
@@ -282,7 +272,7 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-xs font-bold text-gray-500 ml-1">Modalidad preferida *</Label>
             <Select onValueChange={(val) => setValue('preferred_modality', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="presencial">Presencial (Sede Centro Juventud Antoniana)</SelectItem>
                 <SelectItem value="virtual">Virtual / Distancia</SelectItem>
@@ -294,7 +284,7 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-xs font-bold text-gray-500 ml-1">Horario preferido</Label>
             <Select onValueChange={(val) => setValue('preferred_schedule', val)}>
-              <SelectTrigger className="h-12 rounded-xl border-gray-200"><SelectValue placeholder="Turno de preferencia" /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl border-gray-200 text-brand-dark"><SelectValue placeholder="Turno de preferencia" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="mañana">Mañana</SelectItem>
                 <SelectItem value="tarde">Tarde</SelectItem>
@@ -310,7 +300,7 @@ const EducationForm = ({ onSuccess }) => {
         <Textarea 
           placeholder="Si tenés alguna duda específica, escribila aquí..." 
           {...register('message')} 
-          className="rounded-2xl border-gray-200 min-h-[120px] focus:ring-brand-primary" 
+          className="rounded-2xl border-gray-200 min-h-[120px] text-brand-dark focus:ring-brand-primary focus:border-brand-primary" 
         />
       </div>
 
