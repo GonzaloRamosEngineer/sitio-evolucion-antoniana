@@ -165,7 +165,7 @@ const RegisterPage = () => {
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>PROCESANDO...</span>
                     </div>
-                  ) : "CREAR CUENTA OFICIAL"}
+                  ) : "CREAR CUENTA"}
                 </Button>
               </div>
             </form>
