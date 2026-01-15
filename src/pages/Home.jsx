@@ -177,6 +177,8 @@ const Home = () => {
                   </div>
                   {/* Separador elegante */}
                   <div className="h-8 w-px bg-white/8 hidden md:block"></div>{" "}
+                  
+                  
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-xl tracking-tight leading-none">
                       UBA
@@ -185,6 +187,8 @@ const Home = () => {
                       Ciencias Economicas
                     </span>
                   </div>
+
+
                   {/* Ministerio de Educación */}
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-xl tracking-tight leading-none">
@@ -194,6 +198,8 @@ const Home = () => {
                       Provincia de Salta
                     </span>
                   </div>
+
+
                 </div>
               </div>
             </motion.div>
