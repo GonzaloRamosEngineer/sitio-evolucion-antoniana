@@ -141,7 +141,7 @@ const DashboardHeader = ({ user, onUpdateSuccess }) => {
                   className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-14 px-8 shadow-xl shadow-brand-primary/20 transition-all border-none"
                   asChild
                 >
-                  <a href="/colaborar">
+                  <a href="/collaborate">
                     <Star className="w-4 h-4 mr-2 fill-brand-gold text-brand-gold" />
                     ACTIVAR MEMBRESÍA
                   </a>
