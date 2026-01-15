@@ -1,4 +1,4 @@
-// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\ActivityDetailPage.jsx
+// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\ActivityDetailPage.jsx 
 
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
@@ -228,17 +228,19 @@ const ActivityDetailPage = () => {
                 <Badge className={`capitalize shadow-lg text-sm px-3 py-1 ${modality === 'presencial' ? 'bg-brand-primary text-white' : 'bg-green-600 text-white'}`}>
                   {modality || 'modalidad'}
                 </Badge>
+              </div>
 
-                {/* ✅ Ciclo pill sobre la imagen (NIVEL DIOS) */}
-                {cycleCode && cycleName && (
-                  <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-sm ${pill.pill}`}>
-                    <span className={`w-2 h-2 rounded-full ${pill.dot}`} />
+              {/* ✅ Ciclo pill abajo (NIVEL DIOS, sin competir con modalidad) */}
+              {cycleCode && cycleName && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-3">
+                  <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold bg-white/90 backdrop-blur-md shadow-lg ${pill.pill}`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${pill.dot}`} />
                     <span className="uppercase tracking-wide">{cycleCode}</span>
                     <span className="opacity-70">·</span>
-                    <span className="max-w-[220px] truncate">{cycleName}</span>
+                    <span className="max-w-[240px] truncate">{cycleName}</span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {socialLinks.length > 0 && (
