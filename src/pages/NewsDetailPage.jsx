@@ -75,8 +75,8 @@ const NewsDetailPage = () => {
   // URL real (la de tu SPA)
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
 
-  // URL estable para previews (HTML estático en /public/s/...)
-  const shareUrl = `${origin}/s/novedades/${slugOrId}.html`;
+const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
+
 
   // Datos para Helmet (esto no afecta WhatsApp, pero sí tu navegador/SEO básico)
   const title = item?.title || "Novedad - Fundación Evolución Antoniana";
