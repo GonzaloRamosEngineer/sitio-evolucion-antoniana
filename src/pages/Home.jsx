@@ -185,24 +185,21 @@ const Home = () => {
     {/* UBA - Económicas */}
     <div className="flex flex-col group cursor-default">
       <div className="flex items-baseline gap-1">
-        <span className="text-white font-black text-2xl tracking-tighter leading-none">
+        <span className="text-white font-bold text-xl tracking-tighter leading-none">
           UBA
         </span>
-        <span className="text-white/40 font-bold text-[10px] uppercase tracking-tighter">
-          FCE
-        </span>
       </div>
-      <span className="text-brand-gold font-black text-[8px] uppercase tracking-[0.15em] mt-1">
+      <span className="text-[7px] text-brand-gold font-black uppercase tracking-[0.2em] mt-1">
         Ciencias Económicas
       </span>
     </div>
 
     {/* Ministerio de Educación */}
     <div className="flex flex-col group cursor-default">
-      <span className="text-white font-black text-sm md:text-base uppercase tracking-tighter leading-none">
+      <span className="text-white font-bold text-xl tracking-tighter leading-none">
         Ministerio de Educación
       </span>
-      <span className="text-brand-gold font-black text-[9px] uppercase tracking-[0.2em] mt-1">
+      <span className="text-[7px] text-brand-gold font-black uppercase tracking-[0.2em] mt-1">
         Provincia de Salta
       </span>
     </div>
