@@ -16,7 +16,23 @@ const Preinscription = () => {
           </div>
           <h2 className="text-3xl font-black text-brand-dark mb-4 uppercase tracking-tighter">¡Preinscripción Exitosa!</h2>
           <p className="text-gray-500 mb-8 italic">Tus datos han sido enviados correctamente. Pronto recibirás novedades en tu teléfono o correo.</p>
-          <Button className="bg-brand-dark rounded-xl h-12 px-8 font-black text-white hover:bg-brand-primary transition-colors" onClick={() => window.location.href = '/'}>VOLVER AL INICIO</Button>
+          
+          <div className="flex flex-col gap-3">
+            <Button 
+              className="bg-brand-dark rounded-xl h-12 px-8 font-black text-white hover:bg-brand-primary transition-colors w-full" 
+              onClick={() => window.location.href = '/'}
+            >
+              VOLVER AL INICIO
+            </Button>
+            
+            {/* NUEVO BOTÓN DE ACTIVIDADES */}
+            <button 
+              onClick={() => window.open('https://www.evolucionantoniana.com/activities', '_blank')}
+              className="text-brand-primary font-bold text-xs uppercase tracking-widest hover:underline mt-2"
+            >
+              Explorar otras actividades →
+            </button>
+          </div>
         </motion.div>
       </div>
     );
