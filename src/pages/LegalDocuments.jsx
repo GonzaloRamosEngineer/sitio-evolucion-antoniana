@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar } from 'lucide-react';
+import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -131,11 +131,36 @@ const LegalDocuments = () => {
                     <Calendar className="w-6 h-6" />
                 </div>
                 <div>
-                    <p className="text-lg font-bold text-brand-dark">2024</p>
+                    <p className="text-lg font-bold text-brand-dark">{new Date().getFullYear()}</p>
                     <p className="text-sm text-gray-500">Periodo Actual</p>
                 </div>
             </div>
         </div>
+
+        {/* Nota informativa: solicitud formal de información */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-brand-gold/30 rounded-2xl shadow-sm p-6 mb-12 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+        >
+          <div className="bg-brand-sand p-3 rounded-full text-brand-primary flex-shrink-0">
+            <Mail className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-brand-dark mb-1">¿Necesitás información completa y detallada?</p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Para solicitar la documentación completa y detallada, realizá una solicitud formal
+              al correo{' '}
+              <a
+                href="mailto:info@evolucionantoniana.com"
+                className="font-semibold text-brand-primary underline underline-offset-2 hover:text-brand-gold transition-colors"
+              >
+                info@evolucionantoniana.com
+              </a>
+              .
+            </p>
+          </div>
+        </motion.div>
 
         {error && (
           <motion.div
