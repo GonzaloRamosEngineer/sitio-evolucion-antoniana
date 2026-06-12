@@ -305,7 +305,7 @@ const ProjectsManager = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="p-start">Inicio</Label>
                 <Input id="p-start" type="date" value={form.start_date}

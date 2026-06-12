@@ -293,7 +293,7 @@ const ProjectBoard = ({ project, currentUserId, onBack, onTasksChanged }) => {
               <Textarea id="t-desc" value={form.description} rows={3}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles, dependencias, contexto..." />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Columna (tablero)</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
@@ -314,7 +314,7 @@ const ProjectBoard = ({ project, currentUserId, onBack, onTasksChanged }) => {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Prioridad</Label>
                 <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
