@@ -58,6 +58,17 @@ export const uploadVersion = async ({ documentId, file, notes }) => {
   return { data, error: null };
 };
 
-// URL firmada temporal (5 min) para descargar/ver un archivo del bucket privado.
-export const getDownloadUrl = async (filePath) =>
-  supabase.storage.from(BUCKET).createSignedUrl(filePath, 300);
+// URL firmada temporal (10 min) para un archivo del bucket privado.
+// opts.download: true (o un nombre) fuerza la descarga; sin opts, se sirve
+// inline (sirve para previsualizar PDF/imagen en la app).
+export const getSignedUrl = async (filePath, opts) =>
+  supabase.storage.from(BUCKET).createSignedUrl(filePath, 600, opts);
+
+// Clasifica el archivo para decidir cómo previsualizarlo.
+export const fileKind = (mimeType, fileName) => {
+  const m = (mimeType || '').toLowerCase();
+  const ext = (fileName || '').split('.').pop().toLowerCase();
+  if (m === 'application/pdf' || ext === 'pdf') return 'pdf';
+  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'].includes(ext)) return 'image';
+  return 'other';
+};

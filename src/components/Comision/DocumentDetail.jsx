@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Upload, Loader2, Download, FileText, History, FileUp,
+  ArrowLeft, Upload, Loader2, Download, FileText, History, FileUp, Eye,
+  ExternalLink, FileQuestion,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { uploadVersion, getDownloadUrl } from '@/api/documentsApi';
+import { uploadVersion, getSignedUrl, fileKind } from '@/api/documentsApi';
 import { formatBytes, formatDateTime } from './documentConstants';
 
 const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
@@ -20,7 +21,9 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
   const [file, setFile] = useState(null);
   const [notes, setNotes] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [downloadingId, setDownloadingId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [preview, setPreview] = useState(null); // { url, kind, name }
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const versions = [...(doc.document_versions || [])].sort((a, b) => b.version_number - a.version_number);
 
@@ -46,18 +49,43 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
   };
 
   const handleDownload = async (version) => {
-    if (downloadingId) return;
-    setDownloadingId(version.id);
+    if (busyId) return;
+    setBusyId(version.id);
     try {
-      const { data, error } = await getDownloadUrl(version.file_path);
+      const { data, error } = await getSignedUrl(version.file_path, { download: version.file_name });
       if (error || !data?.signedUrl) {
         toast({ title: 'Error', description: 'No se pudo generar el enlace de descarga.', variant: 'destructive' });
         return;
       }
       window.open(data.signedUrl, '_blank', 'noopener');
     } finally {
-      setDownloadingId(null);
+      setBusyId(null);
     }
+  };
+
+  const handlePreview = async (version) => {
+    if (busyId) return;
+    setBusyId(version.id);
+    setPreviewLoading(true);
+    try {
+      const { data, error } = await getSignedUrl(version.file_path);
+      if (error || !data?.signedUrl) {
+        toast({ title: 'Error', description: 'No se pudo abrir la vista previa.', variant: 'destructive' });
+        return;
+      }
+      setPreview({
+        url: data.signedUrl,
+        kind: fileKind(version.mime_type, version.file_name),
+        name: version.file_name,
+      });
+    } finally {
+      setBusyId(null);
+      setPreviewLoading(false);
+    }
+  };
+
+  const openInNewTab = () => {
+    if (preview?.url) window.open(preview.url, '_blank', 'noopener');
   };
 
   return (
@@ -117,16 +145,28 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
                 </p>
                 {v.notes && <p className="text-xs text-gray-500 mt-1 italic">“{v.notes}”</p>}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDownload(v)}
-                disabled={downloadingId === v.id}
-                className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 gap-1.5 shrink-0"
-              >
-                {downloadingId === v.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                <span className="hidden sm:inline">Descargar</span>
-              </Button>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePreview(v)}
+                  disabled={busyId === v.id}
+                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 gap-1.5"
+                >
+                  {busyId === v.id && previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                  <span className="hidden sm:inline">Ver</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDownload(v)}
+                  disabled={busyId === v.id}
+                  className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary/5"
+                  title="Descargar"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -167,6 +207,50 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de vista previa */}
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) setPreview(null); }}>
+        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-3">
+            <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2 text-base pr-8 truncate">
+              <FileText className="w-4 h-4 text-brand-gold shrink-0" />
+              <span className="truncate">{preview?.name}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {preview?.kind === 'pdf' && (
+            <iframe title={preview.name} src={preview.url} className="w-full h-[75vh] border-t border-gray-100" />
+          )}
+
+          {preview?.kind === 'image' && (
+            <div className="bg-gray-50 border-t border-gray-100 max-h-[75vh] overflow-auto flex items-center justify-center p-4">
+              <img src={preview.url} alt={preview.name} className="max-w-full h-auto rounded-lg" />
+            </div>
+          )}
+
+          {preview?.kind === 'other' && (
+            <div className="border-t border-gray-100 px-6 py-12 text-center">
+              <div className="p-4 rounded-2xl bg-brand-sand text-gray-300 w-fit mx-auto mb-4">
+                <FileQuestion className="w-8 h-8" />
+              </div>
+              <p className="font-semibold text-brand-dark">No se puede previsualizar este tipo de archivo</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                Los documentos de Word, Excel y similares no se ven dentro del navegador. Abrilo en una pestaña nueva o descargalo.
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-5">
+                <Button variant="outline" onClick={openInNewTab} className="gap-2">
+                  <ExternalLink className="w-4 h-4" /> Abrir en pestaña
+                </Button>
+                <a href={preview.url} download={preview.name}>
+                  <Button className="gap-2 bg-brand-primary hover:bg-brand-dark text-white">
+                    <Download className="w-4 h-4" /> Descargar
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
