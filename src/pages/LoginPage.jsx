@@ -15,17 +15,25 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { login, loading: authProviderLoading, isAuthenticated } = useAuth(); 
+  const { login, loading: authProviderLoading, isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/dashboard";
+  // Si llegó redirigido desde una página protegida, volvemos ahí. Si no, el
+  // destino depende del rol: cada perfil aterriza en su portal.
+  const from = location.state?.from?.pathname;
 
   useEffect(() => {
     if (isAuthenticated && !authProviderLoading) {
-      navigate(from, { replace: true });
+      const role = user?.role;
+      const landingByRole =
+        role === 'comision_directiva' ? '/comision'
+        : role === 'educacion_manager' ? '/admin/education'
+        : role === 'admin' ? '/admin'
+        : '/dashboard';
+      navigate(from || landingByRole, { replace: true });
     }
-  }, [isAuthenticated, authProviderLoading, navigate, from]);
+  }, [isAuthenticated, authProviderLoading, navigate, from, user]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
