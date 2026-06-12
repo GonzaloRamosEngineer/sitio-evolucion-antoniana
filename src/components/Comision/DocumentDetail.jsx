@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Upload, Loader2, Download, FileText, History, FileUp, Eye,
@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { uploadVersion, getSignedUrl, fileKind } from '@/api/documentsApi';
+import { uploadVersion, getSignedUrl, downloadFile, fileKind } from '@/api/documentsApi';
 import { formatBytes, formatDateTime } from './documentConstants';
 
 const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
@@ -65,24 +65,47 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
 
   const handlePreview = async (version) => {
     if (busyId) return;
+    const kind = fileKind(version.mime_type, version.file_name);
     setBusyId(version.id);
     setPreviewLoading(true);
     try {
-      const { data, error } = await getSignedUrl(version.file_path);
-      if (error || !data?.signedUrl) {
-        toast({ title: 'Error', description: 'No se pudo abrir la vista previa.', variant: 'destructive' });
-        return;
+      if (kind === 'other') {
+        // No previsualizable: solo necesitamos un enlace para abrir/descargar.
+        const { data, error } = await getSignedUrl(version.file_path);
+        if (error || !data?.signedUrl) {
+          toast({ title: 'Error', description: 'No se pudo abrir el archivo.', variant: 'destructive' });
+          return;
+        }
+        setPreview({ url: data.signedUrl, kind, name: version.file_name, isBlob: false });
+      } else {
+        // PDF / imagen: descargamos el archivo y lo mostramos desde la app (blob).
+        const { data, error } = await downloadFile(version.file_path);
+        if (error || !data) {
+          toast({ title: 'Error', description: 'No se pudo abrir la vista previa.', variant: 'destructive' });
+          return;
+        }
+        const type = version.mime_type || (kind === 'pdf' ? 'application/pdf' : data.type || '');
+        const blob = type && data.type !== type ? new Blob([data], { type }) : data;
+        const url = URL.createObjectURL(blob);
+        setPreview({ url, kind, name: version.file_name, isBlob: true });
       }
-      setPreview({
-        url: data.signedUrl,
-        kind: fileKind(version.mime_type, version.file_name),
-        name: version.file_name,
-      });
     } finally {
       setBusyId(null);
       setPreviewLoading(false);
     }
   };
+
+  const closePreview = () => {
+    setPreview((p) => {
+      if (p?.isBlob && p.url) URL.revokeObjectURL(p.url);
+      return null;
+    });
+  };
+
+  // Libera el object URL si el componente se desmonta con la preview abierta.
+  useEffect(() => () => {
+    if (preview?.isBlob && preview.url) URL.revokeObjectURL(preview.url);
+  }, [preview]);
 
   const openInNewTab = () => {
     if (preview?.url) window.open(preview.url, '_blank', 'noopener');
@@ -211,7 +234,7 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
       </Dialog>
 
       {/* Modal de vista previa */}
-      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) setPreview(null); }}>
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) closePreview(); }}>
         <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2 text-base pr-8 truncate">

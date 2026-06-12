@@ -59,10 +59,15 @@ export const uploadVersion = async ({ documentId, file, notes }) => {
 };
 
 // URL firmada temporal (10 min) para un archivo del bucket privado.
-// opts.download: true (o un nombre) fuerza la descarga; sin opts, se sirve
-// inline (sirve para previsualizar PDF/imagen en la app).
+// opts.download: true (o un nombre) fuerza la descarga.
 export const getSignedUrl = async (filePath, opts) =>
   supabase.storage.from(BUCKET).createSignedUrl(filePath, 600, opts);
+
+// Descarga el archivo como Blob (respeta la sesión/RLS). Se usa para la vista
+// previa embebida: Supabase no permite mostrar sus URLs dentro de un iframe, así
+// que servimos el archivo desde la propia app vía un object URL (blob:).
+export const downloadFile = async (filePath) =>
+  supabase.storage.from(BUCKET).download(filePath);
 
 // Clasifica el archivo para decidir cómo previsualizarlo.
 export const fileKind = (mimeType, fileName) => {
