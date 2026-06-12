@@ -31,7 +31,7 @@ import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 import {
-  getProjects, createProject, updateProject, deleteProject, getBoardMembers,
+  getProjects, createProject, updateProject, deleteProject,
 } from '@/api/projectsApi';
 import {
   PROJECT_STATUS_OPTIONS, projectStatusMeta, formatDateShort,
@@ -51,7 +51,6 @@ const ProjectsManager = () => {
   const { toast } = useToast();
 
   const [projects, setProjects] = useState([]);
-  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -81,9 +80,6 @@ const ProjectsManager = () => {
 
   useEffect(() => {
     fetchProjects();
-    getBoardMembers().then(({ data, error: err }) => {
-      if (!err) setMembers(data || []);
-    });
   }, [fetchProjects]);
 
   const openCreate = () => { setEditing(null); setForm(emptyProject()); setFormOpen(true); };
@@ -150,7 +146,6 @@ const ProjectsManager = () => {
       <div className="p-4 sm:p-6">
         <ProjectBoard
           project={selected}
-          members={members}
           currentUserId={user?.id}
           onBack={() => { setSelectedId(null); fetchProjects(); }}
           onTasksChanged={fetchProjects}

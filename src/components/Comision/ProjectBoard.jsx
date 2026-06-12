@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Plus, Loader2, MoreVertical, Pencil, Trash2,
@@ -25,12 +25,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { getTasks, createTask, updateTask, deleteTask } from '@/api/projectsApi';
-import { TASK_COLUMNS, formatDateShort, isOverdue, projectStatusMeta } from './projectConstants';
+import {
+  TASK_COLUMNS, TASK_STATUS_LABELS, PRIORITIES,
+  statusLabelMeta, priorityMeta, formatDateShort, isOverdue, projectStatusMeta,
+} from './projectConstants';
 
-const UNASSIGNED = 'none';
-const emptyTask = () => ({ title: '', description: '', status: 'pendiente', assignee_id: UNASSIGNED, due_date: '' });
+const NONE = 'none';
+const emptyTask = () => ({
+  title: '', description: '', status: 'pendiente',
+  status_label: NONE, priority: NONE, assignee_text: '', due_date: '',
+});
 
-const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged }) => {
+const ProjectBoard = ({ project, currentUserId, onBack, onTasksChanged }) => {
   const { toast } = useToast();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +49,6 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [movingId, setMovingId] = useState(null);
-
-  const memberName = useMemo(() => {
-    const map = {};
-    (members || []).forEach((m) => { map[m.id] = m.name || m.email; });
-    return map;
-  }, [members]);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -71,7 +71,9 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
       title: t.title || '',
       description: t.description || '',
       status: t.status || 'pendiente',
-      assignee_id: t.assignee_id || UNASSIGNED,
+      status_label: t.status_label || NONE,
+      priority: t.priority || NONE,
+      assignee_text: t.assignee_text || '',
       due_date: t.due_date ? String(t.due_date).slice(0, 10) : '',
     });
     setFormOpen(true);
@@ -87,7 +89,9 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
         title: form.title.trim(),
         description: form.description.trim() || null,
         status: form.status,
-        assignee_id: form.assignee_id === UNASSIGNED ? null : form.assignee_id,
+        status_label: form.status_label === NONE ? null : form.status_label,
+        priority: form.priority === NONE ? null : form.priority,
+        assignee_text: form.assignee_text.trim() || null,
         due_date: form.due_date || null,
       };
       const { error } = editing
@@ -109,7 +113,6 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
   const moveTask = async (task, status) => {
     if (task.status === status || movingId) return;
     setMovingId(task.id);
-    // Optimista: reflejar el cambio enseguida.
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
     const { error } = await updateTask(task.id, { status });
     if (error) {
@@ -151,7 +154,7 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-poppins font-bold text-brand-dark truncate">{project.name}</h2>
+              <h2 className="text-xl font-poppins font-bold text-brand-dark">{project.name}</h2>
               <Badge variant="outline" className={`border ${pStatus.badge}`}>{pStatus.label}</Badge>
             </div>
             {project.description && <p className="text-sm text-gray-500 mt-1">{project.description}</p>}
@@ -192,7 +195,10 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
                   {colTasks.length === 0 ? (
                     <p className="text-xs text-gray-400 text-center py-6">Sin tareas</p>
                   ) : (
-                    colTasks.map((t) => (
+                    colTasks.map((t) => {
+                      const sl = statusLabelMeta(t.status_label);
+                      const pr = priorityMeta(t.priority);
+                      return (
                       <motion.div
                         key={t.id}
                         layout
@@ -227,15 +233,27 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
                           </DropdownMenu>
                         </div>
 
+                        {/* Etiquetas: estado detallado + prioridad */}
+                        {(sl || pr) && (
+                          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                            {sl && <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${sl.badge}`}>{sl.value}</Badge>}
+                            {pr && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                                <span className={`w-1.5 h-1.5 rounded-full ${pr.dot}`} /> {pr.label}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         {t.description && (
-                          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2">{t.description}</p>
+                          <p className="text-xs text-gray-500 mt-2 line-clamp-3">{t.description}</p>
                         )}
 
                         <div className="flex items-center gap-3 mt-3 flex-wrap">
-                          {t.assignee_id && (
+                          {t.assignee_text && (
                             <span className="flex items-center gap-1 text-xs text-gray-600">
                               <UserIcon className="w-3.5 h-3.5 text-brand-gold" />
-                              {memberName[t.assignee_id] || 'Asignado'}
+                              {t.assignee_text}
                             </span>
                           )}
                           {t.due_date && (
@@ -246,7 +264,7 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
                           )}
                         </div>
                       </motion.div>
-                    ))
+                    );})
                   )}
                 </div>
               </div>
@@ -257,7 +275,7 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
 
       {/* Dialog crear/editar tarea */}
       <Dialog open={formOpen} onOpenChange={(o) => { if (!saving) setFormOpen(o); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2">
               <ListTodo className="w-5 h-5 text-brand-gold" /> {editing ? 'Editar tarea' : 'Nueva tarea'}
@@ -268,20 +286,42 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
             <div className="space-y-1.5">
               <Label htmlFor="t-title">Título</Label>
               <Input id="t-title" value={form.title} required
-                onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Pedir presupuestos" />
+                onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ej. Firmar acta por el Consejo" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="t-desc">Descripción</Label>
+              <Label htmlFor="t-desc">Descripción / observación</Label>
               <Textarea id="t-desc" value={form.description} rows={3}
-                onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles, contexto, links..." />
+                onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles, dependencias, contexto..." />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Estado</Label>
+                <Label>Columna (tablero)</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {TASK_COLUMNS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Estado detallado</Label>
+                <Select value={form.status_label} onValueChange={(v) => setForm({ ...form, status_label: v })}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>—</SelectItem>
+                    {TASK_STATUS_LABELS.map((s) => <SelectItem key={s.value} value={s.value}>{s.value}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Prioridad</Label>
+                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>—</SelectItem>
+                    {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -292,16 +332,9 @@ const ProjectBoard = ({ project, members, currentUserId, onBack, onTasksChanged 
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Responsable</Label>
-              <Select value={form.assignee_id} onValueChange={(v) => setForm({ ...form, assignee_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNASSIGNED}>Sin asignar</SelectItem>
-                  {(members || []).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="t-resp">Responsable</Label>
+              <Input id="t-resp" value={form.assignee_text}
+                onChange={(e) => setForm({ ...form, assignee_text: e.target.value })} placeholder="Ej. Presidente / Secretario, Contador, Gonzalo..." />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" disabled={saving} onClick={() => setFormOpen(false)}>Cancelar</Button>
