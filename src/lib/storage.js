@@ -1,5 +1,5 @@
 // src/lib/storage.js
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase } from '@/lib/supabase';
 
 /* =======================
  * PARTNERS
