@@ -1,5 +1,5 @@
 // src/App.jsx
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,52 +12,61 @@ import Header from "@/components/Layout/Header";
 import Footer from "@/components/Layout/Footer";
 import BottomNavBar from "@/components/Layout/BottomNavBar";
 import { AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 
-// Pages
-import Home from "@/pages/Home";
-import About from "@/pages/About";
-import Activities from "@/pages/Activities";
-import ActivityDetailPage from "@/pages/ActivityDetailPage";
-import ConfirmAttendancePage from "@/pages/ConfirmAttendancePage";
-import Collaborate from "@/pages/Collaborate";
-import Contact from "@/pages/Contact";
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
-import RequestPasswordResetForm from "@/components/Auth/RequestPasswordResetForm";
-import UpdatePasswordForm from "@/components/Auth/UpdatePasswordForm";
-import Dashboard from "@/pages/Dashboard";
-import AdminPanel from "@/pages/AdminPanel";
+// Shell siempre presente (no se hace lazy: layout + guards + helpers)
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
-import CreateActivityPage from "@/pages/CreateActivityPage";
-import EditActivityPage from "@/pages/EditActivityPage";
-import Agradecimiento from "@/pages/Agradecimiento";
-import LegalDocuments from "@/pages/LegalDocuments";
-import Preinscription from "./pages/Preinscripcion";
-import EducationAdmin from './pages/EducationAdmin';
-
-// Partners / Novedades
-import PartnersPage from "@/pages/PartnersPage";
-import PartnerDetailPage from "@/pages/PartnerDetailPage";
-import BenefitsPage from "@/pages/BenefitsPage";
-import BenefitDetailPage from "@/pages/BenefitDetailPage";
-import ApplyPartnerPage from "@/pages/ApplyPartnerPage";
-import NewsPage from "@/pages/NewsPage";
-import NewsDetailPage from "@/pages/NewsDetailPage";
-
-// NUEVO: Legal
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import TermsOfUse from "@/pages/TermsOfUse";
-
-// NUEVO: helpers de navegación/scroll
 import ScrollToTop from "@/components/Layout/ScrollToTop";
 import BackToTop from "@/components/Layout/BackToTop";
+
+// Pages (lazy: cada una en su propio chunk, se carga al navegar)
+const Home = lazy(() => import("@/pages/Home"));
+const About = lazy(() => import("@/pages/About"));
+const Activities = lazy(() => import("@/pages/Activities"));
+const ActivityDetailPage = lazy(() => import("@/pages/ActivityDetailPage"));
+const ConfirmAttendancePage = lazy(() => import("@/pages/ConfirmAttendancePage"));
+const Collaborate = lazy(() => import("@/pages/Collaborate"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
+const RequestPasswordResetForm = lazy(() => import("@/components/Auth/RequestPasswordResetForm"));
+const UpdatePasswordForm = lazy(() => import("@/components/Auth/UpdatePasswordForm"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
+const CreateActivityPage = lazy(() => import("@/pages/CreateActivityPage"));
+const EditActivityPage = lazy(() => import("@/pages/EditActivityPage"));
+const Agradecimiento = lazy(() => import("@/pages/Agradecimiento"));
+const LegalDocuments = lazy(() => import("@/pages/LegalDocuments"));
+const Preinscription = lazy(() => import("./pages/Preinscripcion"));
+const EducationAdmin = lazy(() => import("./pages/EducationAdmin"));
+
+// Partners / Novedades
+const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
+const PartnerDetailPage = lazy(() => import("@/pages/PartnerDetailPage"));
+const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
+const BenefitDetailPage = lazy(() => import("@/pages/BenefitDetailPage"));
+const ApplyPartnerPage = lazy(() => import("@/pages/ApplyPartnerPage"));
+const NewsPage = lazy(() => import("@/pages/NewsPage"));
+const NewsDetailPage = lazy(() => import("@/pages/NewsDetailPage"));
+
+// Legal
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("@/pages/TermsOfUse"));
+
+// Fallback mientras carga el chunk de la página
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
+  </div>
+);
 
 const PageRoutes = () => {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <Routes location={location} key={location.pathname}>
+      <Suspense key={location.pathname} fallback={<PageLoader />}>
+      <Routes location={location}>
         {/* Sitio */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
@@ -147,6 +156,7 @@ const PageRoutes = () => {
           }
         />
       </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };
