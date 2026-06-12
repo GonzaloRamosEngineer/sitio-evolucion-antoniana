@@ -4,6 +4,15 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Users,
@@ -15,13 +24,31 @@ import {
   Fingerprint,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Loader2,
+  UserCog,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import { USER_ROLES, createUser, updateUserRole } from '@/api/userApi';
+
+// Presentación visual de cada rol (label + estilo + icono).
+const ROLE_META = {
+  admin: { label: 'Admin', icon: ShieldCheck, badge: 'bg-red-50 text-red-700 border-red-200' },
+  comision_directiva: { label: 'Comisión Directiva', icon: Briefcase, badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  educacion_manager: { label: 'Gestor Educación', icon: GraduationCap, badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+  user: { label: 'Miembro', icon: UserCheck, badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+};
+
+const roleMeta = (role) => ROLE_META[role] || ROLE_META.user;
+
+const EMPTY_FORM = { name: '', email: '', password: '', role: 'comision_directiva' };
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -29,6 +56,16 @@ const UserList = () => {
   const [fetchError, setFetchError] = useState(false);
   const { toast } = useToast();
   const { query, setQuery, filtered: filteredUsers } = useSearch(users, ['name', 'email', 'dni']);
+
+  // Alta de usuario
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
+
+  // Edición de rol
+  const [roleUser, setRoleUser] = useState(null); // usuario seleccionado
+  const [newRole, setNewRole] = useState('');
+  const [savingRole, setSavingRole] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -74,12 +111,64 @@ const UserList = () => {
     });
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (creating) return;
+    setCreating(true);
+    try {
+      const { error } = await createUser({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      });
+      if (error) {
+        toast({ title: 'No se pudo crear el usuario', description: error.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Usuario creado', description: `${form.name} fue dado de alta correctamente.` });
+      setCreateOpen(false);
+      setForm(EMPTY_FORM);
+      fetchUsers();
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const openRoleDialog = (u) => {
+    setRoleUser(u);
+    setNewRole(u.role || 'user');
+  };
+
+  const handleSaveRole = async () => {
+    if (!roleUser || savingRole) return;
+    if (newRole === roleUser.role) { setRoleUser(null); return; }
+    setSavingRole(true);
+    try {
+      const { error } = await updateUserRole(roleUser.id, newRole);
+      if (error) {
+        toast({ title: 'No se pudo cambiar el rol', description: error.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Rol actualizado', description: `${roleUser.name || 'El usuario'} ahora es ${roleMeta(newRole).label}.` });
+      setRoleUser(null);
+      fetchUsers();
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
   return (
     <div>
       <SectionHeader
         icon={Users}
         title="Usuarios"
         description="Base de datos central de miembros, administradores y voluntarios."
+        actions={
+          <Button onClick={() => setCreateOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+            <Plus className="w-4 h-4 mr-2" /> Crear usuario
+          </Button>
+        }
       />
 
       {loading ? (
@@ -121,10 +210,14 @@ const UserList = () => {
                         <th className="px-6 py-4">Contacto</th>
                         <th className="px-6 py-4 hidden md:table-cell">Documento/Nac.</th>
                         <th className="px-6 py-4">Estado / Rol</th>
+                        <th className="px-6 py-4 text-right">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredUsers.map((u) => (
+                      {filteredUsers.map((u) => {
+                        const meta = roleMeta(u.role);
+                        const RoleIcon = meta.icon;
+                        return (
                         <tr key={u.id} className="hover:bg-brand-sand/30 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -168,11 +261,11 @@ const UserList = () => {
                           <td className="px-6 py-4">
                             <div className="flex flex-col sm:flex-row gap-2">
                               <Badge
-                                variant={u.role === 'admin' ? 'destructive' : 'secondary'}
-                                className={`flex items-center justify-center gap-1.5 px-2 py-1 border-none shadow-sm ${u.role !== 'admin' && 'bg-blue-50 text-blue-700'}`}
+                                variant="outline"
+                                className={`flex items-center justify-center gap-1.5 px-2 py-1 border shadow-sm ${meta.badge}`}
                               >
-                                {u.role === 'admin' ? <ShieldCheck className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-                                <span className="capitalize">{u.role === 'admin' ? 'Admin' : 'Miembro'}</span>
+                                <RoleIcon className="w-3 h-3" />
+                                <span>{meta.label}</span>
                               </Badge>
 
                               <Badge
@@ -184,8 +277,18 @@ const UserList = () => {
                               </Badge>
                             </div>
                           </td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openRoleDialog(u)}
+                              className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary/5 gap-1.5"
+                            >
+                              <UserCog className="w-4 h-4" /> Rol
+                            </Button>
+                          </td>
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
                 </div>
@@ -194,6 +297,86 @@ const UserList = () => {
           </Card>
         </>
       )}
+
+      {/* --- Dialog: crear usuario --- */}
+      <Dialog open={createOpen} onOpenChange={(open) => { if (!creating) { setCreateOpen(open); if (!open) setForm(EMPTY_FORM); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-poppins text-brand-dark">Crear usuario</DialogTitle>
+            <DialogDescription>
+              La cuenta queda activa de inmediato (sin paso de verificación de email).
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cu-name">Nombre completo</Label>
+              <Input id="cu-name" value={form.name} required
+                onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej. María Pérez" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cu-email">Email</Label>
+              <Input id="cu-email" type="email" value={form.email} required
+                onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="persona@ejemplo.com" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cu-password">Contraseña</Label>
+              <Input id="cu-password" type="text" value={form.password} required minLength={8}
+                onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 8 caracteres" />
+              <p className="text-xs text-gray-400">Compartísela con la persona; podrá cambiarla luego.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rol</Label>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {USER_ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" disabled={creating} onClick={() => setCreateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={creating} className="bg-brand-primary hover:bg-brand-dark text-white">
+                {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creando...</> : 'Crear usuario'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Dialog: cambiar rol --- */}
+      <Dialog open={!!roleUser} onOpenChange={(open) => { if (!savingRole && !open) setRoleUser(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-poppins text-brand-dark">Cambiar rol</DialogTitle>
+            <DialogDescription>
+              {roleUser?.name || roleUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>Nuevo rol</Label>
+            <Select value={newRole} onValueChange={setNewRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {USER_ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={savingRole} onClick={() => setRoleUser(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveRole} disabled={savingRole} className="bg-brand-primary hover:bg-brand-dark text-white">
+              {savingRole ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Guardando...</> : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

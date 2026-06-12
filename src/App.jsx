@@ -40,6 +40,7 @@ const Agradecimiento = lazy(() => import("@/pages/Agradecimiento"));
 const LegalDocuments = lazy(() => import("@/pages/LegalDocuments"));
 const Preinscription = lazy(() => import("./pages/Preinscripcion"));
 const EducationAdmin = lazy(() => import("./pages/EducationAdmin"));
+const CommissionPortal = lazy(() => import("@/pages/CommissionPortal"));
 
 // Partners / Novedades
 const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
@@ -119,6 +120,15 @@ const PageRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["admin", "educacion_manager"]}>
               <EducationAdmin />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/comision"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "comision_directiva"]}>
+              <CommissionPortal />
             </ProtectedRoute>
           }
         />

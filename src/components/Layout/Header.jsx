@@ -20,7 +20,8 @@ import {
   FileText,
   ChevronDown,
   User,
-  GraduationCap
+  GraduationCap,
+  Briefcase
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
@@ -321,26 +322,46 @@ const Header = () => {
                   </DropdownMenuItem>
 
                   {/* --- SECCIÓN DE ADMINISTRACIÓN DINÁMICA --- */}
-                  {(isAdmin || user?.role === "educacion_manager") && (
+                  {(isAdmin ||
+                    user?.role === "educacion_manager" ||
+                    user?.role === "comision_directiva") && (
                     <>
                       <DropdownMenuSeparator className="bg-gray-100 my-1" />
                       <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">
                         Gestión
                       </p>
 
-                      {/* Este lo ven ambos: Admin y Manager */}
-                      <DropdownMenuItem
-                        asChild
-                        className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
-                      >
-                        <Link
-                          to="/admin/education"
-                          className="flex items-center py-2 px-3"
+                      {/* Lo ven Admin y Gestor de Educación */}
+                      {(isAdmin || user?.role === "educacion_manager") && (
+                        <DropdownMenuItem
+                          asChild
+                          className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                         >
-                          <GraduationCap className="mr-2 h-4 w-4" />
-                          <span>Preinscripciones</span>
-                        </Link>
-                      </DropdownMenuItem>
+                          <Link
+                            to="/admin/education"
+                            className="flex items-center py-2 px-3"
+                          >
+                            <GraduationCap className="mr-2 h-4 w-4" />
+                            <span>Preinscripciones</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* Lo ven Admin y Comisión Directiva */}
+                      {(isAdmin || user?.role === "comision_directiva") && (
+                        <DropdownMenuItem
+                          asChild
+                          className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
+                        >
+                          <Link
+                            to="/comision"
+                            className="flex items-center py-2 px-3"
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            <span>Comisión Directiva</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
 
                       {/* Este SOLO lo ve el Admin (Panel General) */}
                       {isAdmin && (

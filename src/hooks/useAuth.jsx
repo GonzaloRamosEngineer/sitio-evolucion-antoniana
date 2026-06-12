@@ -227,7 +227,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isAdmin: !!user?.isAdmin,
     role: user?.role,
-    refreshUser 
+    isBoardMember: user?.role === 'admin' || user?.role === 'comision_directiva',
+    refreshUser
   };
 
   return (

@@ -17,6 +17,10 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
+# Supabase CLI (artefactos locales; el esquema versionado vive en supabase/migrations)
+supabase/.temp/
+supabase/.branches/
+
 # Sistema operativo / editores
 .DS_Store
 Thumbs.db

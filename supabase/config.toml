@@ -1,0 +1,7 @@
+# Configuración del proyecto Supabase (versionada en el repo).
+# No contiene secretos: solo el project_id público. Las claves (service_role,
+# anon, JWT secret) viven en la plataforma / variables de entorno, nunca acá.
+project_id = "lbtyxnbyetsvngsxczkt"
+
+[functions.create-user]
+verify_jwt = true

@@ -31,6 +31,8 @@ const AdminPanel = () => {
     if (!authLoading) {
       if (!isAdmin && user?.role === 'educacion_manager') {
         navigate('/admin/education');
+      } else if (!isAdmin && user?.role === 'comision_directiva') {
+        navigate('/comision');
       } else if (!isAdmin) {
         navigate('/');
       }
