@@ -52,7 +52,7 @@ supabase functions deploy create-user # despliega la Edge Function
 - **Capa de datos**: `src/lib/storage.js` (partners/benefits/news) y `src/api/*.js` (activities/users/membership/education) envuelven las queries. Los getters de listado (`getNews`/`getPartners`/`getBenefits`) **lanzan** en error (no devuelven `[]`); el caller debe manejar loading/error/empty.
 - **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
-- **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia.
+- **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
 
 ## Modelo de seguridad (CRÍTICO)
 
@@ -72,6 +72,7 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
 
 - **Branch / deploy**: el historial commitea directo a `master` y el push dispara deploy en Vercel. Confirmar antes de pushear.
 - Correr `npm run build` antes de commitear cambios de código.
+- **Tema**: la app está forzada a claro (`forcedTheme="light"` en `App.jsx`). El dark mode es solo un esbozo y está deshabilitado a propósito (la paleta y los fondos son light-only); no agregar variantes `dark:` salvo que se reactive el tema.
 - **Nunca** versionar `node_modules` (está en `.gitignore`; estuvo versionado y rompía entre OS). Si hay binarios raros (ej. esbuild de otro SO, `.bin` sin permisos): `rm -rf node_modules && npm ci`.
 - Vercel: los **preview deployments dan 401** (protección); validar OG/social y comportamiento solo en **producción**, no en previews.
 
