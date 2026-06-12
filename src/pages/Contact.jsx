@@ -1,5 +1,6 @@
 // C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\Contact.jsx
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -116,7 +117,12 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
-      
+      <Helmet>
+        <title>Contacto - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Comunicate con la Fundación Evolución Antoniana. Escribinos a info@evolucionantoniana.com." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/contact" />
+      </Helmet>
+
       {/* --- HERO SECTION --- */}
       <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
         <div className="absolute inset-0">

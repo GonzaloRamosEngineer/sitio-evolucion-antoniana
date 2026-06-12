@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,12 @@ const Preinscription = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24">
+      <Helmet>
+        <title>Preinscripción - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Preinscribite a los programas educativos de la Fundación Evolución Antoniana." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/preinscripcion" />
+      </Helmet>
+
       <section className="bg-brand-dark pt-24 pb-40 px-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary/10 blur-[100px] rounded-full -mr-20 -mt-20" />
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-4">

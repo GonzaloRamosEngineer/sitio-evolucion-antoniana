@@ -1,6 +1,7 @@
 // C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\ActivityDetailPage.jsx 
 
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/hooks/useAuth';
@@ -200,6 +201,11 @@ const ActivityDetailPage = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-brand-sand font-sans py-12"
     >
+      <Helmet>
+        <title>{(cleanTitle || activity?.title) ? `${cleanTitle || activity.title} - Fundación Evolución Antoniana` : 'Actividad - Fundación Evolución Antoniana'}</title>
+        <meta name="description" content={descBody || activity?.description || 'Actividad de la Fundación Evolución Antoniana.'} />
+      </Helmet>
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <Link to="/activities" className="inline-flex items-center text-gray-500 hover:text-brand-primary transition-colors font-medium group">

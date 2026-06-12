@@ -1,6 +1,7 @@
 // C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\Activities.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -336,6 +337,11 @@ const getCleanTitle = (title) => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-brand-sand font-sans"
     >
+      <Helmet>
+        <title>Actividades - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Explorá las actividades, talleres y eventos de la Fundación Evolución Antoniana e inscribite." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/activities" />
+      </Helmet>
       {/* --- HERO SECTION (Tech-Institucional) --- */}
       <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
         {/* Fondo Tech Sutil */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -111,6 +112,11 @@ const Agradecimiento = () => {
 
   return (
     <>
+      <Helmet>
+        <title>¡Gracias! - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Gracias por tu colaboración con la Fundación Evolución Antoniana." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       {showConfetti && <ReactConfetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} colors={['#163A68', '#9C2A32', '#C98E2A', '#F9F7F5']} />}
       
       <div className="min-h-screen flex flex-col items-center justify-center bg-brand-sand p-4 font-sans relative overflow-hidden">

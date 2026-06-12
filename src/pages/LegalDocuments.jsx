@@ -1,5 +1,6 @@
 // src/pages/LegalDocuments.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,12 @@ const LegalDocuments = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-brand-sand font-sans"
     >
+      <Helmet>
+        <title>Documentación Oficial - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/legal-documents" />
+      </Helmet>
+
       {/* --- HERO SECTION (Tech-Institucional) --- */}
       <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
         {/* Fondo Tech Sutil */}

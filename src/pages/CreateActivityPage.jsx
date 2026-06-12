@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import ActivityForm from '@/components/Admin/ActivityForm';
 import { useActivities } from '@/hooks/useActivities';
@@ -33,7 +34,12 @@ const CreateActivityPage = () => {
 
   return (
     <div className="min-h-screen bg-brand-sand font-sans py-12 px-4">
-      <motion.div 
+      <Helmet>
+        <title>Nueva actividad - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Crear una nueva actividad." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}

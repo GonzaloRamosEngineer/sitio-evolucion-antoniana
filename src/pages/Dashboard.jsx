@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import {
@@ -124,7 +125,12 @@ const Dashboard = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-[#FDFDFD] pb-24 font-sans">
-      
+      <Helmet>
+        <title>Mi panel - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Panel personal de la Fundación Evolución Antoniana." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       {/* --- HERO SECTION --- */}
       <section className="bg-brand-dark pt-32 pb-56 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] mix-blend-overlay"></div>

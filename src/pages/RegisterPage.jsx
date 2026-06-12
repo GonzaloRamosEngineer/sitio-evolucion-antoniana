@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,7 +84,12 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand relative overflow-hidden py-16 px-4 font-sans">
-      
+      <Helmet>
+        <title>Crear cuenta - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Creá tu cuenta en la Fundación Evolución Antoniana." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       {/* Fondo Tech */}
       <div className="absolute inset-0">
          <div className="absolute inset-0 bg-brand-primary opacity-5"></div>

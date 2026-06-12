@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet';
 import {
   Card,
   CardContent,
@@ -86,7 +87,12 @@ const authorities = [
 const About = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans selection:bg-brand-gold/30">
-      
+      <Helmet>
+        <title>Quiénes Somos - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Conocé la misión, los valores y el equipo de la Fundación Evolución Antoniana." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/about" />
+      </Helmet>
+
       {/* --- HERO SECTION (Tech-Institucional) --- */}
       <section className="relative bg-brand-primary overflow-hidden py-24 md:py-32 px-4">
         {/* Fondo Tech Sutil */}

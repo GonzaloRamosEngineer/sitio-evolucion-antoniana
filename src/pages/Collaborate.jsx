@@ -1,5 +1,6 @@
 // src/pages/Collaborate.jsx
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -240,6 +241,12 @@ const Collaborate = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Colaborá - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Sumate como voluntario, aliado o donante y ayudá a transformar realidades con la Fundación Evolución Antoniana." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/collaborate" />
+      </Helmet>
+
       {/* Estilo para evitar el fondo amarillo del autofill de Chrome */}
       <style>{`
         input:-webkit-autofill,

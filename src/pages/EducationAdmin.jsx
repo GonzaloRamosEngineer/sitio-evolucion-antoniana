@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { Helmet } from "react-helmet";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   getPreinscriptions,
@@ -225,6 +226,11 @@ const EducationAdmin = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 md:px-8">
+      <Helmet>
+        <title>Gestión educativa - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Panel de gestión educativa." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* HEADER ESTRATÉGICO */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">

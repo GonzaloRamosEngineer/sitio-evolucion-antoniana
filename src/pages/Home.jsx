@@ -1,5 +1,6 @@
 // src/pages/Home.jsx
 import React from "react";
+import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,6 +79,11 @@ const Home = () => {
       transition={{ duration: 0.5 }}
       className="bg-blanco-fundacion dark:bg-background"
     >
+      <Helmet>
+        <title>Fundación Evolución Antoniana | Educación, Deporte y Tecnología para Transformar Realidades</title>
+        <meta name="description" content="Impulsamos oportunidades reales a través de la educación, el deporte, la inclusión y la tecnología, desarrollando proyectos que transforman realidades." />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/" />
+      </Helmet>
       {/* Hero Section */}
       <section className="relative bg-azul-profundo dark:bg-primary-antoniano/90 text-white overflow-hidden">
         <div className="absolute inset-0 hero-pattern opacity-30 dark:opacity-10" />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,11 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand relative overflow-hidden p-4 font-sans">
+      <Helmet>
+        <title>Iniciar sesión - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Accedé a tu cuenta de la Fundación Evolución Antoniana." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="absolute inset-0">
          <div className="absolute inset-0 bg-brand-primary opacity-5"></div>
          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>

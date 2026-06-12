@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2, CheckCircle2, XCircle, AlertTriangle, Info, CalendarCheck } from 'lucide-react';
@@ -97,6 +98,11 @@ const ConfirmAttendancePage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand p-4 font-sans relative overflow-hidden">
+        <Helmet>
+          <title>Confirmar asistencia - Fundación Evolución Antoniana</title>
+          <meta name="description" content="Confirmá tu asistencia a la actividad." />
+          <meta name="robots" content="noindex" />
+        </Helmet>
         {/* Fondo decorativo */}
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 

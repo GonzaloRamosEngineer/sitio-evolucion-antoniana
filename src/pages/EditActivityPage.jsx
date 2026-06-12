@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import ActivityForm from '@/components/Admin/ActivityForm';
 import { useActivities } from '@/hooks/useActivities';
@@ -89,7 +90,12 @@ const EditActivityPage = () => {
 
   return (
     <div className="min-h-screen bg-brand-sand font-sans py-12 px-4">
-      <motion.div 
+      <Helmet>
+        <title>Editar actividad - Fundación Evolución Antoniana</title>
+        <meta name="description" content="Editar una actividad existente." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
@@ -98,9 +104,9 @@ const EditActivityPage = () => {
       >
         {/* Header de Navegación */}
         <div className="mb-8 flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/admin?tab=activities')} 
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/admin?tab=activities')}
             className="text-gray-500 hover:text-brand-primary hover:bg-white/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
