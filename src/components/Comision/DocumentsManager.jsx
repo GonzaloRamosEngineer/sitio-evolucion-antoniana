@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileStack, Plus, Loader2, MoreVertical, Pencil, Trash2,
@@ -33,8 +33,11 @@ import { useSearch } from '@/components/Admin/shared/useSearch';
 import { getDocuments, createDocument, updateDocument, deleteDocument } from '@/api/documentsApi';
 import { DOC_CATEGORIES, formatDateTime } from './documentConstants';
 import DocumentDetail from './DocumentDetail';
+import FilterChips from '@/components/Comision/FilterChips';
 
 const NONE = 'none';
+const ALL = 'all';
+const NO_CATEGORY = '__none__';
 const emptyDoc = () => ({ title: '', category: NONE, description: '' });
 
 const DocumentsManager = () => {
@@ -54,7 +57,45 @@ const DocumentsManager = () => {
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { query, setQuery, filtered } = useSearch(documents, ['title', 'category', 'description']);
+  const [categoryFilter, setCategoryFilter] = useState(ALL);
+  const [sortBy, setSortBy] = useState('recent');
+
+  // Opciones de chips: "Todas" + categorías realmente presentes (en orden de DOC_CATEGORIES) + "Sin categoría".
+  const categoryOptions = useMemo(() => {
+    const counts = new Map();
+    let noneCount = 0;
+    documents.forEach((d) => {
+      if (d.category) counts.set(d.category, (counts.get(d.category) || 0) + 1);
+      else noneCount += 1;
+    });
+    const ordered = DOC_CATEGORIES.filter((c) => counts.has(c)).map((c) => ({ value: c, label: c, count: counts.get(c) }));
+    // Categorías presentes que no estén en DOC_CATEGORIES (defensivo), al final.
+    counts.forEach((count, c) => {
+      if (!DOC_CATEGORIES.includes(c)) ordered.push({ value: c, label: c, count });
+    });
+    const options = [{ value: ALL, label: 'Todas', count: documents.length }, ...ordered];
+    if (noneCount > 0) options.push({ value: NO_CATEGORY, label: 'Sin categoría', count: noneCount });
+    return options;
+  }, [documents]);
+
+  // Pipeline: documents → filtro por categoría → búsqueda (useSearch) → orden.
+  const categoryDocuments = useMemo(() => {
+    if (categoryFilter === ALL) return documents;
+    if (categoryFilter === NO_CATEGORY) return documents.filter((d) => !d.category);
+    return documents.filter((d) => d.category === categoryFilter);
+  }, [documents, categoryFilter]);
+
+  const { query, setQuery, filtered } = useSearch(categoryDocuments, ['title', 'category', 'description']);
+
+  const sortedDocuments = useMemo(() => {
+    const list = [...filtered];
+    if (sortBy === 'title') {
+      list.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }));
+    } else {
+      list.sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+    }
+    return list;
+  }, [filtered, sortBy]);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -70,6 +111,13 @@ const DocumentsManager = () => {
   }, []);
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+
+  // Si la categoría seleccionada ya no existe entre las opciones (ej. tras borrar), volvé a "Todas".
+  useEffect(() => {
+    if (categoryFilter !== ALL && !categoryOptions.some((o) => o.value === categoryFilter)) {
+      setCategoryFilter(ALL);
+    }
+  }, [categoryOptions, categoryFilter]);
 
   const openCreate = () => { setEditing(null); setForm(emptyDoc()); setFormOpen(true); };
   const openEdit = (d) => {
@@ -172,19 +220,42 @@ const DocumentsManager = () => {
             value={query}
             onChange={setQuery}
             placeholder="Buscar documento..."
-            count={filtered.length}
+            count={sortedDocuments.length}
             countLabel="documentos"
-          />
+          >
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-9 w-40 rounded-xl border-gray-200 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Recientes</SelectItem>
+                <SelectItem value="title">Nombre (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </SearchBar>
 
-          {filtered.length === 0 ? (
+          {categoryOptions.length > 1 && (
+            <FilterChips
+              options={categoryOptions}
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              className="-mt-2 mb-5"
+            />
+          )}
+
+          {sortedDocuments.length === 0 ? (
             <Card className="border-none shadow-sm bg-white rounded-2xl">
               <CardContent className="p-0">
-                <EmptyState icon={FileStack} title="Sin coincidencias" description="Probá con otro término de búsqueda." />
+                <EmptyState
+                  icon={FileStack}
+                  title="Sin coincidencias"
+                  description={query.trim() ? 'Probá con otro término de búsqueda.' : 'No hay documentos en esta categoría.'}
+                />
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((d, i) => {
+              {sortedDocuments.map((d, i) => {
                 const versionCount = (d.document_versions || []).length;
                 return (
                   <motion.button

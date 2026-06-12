@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FolderKanban, Plus, Loader2, MoreVertical, Pencil, Trash2,
-  CalendarRange, AlertTriangle, CheckCircle2,
+  CalendarRange, AlertTriangle, AlertCircle, ListChecks, TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,20 +30,48 @@ import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import FilterChips from './FilterChips';
 import {
   getProjects, createProject, updateProject, deleteProject,
 } from '@/api/projectsApi';
 import {
-  PROJECT_STATUS_OPTIONS, projectStatusMeta, formatDateShort,
+  PROJECT_STATUS_OPTIONS, projectStatusMeta, formatDateShort, isOverdue,
 } from './projectConstants';
 import ProjectBoard from './ProjectBoard';
 
 const emptyProject = () => ({ name: '', description: '', status: 'activo', start_date: '', end_date: '' });
 
-const taskCounts = (project) => {
+const STATUS_ORDER = { activo: 0, en_pausa: 1, cerrado: 2 };
+
+const projectStats = (project) => {
   const list = project.tasks || [];
+  const total = list.length;
   const done = list.filter((t) => t.status === 'hecho').length;
-  return { done, total: list.length };
+  const inProgress = list.filter((t) => t.status === 'en_progreso').length;
+  const pending = list.filter((t) => t.status === 'pendiente').length;
+  const overdue = list.filter((t) => t.due_date && t.status !== 'hecho' && isOverdue(t.due_date)).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return { total, done, inProgress, pending, overdue, pct };
+};
+
+const StatCard = ({ icon: Icon, label, value, tone }) => {
+  const tones = {
+    primary: 'bg-brand-primary/10 text-brand-primary',
+    amber: 'bg-amber-50 text-amber-600',
+    red: 'bg-red-50 text-red-600',
+    green: 'bg-green-50 text-green-600',
+  };
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+      <div className={`p-2.5 rounded-xl ${tones[tone]} shrink-0`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xl font-bold font-poppins text-brand-dark leading-none">{value}</p>
+        <p className="text-xs text-gray-500 mt-1 truncate">{label}</p>
+      </div>
+    </div>
+  );
 };
 
 const ProjectsManager = () => {
@@ -55,6 +83,9 @@ const ProjectsManager = () => {
   const [error, setError] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('recomendado');
+
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyProject());
@@ -63,7 +94,7 @@ const ProjectsManager = () => {
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { query, setQuery, filtered } = useSearch(projects, ['name', 'description']);
+  const { query, setQuery, filtered: searched } = useSearch(projects, ['name', 'description']);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -81,6 +112,42 @@ const ProjectsManager = () => {
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  // Métricas globales del portafolio.
+  const metrics = useMemo(() => {
+    const all = projects.flatMap((p) => p.tasks || []);
+    const done = all.filter((t) => t.status === 'hecho').length;
+    return {
+      activos: projects.filter((p) => p.status === 'activo').length,
+      pendientes: all.filter((t) => t.status !== 'hecho').length,
+      vencidas: all.filter((t) => t.due_date && t.status !== 'hecho' && isOverdue(t.due_date)).length,
+      avance: all.length ? Math.round((done / all.length) * 100) : 0,
+    };
+  }, [projects]);
+
+  const statusChips = useMemo(() => ([
+    { value: 'all', label: 'Todos', count: projects.length },
+    { value: 'activo', label: 'Activos', count: projects.filter((p) => p.status === 'activo').length },
+    { value: 'en_pausa', label: 'En pausa', count: projects.filter((p) => p.status === 'en_pausa').length },
+    { value: 'cerrado', label: 'Cerrados', count: projects.filter((p) => p.status === 'cerrado').length },
+  ]), [projects]);
+
+  const visible = useMemo(() => {
+    let list = statusFilter === 'all' ? searched : searched.filter((p) => p.status === statusFilter);
+    list = [...list];
+    if (sortBy === 'nombre') {
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+    } else if (sortBy === 'avance') {
+      list.sort((a, b) => projectStats(b).pct - projectStats(a).pct);
+    } else {
+      list.sort((a, b) => {
+        const s = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+        if (s !== 0) return s;
+        return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+      });
+    }
+    return list;
+  }, [searched, statusFilter, sortBy]);
 
   const openCreate = () => { setEditing(null); setForm(emptyProject()); setFormOpen(true); };
   const openEdit = (p) => {
@@ -189,27 +256,49 @@ const ProjectsManager = () => {
         />
       ) : (
         <>
+          {/* Métricas globales */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+            <StatCard icon={FolderKanban} label="Proyectos activos" value={metrics.activos} tone="primary" />
+            <StatCard icon={ListChecks} label="Tareas pendientes" value={metrics.pendientes} tone="amber" />
+            <StatCard icon={AlertCircle} label="Vencidas" value={metrics.vencidas} tone="red" />
+            <StatCard icon={TrendingUp} label="Avance global" value={`${metrics.avance}%`} tone="green" />
+          </div>
+
           <SearchBar
             value={query}
             onChange={setQuery}
             placeholder="Buscar proyecto..."
-            count={filtered.length}
+            count={visible.length}
             countLabel="proyectos"
           />
 
-          {filtered.length === 0 ? (
+          {/* Filtros por estado + orden */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+            <FilterChips options={statusChips} value={statusFilter} onChange={setStatusFilter} className="flex-1" />
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-9 w-full sm:w-44 shrink-0 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recomendado">Orden: recomendado</SelectItem>
+                <SelectItem value="avance">Orden: más avance</SelectItem>
+                <SelectItem value="nombre">Orden: nombre (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {visible.length === 0 ? (
             <Card className="border-none shadow-sm bg-white rounded-2xl">
               <CardContent className="p-0">
-                <EmptyState icon={FolderKanban} title="Sin coincidencias" description="Probá con otro término de búsqueda." />
+                <EmptyState icon={FolderKanban} title="Sin coincidencias" description="Probá con otro filtro o término de búsqueda." />
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((p, i) => {
+              {visible.map((p, i) => {
                 const meta = projectStatusMeta(p.status);
-                const { done, total } = taskCounts(p);
-                const pct = total ? Math.round((done / total) * 100) : 0;
-                const complete = total > 0 && done === total;
+                const st = projectStats(p);
+                const complete = st.total > 0 && st.done === st.total;
                 return (
                   <motion.button
                     key={p.id}
@@ -217,7 +306,7 @@ const ProjectsManager = () => {
                     onClick={() => setSelectedId(p.id)}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: i * 0.03 }}
+                    transition={{ duration: 0.25, delay: Math.min(i, 8) * 0.03 }}
                     className="text-left bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-gray-100 p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -242,8 +331,13 @@ const ProjectsManager = () => {
                       </span>
                     </div>
 
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className={`border ${meta.badge}`}>{meta.label}</Badge>
+                      {st.overdue > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                          <AlertCircle className="w-3 h-3" /> {st.overdue} vencida{st.overdue === 1 ? '' : 's'}
+                        </span>
+                      )}
                     </div>
 
                     {p.description && <p className="text-sm text-gray-500 mt-3 line-clamp-2">{p.description}</p>}
@@ -251,15 +345,19 @@ const ProjectsManager = () => {
                     {/* Progreso */}
                     <div className="mt-4">
                       <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="text-gray-500 flex items-center gap-1">
-                          {complete && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
-                          {total === 0 ? 'Sin tareas' : `${done}/${total} tareas`}
-                        </span>
-                        <span className="font-bold text-brand-dark">{pct}%</span>
+                        <span className="text-gray-500">{st.total === 0 ? 'Sin tareas' : `${st.done}/${st.total} tareas`}</span>
+                        <span className="font-bold text-brand-dark">{st.pct}%</span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${complete ? 'bg-green-500' : 'bg-brand-primary'}`} style={{ width: `${pct}%` }} />
+                        <div className={`h-full rounded-full transition-all ${complete ? 'bg-green-500' : 'bg-brand-primary'}`} style={{ width: `${st.pct}%` }} />
                       </div>
+                      {st.total > 0 && (
+                        <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-500">
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> {st.pending} pend.</span>
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-brand-primary" /> {st.inProgress} en curso</span>
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500" /> {st.done} hechas</span>
+                        </div>
+                      )}
                     </div>
 
                     {(p.start_date || p.end_date) && (

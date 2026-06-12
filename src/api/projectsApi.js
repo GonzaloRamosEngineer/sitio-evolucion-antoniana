@@ -10,16 +10,16 @@ import { supabase } from '@/lib/supabase';
 export const getProjects = async () => {
   return supabase
     .from('projects')
-    .select('*, tasks(id, status)')
+    .select('*, tasks(id, status, due_date)')
     .order('created_at', { ascending: false });
 };
 
 export const createProject = async (payload) => {
-  return supabase.from('projects').insert(payload).select('*, tasks(id, status)').single();
+  return supabase.from('projects').insert(payload).select('*, tasks(id, status, due_date)').single();
 };
 
 export const updateProject = async (id, payload) => {
-  return supabase.from('projects').update(payload).eq('id', id).select('*, tasks(id, status)').single();
+  return supabase.from('projects').update(payload).eq('id', id).select('*, tasks(id, status, due_date)').single();
 };
 
 export const deleteProject = async (id) => {
