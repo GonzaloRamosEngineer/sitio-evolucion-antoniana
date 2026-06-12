@@ -56,8 +56,14 @@ const BenefitsAdmin = () => {
   });
 
   const loadBenefits = async () => {
-    const data = await getBenefits();
-    setBenefits(data);
+    try {
+      const data = await getBenefits();
+      setBenefits(data);
+    } catch (e) {
+      console.error('Error cargando beneficios:', e);
+      setBenefits([]);
+      toast({ variant: 'destructive', title: 'Error al cargar beneficios', description: 'No se pudieron obtener los beneficios.' });
+    }
   };
 
   useEffect(() => {

@@ -1,22 +1,33 @@
 // C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\PartnersPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Plus, ArrowRight, Handshake } from 'lucide-react';
+import { Plus, ArrowRight, Handshake, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
 
 const PartnersPage = () => {
   const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(false);
+      const data = await getPartners();
+      setPartners((data || []).filter((p) => p.estado === 'aprobado'));
+    } catch (e) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPartners = async () => {
-      const loadedPartners = await getPartners();
-      setPartners((loadedPartners || []).filter((p) => p.estado === 'aprobado'));
-    };
-    fetchPartners();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
@@ -69,7 +80,20 @@ const PartnersPage = () => {
       {/* --- CONTENIDO --- */}
       <main className="flex-1 py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          {partners.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-24">
+              <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-red-100">
+              <AlertTriangle className="h-16 w-16 text-red-300 mx-auto mb-4" />
+              <p className="text-xl text-gray-700 font-bold mb-2">No pudimos cargar esta sección.</p>
+              <p className="text-gray-500 mb-6">Revisá tu conexión e intentá nuevamente.</p>
+              <Button onClick={fetchData} variant="outline" className="border-brand-action text-brand-action hover:bg-brand-action hover:text-white font-bold">
+                Reintentar
+              </Button>
+            </div>
+          ) : partners.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-brand-primary/5">
               <Handshake className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <p className="text-xl text-gray-500 font-medium mb-6">

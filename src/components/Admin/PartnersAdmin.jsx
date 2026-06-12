@@ -37,8 +37,14 @@ const PartnersAdmin = () => {
   });
 
   const loadPartners = async () => {
-    const data = await getPartners();
-    setPartners(data);
+    try {
+      const data = await getPartners();
+      setPartners(data);
+    } catch (e) {
+      console.error('Error cargando socios:', e);
+      setPartners([]);
+      toast({ variant: 'destructive', title: 'Error al cargar socios', description: 'No se pudieron obtener los socios.' });
+    }
   };
 
   useEffect(() => {

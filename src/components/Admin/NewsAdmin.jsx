@@ -21,8 +21,14 @@ const NewsAdmin = () => {
   });
 
   const loadNews = async () => {
-    const data = await getNews();
-    setNews(data);
+    try {
+      const data = await getNews();
+      setNews(data);
+    } catch (e) {
+      console.error('Error cargando noticias:', e);
+      setNews([]);
+      toast({ variant: 'destructive', title: 'Error al cargar noticias', description: 'No se pudieron obtener las noticias.' });
+    }
   };
   
   useEffect(() => {

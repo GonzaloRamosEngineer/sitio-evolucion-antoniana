@@ -1,8 +1,8 @@
 // C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\BenefitsPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, Filter, Gift, Tag } from 'lucide-react';
+import { Search, Filter, Gift, Tag, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BenefitCard from '@/components/BenefitCard';
@@ -24,16 +24,27 @@ const BenefitsPage = () => {
   const [filteredBenefits, setFilteredBenefits] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchBenefits = async () => {
-      const loadedBenefits = await getBenefits();
-      const activeBenefits = (loadedBenefits || []).filter((b) => b.estado === 'activo');
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(false);
+      const data = await getBenefits();
+      const activeBenefits = (data || []).filter((b) => b.estado === 'activo');
       setBenefits(activeBenefits);
       setFilteredBenefits(activeBenefits);
-    };
-    fetchBenefits();
+    } catch (e) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     let filtered = benefits;
@@ -132,8 +143,21 @@ const BenefitsPage = () => {
       {/* --- RESULTADOS --- */}
       <main className="flex-1 py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {filteredBenefits.length === 0 ? (
-            <motion.div 
+          {loading ? (
+            <div className="flex justify-center py-24">
+              <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-red-100">
+              <AlertTriangle className="h-16 w-16 text-red-300 mx-auto mb-4" />
+              <p className="text-xl text-gray-700 font-bold mb-2">No pudimos cargar esta sección.</p>
+              <p className="text-gray-500 mb-6">Revisá tu conexión e intentá nuevamente.</p>
+              <Button onClick={fetchData} variant="outline" className="border-brand-action text-brand-action hover:bg-brand-action hover:text-white font-bold">
+                Reintentar
+              </Button>
+            </div>
+          ) : filteredBenefits.length === 0 ? (
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-200"

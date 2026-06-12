@@ -17,7 +17,7 @@ export const getPartners = async () => {
 
   if (error) {
     console.error('Error fetching partners:', error);
-    return [];
+    throw error;
   }
   return data || [];
 };
@@ -133,7 +133,7 @@ export const getBenefits = async () => {
 
   if (error) {
     console.error('Error fetching benefits:', error);
-    return [];
+    throw error;
   }
   return data || [];
 };
@@ -182,7 +182,7 @@ export const getNews = async () => {
 
   if (error) {
     console.error('Error fetching news:', error);
-    return [];
+    throw error;
   }
   return data || [];
 };
