@@ -235,45 +235,55 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
 
       {/* Modal de vista previa */}
       <Dialog open={!!preview} onOpenChange={(o) => { if (!o) closePreview(); }}>
-        <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden">
-          <DialogHeader className="px-5 pt-5 pb-3">
-            <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2 text-base pr-8 truncate">
+        <DialogContent className="max-w-5xl w-screen sm:w-[95vw] h-[100dvh] sm:h-[85vh] p-0 gap-0 flex flex-col rounded-none sm:rounded-lg overflow-hidden">
+          <DialogHeader className="px-4 py-3 border-b border-gray-100 shrink-0 space-y-0">
+            <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2 text-sm sm:text-base min-w-0 pr-16">
               <FileText className="w-4 h-4 text-brand-gold shrink-0" />
               <span className="truncate">{preview?.name}</span>
+              <button
+                type="button"
+                onClick={openInNewTab}
+                title="Abrir en pestaña nueva"
+                className="ml-auto shrink-0 text-gray-400 hover:text-brand-primary p-1"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
             </DialogTitle>
           </DialogHeader>
 
-          {preview?.kind === 'pdf' && (
-            <iframe title={preview.name} src={preview.url} className="w-full h-[75vh] border-t border-gray-100" />
-          )}
+          <div className="flex-1 min-h-0 bg-gray-100">
+            {preview?.kind === 'pdf' && (
+              <iframe title={preview.name} src={preview.url} className="w-full h-full border-0" />
+            )}
 
-          {preview?.kind === 'image' && (
-            <div className="bg-gray-50 border-t border-gray-100 max-h-[75vh] overflow-auto flex items-center justify-center p-4">
-              <img src={preview.url} alt={preview.name} className="max-w-full h-auto rounded-lg" />
-            </div>
-          )}
-
-          {preview?.kind === 'other' && (
-            <div className="border-t border-gray-100 px-6 py-12 text-center">
-              <div className="p-4 rounded-2xl bg-brand-sand text-gray-300 w-fit mx-auto mb-4">
-                <FileQuestion className="w-8 h-8" />
+            {preview?.kind === 'image' && (
+              <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
+                <img src={preview.url} alt={preview.name} className="max-w-full max-h-full object-contain rounded-lg" />
               </div>
-              <p className="font-semibold text-brand-dark">No se puede previsualizar este tipo de archivo</p>
-              <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-                Los documentos de Word, Excel y similares no se ven dentro del navegador. Abrilo en una pestaña nueva o descargalo.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-                <Button variant="outline" onClick={openInNewTab} className="gap-2">
-                  <ExternalLink className="w-4 h-4" /> Abrir en pestaña
-                </Button>
-                <a href={preview.url} download={preview.name}>
-                  <Button className="gap-2 bg-brand-primary hover:bg-brand-dark text-white">
-                    <Download className="w-4 h-4" /> Descargar
+            )}
+
+            {preview?.kind === 'other' && (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                <div className="p-4 rounded-2xl bg-white text-gray-300 mb-4 shadow-sm">
+                  <FileQuestion className="w-8 h-8" />
+                </div>
+                <p className="font-semibold text-brand-dark">No se puede previsualizar este tipo de archivo</p>
+                <p className="text-sm text-gray-500 mt-1 max-w-sm">
+                  Los documentos de Word, Excel y similares no se ven dentro del navegador. Abrilo en una pestaña nueva o descargalo.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
+                  <Button variant="outline" onClick={openInNewTab} className="gap-2 bg-white">
+                    <ExternalLink className="w-4 h-4" /> Abrir en pestaña
                   </Button>
-                </a>
+                  <a href={preview.url} download={preview.name}>
+                    <Button className="gap-2 bg-brand-primary hover:bg-brand-dark text-white">
+                      <Download className="w-4 h-4" /> Descargar
+                    </Button>
+                  </a>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
