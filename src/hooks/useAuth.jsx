@@ -125,17 +125,11 @@ export const AuthProvider = ({ children }) => {
   }, [handleAuthStateChange]);
 
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshUser();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refreshUser]);
+  // NOTA: se quitó el refresco automático en 'visibilitychange'. Disparaba
+  // refreshUser() (setLoading(true)) cada vez que se volvía a la pestaña, lo que
+  // desmontaba las páginas protegidas y hacía perder formularios a medio completar
+  // (alta de noticias/partners). Supabase ya renueva el token por su cuenta
+  // (autoRefreshToken) y notifica vía onAuthStateChange, así que era redundante.
 
   const login = async (email, password) => {
     try {
