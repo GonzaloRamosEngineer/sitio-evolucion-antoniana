@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit, FileText, Image as ImageIcon, Calendar, ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Trash2, Edit, FileText, Image as ImageIcon, Calendar, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,10 +8,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { getNews, addNews, updateNews, deleteNews } from '@/lib/storage';
+import SectionHeader from '@/components/Admin/shared/SectionHeader';
+import SearchBar from '@/components/Admin/shared/SearchBar';
+import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
+import EmptyState from '@/components/Admin/shared/EmptyState';
+import { useSearch } from '@/components/Admin/shared/useSearch';
 
 const NewsAdmin = () => {
   const [news, setNews] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { query, setQuery, filtered: filteredNews } = useSearch(news, ['title']);
   const [editingNews, setEditingNews] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -28,6 +37,8 @@ const NewsAdmin = () => {
       console.error('Error cargando noticias:', e);
       setNews([]);
       toast({ variant: 'destructive', title: 'Error al cargar noticias', description: 'No se pudieron obtener las noticias.' });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -37,7 +48,8 @@ const NewsAdmin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    setIsSubmitting(true);
     try {
         if (editingNews) {
             await updateNews(editingNews.id, formData);
@@ -51,6 +63,8 @@ const NewsAdmin = () => {
         setIsDialogOpen(false);
     } catch (error) {
         toast({ title: "Error", description: "No se pudo procesar la solicitud", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -67,9 +81,14 @@ const NewsAdmin = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.')) {
-      await deleteNews(id);
-      loadNews();
-      toast({ title: "Noticia eliminada", description: "El registro ha sido borrado." });
+      setDeletingId(id);
+      try {
+        await deleteNews(id);
+        loadNews();
+        toast({ title: "Noticia eliminada", description: "El registro ha sido borrado." });
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
 
@@ -82,18 +101,40 @@ const NewsAdmin = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          icon={FileText}
+          title="Gestión de Novedades"
+          description="Publica noticias y actualizaciones para la comunidad."
+        />
+        <ListSkeleton rows={6} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div>
-            <h2 className="text-2xl font-bold text-brand-dark font-poppins">Gestión de Novedades</h2>
-            <p className="text-sm text-gray-500">Publica noticias y actualizaciones para la comunidad.</p>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-md transition-all">
-          <Plus className="mr-2 h-5 w-5" />
-          Nueva Noticia
-        </Button>
-      </div>
+      <SectionHeader
+        icon={FileText}
+        title="Gestión de Novedades"
+        description="Publica noticias y actualizaciones para la comunidad."
+        actions={
+          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva novedad
+          </Button>
+        }
+      />
+
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        placeholder="Buscar por título..."
+        count={filteredNews.length}
+        countLabel={filteredNews.length === 1 ? 'noticia' : 'noticias'}
+      />
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
@@ -165,10 +206,11 @@ const NewsAdmin = () => {
             </div>
 
             <DialogFooter className="pt-6 gap-3">
-              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-gray-500 font-bold">
+              <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => setIsDialogOpen(false)} className="text-gray-500 font-bold">
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-brand-action hover:bg-red-800 text-white font-bold px-8 rounded-xl shadow-lg">
+              <Button type="submit" disabled={isSubmitting} className="bg-brand-action hover:bg-red-800 text-white font-bold px-8 rounded-xl shadow-lg">
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {editingNews ? 'Guardar Cambios' : 'Publicar Ahora'}
               </Button>
             </DialogFooter>
@@ -176,6 +218,29 @@ const NewsAdmin = () => {
         </DialogContent>
       </Dialog>
 
+      {filteredNews.length === 0 ? (
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          {news.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Todavía no hay noticias publicadas"
+              description="Publicá la primera novedad para que aparezca en la web."
+              action={
+                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva novedad
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Search}
+              title="Sin resultados"
+              description={`No se encontraron noticias para "${query}". Probá con otro término.`}
+            />
+          )}
+        </div>
+      ) : (
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -187,14 +252,7 @@ const NewsAdmin = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {news.length === 0 ? (
-                <tr>
-                  <td colSpan="3" className="px-6 py-12 text-center text-gray-400 italic">
-                    No hay noticias publicadas todavía.
-                  </td>
-                </tr>
-              ) : (
-                news.map((item, index) => (
+              {filteredNews.map((item, index) => (
                   <motion.tr
                     key={item.id}
                     initial={{ opacity: 0 }}
@@ -238,20 +296,21 @@ const NewsAdmin = () => {
                         <Button
                           size="icon"
                           variant="ghost"
+                          disabled={deletingId === item.id}
                           className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm border border-gray-100"
                           onClick={() => handleDelete(item.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     </td>
                   </motion.tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };

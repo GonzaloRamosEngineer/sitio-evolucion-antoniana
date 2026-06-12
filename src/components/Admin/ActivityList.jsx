@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -12,17 +12,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import SectionHeader from '@/components/Admin/shared/SectionHeader';
+import SearchBar from '@/components/Admin/shared/SearchBar';
+import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
+import EmptyState from '@/components/Admin/shared/EmptyState';
+import { useSearch } from '@/components/Admin/shared/useSearch';
 import { useActivities } from '@/hooks/useActivities';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  Plus, Edit3, Trash2, Loader2, AlertTriangle, 
-  Calendar, Clock, Users, MapPin, Eye, EyeOff, 
-  CheckCircle2, XCircle, ImageOff, ExternalLink,
-  Target
+import {
+  Plus, Edit3, Trash2, AlertTriangle,
+  Calendar, Clock, MapPin, EyeOff,
+  CheckCircle2, XCircle, ImageOff, Target, Search
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const ActivityList = ({ onAddRequest }) => {
   const { activities, deleteActivity, loading: activitiesHookLoading, error: activitiesError, refreshActivities } = useActivities();
@@ -31,9 +35,10 @@ const ActivityList = ({ onAddRequest }) => {
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const { query, setQuery, filtered } = useSearch(activities, ['title', 'description', 'status']);
 
   useEffect(() => {
-    if (!authLoading) { 
+    if (!authLoading) {
       const hasLoaded = sessionStorage.getItem('admin_activities_loaded');
       if (!hasLoaded || activities.length === 0) {
         refreshActivities();
@@ -65,7 +70,7 @@ const ActivityList = ({ onAddRequest }) => {
         description: `"${activityToDelete.title}" ya no está disponible.`,
         className: "bg-green-600 text-white border-none"
       });
-      refreshActivities(); 
+      refreshActivities();
     } catch (error) {
       toast({
         title: "Error al eliminar",
@@ -106,40 +111,68 @@ const ActivityList = ({ onAddRequest }) => {
         return <Badge variant="secondary" className={common}>{status || 'Sin Estado'}</Badge>;
     }
   };
-  
+
+  const sectionHeader = (
+    <SectionHeader
+      icon={Calendar}
+      title="Actividades"
+      description="Gestioná el cronograma de actividades de la fundación."
+      actions={
+        <Button onClick={onAddRequest} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+          <Plus className="w-4 h-4 mr-2" />
+          Nueva actividad
+        </Button>
+      }
+    />
+  );
+
   const showInitialLoader = authLoading || (activitiesHookLoading && (activities.length === 0 && !sessionStorage.getItem('admin_activities_loaded')));
 
   if (showInitialLoader) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-brand-primary" />
-        <p className="text-gray-500 font-medium animate-pulse">Sincronizando cronograma...</p>
+      <div>
+        {sectionHeader}
+        <ListSkeleton rows={6} />
       </div>
     );
   }
 
   if (activitiesError) {
     return (
-      <Card className="border-red-100 bg-red-50/50 rounded-3xl overflow-hidden shadow-lg">
-        <CardContent className="flex flex-col items-center py-12 text-center">
-            <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-            <h3 className="text-xl font-bold text-red-800">No pudimos cargar las actividades</h3>
-            <p className="text-red-600/80 max-w-sm mt-2">
-                Ocurrió un error al intentar conectar con el servidor de contenidos.
-            </p>
-            <Button onClick={refreshActivities} className="mt-6 bg-red-600 hover:bg-red-700 text-white rounded-xl px-8">
+      <div>
+        {sectionHeader}
+        <Card className="border-red-100 bg-red-50/50 rounded-2xl shadow-sm overflow-hidden">
+          <EmptyState
+            icon={AlertTriangle}
+            title="No pudimos cargar las actividades"
+            description="Ocurrió un error al intentar conectar con el servidor de contenidos."
+            action={
+              <Button onClick={refreshActivities} className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl px-8">
                 Intentar de nuevo
-            </Button>
-        </CardContent>
-      </Card>
+              </Button>
+            }
+          />
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div>
+      {sectionHeader}
+
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        placeholder="Buscar por título, descripción o estado..."
+        count={filtered.length}
+        countLabel="actividades"
+      />
+
       {activities && activities.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6">
-          {activities.map((activity, index) => (
+        filtered.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6">
+            {filtered.map((activity, index) => (
             <motion.div
               key={activity.id}
               initial={{ opacity: 0, y: 20 }}
@@ -151,9 +184,9 @@ const ActivityList = ({ onAddRequest }) => {
                   {/* Imagen / Miniatura */}
                   <div className="lg:w-1/3 aspect-video lg:aspect-auto bg-gray-100 relative overflow-hidden">
                     {activity.image_url ? (
-                      <img 
+                      <img
                         alt={activity.title}
-                        src={activity.image_url} 
+                        src={activity.image_url}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
@@ -181,7 +214,7 @@ const ActivityList = ({ onAddRequest }) => {
                             {getStatusBadge(activity.status)}
                         </div>
                       </div>
-                      
+
                       {/* Cupos como KPI circular/minimalista */}
                       <div className="bg-brand-sand px-4 py-2 rounded-2xl border border-brand-primary/10 flex items-center gap-3">
                         <div className="p-2 bg-white rounded-lg text-brand-primary shadow-sm">
@@ -210,7 +243,7 @@ const ActivityList = ({ onAddRequest }) => {
                             <p className="text-xs font-bold text-brand-dark">{formatDate(activity.date)}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
                             <Clock size={14} />
@@ -255,21 +288,30 @@ const ActivityList = ({ onAddRequest }) => {
                 </div>
               </Card>
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="border-none shadow-sm bg-white rounded-2xl">
+            <EmptyState
+              icon={Search}
+              title="Sin resultados"
+              description={`No encontramos actividades que coincidan con "${query}".`}
+            />
+          </Card>
+        )
       ) : (
-        <Card className="border-none shadow-xl bg-white rounded-[2rem] p-12 text-center">
-            <div className="bg-brand-sand w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Calendar className="w-10 h-10 text-brand-primary/40" />
-            </div>
-            <h3 className="text-2xl font-bold text-brand-dark">Sin actividades activas</h3>
-            <p className="text-gray-500 max-w-xs mx-auto mt-2">
-                Parece que todavía no has creado ninguna actividad para la fundación.
-            </p>
-            <Button onClick={onAddRequest} className="mt-8 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 px-8 rounded-xl shadow-lg">
-                <Plus className="w-5 h-5 mr-2" />
+        <Card className="border-none shadow-sm bg-white rounded-2xl">
+          <EmptyState
+            icon={Calendar}
+            title="Sin actividades activas"
+            description="Parece que todavía no has creado ninguna actividad para la fundación."
+            action={
+              <Button onClick={onAddRequest} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl px-8">
+                <Plus className="w-4 h-4 mr-2" />
                 Crear Mi Primera Actividad
-            </Button>
+              </Button>
+            }
+          />
         </Card>
       )}
 

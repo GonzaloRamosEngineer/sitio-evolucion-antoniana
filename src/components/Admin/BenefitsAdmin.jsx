@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Plus, Trash2, Edit, Tag, Image as ImageIcon, 
-  ArrowUpDown, Calendar, CheckCircle2, AlertCircle,
-  Layers, Filter
+import {
+  Plus, Trash2, Edit, Tag, Image as ImageIcon,
+  ArrowUpDown, CheckCircle2, AlertCircle,
+  Search, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,8 +12,7 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription, 
-  DialogFooter, 
-  DialogTrigger 
+  DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +27,11 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { getBenefits, addBenefit, updateBenefit, deleteBenefit } from '@/lib/storage';
+import SectionHeader from '@/components/Admin/shared/SectionHeader';
+import SearchBar from '@/components/Admin/shared/SearchBar';
+import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
+import EmptyState from '@/components/Admin/shared/EmptyState';
+import { useSearch } from '@/components/Admin/shared/useSearch';
 
 const categories = [
   { value: 'educacion', label: 'Educación' },
@@ -42,7 +46,11 @@ const categories = [
 
 const BenefitsAdmin = () => {
   const [benefits, setBenefits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { query, setQuery, filtered: filteredBenefits } = useSearch(benefits, ['titulo', 'categoria']);
   const [editingBenefit, setEditingBenefit] = useState(null);
   const [formData, setFormData] = useState({
     titulo: '',
@@ -63,6 +71,8 @@ const BenefitsAdmin = () => {
       console.error('Error cargando beneficios:', e);
       setBenefits([]);
       toast({ variant: 'destructive', title: 'Error al cargar beneficios', description: 'No se pudieron obtener los beneficios.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,6 +87,7 @@ const BenefitsAdmin = () => {
       orden: Number.isFinite(Number(formData.orden)) ? Number(formData.orden) : 1000,
     };
 
+    setIsSubmitting(true);
     try {
       if (editingBenefit) {
         await updateBenefit(editingBenefit.id, payload);
@@ -95,11 +106,13 @@ const BenefitsAdmin = () => {
       loadBenefits();
       setIsDialogOpen(false);
     } catch (err) {
-      toast({ 
-        title: 'Error', 
-        description: 'Hubo un problema al guardar el beneficio.', 
-        variant: 'destructive' 
+      toast({
+        title: 'Error',
+        description: 'Hubo un problema al guardar el beneficio.',
+        variant: 'destructive'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -120,12 +133,17 @@ const BenefitsAdmin = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este beneficio? Esta acción es permanente.')) {
-      await deleteBenefit(id);
-      loadBenefits();
-      toast({ 
-        title: 'Beneficio eliminado', 
-        description: 'El registro ha sido borrado de la base de datos.' 
-      });
+      setDeletingId(id);
+      try {
+        await deleteBenefit(id);
+        loadBenefits();
+        toast({
+          title: 'Beneficio eliminado',
+          description: 'El registro ha sido borrado de la base de datos.'
+        });
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
 
@@ -147,24 +165,40 @@ const BenefitsAdmin = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          icon={Tag}
+          title="Gestión de Beneficios"
+          description="Administra los convenios y descuentos para la red solidaria."
+        />
+        <ListSkeleton rows={6} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* HEADER DE SECCIÓN */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-3">
-            <div className="bg-brand-sand p-2 rounded-xl">
-                <Tag className="w-6 h-6 text-brand-primary" />
-            </div>
-            <div>
-                <h2 className="text-2xl font-bold text-brand-dark font-poppins">Gestión de Beneficios</h2>
-                <p className="text-sm text-gray-500">Administra los convenios y descuentos para la red solidaria.</p>
-            </div>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-md transition-all">
-          <Plus className="mr-2 h-5 w-5" />
-          Nuevo Beneficio
-        </Button>
-      </div>
+      <SectionHeader
+        icon={Tag}
+        title="Gestión de Beneficios"
+        description="Administra los convenios y descuentos para la red solidaria."
+        actions={
+          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo beneficio
+          </Button>
+        }
+      />
+
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        placeholder="Buscar por título o categoría..."
+        count={filteredBenefits.length}
+        countLabel={filteredBenefits.length === 1 ? 'beneficio' : 'beneficios'}
+      />
 
       {/* DIALOGO DE EDICIÓN / CREACIÓN */}
       <Dialog
@@ -298,6 +332,7 @@ const BenefitsAdmin = () => {
               <Button
                 type="button"
                 variant="ghost"
+                disabled={isSubmitting}
                 onClick={() => {
                   resetForm();
                   setIsDialogOpen(false);
@@ -306,7 +341,8 @@ const BenefitsAdmin = () => {
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-10 rounded-xl shadow-lg transition-all">
+              <Button type="submit" disabled={isSubmitting} className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-10 rounded-xl shadow-lg transition-all">
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {editingBenefit ? 'Actualizar Beneficio' : 'Crear Beneficio'}
               </Button>
             </DialogFooter>
@@ -315,6 +351,29 @@ const BenefitsAdmin = () => {
       </Dialog>
 
       {/* TABLA DE CONTENIDO */}
+      {filteredBenefits.length === 0 ? (
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          {benefits.length === 0 ? (
+            <EmptyState
+              icon={Tag}
+              title="Todavía no hay beneficios cargados"
+              description="Creá el primer convenio o descuento para la red solidaria."
+              action={
+                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo beneficio
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Search}
+              title="Sin resultados"
+              description={`No se encontraron beneficios para "${query}". Probá con otro término.`}
+            />
+          )}
+        </div>
+      ) : (
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -328,14 +387,7 @@ const BenefitsAdmin = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {benefits.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-400 italic">
-                    No hay beneficios registrados en la base de datos.
-                  </td>
-                </tr>
-              ) : (
-                benefits.sort((a, b) => (a.orden || 1000) - (b.orden || 1000)).map((benefit, index) => (
+              {[...filteredBenefits].sort((a, b) => (a.orden || 1000) - (b.orden || 1000)).map((benefit, index) => (
                   <motion.tr
                     key={benefit.id}
                     initial={{ opacity: 0 }}
@@ -398,20 +450,21 @@ const BenefitsAdmin = () => {
                         <Button
                           size="icon"
                           variant="ghost"
+                          disabled={deletingId === benefit.id}
                           className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm"
                           onClick={() => handleDelete(benefit.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingId === benefit.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     </td>
                   </motion.tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };

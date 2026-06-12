@@ -1,16 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useActivities } from '@/hooks/useActivities';
 import { useToast } from '@/components/ui/use-toast';
-import { 
-  Loader2, AlertTriangle, MailWarning, UserCheck, 
-  Users, CalendarDays, Clock, User, Mail, Info 
+import {
+  AlertTriangle, MailWarning, UserCheck,
+  CalendarDays, Clock, User, Mail, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import SectionHeader from '@/components/Admin/shared/SectionHeader';
+import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
+import EmptyState from '@/components/Admin/shared/EmptyState';
 
 const PendingConfirmationsList = () => {
   const { getPendingConfirmations, loading, error } = useActivities();
@@ -43,62 +46,62 @@ const PendingConfirmationsList = () => {
     }
   };
 
+  const sectionHeader = (
+    <SectionHeader
+      icon={MailWarning}
+      title="Validaciones Pendientes"
+      description="Usuarios que aún no han confirmado el enlace de su correo electrónico."
+      actions={
+        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-4 py-1 rounded-full font-bold">
+          {pendingRegistrations.length} Por confirmar
+        </Badge>
+      }
+    />
+  );
+
   if (loading && pendingRegistrations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
-        <p className="text-gray-500 font-medium animate-pulse font-sans">Sincronizando pendientes...</p>
+      <div className="font-sans">
+        {sectionHeader}
+        <ListSkeleton rows={6} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="border-none bg-red-50 rounded-[2rem] shadow-lg">
-        <CardContent className="flex flex-col items-center py-12 text-center">
-            <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-            <h3 className="text-xl font-bold text-red-800">Error de conexión</h3>
-            <p className="text-red-600/70 max-w-xs mt-2">{error.message || "No pudimos traer los datos."}</p>
-            <Button onClick={fetchPending} className="mt-6 bg-red-600 hover:bg-red-700 text-white rounded-xl">
-                Reintentar
-            </Button>
-        </CardContent>
-      </Card>
+      <div className="font-sans">
+        {sectionHeader}
+        <Card className="border-none shadow-sm bg-white rounded-2xl">
+          <CardContent className="p-0">
+            <EmptyState
+              icon={AlertTriangle}
+              title="Error de conexión"
+              description={error.message || "No pudimos traer los datos."}
+              action={
+                <Button onClick={fetchPending} className="bg-brand-primary hover:bg-brand-dark text-white rounded-xl">
+                  Reintentar
+                </Button>
+              }
+            />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
-  
-  return (
-    <div className="space-y-6 font-sans">
-      {/* HEADER INFORMATIVO */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-amber-50 p-2 rounded-xl">
-            <MailWarning className="w-6 h-6 text-amber-500" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-brand-dark font-poppins">Validaciones Pendientes</h2>
-            <p className="text-sm text-gray-500">Usuarios que aún no han confirmado el enlace de su correo electrónico.</p>
-          </div>
-        </div>
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-4 py-1 rounded-full font-bold">
-            {pendingRegistrations.length} Por confirmar
-        </Badge>
-      </div>
 
-      <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden bg-white">
-        <CardContent className="p-8">
+  return (
+    <div className="font-sans">
+      {sectionHeader}
+
+      <Card className="border-none shadow-sm rounded-2xl overflow-hidden bg-white">
+        <CardContent className={pendingRegistrations.length === 0 ? 'p-0' : 'p-6 md:p-8'}>
           {pendingRegistrations.length === 0 ? (
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
-            >
-              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <UserCheck className="w-10 h-10 text-green-500" />
-              </div>
-              <h3 className="text-xl font-bold text-brand-dark">¡Todo confirmado!</h3>
-              <p className="text-gray-500 mt-2">No hay registros pendientes de validación en este momento.</p>
-            </motion.div>
+            <EmptyState
+              icon={UserCheck}
+              title="¡Todo confirmado!"
+              description="No hay registros pendientes de validación en este momento."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <AnimatePresence>
@@ -141,7 +144,7 @@ const PendingConfirmationsList = () => {
                                 {reg.activity?.title || 'Actividad no definida'}
                             </p>
                         </div>
-                        
+
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                             <Mail className="w-4 h-4 text-gray-400" />
                             <span className="truncate">{reg.users ? reg.users.email : reg.guest_email}</span>
@@ -159,8 +162,8 @@ const PendingConfirmationsList = () => {
           )}
         </CardContent>
       </Card>
-      
-      <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+
+      <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-6">
         Sistema de validación automática por Token
       </p>
     </div>

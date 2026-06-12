@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Check, X, Trash2, ExternalLink, Plus, Edit, 
-  Handshake, Mail, Globe, Clock, AlertCircle, 
-  CheckCircle2, ArrowUpDown, Search, Image as ImageIcon 
+import {
+  Trash2, ExternalLink, Plus, Edit,
+  Handshake, Mail, Globe, AlertCircle,
+  CheckCircle2, ArrowUpDown, Search, Loader2, Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, 
-  DialogDescription, DialogFooter, DialogTrigger 
+  DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,11 +19,19 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { getPartners, updatePartner, deletePartner, addPartner } from '@/lib/storage';
+import SectionHeader from '@/components/Admin/shared/SectionHeader';
+import SearchBar from '@/components/Admin/shared/SearchBar';
+import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
+import EmptyState from '@/components/Admin/shared/EmptyState';
+import { useSearch } from '@/components/Admin/shared/useSearch';
 
 const PartnersAdmin = () => {
   const [partners, setPartners] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { query, setQuery, filtered: filteredPartners } = useSearch(partners, ['nombre', 'contacto_email']);
   const [editingPartner, setEditingPartner] = useState(null);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -44,6 +52,8 @@ const PartnersAdmin = () => {
       console.error('Error cargando socios:', e);
       setPartners([]);
       toast({ variant: 'destructive', title: 'Error al cargar socios', description: 'No se pudieron obtener los socios.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,6 +80,7 @@ const PartnersAdmin = () => {
       orden: Number.isFinite(Number(formData.orden)) ? Number(formData.orden) : 1000,
     };
 
+    setIsSubmitting(true);
     try {
       if (editingPartner) {
         await updatePartner(editingPartner.id, payload);
@@ -83,6 +94,8 @@ const PartnersAdmin = () => {
       setIsDialogOpen(false);
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo procesar la solicitud.', variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -115,9 +128,14 @@ const PartnersAdmin = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este aliado? Esta acción es permanente.')) {
-      await deletePartner(id);
-      loadPartners();
-      toast({ title: 'Partner eliminado', description: 'El registro ha sido borrado.' });
+      setDeletingId(id);
+      try {
+        await deletePartner(id);
+        loadPartners();
+        toast({ title: 'Partner eliminado', description: 'El registro ha sido borrado.' });
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
 
@@ -125,40 +143,40 @@ const PartnersAdmin = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const filteredPartners = partners.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.contacto_email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          icon={Handshake}
+          title="Gestión de Partners"
+          description="Administra las empresas y organizaciones aliadas."
+        />
+        <ListSkeleton rows={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* HEADER DE SECCIÓN */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="bg-brand-sand p-2 rounded-xl">
-            <Handshake className="w-6 h-6 text-brand-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-brand-dark font-poppins">Gestión de Partners</h2>
-            <p className="text-sm text-gray-500">Administra las empresas y organizaciones aliadas.</p>
-          </div>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl shadow-md transition-all">
-          <Plus className="mr-2 h-5 w-5" />
-          Nuevo Partner
-        </Button>
-      </div>
+      <SectionHeader
+        icon={Handshake}
+        title="Gestión de Partners"
+        description="Administra las empresas y organizaciones aliadas."
+        actions={
+          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo partner
+          </Button>
+        }
+      />
 
-      {/* BUSCADOR */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input 
-            placeholder="Buscar por nombre o email..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 border-gray-200 focus:border-brand-primary rounded-xl bg-white shadow-sm"
-        />
-      </div>
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        placeholder="Buscar por nombre o email..."
+        count={filteredPartners.length}
+        countLabel={filteredPartners.length === 1 ? 'partner' : 'partners'}
+      />
 
       <Dialog
         open={isDialogOpen}
@@ -277,10 +295,11 @@ const PartnersAdmin = () => {
             </div>
 
             <DialogFooter className="pt-6 gap-3">
-              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="font-bold text-gray-400 hover:text-brand-dark">
+              <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => setIsDialogOpen(false)} className="font-bold text-gray-400 hover:text-brand-dark">
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-10 rounded-xl shadow-lg transition-all h-12">
+              <Button type="submit" disabled={isSubmitting} className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-10 rounded-xl shadow-lg transition-all h-12">
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {editingPartner ? 'Actualizar Registro' : 'Registrar Aliado'}
               </Button>
             </DialogFooter>
@@ -289,6 +308,29 @@ const PartnersAdmin = () => {
       </Dialog>
 
       {/* TABLA DE CONTENIDO */}
+      {filteredPartners.length === 0 ? (
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          {partners.length === 0 ? (
+            <EmptyState
+              icon={Handshake}
+              title="Todavía no hay partners registrados"
+              description="Registrá la primera organización aliada para que aparezca en el sitio."
+              action={
+                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo partner
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Search}
+              title="Sin resultados"
+              description={`No se encontraron partners para "${query}". Probá con otro término.`}
+            />
+          )}
+        </div>
+      ) : (
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -302,14 +344,7 @@ const PartnersAdmin = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredPartners.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-400 italic">
-                    No se encontraron aliados registrados.
-                  </td>
-                </tr>
-              ) : (
-                filteredPartners.sort((a, b) => (a.orden || 1000) - (b.orden || 1000)).map((partner, index) => (
+              {[...filteredPartners].sort((a, b) => (a.orden || 1000) - (b.orden || 1000)).map((partner, index) => (
                   <motion.tr
                     key={partner.id}
                     initial={{ opacity: 0, y: 5 }}
@@ -372,18 +407,18 @@ const PartnersAdmin = () => {
                         <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white border border-gray-100 shadow-sm" onClick={() => handleEdit(partner)}>
                           <Edit size={16} />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm" onClick={() => handleDelete(partner.id)}>
-                          <Trash2 size={16} />
+                        <Button size="icon" variant="ghost" disabled={deletingId === partner.id} className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm" onClick={() => handleDelete(partner.id)}>
+                          {deletingId === partner.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </Button>
                       </div>
                     </td>
                   </motion.tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };
