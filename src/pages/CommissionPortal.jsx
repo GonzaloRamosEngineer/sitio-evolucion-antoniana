@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, FolderKanban, FileStack, ExternalLink, Construction } from 'lucide-react';
+import { Briefcase, FolderKanban, FileStack, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import EmptyState from '@/components/Admin/shared/EmptyState';
 import ProjectsManager from '@/components/Comision/ProjectsManager';
+import DocumentsManager from '@/components/Comision/DocumentsManager';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
@@ -124,19 +124,9 @@ const CommissionPortal = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'projects' ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                  <ProjectsManager />
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                  <EmptyState
-                    icon={Construction}
-                    title="Gestor de documentación — próximamente"
-                    description="Acá vas a subir y versionar la documentación de la fundación (estatuto, balances, convenios), conservando el historial de cada versión."
-                  />
-                </div>
-              )}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                {activeTab === 'projects' ? <ProjectsManager /> : <DocumentsManager />}
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
