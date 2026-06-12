@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar, Mail } from 'lucide-react';
+import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar, Mail, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -255,8 +255,5 @@ const LegalDocuments = () => {
     </motion.div>
   );
 };
-
-// Importamos ArrowRight que faltaba en el destructuring original
-import { ArrowRight } from 'lucide-react'; 
 
 export default LegalDocuments;

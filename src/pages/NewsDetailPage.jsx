@@ -12,6 +12,7 @@ import {
   Check,
   Calendar,
 } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { getNewsBySlug, getNewsById } from "@/lib/storage";
 
@@ -229,7 +230,7 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
                       prose-blockquote:border-brand-primary prose-blockquote:bg-brand-sand prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic
                       prose-img:rounded-2xl prose-img:shadow-lg
                     "
-                    dangerouslySetInnerHTML={{ __html: item.body_md }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.body_md) }}
                   />
                 )}
 

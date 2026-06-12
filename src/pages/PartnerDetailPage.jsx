@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info, CheckCircle2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { getPartners } from '@/lib/storage';
 
@@ -218,7 +219,7 @@ const PartnerDetailPage = () => {
                                 prose-li:marker:text-brand-gold
                             "
                             dangerouslySetInnerHTML={{
-                            __html: partner.colaboracion_detalle,
+                            __html: DOMPurify.sanitize(partner.colaboracion_detalle),
                             }}
                         />
                         ) : (
