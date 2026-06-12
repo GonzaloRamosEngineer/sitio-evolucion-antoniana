@@ -6,6 +6,7 @@ import { Briefcase, FolderKanban, FileStack, ExternalLink, Construction } from '
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import EmptyState from '@/components/Admin/shared/EmptyState';
+import ProjectsManager from '@/components/Comision/ProjectsManager';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
@@ -123,21 +124,19 @@ const CommissionPortal = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                {activeTab === 'projects' ? (
-                  <EmptyState
-                    icon={Construction}
-                    title="Gestor de proyectos — próximamente"
-                    description="Acá vas a poder crear proyectos, organizar tareas en un tablero, asignar responsables y seguir los pendientes de cada frente abierto."
-                  />
-                ) : (
+              {activeTab === 'projects' ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                  <ProjectsManager />
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                   <EmptyState
                     icon={Construction}
                     title="Gestor de documentación — próximamente"
                     description="Acá vas a subir y versionar la documentación de la fundación (estatuto, balances, convenios), conservando el historial de cada versión."
                   />
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
