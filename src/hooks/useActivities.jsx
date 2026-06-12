@@ -71,14 +71,12 @@ export const useActivities = () => {
 
   const invokeSendConfirmationEmail = async (registrationDetails) => {
     try {
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('send-activity-confirmation', {
+      const { error: functionError } = await supabase.functions.invoke('send-activity-confirmation', {
         body: registrationDetails,
       });
 
       if (functionError) {
         console.error('Error al invocar send-activity-confirmation:', functionError);
-      } else {
-        console.log('Función send-activity-confirmation invocada con éxito:', functionData);
       }
     } catch (e) {
       console.error('Excepción al invocar send-activity-confirmation:', e);

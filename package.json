@@ -4,9 +4,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "node ./node_modules/vite/bin/vite.js",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "node ./node_modules/vite/bin/vite.js preview"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
