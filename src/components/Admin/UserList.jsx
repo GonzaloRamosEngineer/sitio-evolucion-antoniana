@@ -30,13 +30,16 @@ import {
   UserCog,
   Briefcase,
   GraduationCap,
+  MailWarning,
+  Copy,
 } from 'lucide-react';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
-import { USER_ROLES, createUser, updateUserRole } from '@/api/userApi';
+import FilterChips from '@/components/Comision/FilterChips';
+import { USER_ROLES, createUser, updateUserRole, verifyUser, resendVerificationEmail } from '@/api/userApi';
 
 // Presentación visual de cada rol (label + estilo + icono).
 const ROLE_META = {
@@ -62,10 +65,33 @@ const UserList = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
 
+  // Filtro por rol
+  const [roleFilter, setRoleFilter] = useState('all');
+
+  const roleFilteredUsers = roleFilter === 'all'
+    ? filteredUsers
+    : filteredUsers.filter((u) => (u.role || 'user') === roleFilter);
+
+  const roleChipOptions = [
+    { value: 'all', label: 'Todos', count: filteredUsers.length },
+    ...Object.entries(ROLE_META).map(([value, meta]) => ({
+      value,
+      label: meta.label,
+      count: filteredUsers.filter((u) => (u.role || 'user') === value).length,
+    })),
+  ];
+
   // Edición de rol
   const [roleUser, setRoleUser] = useState(null); // usuario seleccionado
   const [newRole, setNewRole] = useState('');
   const [savingRole, setSavingRole] = useState(false);
+
+  // Verificación de email
+  const [verifyDialog, setVerifyDialog] = useState(null); // usuario seleccionado
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [emailSent, setEmailSent] = useState(''); // email al que se envió
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -158,6 +184,61 @@ const UserList = () => {
     }
   };
 
+  const closeVerifyDialog = () => {
+    if (verifyLoading) return;
+    setVerifyDialog(null);
+    setGeneratedLink('');
+    setEmailSent('');
+    setLinkCopied(false);
+  };
+
+  const handleManualVerify = async () => {
+    if (!verifyDialog || verifyLoading) return;
+    setVerifyLoading(true);
+    try {
+      const { error } = await verifyUser(verifyDialog.id);
+      if (error) {
+        toast({ title: 'Error al verificar', description: error.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Usuario verificado', description: `${verifyDialog.name || 'El usuario'} fue verificado correctamente.` });
+      closeVerifyDialog();
+      fetchUsers();
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleGetVerificationLink = async () => {
+    if (!verifyDialog || verifyLoading) return;
+    setVerifyLoading(true);
+    try {
+      const { data, error } = await resendVerificationEmail(verifyDialog.id);
+      if (error) {
+        toast({ title: 'Error al enviar verificación', description: error.message, variant: 'destructive' });
+        return;
+      }
+      if (data.sent) {
+        // Resend configurado: email enviado exitosamente
+        setEmailSent(data.email);
+      } else {
+        // Sin Resend o fallo de envío: mostrar link para copiar manualmente
+        setGeneratedLink(data.link);
+        if (data.emailError) {
+          toast({ title: 'No se pudo enviar el email', description: `${data.emailError}. Podés copiar el link manualmente.`, variant: 'destructive' });
+        }
+      }
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(generatedLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
   return (
     <div>
       <SectionHeader
@@ -189,17 +270,24 @@ const UserList = () => {
             value={query}
             onChange={setQuery}
             placeholder="Buscar por nombre, email o DNI..."
-            count={filteredUsers.length}
+            count={roleFilteredUsers.length}
             countLabel="usuarios"
+          />
+
+          <FilterChips
+            options={roleChipOptions}
+            value={roleFilter}
+            onChange={setRoleFilter}
+            className="mb-4"
           />
 
           <Card className="border-none shadow-sm bg-white rounded-2xl overflow-hidden">
             <CardContent className="p-0">
-              {filteredUsers.length === 0 ? (
+              {roleFilteredUsers.length === 0 ? (
                 <EmptyState
                   icon={Users}
                   title="No se encontraron usuarios"
-                  description={query ? 'Probá con otro término de búsqueda.' : 'Todavía no hay usuarios registrados.'}
+                  description={query || roleFilter !== 'all' ? 'Probá con otro término de búsqueda o filtro.' : 'Todavía no hay usuarios registrados.'}
                 />
               ) : (
                 <div className="overflow-x-auto">
@@ -214,7 +302,7 @@ const UserList = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredUsers.map((u) => {
+                      {roleFilteredUsers.map((u) => {
                         const meta = roleMeta(u.role);
                         const RoleIcon = meta.icon;
                         return (
@@ -278,14 +366,26 @@ const UserList = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openRoleDialog(u)}
-                              className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary/5 gap-1.5"
-                            >
-                              <UserCog className="w-4 h-4" /> Rol
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              {!u.is_verified && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setVerifyDialog(u)}
+                                  className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 gap-1.5"
+                                >
+                                  <MailWarning className="w-4 h-4" /> Verificar
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openRoleDialog(u)}
+                                className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary/5 gap-1.5"
+                              >
+                                <UserCog className="w-4 h-4" /> Rol
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );})}
@@ -373,6 +473,80 @@ const UserList = () => {
             </Button>
             <Button onClick={handleSaveRole} disabled={savingRole} className="bg-brand-primary hover:bg-brand-dark text-white">
               {savingRole ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Guardando...</> : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* --- Dialog: verificar email --- */}
+      <Dialog open={!!verifyDialog} onOpenChange={(open) => { if (!open) closeVerifyDialog(); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-poppins text-brand-dark">Verificación de email</DialogTitle>
+            <DialogDescription>
+              {verifyDialog?.name || verifyDialog?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          {emailSent ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              </div>
+              <p className="font-semibold text-brand-dark">Email enviado</p>
+              <p className="text-sm text-gray-500">
+                Se envió un link de acceso a <span className="font-medium">{emailSent}</span>.
+                Al hacer clic quedará logueado y su cuenta se verificará automáticamente.
+              </p>
+            </div>
+          ) : generatedLink ? (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Compartí este link con el usuario. Al hacer clic quedará logueado y
+                su cuenta se verificará automáticamente.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input value={generatedLink} readOnly className="text-xs font-mono" />
+                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link">
+                  {linkCopied ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400">
+                El link es de un solo uso y expira en 1 hora.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Este usuario aún no confirmó su email. Podés verificarlo manualmente
+                o enviarle un email con un link de acceso.
+              </p>
+              <Button
+                onClick={handleManualVerify}
+                disabled={verifyLoading}
+                className="w-full bg-brand-primary hover:bg-brand-dark text-white"
+              >
+                {verifyLoading
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando...</>
+                  : <><CheckCircle2 className="w-4 h-4 mr-2" /> Verificar manualmente</>
+                }
+              </Button>
+              <Button
+                onClick={handleGetVerificationLink}
+                disabled={verifyLoading}
+                variant="outline"
+                className="w-full"
+              >
+                {verifyLoading
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</>
+                  : <><Mail className="w-4 h-4 mr-2" /> Enviar email de verificación</>
+                }
+              </Button>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={verifyLoading} onClick={closeVerifyDialog}>
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -32,7 +32,8 @@ El esquema y las Edge Functions están **versionados en el repo** (antes se admi
 ```bash
 supabase link --project-ref lbtyxnbyetsvngsxczkt
 supabase db push                      # aplica migraciones de supabase/migrations/
-supabase functions deploy create-user # despliega la Edge Function
+supabase functions deploy create-user         # despliega la Edge Function de alta de usuarios
+supabase functions deploy resend-verification # despliega la Edge Function de verificación de email
 ```
 
 - `supabase/migrations/*.sql`: esquema (orden por timestamp, idempotentes). Se pueden aplicar con `db push` **o** pegándolas en el SQL Editor de Supabase (el dueño suele correrlas a mano ahí).
@@ -60,6 +61,7 @@ La autorización del frontend (`ProtectedRoute`, `isAdmin`) es **solo UX, no una
 - **Roles** en `users.role` (CHECK constraint): `admin`, `user`, `educacion_manager`, `comision_directiva`. `users` tiene un trigger `prevent_privilege_escalation` que impide a no-admins cambiar `role`/`is_verified` (los admin sí pueden).
 - **`is_board_member()`** (función SQL `SECURITY DEFINER`): true para `admin`+`comision_directiva`. Es la base de las RLS de `projects`/`tasks`/`documents`/`document_versions` y de las policies del bucket de Storage. Reusala para datos nuevos del portal de comisión.
 - **Alta de usuarios**: la Edge Function `create-user` valida que el invocador sea admin **leyendo su rol de la DB** (no del JWT) antes de crear la cuenta con `service_role`. No confiar en el rol del body.
+- **Verificación de email**: la Edge Function `resend-verification` genera un magic link y lo envía por email vía Resend (`RESEND_API_KEY` y `RESEND_FROM_EMAIL` seteados como secrets en Supabase). El trigger `on_auth_user_email_confirmed` en `auth.users` sincroniza `email_confirmed_at → public.users.is_verified` automáticamente al hacer clic en el link. El trigger de tabla `trg_prevent_privilege_escalation` bloquea updates directos a `is_verified` desde SQL (para backfills usar `DISABLE TRIGGER trg_prevent_privilege_escalation` + `ENABLE TRIGGER`).
 - **Storage**: bucket **privado** `comision-docs` (documentación interna de la comisión), con policies sobre `storage.objects` restringidas a `is_board_member()`; los archivos se sirven con **signed URLs** o se bajan como blob (no se pueden embeber por iframe directo). Es **independiente** de `legal_documents` (tabla pública del sitio): no mezclarlos.
 - `partners`: el insert público/anon NO puede setear `estado='aprobado'` (anti auto-publicación).
 - Contenido HTML de la BD (`news.body_md`, `partners.colaboracion_detalle`) se renderiza con **DOMPurify** antes de `dangerouslySetInnerHTML`. Mantené ese sanitizado.

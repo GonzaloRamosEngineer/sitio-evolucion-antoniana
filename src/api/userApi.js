@@ -1,14 +1,42 @@
 import { supabase } from '@/lib/supabase';
 
 export const updateUserProfile = async (userId, profileData) => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('users')
     .update(profileData)
-    .eq('id', userId)
-    .select()
-    .single();
+    .eq('id', userId);
 
-  return { data, error };
+  return { data: null, error };
+};
+
+export const verifyUser = async (userId) => {
+  const { error } = await supabase
+    .from('users')
+    .update({ is_verified: true })
+    .eq('id', userId);
+
+  return { data: null, error };
+};
+
+export const resendVerificationEmail = async (userId) => {
+  const { data, error } = await supabase.functions.invoke('resend-verification', {
+    body: { userId },
+  });
+
+  if (error) {
+    let message = error.message || 'No se pudo generar el link.';
+    try {
+      const body = await error.context?.json?.();
+      if (body?.error) message = body.error;
+    } catch { /* sin cuerpo parseable */ }
+    return { data: null, error: { message } };
+  }
+
+  if (data?.error) {
+    return { data: null, error: { message: data.error } };
+  }
+
+  return { data, error: null };
 };
 
 // Roles válidos del sistema (espejo del CHECK constraint en la DB).
@@ -48,13 +76,14 @@ export const createUser = async ({ email, password, name, role }) => {
 
 // Cambia el rol de un usuario existente. Sólo un admin tiene permiso real
 // (lo garantiza el trigger prevent_privilege_escalation + RLS en Supabase).
+// No usamos .select().single() porque la policy SELECT de users no devuelve
+// filas ajenas al caller, lo que haría fallar PGRST116 aunque el UPDATE haya
+// funcionado correctamente.
 export const updateUserRole = async (userId, role) => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('users')
     .update({ role })
-    .eq('id', userId)
-    .select()
-    .single();
+    .eq('id', userId);
 
-  return { data, error };
+  return { data: null, error };
 };
