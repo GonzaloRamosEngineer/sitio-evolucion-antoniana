@@ -69,7 +69,7 @@ const PartnerDetailPage = () => {
         <Helmet>
           <title>Alianza no encontrada – Fundación Evolución Antoniana</title>
         </Helmet>
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-lg text-center border border-gray-100">
+        <div className="max-w-md w-full bg-white rounded-sm p-8 text-center border border-brand-dark/10">
           <Info className="w-12 h-12 text-brand-gold mx-auto mb-4" />
           <h1 className="text-2xl font-bold font-poppins text-brand-dark mb-3">
             Alianza no encontrada
@@ -78,7 +78,7 @@ const PartnerDetailPage = () => {
             Es posible que el vínculo haya cambiado o que el enlace no sea correcto.
           </p>
           <Link to="/partners">
-            <Button className="bg-brand-primary text-white hover:bg-brand-dark">
+            <Button variant="outline">
                 Volver al listado
             </Button>
           </Link>
@@ -104,7 +104,7 @@ const PartnerDetailPage = () => {
             className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-action transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Volver a Partners
+            Volver a partners
           </Link>
         </div>
 
@@ -117,13 +117,13 @@ const PartnerDetailPage = () => {
                 transition={{ duration: 0.5 }}
                 className="lg:col-span-1"
             >
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-hidden relative">
+                <div className="bg-white rounded-sm border border-brand-dark/10 p-6 overflow-hidden relative">
                     {/* Header decorativo */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-brand-primary"></div>
                     
                     {/* Logo */}
                     {partner.logo_url && (
-                        <div className="w-full rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center p-8 mb-6 h-48">
+                        <div className="w-full rounded-sm bg-brand-sand/60 border border-brand-dark/10 flex items-center justify-center p-8 mb-6 h-48">
                             <img
                             src={partner.logo_url}
                             alt={partner.nombre}
@@ -141,7 +141,7 @@ const PartnerDetailPage = () => {
                         <div className="flex items-center gap-2 mb-4">
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                             <span className="text-xs font-bold uppercase tracking-wider text-green-600">
-                                Partner Verificado
+                                Partner verificado
                             </span>
                         </div>
                     )}
@@ -166,7 +166,7 @@ const PartnerDetailPage = () => {
                             rel="noopener noreferrer"
                             >
                             <Globe className="w-4 h-4 mr-2" />
-                            Visitar Sitio Web
+                            Visitar sitio web
                             </a>
                         </Button>
                         )}
@@ -193,17 +193,14 @@ const PartnerDetailPage = () => {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="lg:col-span-2"
             >
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-10 relative overflow-hidden">
-                    {/* Icono de fondo decorativo */}
-                    <Info className="absolute -top-6 -right-6 w-32 h-32 text-brand-sand opacity-50 rotate-12" />
-                    
+                <div className="bg-white rounded-sm border border-brand-dark/10 p-8 md:p-10 relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-sand text-brand-primary">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-brand-sand text-brand-primary">
                                 <Info className="w-5 h-5" />
                             </div>
                             <h2 className="text-xl font-bold font-poppins text-brand-dark">
-                                Detalles de la Alianza
+                                Detalles de la alianza
                             </h2>
                         </div>
 
@@ -231,13 +228,13 @@ const PartnerDetailPage = () => {
                 </div>
 
                 {/* Banner Promo Opcional (si quisieras agregar algo abajo) */}
-                <div className="mt-6 bg-brand-primary rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+                <div className="mt-6 bg-brand-primary rounded-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
                     <div>
                         <h3 className="font-bold font-poppins text-lg">¿Tu organización quiere sumarse?</h3>
-                        <p className="text-blue-200 text-sm">Sé parte de la red de impacto de Evolución Antoniana.</p>
+                        <p className="text-white/75 text-sm">Sé parte de la red de impacto de Evolución Antoniana.</p>
                     </div>
                     <Link to="/postular-partner">
-                         <Button className="bg-white text-brand-primary hover:bg-blue-50 font-bold whitespace-nowrap">
+                         <Button className="bg-white text-brand-primary hover:bg-brand-sand font-bold whitespace-nowrap">
                             Postular mi empresa
                          </Button>
                     </Link>

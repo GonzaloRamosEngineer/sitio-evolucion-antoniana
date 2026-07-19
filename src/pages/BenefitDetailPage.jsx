@@ -117,11 +117,11 @@ const BenefitDetailPage = () => {
         <Tag className="w-16 h-16 text-gray-400 mb-6" />
         <h1 className="text-3xl font-bold font-poppins text-brand-dark mb-4">Beneficio no encontrado</h1>
         <p className="text-gray-600 mb-8">
-          El beneficio que buscas no existe o ha sido eliminado.
+          El beneficio que buscás no existe o fue eliminado.
         </p>
         <Link to="/beneficios">
-          <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white">
-             Volver a Beneficios
+          <Button variant="outline">
+             Volver a beneficios
           </Button>
         </Link>
       </div>
@@ -156,9 +156,9 @@ const BenefitDetailPage = () => {
           >
             {/* Columna Izquierda: Imagen y Partner */}
             <div className="lg:col-span-2 space-y-8">
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-sm border border-brand-dark/10 overflow-hidden">
                     {/* Imagen Header */}
-                    <div className="bg-gray-50 w-full h-64 md:h-80 flex items-center justify-center p-8 relative">
+                    <div className="bg-brand-sand/60 w-full h-64 md:h-80 flex items-center justify-center p-8 relative">
                         {benefit.imagen_url ? (
                             <img
                             src={benefit.imagen_url}
@@ -168,13 +168,13 @@ const BenefitDetailPage = () => {
                         ) : (
                             <div className="text-center text-gray-400">
                                 <Tag className="h-20 w-20 mx-auto mb-2 opacity-50" />
-                                <span className="text-sm font-bold uppercase tracking-wider">Sin Imagen</span>
+                                <span className="text-sm font-bold uppercase tracking-wider">Sin imagen</span>
                             </div>
                         )}
                         {/* Categoría Badge */}
                         {benefit.categoria && (
                             <div className="absolute top-4 left-4">
-                                <span className="inline-block bg-white/90 backdrop-blur-sm text-brand-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-gray-200">
+                                <span className="inline-block bg-white/90 text-brand-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-gray-200">
                                     {benefit.categoria}
                                 </span>
                             </div>
@@ -187,7 +187,7 @@ const BenefitDetailPage = () => {
                         </h1>
 
                         {partner && (
-                            <div className="flex items-center gap-3 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <div className="flex items-center gap-3 mb-6 p-4 bg-brand-sand/60 rounded-sm border border-brand-dark/10">
                                 {partner.logo_url && (
                                     <img
                                     src={partner.logo_url}
@@ -242,7 +242,7 @@ const BenefitDetailPage = () => {
 
             {/* Columna Derecha: Cómo usarlo (Sticky) */}
             <div className="lg:col-span-1">
-                <div className="bg-white rounded-3xl shadow-lg border border-brand-primary/10 p-6 md:p-8 sticky top-24">
+                <div className="bg-white rounded-sm border border-brand-dark/10 p-6 md:p-8 sticky top-24">
                     <div className="flex items-center gap-2 mb-6 text-brand-dark">
                          <div className="p-2 bg-brand-gold/20 rounded-lg text-brand-dark">
                              <CheckCircle2 className="w-5 h-5" />
@@ -254,7 +254,7 @@ const BenefitDetailPage = () => {
                     <div className="space-y-6 mb-8">
                         <div>
                              <h4 className="text-sm font-bold text-gray-900 mb-2">Instrucciones</h4>
-                             <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
+                             <p className="text-sm text-gray-600 leading-relaxed bg-brand-sand/60 p-4 rounded-sm border border-brand-dark/10">
                                 {benefit.instrucciones?.trim() || "Ingresá a la web del comercio, elegí tu producto y presentá este beneficio."}
                              </p>
                         </div>
@@ -262,12 +262,12 @@ const BenefitDetailPage = () => {
                         {/* Código de Descuento */}
                         {(benefit.codigo || benefit.codigo_descuento) && (
                             <div>
-                                <h4 className="text-sm font-bold text-gray-900 mb-2">Tu Código</h4>
+                                <h4 className="text-sm font-bold text-gray-900 mb-2">Tu código</h4>
                                 <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-brand-sand border-2 border-dashed border-brand-gold/50 rounded-xl p-3 text-center font-mono font-bold text-brand-dark text-lg tracking-wider">
+                                    <div className="flex-1 bg-brand-sand border-2 border-dashed border-brand-gold/50 rounded-sm p-3 text-center font-mono font-bold text-brand-dark text-lg tracking-wider">
                                         {benefit.codigo || benefit.codigo_descuento}
                                     </div>
-                                    <Button size="icon" variant="outline" onClick={handleCopyCode} className="h-12 w-12 rounded-xl border-gray-200">
+                                    <Button size="icon" variant="outline" onClick={handleCopyCode} className="h-12 w-12 rounded-sm border-gray-200">
                                         {copied ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5 text-gray-500" />}
                                     </Button>
                                 </div>
@@ -275,7 +275,7 @@ const BenefitDetailPage = () => {
                         )}
 
                         {benefit.descuento && (
-                            <div className="flex items-center gap-2 text-brand-action font-bold bg-red-50 p-3 rounded-xl border border-red-100 justify-center">
+                            <div className="flex items-center gap-2 text-brand-action font-bold bg-brand-sand/60 p-3 rounded-sm border border-brand-dark/10 justify-center">
                                 <Percent className="h-4 w-4" />
                                 <span>{benefit.descuento} de descuento</span>
                             </div>
@@ -311,7 +311,7 @@ const BenefitDetailPage = () => {
 
                     {partner?.slug && (
                         <Link to={`/partners/${partner.slug}`} className="block mt-6">
-                            <Button className="w-full bg-brand-dark hover:bg-brand-primary text-white font-bold rounded-xl">
+                            <Button className="w-full bg-brand-dark hover:bg-brand-primary text-white font-bold">
                                 Ver perfil del aliado
                             </Button>
                         </Link>

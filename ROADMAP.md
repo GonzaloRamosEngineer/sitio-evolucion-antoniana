@@ -431,7 +431,10 @@ Notas de las sesiones:
   hairline, rounded-sm) propagado a About (rediseño completo), Activities,
   ActivityDetailPage, NewsPage, PartnersPage, BenefitsPage, Collaborate, LegalDocuments,
   Login/Register y Preinscripcion. Fuera: grids de puntos, pills glassmórficos,
-  degradados de texto, placeholders de logos.
+  degradados de texto, placeholders de logos. **Seguimiento (mismo día):** las 4
+  páginas de detalle (ActivityDetail, BenefitDetail, NewsDetail, PartnerDetail), que
+  no estaban en la lista original, recibieron el pulido editorial conservador
+  (rounded-sm, bordes hairline, sin blobs/overlays decorativos, copy en sentence case).
 - [x] 5.12 / 5.7 — Labels unificados (`text-brand-dark font-semibold`, sentence case) e
   inputs al estilo Contact en todos los forms públicos; errores de validación a
   `text-sm text-red-600`. Micro-tipografía pública a mínimos `text-xs` (paneles

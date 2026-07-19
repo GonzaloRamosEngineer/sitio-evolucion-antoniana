@@ -168,10 +168,10 @@ const ActivityDetailPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-brand-sand">
         <AlertTriangle className="w-20 h-20 text-red-500 mb-6" />
-        <h2 className="text-3xl font-poppins text-brand-dark mb-3">Error al Cargar</h2>
+        <h2 className="text-3xl font-poppins text-brand-dark mb-3">No pudimos cargar la actividad</h2>
         <p className="text-gray-600 mb-8 max-w-md">{error}</p>
         <Button variant="outline" asChild>
-          <Link to="/activities">Volver a Actividades</Link>
+          <Link to="/activities">Volver a actividades</Link>
         </Button>
       </div>
     );
@@ -181,10 +181,10 @@ const ActivityDetailPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-brand-sand">
         <Info className="w-20 h-20 text-gray-400 mb-6" />
-        <h2 className="text-3xl font-poppins text-brand-dark mb-3">Actividad no Encontrada</h2>
-        <p className="text-gray-600 mb-8 max-w-md">La actividad que buscas no existe o fue eliminada.</p>
+        <h2 className="text-3xl font-poppins text-brand-dark mb-3">Actividad no encontrada</h2>
+        <p className="text-gray-600 mb-8 max-w-md">La actividad que buscás no existe o fue eliminada.</p>
         <Button variant="outline" asChild>
-          <Link to="/activities">Volver a Actividades</Link>
+          <Link to="/activities">Volver a actividades</Link>
         </Button>
       </div>
     );
@@ -223,7 +223,7 @@ const ActivityDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Columna Izquierda */}
           <div className="lg:col-span-1 space-y-8">
-            <div className="rounded-3xl overflow-hidden shadow-xl border border-white/50 aspect-[4/5] relative bg-brand-dark group">
+            <div className="rounded-sm overflow-hidden border border-brand-dark/10 aspect-[4/5] relative bg-brand-dark group">
               {displayImageUrl ? (
                 <img
                   alt={cleanTitle || activity.title}
@@ -233,7 +233,7 @@ const ActivityDetailPage = () => {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-brand-gold/50">
                   <ImageOff className="w-20 h-20 mb-4" />
-                  <span className="uppercase font-bold tracking-widest text-sm">Sin Imagen</span>
+                  <span className="uppercase font-bold tracking-widest text-sm">Sin imagen</span>
                 </div>
               )}
 
@@ -276,8 +276,8 @@ const ActivityDetailPage = () => {
             </div>
 
             {socialLinks.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h4 className="font-poppins font-bold text-brand-dark mb-4 text-center">¡Compartí esta actividad!</h4>
+              <div className="bg-white rounded-sm p-6 border border-brand-dark/10">
+                <h4 className="font-poppins font-bold text-brand-dark mb-4 text-center">Compartí esta actividad</h4>
                 <div className="flex justify-center gap-3">
                   {socialLinks.map(link => (
                     <a
@@ -297,29 +297,27 @@ const ActivityDetailPage = () => {
 
           {/* Columna Derecha */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-bl-full -mr-10 -mt-10"></div>
-
-              <h1 className="text-3xl md:text-5xl font-poppins font-bold text-brand-dark mb-6 leading-tight relative z-10">
+            <div className="bg-white rounded-sm p-8 md:p-10 border border-brand-dark/10">
+              <h1 className="text-3xl md:text-5xl font-poppins font-bold text-brand-dark tracking-tight mb-6 leading-tight">
                 {cleanTitle}
               </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="flex items-start p-4 bg-brand-sand rounded-xl">
+                <div className="flex items-start p-4 bg-brand-sand rounded-sm">
                   <Calendar className="w-5 h-5 text-brand-action mr-3 mt-0.5" />
                   <div>
                     <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</span>
                     <span className="font-medium text-brand-dark capitalize">{formatDate(activity.date)}</span>
                   </div>
                 </div>
-                <div className="flex items-start p-4 bg-brand-sand rounded-xl">
+                <div className="flex items-start p-4 bg-brand-sand rounded-sm">
                   <Clock className="w-5 h-5 text-brand-action mr-3 mt-0.5" />
                   <div>
                     <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Duración</span>
                     <span className="font-medium text-brand-dark">{activity.duration}</span>
                   </div>
                 </div>
-                <div className="flex items-start p-4 bg-brand-sand rounded-xl md:col-span-2">
+                <div className="flex items-start p-4 bg-brand-sand rounded-sm md:col-span-2">
                   <MapPin className="w-5 h-5 text-brand-action mr-3 mt-0.5" />
                   <div>
                     <span className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Ubicación</span>
@@ -337,10 +335,10 @@ const ActivityDetailPage = () => {
                 {descBody}
               </div>
 
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
+              <div className="bg-brand-sand/60 rounded-sm p-6 border border-brand-dark/10 mb-8">
                 <h4 className="font-poppins font-bold text-brand-dark mb-4 flex items-center">
                   <Users className="w-5 h-5 mr-2 text-brand-primary" />
-                  Estado de Cupos
+                  Estado de cupos
                 </h4>
 
                 {percentage !== null ? (
@@ -351,7 +349,7 @@ const ActivityDetailPage = () => {
                     </div>
                     <Progress value={percentage} className="h-3 bg-gray-200 [&>div]:bg-brand-primary" />
                     {isFull && activity.status !== 'Finalizada' && activity.status !== 'Cerrada' && (
-                      <p className="text-sm text-red-600 font-bold mt-2">¡Cupos Completos!</p>
+                      <p className="text-sm text-red-600 font-bold mt-2">Cupos completos</p>
                     )}
                   </>
                 ) : (
@@ -367,13 +365,13 @@ const ActivityDetailPage = () => {
                   onClick={handleUserRegister}
                   disabled={(percentage !== null && isFull) || activity.status === 'Finalizada' || activity.status === 'Cerrada' || activity.status === 'Próximamente'}
                 >
-                  {activity.status === 'Finalizada' ? 'Actividad Finalizada'
-                    : activity.status === 'Cerrada' ? 'Inscripciones Cerradas'
+                  {activity.status === 'Finalizada' ? 'Actividad finalizada'
+                    : activity.status === 'Cerrada' ? 'Inscripciones cerradas'
                       : activity.status === 'Próximamente' ? 'Próximamente'
-                        : (percentage !== null && isFull) ? 'Unirse a Lista de Espera'
+                        : (percentage !== null && isFull) ? 'Unirme a la lista de espera'
                           : isAuthenticated
-                            ? 'Confirmar mi Asistencia'
-                            : <> <LogIn className="mr-2 h-5 w-5" /> Iniciar Sesión para Participar</>
+                            ? 'Confirmar mi asistencia'
+                            : <> <LogIn className="mr-2 h-5 w-5" /> Iniciar sesión para participar</>
                   }
                 </Button>
 

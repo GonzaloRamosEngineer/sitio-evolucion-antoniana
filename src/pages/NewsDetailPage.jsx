@@ -145,11 +145,11 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
           Noticia no encontrada
         </h1>
         <p className="text-gray-600 mb-8">
-          La noticia que buscas no existe o ha sido eliminada.
+          La noticia que buscás no existe o fue eliminada.
         </p>
         <Link to="/novedades">
-          <Button className="bg-brand-primary hover:bg-brand-dark text-white">
-            Volver a Novedades
+          <Button variant="outline">
+            Volver a novedades
           </Button>
         </Link>
       </div>
@@ -180,7 +180,7 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-white/50">
+            <div className="bg-white rounded-sm overflow-hidden border border-brand-dark/10">
               {/* Imagen Principal */}
               {item.image_url && (
                 <div className="w-full h-64 md:h-[450px] overflow-hidden relative">
@@ -191,7 +191,6 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
                     decoding="async"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
                 </div>
               )}
 
@@ -227,8 +226,8 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
                       prose-headings:font-poppins prose-headings:font-bold prose-headings:text-brand-dark
                       prose-a:text-brand-action hover:prose-a:text-brand-primary prose-a:no-underline hover:prose-a:underline
                       prose-strong:text-brand-dark
-                      prose-blockquote:border-brand-primary prose-blockquote:bg-brand-sand prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic
-                      prose-img:rounded-2xl prose-img:shadow-lg
+                      prose-blockquote:border-brand-primary prose-blockquote:bg-brand-sand prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:not-italic
+                      prose-img:rounded-sm
                     "
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.body_md) }}
                   />
@@ -336,7 +335,7 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
                             exit={{ opacity: 0, scale: 0.8 }}
                             className="inline-flex items-center"
                           >
-                            <Copy className="h-4 w-4 mr-2" /> Copiar Enlace
+                            <Copy className="h-4 w-4 mr-2" /> Copiar enlace
                           </motion.span>
                         )}
                       </AnimatePresence>
