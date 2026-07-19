@@ -1,12 +1,16 @@
 import { supabase } from '@/lib/supabase';
 
+// Devuelve la fila actualizada: la policy SELECT de users sí permite leer la
+// fila propia (a diferencia de updateUserRole, que opera sobre filas ajenas).
 export const updateUserProfile = async (userId, profileData) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .update(profileData)
-    .eq('id', userId);
+    .eq('id', userId)
+    .select('id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender')
+    .single();
 
-  return { data: null, error };
+  return { data, error };
 };
 
 export const verifyUser = async (userId) => {

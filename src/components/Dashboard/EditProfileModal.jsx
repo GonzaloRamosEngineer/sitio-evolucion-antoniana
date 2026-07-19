@@ -62,7 +62,14 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
 
   const handleSave = async () => {
     setIsLoading(true);
-    const { data: updatedProfile, error } = await updateUserProfile(user.id, formData);
+    // Postgres rechaza '' en columnas date; los campos opcionales van como null.
+    const payload = {
+      ...formData,
+      dni: formData.dni || null,
+      birth_date: formData.birth_date || null,
+      gender: formData.gender || null,
+    };
+    const { data: updatedProfile, error } = await updateUserProfile(user.id, payload);
     setIsLoading(false);
 
     if (error) {

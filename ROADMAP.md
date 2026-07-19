@@ -38,7 +38,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 ## 2. Bugs y riesgos concretos (arreglar primero)
 
-- [ ] **2.1 — Editar perfil probablemente crashea.**
+- [x] **2.1 — Editar perfil probablemente crashea. HECHO (2026-07-19)**
   `src/pages/Dashboard.jsx:39` desestructura `setUser` de `useAuth`, pero el contexto
   no lo exporta (`src/hooks/useAuth.jsx:219-232`) → `setAuthUser` es `undefined` y al
   guardar el perfil (`Dashboard.jsx:159`) tira "setAuthUser is not a function".
@@ -109,8 +109,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`:152-167`); en React Router v6 matchea por especificidad, pero conviven con la
   sección de actividades del `AdminPanel`. Revisar para evitar fragilidad.
 
-- [ ] **3.2 — Perfil de usuario parcial.** (Ver 2.1: hidratar `dni/birth_date/gender`
-  en `useAuth.jsx:29`.)
+- [x] **3.2 — Perfil de usuario parcial.** (Ver 2.1.) **HECHO (2026-07-19)**
 
 - [x] **3.3 — Comentario obsoleto "Fase 1 placeholders"** en `CommissionPortal.jsx:16-19`. **HECHO (2026-07-19)**
 
@@ -329,6 +328,12 @@ Horizons 2.3, 404 2.5, errores de EducationForm 2.6) son de horas y sin riesgo.
   "Reconocimientos" aspiracionales por "Nuestros compromisos". **Copy sujeto a validación.**
 - [x] 3.3 — Comentario "Fase 1 placeholders" limpiado en `CommissionPortal.jsx`.
 - [x] 6.3 — Comentarios `// C:\Users\gandr\Downloads\...` eliminados de los 6 archivos restantes.
+
+**Sesión B — perfil de usuario (2026-07-19):**
+- [x] 2.1 / 3.2 — Editar perfil ya no crashea: `useAuth` exporta `setUser` e hidrata
+  `dni/birth_date/gender`; `updateUserProfile` devuelve la fila actualizada
+  (`.select().single()`, la policy permite leer la fila propia); `EditProfileModal`
+  normaliza opcionales vacíos a `null` (Postgres rechazaba `''` en `birth_date`).
 
 ---
 
