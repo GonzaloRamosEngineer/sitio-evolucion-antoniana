@@ -300,17 +300,33 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 ---
 
-## 7. Orden sugerido (las 3 inversiones de mayor retorno)
+## 7. Plan de sesiones de trabajo (acordado 2026-07-19)
 
-1. **Consolidar la paleta y alinear Home con el resto del sitio** (5.1) — máximo impacto
-   visual, no requiere reescribir lógica.
-2. **Versionar RLS + Edge Functions faltantes** (2.4, 2.2) — cierra el mayor riesgo de
-   seguridad/auditoría.
-3. **Pasada de accesibilidad** (5.3, 5.4, 5.5, 5.6) — contraste, tamaños, reduced-motion,
-   landmarks/headings. Alto impacto en usabilidad real, bajo riesgo.
+Los ítems pendientes se agrupan en sesiones que se potencian entre sí (mismo archivo,
+mismo tema, mismo riesgo). Orden acordado: **A → B → C → G → D → E → F → H**.
+La lógica: primero bugs y lo barato (A, B), cerrar seguridad (C), luego la red de
+seguridad de lint/tests (G) *antes* de los refactors grandes (D, E, F), y performance
+al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 
-Antes de todo eso, los arreglos rápidos de la sección 2 (bug de Dashboard 2.1, scaffold
-Horizons 2.3, 404 2.5, errores de EducationForm 2.6) son de horas y sin riesgo.
+| Sesión | Tema | Ítems | Dedicación | Estado |
+|--------|------|-------|-----------|--------|
+| A | Barrida rápida | 2.3, 2.5, 2.6/5.2, 3.3, 6.3, 2.7 | ~medio día | ✅ 2026-07-19 |
+| B | Perfil de usuario | 2.1, 3.2 | ~medio día | ✅ 2026-07-19 |
+| C | Seguridad y auditoría | 2.4, 2.2, 2.8 (+5.9) | ~1,5 días | ✅ 2026-07-19 |
+| **G** | **Infra de calidad (SIGUIENTE)** | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (decidir dark mode), 4.6 (decidir RHF+zod) | ~1-2 días | ⬜ |
+| D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ⬜ |
+| E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 | ~2-3 días (partible) | ⬜ |
+| F | Robustez de datos | 4.1, 4.2, 4.3, 3.6 | ~3-4 días (partible) | ⬜ |
+| H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
+
+Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
+decisión de la Fundación), 6.6 (dedup listado/detalle), 6.7 (upgrades de deps, al final).
+
+Notas de las sesiones G/D/E/F:
+- **G:** en 4.4 y 4.6 hay una decisión previa (¿dark mode sí o no? ¿RHF+zod en todos los
+  forms o eliminarlo?) — preguntar antes de tocar código.
+- **E:** conviene después de G para tener lint/build check al tocar ~60 archivos de estilos.
+- **F:** el refactor transversal de 4.1/4.2 necesita los tests de humo de G como red.
 
 ---
 
