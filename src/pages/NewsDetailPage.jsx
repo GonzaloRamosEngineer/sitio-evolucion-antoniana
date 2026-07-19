@@ -73,10 +73,12 @@ const NewsDetailPage = () => {
   const origin =
     typeof window === "undefined" ? "" : window.location.origin;
 
-  // URL real (la de tu SPA)
+  // URL real (la de tu SPA) — es también la que se comparte.
+  // Los bots de redes reciben el OG dinámico vía rewrite condicional por
+  // User-Agent en vercel.json, así que ya no hace falta compartir /api/share/.
   const canonicalUrl = `${origin}/novedades/${slugOrId}`;
 
-const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
+  const shareUrl = canonicalUrl;
 
 
   // Datos para Helmet (esto no afecta WhatsApp, pero sí tu navegador/SEO básico)

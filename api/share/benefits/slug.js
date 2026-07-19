@@ -1,8 +1,10 @@
-// api/share/news/slug.js
-// Share endpoint para previews (WhatsApp/Facebook/LinkedIn):
-// - Lee ?slug=... (o llega vía vercel.json rewrite /api/share/news/<slug> -> /api/share/news/slug?slug=<slug>)
-// - Devuelve HTML con OG dinámico
-// - Redirige a humanos a /novedades/:slug
+// api/share/benefits/slug.js
+// Share endpoint para previews (WhatsApp/Facebook/LinkedIn/etc.):
+// - Lo invocan SOLO los bots de redes sociales vía rewrite condicional por
+//   User-Agent en vercel.json: /beneficios/<slug> -> /api/share/benefits/slug?slug=<slug>
+// - También responde al path explícito /api/share/benefits/<slug> (backward compat).
+// - Devuelve HTML con Open Graph dinámico y redirige a humanos a /beneficios/:slug
+// Mismo patrón que api/share/news/slug.js (mantener en sincronía).
 
 const isUuid = (v = "") =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -60,7 +62,7 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    const apiUrl = `${SUPABASE_URL}/rest/v1/news?select=id,title,content,image_url,created_at,slug&${filter}`;
+    const apiUrl = `${SUPABASE_URL}/rest/v1/benefits?select=id,titulo,descripcion,imagen_url,descuento,slug&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -85,24 +87,20 @@ export default async function handler(req, res) {
     const slugOrId = item.slug || item.id;
 
     // URL humana real (SPA) — es también la que se comparte y la canónica.
-    // Los bots de redes llegan acá vía rewrite condicional por User-Agent en
-    // vercel.json (/novedades/<slug> -> esta función), así que el OG debe apuntar
-    // a la URL limpia, no al endpoint /api/share/.
-    const humanUrl = `${proto}://${host}/novedades/${encodeURIComponent(slugOrId)}`;
-    const sharePublicUrl = humanUrl;
+    const humanUrl = `${proto}://${host}/beneficios/${encodeURIComponent(slugOrId)}`;
 
     // Imagen absoluta con fallback
-    let image = item.image_url || "/og-default.png";
+    let image = item.imagen_url || "/og-default.png";
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith("/") ? "" : "/"}${image}`;
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const title = escapeHtml(item.title || "Novedad");
-    const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
-    const publishedIso = item.created_at
-      ? new Date(item.created_at).toISOString()
-      : new Date().toISOString();
+    const rawTitle = item.titulo || "Beneficio";
+    const title = escapeHtml(
+      item.descuento ? `${rawTitle} — ${item.descuento}` : rawTitle
+    );
+    const desc = escapeHtml(stripToOneLine(item.descripcion).slice(0, 180));
 
     const extraImageType = imageMime
       ? `<meta property="og:image:type" content="${imageMime}"/>`
@@ -115,10 +113,10 @@ export default async function handler(req, res) {
   <title>${title}</title>
 
   <!-- Open Graph -->
-  <meta property="og:type" content="article" />
+  <meta property="og:type" content="website" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
-  <meta property="og:url" content="${sharePublicUrl}" />
+  <meta property="og:url" content="${humanUrl}" />
   <meta property="og:image" content="${image}" />
   <meta property="og:image:secure_url" content="${image}" />
   <meta property="og:image:width" content="1200" />
@@ -126,7 +124,6 @@ export default async function handler(req, res) {
   ${extraImageType}
   <meta property="og:site_name" content="Fundación Evolución Antoniana" />
   <meta property="og:locale" content="es_AR" />
-  <meta property="article:published_time" content="${publishedIso}" />
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -134,7 +131,7 @@ export default async function handler(req, res) {
   <meta name="twitter:description" content="${desc}" />
   <meta name="twitter:image" content="${image}" />
 
-  <link rel="canonical" href="${sharePublicUrl}" />
+  <link rel="canonical" href="${humanUrl}" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -144,7 +141,6 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // Headers pro
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Accept-Ranges", "none");
     res.setHeader(
@@ -168,7 +164,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Length", String(buf.byteLength));
     res.end(buf);
   } catch (err) {
-    console.error("Error en api/share/news/slug.js:", err);
+    console.error("Error en api/share/benefits/slug.js:", err);
     res.status(500).send("Internal error");
   }
 }

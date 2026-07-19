@@ -155,10 +155,12 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   `vercel.json:6` reescribe `/api/*` → microservicio Render. `membershipApi.js:59-78`
   (`callWebhook`) hace `fetch` **sin timeout, sin retry, sin manejo de cold-start**.
   El free-tier de Render duerme; el usuario ve "Error en la operación" (`:74`) sin
-  distinguir cold-start de fallo real. Además naming inconsistente en share de partners:
-  `vercel.json:3` apunta a `slug` pero el archivo es `api/share/partners/[slug].js`
-  (novedades usa `slug.js`). **Acción:** timeout+retry+mensaje de cold-start; unificar
-  naming. **Esfuerzo:** ~medio día. **Prioridad:** importante.
+  distinguir cold-start de fallo real. ~~Además naming inconsistente en share de
+  partners~~ **HECHO (2026-07-19, Sesión E — previews):** se eliminó el rewrite roto de
+  partners (el archivo es `[slug].js`, ruta dinámica; el rewrite apuntaba a un `slug`
+  inexistente) y se unificó el sistema de share (ver §8 "Previews de compartir").
+  **Pendiente de 4.3:** solo la resiliencia del proxy a Render (timeout+retry+mensaje de
+  cold-start en `callWebhook`). **Esfuerzo:** ~medio día. **Prioridad:** importante.
 
 - [x] **4.4 — Dark mode = código muerto. HECHO (2026-07-19, Sesión G).**
   **Decisión del usuario: eliminarlo** (completar dark mode real era un trabajo de diseño
@@ -448,6 +450,34 @@ Notas de las sesiones:
   mitad de camino; se auditó el estado real archivo por archivo y se completó a mano lo
   que quedó a medias (BenefitsPage, RegisterPage, EducationForm, CTA de Collaborate y
   un import de `ShieldCheck` roto).
+
+**Previews de compartir (OG dinámico) — Sesión E, seguimiento (2026-07-19):**
+Objetivo: que al compartir una URL normal (novedades/beneficios/partners) por WhatsApp,
+Facebook, etc., se arme una preview con título/imagen/descripción reales, sin exponer
+URLs feas `/api/share/...`.
+- [x] **Rewrites condicionales por User-Agent** en `vercel.json`: cuando un bot de red
+  social (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, Telegram, Discord,
+  Slack, etc.) pide `/novedades/:slug`, `/beneficios/:slug` o `/partners/:slug`, se le
+  sirve la función OG correspondiente; los humanos reciben la SPA normal. Patrón estándar
+  para SPAs (el navegador nunca ve la URL `/api/share/`).
+- [x] **Nueva función OG de beneficios** (`api/share/benefits/slug.js`), clon del patrón
+  de novedades adaptado a la tabla `benefits` (título + descuento, `imagen_url`,
+  descripción). Verificada contra producción con un slug real.
+- [x] **Novedades**: `og:url`/canonical ahora apuntan a la URL limpia `/novedades/:slug`
+  (antes `/api/share/news/...`); el botón de compartir de `NewsDetailPage` copia la URL
+  limpia. Función verificada contra producción.
+- [x] **Partners**: eliminado el rewrite roto (apuntaba a un archivo `slug` inexistente;
+  la ruta real es la dinámica `[slug].js`); agregado fallback de env vars `VITE_*`,
+  dimensiones de imagen OG y copy en voseo.
+- [x] Endpoints legacy `/api/share/news|benefits/(.*)` conservados (backward compat de
+  links ya compartidos) y con headers no-cache.
+- **Validación:** las funciones se probaron localmente contra la Supabase de producción
+  (OG correcto). El rewrite por User-Agent **solo se puede validar en producción real**
+  (los preview deployments de Vercel dan 401). Post-deploy: probar con
+  https://developers.facebook.com/tools/debug/ y compartiendo por WhatsApp (cachea la
+  preview, variar la URL para re-testear).
+- **Pendiente (fase 2, sesión aparte):** slugs para **actividades** (hoy usan UUID:
+  `/activities/<uuid>`) — requiere columna `slug` + backfill + ruta con fallback al UUID.
 
 **Sesión C — seguridad y auditoría (2026-07-19, parcial):**
 - [x] 2.4 — Baseline completo del esquema público + RLS versionado en
