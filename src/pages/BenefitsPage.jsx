@@ -1,4 +1,3 @@
-// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\BenefitsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';

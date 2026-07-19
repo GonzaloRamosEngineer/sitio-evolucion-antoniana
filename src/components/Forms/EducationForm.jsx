@@ -113,10 +113,12 @@ const EducationForm = ({ onSuccess }) => {
           <div className="space-y-2">
             <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Email *</Label>
             <Input placeholder="correo@ejemplo.com" {...register('email')} className={inputBaseStyle} />
+            {errors.email && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
             <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">WhatsApp *</Label>
             <Input placeholder="387..." {...register('phone')} className={inputBaseStyle} />
+            {errors.phone && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.phone.message}</p>}
           </div>
         </div>
       </div>
@@ -140,6 +142,7 @@ const EducationForm = ({ onSuccess }) => {
                   <SelectItem value="secundaria-incompleta">Secundaria Incompleta</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.last_year_completed && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.last_year_completed.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -152,6 +155,7 @@ const EducationForm = ({ onSuccess }) => {
                   <SelectItem value="asesoramiento">Asesoramiento</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.level_to_start && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.level_to_start.message}</p>}
           </div>
         </div>
 
@@ -203,6 +207,7 @@ const EducationForm = ({ onSuccess }) => {
                 </motion.div>
               )}
             </AnimatePresence>
+            {errors.location && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.location.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -216,6 +221,7 @@ const EducationForm = ({ onSuccess }) => {
                 <SelectItem value="ninguno">Ninguno</SelectItem>
               </SelectContent>
             </Select>
+            {errors.relationship_club && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.relationship_club.message}</p>}
           </div>
         </div>
 
@@ -229,6 +235,7 @@ const EducationForm = ({ onSuccess }) => {
                 <SelectItem value="virtual">Virtual</SelectItem>
               </SelectContent>
             </Select>
+            {errors.preferred_modality && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.preferred_modality.message}</p>}
           </div>
 
           <div className="space-y-2">

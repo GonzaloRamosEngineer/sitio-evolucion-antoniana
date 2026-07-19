@@ -57,7 +57,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** exportar el código actual de las 3 funciones a `supabase/functions/` y
   versionarlas. **Esfuerzo:** ~medio día. **Prioridad:** alta.
 
-- [ ] **2.3 — Scaffold de Hostinger Horizons corriendo en PRODUCCIÓN.**
+- [x] **2.3 — Scaffold de Hostinger Horizons corriendo en PRODUCCIÓN. HECHO (2026-07-19)**
   `vite.config.js:144-198` agrega `addTransformIndexHtml` **siempre** (fuera del guard
   `isDev`). Inyecta en el HTML publicado: monkeypatch global de `window.fetch`
   (`:105`), handlers que reenvían errores por `postMessage(..., '*')` (`:60`) y
@@ -76,12 +76,12 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** exportar el esquema + RLS actuales a `supabase/migrations/` (idempotentes).
   **Esfuerzo:** ~1 día. **Prioridad:** alta (mayor punto ciego de auditoría).
 
-- [ ] **2.5 — Sin página 404 / catch-all.**
+- [x] **2.5 — Sin página 404 / catch-all. HECHO (2026-07-19)** — `src/pages/NotFound.jsx` + ruta `*`.
   El `<Routes>` de `src/App.jsx` no tiene ruta `*`. Una URL inexistente renderiza el
   shell (Header/Footer) con `<main>` vacío.
   **Acción:** agregar `<Route path="*" element={<NotFound/>} />`. **Esfuerzo:** ~1-2h.
 
-- [ ] **2.6 — Formulario de educación falla en silencio.**
+- [x] **2.6 — Formulario de educación falla en silencio. HECHO (2026-07-19)**
   El schema zod valida email, WhatsApp y 5 selects (`EducationForm.jsx:16-28`), pero
   solo se renderizan errores de `full_name/dni/age` (`:95,102,107`). Email (`:114-116`),
   WhatsApp (`:118-120`) y todos los selects (`:132-155,187-244`) no muestran feedback.
@@ -89,7 +89,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** agregar bloques `{errors.x && ...}` a los campos faltantes.
   **Esfuerzo:** ~1-2h.
 
-- [ ] **2.7 — Copy que compromete credibilidad.**
+- [x] **2.7 — Copy que compromete credibilidad. HECHO (2026-07-19)** — pendiente de validación del copy final por la Fundación.
   Dashboard afirma "PCI DSS", "cifrado SSL 256 bits", "sincronización cada 15 min con el
   servidor central" (`Dashboard.jsx:410,418`) — no respaldado por la arquitectura.
   About lista reconocimientos aspiracionales (`About.jsx:375`). En una fundación que
@@ -112,8 +112,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 - [ ] **3.2 — Perfil de usuario parcial.** (Ver 2.1: hidratar `dni/birth_date/gender`
   en `useAuth.jsx:29`.)
 
-- [ ] **3.3 — Comentario obsoleto "Fase 1 placeholders"** en `CommissionPortal.jsx:16-19`
-  (las fases 2 y 3 ya están implementadas). Limpiar. **Esfuerzo:** trivial.
+- [x] **3.3 — Comentario obsoleto "Fase 1 placeholders"** en `CommissionPortal.jsx:16-19`. **HECHO (2026-07-19)**
 
 - [ ] **3.4 — Datos institucionales hardcodeados.** Métricas de Home
   (`Home.jsx:51-72`), reconocimientos/autoridades de About (`:60-85`). Evaluar moverlos
@@ -206,7 +205,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** colapsar a un set de tokens único (`brand.*`), eliminar paletas legacy,
   migrar Home. **Esfuerzo:** ~2-3 días. **La mejora de diseño de mayor impacto.**
 
-- [ ] **5.2 — Errores de validación no renderizados en EducationForm.** (= 2.6) **[ALTA]**
+- [x] **5.2 — Errores de validación no renderizados en EducationForm.** (= 2.6) **HECHO (2026-07-19)**
 
 - [ ] **5.3 — Contraste insuficiente pervasivo. [ALTA]**
   `text-gray-400` (#9CA3AF) sobre blanco ≈ 2.85:1 (WCAG AA pide 4.5:1) usado como
@@ -282,9 +281,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   redimensionar (~-80%). **La mejora de performance más barata.** ~2-3h.
 - [ ] **6.2 — Sin `manualChunks` de vendor** (`vite.config.js`). `framer-motion` (eager en
   `App.jsx:14`, usado en 59 archivos) va al chunk inicial. ~2h.
-- [ ] **6.3 — Ruta local del dev filtrada** en comentario línea 1 de 7 archivos
-  (`Activities.jsx:1`, etc.: `// C:\Users\gandr\Downloads\...`). Queda en el bundle. ~15 min.
-  (Parcial: `Contact.jsx` ya limpiado en el rediseño 2026-07.)
+- [x] **6.3 — Ruta local del dev filtrada** en comentario línea 1 de 7 archivos. **HECHO (2026-07-19)**
 - [ ] **6.4 — 63 `console.*` sin gate** en `src/` van al bundle de prod. Logger con no-op. ~2h.
 - [ ] **6.5 — Restos muertos:** `plugins/visual-editor/` (810 líneas, solo dev),
   `public/.htaccess` (Apache, muerto en Vercel), `public/s/novedades/test.html`
@@ -320,7 +317,18 @@ Horizons 2.3, 404 2.5, errores de EducationForm 2.6) son de horas y sin riesgo.
 - [x] 2.3 — Scaffold Horizons fuera de prod. (2026-07-20, commit abc1234)
 -->
 
-_(nada aún)_
+**Sesión A — barrida rápida (2026-07-19):**
+- [x] 2.3 — Scaffold Horizons fuera de prod: eliminado `addTransformIndexHtml` + 4 scripts
+  inyectados de `vite.config.js`; borrado `public/.htaccess`. Verificado en `dist/index.html`.
+- [x] 2.5 — Página 404 (`src/pages/NotFound.jsx`, estilo editorial con `Eyebrow`) + ruta
+  catch-all `*` en `App.jsx`.
+- [x] 2.6 / 5.2 — EducationForm ahora muestra errores en email, WhatsApp y los 5 selects
+  obligatorios (mismo patrón que full_name/dni/age).
+- [x] 2.7 — Copy: Dashboard ya no afirma PCI DSS/SSL 256/sync 15 min (ahora describe la
+  arquitectura real: Mercado Pago procesa, HTTPS, datos al ingresar); About cambia
+  "Reconocimientos" aspiracionales por "Nuestros compromisos". **Copy sujeto a validación.**
+- [x] 3.3 — Comentario "Fase 1 placeholders" limpiado en `CommissionPortal.jsx`.
+- [x] 6.3 — Comentarios `// C:\Users\gandr\Downloads\...` eliminados de los 6 archivos restantes.
 
 ---
 

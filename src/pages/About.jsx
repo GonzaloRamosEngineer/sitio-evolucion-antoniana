@@ -367,12 +367,12 @@ const About = () => {
       <section className="py-20 bg-brand-dark text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-poppins font-bold mb-4">Reconocimientos</h2>
-            <p className="text-gray-400">Nuestro impacto validado por la comunidad.</p>
+            <h2 className="text-3xl font-poppins font-bold mb-4">Nuestros compromisos</h2>
+            <p className="text-gray-400">Lo que sostenemos en cada proyecto.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             {['Postulación Impacto Social 2022', 'Certificación de Transparencia', 'Mención en Educación Digital'].map((item, i) => (
+             {['Transparencia en el uso de los recursos', 'Educación como motor de inclusión', 'Trabajo junto a la comunidad antoniana'].map((item, i) => (
                 <motion.div
                     key={i}
                     initial={{ opacity: 0, scale: 0.9 }}

@@ -1,5 +1,3 @@
-// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\PartnerDetailPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';

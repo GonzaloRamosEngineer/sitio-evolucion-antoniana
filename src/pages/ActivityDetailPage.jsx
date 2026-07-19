@@ -1,5 +1,3 @@
-// C:\Users\gandr\Downloads\SitioWebEvolucionAntonianaProduccion\src\pages\ActivityDetailPage.jsx 
-
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';

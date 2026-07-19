@@ -41,6 +41,7 @@ const LegalDocuments = lazy(() => import("@/pages/LegalDocuments"));
 const Preinscription = lazy(() => import("./pages/Preinscripcion"));
 const EducationAdmin = lazy(() => import("./pages/EducationAdmin"));
 const CommissionPortal = lazy(() => import("@/pages/CommissionPortal"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Partners / Novedades
 const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
@@ -165,6 +166,9 @@ const PageRoutes = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Catch-all: 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
     </AnimatePresence>

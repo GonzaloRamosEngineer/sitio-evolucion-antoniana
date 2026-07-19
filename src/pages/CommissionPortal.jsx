@@ -15,8 +15,7 @@ const TABS = [
 
 // Portal interno de la Comisión Directiva. Acceso gateado en App.jsx por
 // ProtectedRoute allowedRoles={["admin","comision_directiva"]} (la barrera real
-// son las RLS de Supabase). Fase 1: estructura navegable con placeholders.
-// Fase 2 monta el gestor de proyectos; Fase 3, el de documentos versionados.
+// son las RLS de Supabase).
 const CommissionPortal = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const location = useLocation();

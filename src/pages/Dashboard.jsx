@@ -407,7 +407,7 @@ const Dashboard = () => {
                     <ShieldCheck size={20} /> Seguridad
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed italic">
-                    Cumplimos con los estándares de seguridad de datos PCI DSS y cifrado SSL de 256 bits para proteger toda su información personal y financiera.
+                    Tus pagos se procesan directamente en Mercado Pago: la Fundación nunca ve ni almacena datos de tu tarjeta. Toda la comunicación con el sitio viaja cifrada (HTTPS).
                 </p>
             </div>
             <div className="space-y-4">
@@ -415,7 +415,7 @@ const Dashboard = () => {
                     <History size={20} /> Actualización
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed italic">
-                    Los datos de impacto global se sincronizan cada 15 minutos con el servidor central de la Fundación para garantizar precisión absoluta.
+                    Tus datos y movimientos se actualizan cada vez que ingresás al panel. Si un pago recién acreditado no aparece, recargá la página en unos minutos.
                 </p>
             </div>
             <div className="space-y-4">
