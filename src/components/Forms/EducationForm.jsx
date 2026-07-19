@@ -94,40 +94,40 @@ const EducationForm = ({ onSuccess }) => {
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <Users size={16} className="text-brand-primary" />
-            <Label className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em]">Datos del Aspirante</Label>
+            <Label className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-primary">Datos del Aspirante</Label>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Nombre Completo *</Label>
+            <Label className="text-brand-dark font-semibold">Nombre Completo *</Label>
             <Input placeholder="Ej: Juan Pérez" {...register('full_name')} className={inputBaseStyle} />
-            {errors.full_name && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.full_name.message}</p>}
+            {errors.full_name && <p className="text-sm text-red-600">{errors.full_name.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">DNI *</Label>
+                <Label className="text-brand-dark font-semibold">DNI *</Label>
                 <Input placeholder="Sin puntos" {...register('dni')} className={inputBaseStyle} />
-                {errors.dni && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.dni.message}</p>}
+                {errors.dni && <p className="text-sm text-red-600">{errors.dni.message}</p>}
             </div>
             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Edad *</Label>
+                <Label className="text-brand-dark font-semibold">Edad *</Label>
                 <Input placeholder="Años" {...register('age')} className={inputBaseStyle} />
-                {errors.age && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.age.message}</p>}
+                {errors.age && <p className="text-sm text-red-600">{errors.age.message}</p>}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Email *</Label>
+            <Label className="text-brand-dark font-semibold">Email *</Label>
             <Input placeholder="correo@ejemplo.com" {...register('email')} className={inputBaseStyle} />
-            {errors.email && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">WhatsApp *</Label>
+            <Label className="text-brand-dark font-semibold">WhatsApp *</Label>
             <Input placeholder="387..." {...register('phone')} className={inputBaseStyle} />
-            {errors.phone && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.phone.message}</p>}
+            {errors.phone && <p className="text-sm text-red-600">{errors.phone.message}</p>}
           </div>
         </div>
       </div>
@@ -136,12 +136,12 @@ const EducationForm = ({ onSuccess }) => {
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <GraduationCap size={16} className="text-brand-primary" />
-            <Label className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em]">Situación Académica</Label>
+            <Label className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-primary">Situación Académica</Label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Último año cursado *</Label>
+              <Label className="text-brand-dark font-semibold">Último año cursado *</Label>
               <Select onValueChange={(val) => setValue('last_year_completed', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
@@ -151,11 +151,11 @@ const EducationForm = ({ onSuccess }) => {
                   <SelectItem value="secundaria-incompleta">Secundaria Incompleta</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.last_year_completed && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.last_year_completed.message}</p>}
+              {errors.last_year_completed && <p className="text-sm text-red-600">{errors.last_year_completed.message}</p>}
           </div>
 
           <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Nivel a iniciar *</Label>
+              <Label className="text-brand-dark font-semibold">Nivel a iniciar *</Label>
               <Select onValueChange={(val) => setValue('level_to_start', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir nivel" /></SelectTrigger>
                 <SelectContent>
@@ -164,12 +164,12 @@ const EducationForm = ({ onSuccess }) => {
                   <SelectItem value="asesoramiento">Asesoramiento</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.level_to_start && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.level_to_start.message}</p>}
+              {errors.level_to_start && <p className="text-sm text-red-600">{errors.level_to_start.message}</p>}
           </div>
         </div>
 
         <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Orientación</Label>
+            <Label className="text-brand-dark font-semibold">Orientación</Label>
             <Select onValueChange={(val) => setValue('interest_area', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
@@ -194,12 +194,12 @@ const EducationForm = ({ onSuccess }) => {
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
             <MapPin size={16} className="text-brand-primary" />
-            <Label className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em]">Contexto</Label>
+            <Label className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-primary">Contexto</Label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Localidad *</Label>
+            <Label className="text-brand-dark font-semibold">Localidad *</Label>
             <Select onValueChange={(val) => setValue('location', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
               <SelectContent>
@@ -216,11 +216,11 @@ const EducationForm = ({ onSuccess }) => {
                 </motion.div>
               )}
             </AnimatePresence>
-            {errors.location && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.location.message}</p>}
+            {errors.location && <p className="text-sm text-red-600">{errors.location.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Vínculo con el Club *</Label>
+            <Label className="text-brand-dark font-semibold">Vínculo con el Club *</Label>
             <Select onValueChange={(val) => setValue('relationship_club', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Tu relación" /></SelectTrigger>
               <SelectContent>
@@ -230,13 +230,13 @@ const EducationForm = ({ onSuccess }) => {
                 <SelectItem value="ninguno">Ninguno</SelectItem>
               </SelectContent>
             </Select>
-            {errors.relationship_club && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.relationship_club.message}</p>}
+            {errors.relationship_club && <p className="text-sm text-red-600">{errors.relationship_club.message}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Modalidad *</Label>
+            <Label className="text-brand-dark font-semibold">Modalidad *</Label>
             <Select onValueChange={(val) => setValue('preferred_modality', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
               <SelectContent>
@@ -244,11 +244,11 @@ const EducationForm = ({ onSuccess }) => {
                 <SelectItem value="virtual">Virtual</SelectItem>
               </SelectContent>
             </Select>
-            {errors.preferred_modality && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.preferred_modality.message}</p>}
+            {errors.preferred_modality && <p className="text-sm text-red-600">{errors.preferred_modality.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Horario</Label>
+            <Label className="text-brand-dark font-semibold">Horario</Label>
             <Select onValueChange={(val) => setValue('preferred_schedule', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Turno" /></SelectTrigger>
               <SelectContent>
@@ -262,7 +262,7 @@ const EducationForm = ({ onSuccess }) => {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Mensaje adicional</Label>
+        <Label className="text-brand-dark font-semibold">Mensaje adicional</Label>
         <Textarea 
           placeholder="Escribí aquí..." 
           {...register('message')} 
@@ -277,41 +277,42 @@ const EducationForm = ({ onSuccess }) => {
              <Users size={18} />
           </div>
           <div>
-            <p className="text-[11px] font-black text-brand-dark uppercase leading-none">¿Querés sumarte a más?</p>
-            <p className="text-[10px] text-gray-500 italic">Conocé todos los talleres y proyectos vigentes.</p>
+            <p className="text-sm font-semibold text-brand-dark leading-none">¿Querés sumarte a más?</p>
+            <p className="text-xs text-gray-500">Conocé todos los talleres y proyectos vigentes.</p>
           </div>
         </div>
         <a 
           href="https://www.evolucionantoniana.com/activities" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="bg-white text-brand-primary text-[10px] font-bold px-4 py-2 rounded-full shadow-sm hover:bg-brand-primary hover:text-white transition-all uppercase"
+          className="bg-white text-brand-primary text-xs font-semibold px-4 py-2 rounded-sm shadow-sm hover:bg-brand-primary hover:text-white transition-all"
         >
-          Ver Actividades
+          Ver actividades
         </a>
       </div>
 
-      <Button 
-        type="submit" 
+      <Button
+        type="submit"
+        variant="action"
         disabled={isSubmitting}
-        className="w-full h-16 bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl shadow-xl shadow-brand-primary/20 text-lg transition-all active:scale-95"
+        className="w-full h-14 text-lg"
       >
         {isSubmitting ? (
           <div className="flex items-center gap-3">
             <Loader2 className="animate-spin h-5 w-5" />
-            <span>PROCESANDO...</span>
+            <span>Procesando...</span>
           </div>
         ) : (
           <div className="flex items-center gap-3">
             <Send size={20} />
-            <span>ENVIAR PREINSCRIPCIÓN</span>
+            <span>Enviar preinscripción</span>
           </div>
         )}
       </Button>
 
-      <div className="flex items-center gap-3 text-[10px] text-gray-600 font-bold uppercase tracking-widest justify-center pt-4 border-t border-gray-50">
+      <div className="flex items-center gap-3 text-xs text-gray-600 justify-center pt-4 border-t border-brand-dark/10">
         <ShieldCheck size={14} className="text-brand-gold" />
-        Sistema de Registro Seguro - Fundación Evolución Antoniana
+        Registro seguro — Fundación Evolución Antoniana
       </div>
     </form>
   );

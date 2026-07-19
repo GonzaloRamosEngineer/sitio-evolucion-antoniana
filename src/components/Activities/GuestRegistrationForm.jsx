@@ -40,36 +40,36 @@ const GuestRegistrationForm = ({ activityId, onSubmit, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 py-4">
       <div className="space-y-2">
-        <Label htmlFor="guest-name" className="text-marron-legado">Nombre Completo</Label>
+        <Label htmlFor="guest-name" className="text-sm font-semibold text-brand-dark">Nombre completo</Label>
         <Input
           id="guest-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ej: Ana Pérez"
-          className="border-marron-legado/30 focus:border-primary-antoniano"
+          className="border-input focus:border-brand-primary"
           disabled={loading}
         />
         {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="guest-email" className="text-marron-legado">Correo Electrónico</Label>
+        <Label htmlFor="guest-email" className="text-sm font-semibold text-brand-dark">Correo electrónico</Label>
         <Input
           id="guest-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Ej: ana.perez@ejemplo.com"
-          className="border-marron-legado/30 focus:border-primary-antoniano"
+          className="border-input focus:border-brand-primary"
           disabled={loading}
         />
         {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
       </div>
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="w-full sm:w-auto border-primary-antoniano text-primary-antoniano hover:bg-celeste-complementario">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="w-full sm:w-auto border-brand-primary text-brand-primary hover:bg-brand-primary/10">
           Cancelar
         </Button>
-        <Button type="submit" variant="antoniano" disabled={loading} className="w-full sm:w-auto text-white">
+        <Button type="submit" variant="action" disabled={loading} className="w-full sm:w-auto">
           {loading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

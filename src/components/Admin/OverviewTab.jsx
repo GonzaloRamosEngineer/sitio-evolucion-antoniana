@@ -214,7 +214,7 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
           </CardHeader>
           <CardContent className="p-5 pt-0 space-y-2">
             <Link to="/admin/activities/new" className="block">
-              <Button className="w-full justify-start gap-2 bg-brand-action hover:bg-red-800 text-white font-semibold">
+              <Button variant="action" className="w-full justify-start gap-2 font-semibold">
                 <Plus className="w-4 h-4" /> Nueva actividad
               </Button>
             </Link>

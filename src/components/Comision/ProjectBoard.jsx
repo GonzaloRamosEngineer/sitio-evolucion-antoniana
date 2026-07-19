@@ -291,7 +291,7 @@ const ProjectBoard = ({ project, currentUserId, onBack, onTasksChanged }) => {
             </div>
             {project.description && <p className="text-sm text-gray-500 mt-1">{project.description}</p>}
           </div>
-          <Button onClick={openCreate} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl shrink-0">
+          <Button onClick={openCreate} variant="action" className="rounded-xl shrink-0">
             <Plus className="w-4 h-4 mr-2" /> Nueva tarea
           </Button>
         </div>

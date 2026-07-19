@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { useActivities } from '@/hooks/useActivities';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,7 +24,6 @@ import {
   XCircle,
   Archive,
   ImageOff,
-  Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -297,7 +297,8 @@ const getCleanTitle = (title) => {
 
     return (
       <Button
-        className="w-full flex items-center justify-center font-bold bg-brand-action hover:bg-red-800 text-white shadow-md hover:shadow-lg transition-all"
+        variant="action"
+        className="w-full"
         onClick={() => handleUserRegister(activity.id)}
         disabled={authLoading}
       >
@@ -348,58 +349,41 @@ const getCleanTitle = (title) => {
         <meta name="description" content="Explorá las actividades, talleres y eventos de la Fundación Evolución Antoniana e inscribite." />
         <link rel="canonical" href="https://www.evolucionantoniana.com/activities" />
       </Helmet>
-      {/* --- HERO SECTION (Tech-Institucional) --- */}
-      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}
-          ></div>
-        </div>
+      {/* ============ HERO ============ */}
+      <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+        >
+          <div className="mb-6">
+            <Eyebrow light>Formación y eventos</Eyebrow>
+          </div>
+          <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            Nuestras actividades
+          </h1>
+          <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
+            Explorá talleres, cursos y eventos pensados para impulsar el
+            desarrollo tecnológico y social de la comunidad, organizados en
+            tres ciclos: tecnología, educación y comunidad.
+          </p>
 
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-              <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Formación y Eventos</span>
-            </div>
-
-            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
-              Nuestras <span className="text-brand-gold">Actividades</span>
-            </h1>
-
-            <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Explora talleres, cursos y eventos diseñados para impulsar el desarrollo tecnológico y social de nuestra
-              comunidad.
+          {cycleFilter !== 'all' && (
+            <p className="mt-6 text-sm text-white/75">
+              Filtrando por:{' '}
+              <span className="font-semibold text-brand-gold">Ciclo {cycleFilter}</span>
+              <button
+                className="ml-2 underline underline-offset-4 text-white/75 hover:text-white"
+                onClick={() => setCycleFilter('all')}
+                type="button"
+              >
+                limpiar
+              </button>
             </p>
-
-            {/* ✅ Mini-guía + estado del ciclo seleccionado */}
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-                <Sparkles className="w-4 h-4 text-brand-gold" />
-                <span className="text-sm text-gray-100">
-                  Actividades organizadas por ciclos: <span className="text-brand-gold font-bold">Tecnología</span> ·{' '}
-                  <span className="text-brand-gold font-bold">Educación</span> ·{' '}
-                  <span className="text-brand-gold font-bold">Comunidad</span>
-                </span>
-              </div>
-
-              {cycleFilter !== 'all' && (
-                <div className="text-sm text-gray-100">
-                  Filtrando por: <span className="font-bold text-brand-gold">Ciclo {cycleFilter}</span>{' '}
-                  <button
-                    className="ml-2 underline underline-offset-4 text-gray-200 hover:text-white"
-                    onClick={() => setCycleFilter('all')}
-                    type="button"
-                  >
-                    limpiar
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
+          )}
+        </motion.div>
       </section>
 
       {/* --- FILTERS (sticky) --- */}

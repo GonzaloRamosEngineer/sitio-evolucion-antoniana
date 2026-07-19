@@ -24,7 +24,7 @@ const RequestPasswordResetForm = () => {
       toast({
         title: "Correo Enviado",
         description: "Si existe una cuenta con ese email, recibirás instrucciones para reestablecer tu contraseña.",
-        className: "bg-celeste-complementario border-primary-antoniano text-primary-antoniano"
+        className: "bg-brand-primary/10 border-brand-primary text-brand-primary"
       });
       setEmail(''); 
     } catch (error) {
@@ -44,13 +44,13 @@ const RequestPasswordResetForm = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-gradient-to-br from-blanco-fundacion to-celeste-complementario/30 px-4 py-12"
+      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-brand-sand px-4 py-12"
     >
       <Card className="w-full max-w-md shadow-2xl border-border bg-card/90 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-            <CardTitle className="text-3xl font-poppins font-bold text-primary-antoniano">
-              Reestablecer Contraseña
+            <CardTitle className="text-3xl font-poppins font-bold text-brand-primary">
+              Reestablecer contraseña
             </CardTitle>
           </motion.div>
           <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -62,7 +62,7 @@ const RequestPasswordResetForm = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="space-y-2">
-              <Label htmlFor="email" className="text-marron-legado">Email</Label>
+              <Label htmlFor="email" className="text-sm font-semibold text-brand-dark">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -72,7 +72,7 @@ const RequestPasswordResetForm = () => {
                   placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 border-border focus:border-primary-antoniano focus:ring-primary-antoniano"
+                  className="pl-10 border-border focus:border-brand-primary focus:ring-brand-primary"
                   required
                 />
               </div>
@@ -81,7 +81,7 @@ const RequestPasswordResetForm = () => {
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
               <Button
                 type="submit"
-                className="w-full bg-primary-antoniano text-white hover:bg-primary-antoniano/90 transition-all duration-300 ease-in-out transform hover:scale-105"
+                className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 transition-all duration-300 ease-in-out"
                 disabled={loading}
               >
                 {loading ? 'Enviando...' : 'Enviar Enlace'}
@@ -92,10 +92,10 @@ const RequestPasswordResetForm = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8 text-center">
             <Link
               to="/login"
-              className="text-sm font-medium text-primary-antoniano hover:underline inline-flex items-center"
+              className="text-sm font-medium text-brand-primary hover:underline inline-flex items-center"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              Volver a Iniciar Sesión
+              Volver a iniciar sesión
             </Link>
           </motion.div>
         </CardContent>

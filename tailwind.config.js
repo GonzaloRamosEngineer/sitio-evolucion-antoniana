@@ -26,7 +26,6 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          antoniano: "#103754",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -52,13 +51,8 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Tus colores originales (Se mantienen para no romper nada)
-        'blanco-fundacion': '#F8F9F7',
-        'marron-legado': '#3D2612',
-        'celeste-complementario': '#D3E8FF',
-        'azul-profundo': '#1A2F48',
-
-        // --- NUEVA PALETA "LEGADO MODERNO" (Para el enchulamiento) ---
+        // Paleta única de marca ("Legado Moderno"). No agregar paletas paralelas:
+        // todo color institucional nuevo entra acá como token brand.*.
         brand: {
           primary: '#163A68',      // Azul Antoniana (Base)
           dark: '#0F294A',         // Azul Noche (Textos)

@@ -10,7 +10,7 @@ Sitio web institucional de la **Fundación Evolución Antoniana** (Salta, Argent
 
 - **Vite 4 + React 18** (JavaScript, sin TypeScript), `react-router-dom` v6 (client-side routing, SPA).
 - **Supabase** como backend (auth + Postgres + Storage). La lógica de datos corre en el browser con la **anon key**; la única excepción es la **Edge Function `create-user`** (Deno), que usa la `service_role` para dar de alta usuarios desde el panel admin.
-- **Tailwind** + Radix/shadcn (`src/components/ui/`), `framer-motion`, `react-helmet-async`. Validación de forms **híbrida**: `react-hook-form` + `zod` en `EducationForm` (patrón a estandarizar gradualmente); el resto valida con `useState` manual.
+- **Tailwind** + Radix/shadcn (`src/components/ui/`), `framer-motion`, `react-helmet-async`. Validación de forms **híbrida**: `react-hook-form` + `zod` en `EducationForm`, `LoginPage` y `RegisterPage` (patrón a seguir); quedan con `useState` manual `Contact`, `ContactModal` y `ApplyPartnerPage` (a migrar en la Sesión F).
 - Deploy en **Vercel**. Funciones serverless en `api/` (OG/share). `vercel.json` proxea `/api/*` a un webhook externo en Render.
 
 ## Comandos
@@ -66,12 +66,17 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 - **Tipografía**: Poppins (display, 600–800) + Inter (texto) se cargan en `index.html`
   vía Google Fonts. Estaban declaradas en Tailwind pero **nunca se cargaban** (todo caía
   a la sans del sistema) — no quitar esos `<link>`.
-- **Lenguaje editorial** (Home y Contact son la referencia; propagarlo al resto):
-  eyebrows en versalitas con filete dorado (`src/components/ui/eyebrow.jsx`), headings
-  en *sentence case* y voseo, filas/bandas con bordes hairline en vez de cards con
-  sombra, `rounded-sm`, `brand-gold` como acento puntual (nunca degradados de texto),
-  animaciones con `useReducedMotion` + `viewport: once`. Evitar los clichés que se
-  quitaron: pills glassmórficos, grids de puntos, blobs desenfocados, todo-centrado.
+- **Lenguaje editorial** (Home y Contact son la referencia; propagado a TODAS las
+  públicas en la Sesión E — páginas nuevas deben nacer con él): eyebrows en versalitas
+  con filete dorado (`src/components/ui/eyebrow.jsx`), headings en *sentence case* y
+  voseo, filas/bandas con bordes hairline en vez de cards con sombra, `rounded-sm`,
+  `brand-gold` como acento puntual (nunca degradados de texto), animaciones con
+  `useReducedMotion` + `viewport: once`. Evitar los clichés que se quitaron: pills
+  glassmórficos, grids de puntos, blobs desenfocados, todo-centrado.
+- **Tokens**: paleta única `brand.*` en `tailwind.config.js` (los tokens shadcn HSL de
+  `index.css` derivan de ella). No crear colores/fondos nuevos fuera de `brand.*`.
+  CTAs con `<Button variant="action">`; labels de forms `text-brand-dark font-semibold`
+  en sentence case; errores de validación `text-sm text-red-600`.
 - **Logos de partners**: la Home usa versiones normalizadas (recorte de aire + masa
   visual pareja) generadas por `tools/normalize-partner-logos.mjs` →
   `public/img/partners/` + `src/data/partnerLogoOverrides.json` (fallback al `logo_url`
@@ -109,5 +114,5 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
   documento al día en vez de re-auditar. Corrige 4 puntos desactualizados de este CLAUDE.md
   (ver su última sección).
 - 3 vulns npm que requieren bumps breaking (`vite@8`, `uuid@14`) — migración aparte.
-- Tests de humo mínimos (Vitest); falta cobertura del flujo real. ESLint deja ~61 warnings
-  de backlog. Ambos se amplían/limpian en las Sesiones D/E/F.
+- Tests de humo mínimos (Vitest); falta cobertura del flujo real. ESLint deja ~55 warnings
+  de backlog (imports sin usar, exhaustive-deps). Ambos se amplían/limpian en la Sesión F.

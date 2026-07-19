@@ -100,7 +100,7 @@ const UpdatePasswordForm = () => {
       toast({
         title: "Contraseña Actualizada",
         description: "Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.",
-        className: "bg-celeste-complementario border-primary-antoniano text-primary-antoniano"
+        className: "bg-brand-primary/10 border-brand-primary text-brand-primary"
       });
       navigate('/login', { replace: true });
     } catch (error) {
@@ -118,8 +118,8 @@ const UpdatePasswordForm = () => {
   
   if (authHookLoading || tokenStatus === 'checking') {
      return (
-      <div className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-blanco-fundacion">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-antoniano"></div>
+      <div className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-brand-sand">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
@@ -130,7 +130,7 @@ const UpdatePasswordForm = () => {
   if (tokenStatus !== 'valid') {
     // Este return es un fallback, el useEffect debería haber navegado ya.
      return (
-      <div className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-blanco-fundacion p-4">
+      <div className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-brand-sand p-4">
         {/* Mensaje de espera o spinner mientras se redirige */}
       </div>
     );
@@ -143,13 +143,13 @@ const UpdatePasswordForm = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-gradient-to-br from-blanco-fundacion to-celeste-complementario/30 px-4 py-12"
+      className="min-h-[calc(100vh-128px)] flex items-center justify-center bg-brand-sand px-4 py-12"
     >
       <Card className="w-full max-w-md shadow-2xl border-border bg-card/90 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-            <CardTitle className="text-3xl font-poppins font-bold text-primary-antoniano">
-              Ingresa Nueva Contraseña
+            <CardTitle className="text-3xl font-poppins font-bold text-brand-primary">
+              Ingresá tu nueva contraseña
             </CardTitle>
           </motion.div>
           <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -161,7 +161,7 @@ const UpdatePasswordForm = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="space-y-2">
-              <Label htmlFor="password" className="text-marron-legado">Nueva Contraseña</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-brand-dark">Nueva contraseña</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -171,14 +171,14 @@ const UpdatePasswordForm = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 border-border focus:border-primary-antoniano focus:ring-primary-antoniano"
+                  className="pl-10 pr-10 border-border focus:border-brand-primary focus:ring-brand-primary"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-celeste-complementario"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-brand-primary/10"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
@@ -188,7 +188,7 @@ const UpdatePasswordForm = () => {
             </motion.div>
 
             <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }} className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-marron-legado">Confirmar Nueva Contraseña</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-brand-dark">Confirmar nueva contraseña</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -198,14 +198,14 @@ const UpdatePasswordForm = () => {
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10 border-border focus:border-primary-antoniano focus:ring-primary-antoniano"
+                  className="pl-10 pr-10 border-border focus:border-brand-primary focus:ring-brand-primary"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-celeste-complementario"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-brand-primary/10"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
@@ -217,7 +217,7 @@ const UpdatePasswordForm = () => {
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
               <Button
                 type="submit"
-                className="w-full bg-primary-antoniano text-white hover:bg-primary-antoniano/90 transition-all duration-300 ease-in-out transform hover:scale-105"
+                className="w-full bg-brand-primary text-white hover:bg-brand-primary/90 transition-all duration-300 ease-in-out"
                 disabled={formLoading || authHookLoading}
               >
                 {formLoading || authHookLoading ? 'Actualizando...' : 'Actualizar Contraseña'}

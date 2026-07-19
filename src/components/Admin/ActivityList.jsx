@@ -118,7 +118,7 @@ const ActivityList = ({ onAddRequest }) => {
       title="Actividades"
       description="Gestioná el cronograma de actividades de la fundación."
       actions={
-        <Button onClick={onAddRequest} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+        <Button onClick={onAddRequest} variant="action" className="rounded-xl">
           <Plus className="w-4 h-4 mr-2" />
           Nueva actividad
         </Button>
@@ -306,7 +306,7 @@ const ActivityList = ({ onAddRequest }) => {
             title="Sin actividades activas"
             description="Parece que todavía no has creado ninguna actividad para la fundación."
             action={
-              <Button onClick={onAddRequest} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl px-8">
+              <Button onClick={onAddRequest} variant="action" className="rounded-xl px-8">
                 <Plus className="w-4 h-4 mr-2" />
                 Crear Mi Primera Actividad
               </Button>

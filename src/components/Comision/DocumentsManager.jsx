@@ -188,7 +188,7 @@ const DocumentsManager = () => {
         title="Documentación"
         description="Estatuto, balances, convenios y demás, con historial de versiones."
         actions={
-          <Button onClick={openCreate} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+          <Button onClick={openCreate} variant="action" className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Nuevo documento
           </Button>
         }

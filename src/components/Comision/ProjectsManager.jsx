@@ -228,7 +228,7 @@ const ProjectsManager = () => {
         title="Proyectos"
         description="Los frentes de trabajo de la fundación y sus tareas."
         actions={
-          <Button onClick={openCreate} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+          <Button onClick={openCreate} variant="action" className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Nuevo proyecto
           </Button>
         }

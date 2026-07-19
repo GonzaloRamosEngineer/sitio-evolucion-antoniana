@@ -246,7 +246,7 @@ const UserList = () => {
         title="Usuarios"
         description="Base de datos central de miembros, administradores y voluntarios."
         actions={
-          <Button onClick={() => setCreateOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold rounded-xl">
+          <Button onClick={() => setCreateOpen(true)} variant="action" className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Crear usuario
           </Button>
         }

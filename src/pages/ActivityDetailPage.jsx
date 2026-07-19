@@ -362,7 +362,8 @@ const ActivityDetailPage = () => {
               <div className="sticky bottom-4 md:static z-20">
                 <Button
                   size="lg"
-                  className="w-full h-16 text-lg font-bold bg-brand-action hover:bg-red-800 text-white shadow-xl hover:shadow-2xl transition-all rounded-xl"
+                  variant="action"
+                  className="w-full h-16 text-lg rounded-xl"
                   onClick={handleUserRegister}
                   disabled={(percentage !== null && isFull) || activity.status === 'Finalizada' || activity.status === 'Cerrada' || activity.status === 'Próximamente'}
                 >

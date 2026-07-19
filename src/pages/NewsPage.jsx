@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, Newspaper, Loader2, AlertTriangle } from 'lucide-react'; // Agregué Newspaper para el placeholder
 import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { getNews } from '@/lib/storage';
 
 const NewsPage = () => {
@@ -35,37 +36,31 @@ const NewsPage = () => {
         <title>Novedades - Fundación Evolución Antoniana</title>
         <meta
           name="description"
-          content="Mantente al día con las últimas noticias y actividades de la Fundación."
+          content="Mantenete al día con las últimas noticias y actividades de la Fundación."
         />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/novedades" />
       </Helmet>
 
-      {/* --- HERO SECTION (Coherente con Home.jsx) --- */}
-      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
-        </div>
-
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Actualidad</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold font-poppins text-white mb-6">
-              Novedades <span className="text-brand-gold">.</span>
-            </h1>
-            <p className="text-xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
-              Últimas noticias, avances de proyectos y actividades de la Fundación Evolución Antoniana.
-            </p>
-          </motion.div>
-        </div>
+      {/* ============ HERO ============ */}
+      <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+        >
+          <div className="mb-6">
+            <Eyebrow light>Actualidad</Eyebrow>
+          </div>
+          <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            Novedades
+          </h1>
+          <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
+            Últimas noticias, avances de proyectos y actividades de la Fundación
+            Evolución Antoniana.
+          </p>
+        </motion.div>
       </section>
 
       {/* --- CONTENIDO --- */}
@@ -85,7 +80,7 @@ const NewsPage = () => {
               </Button>
             </div>
           ) : news.length === 0 ? (
-            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-brand-border/50">
+            <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-brand-dark/10">
               <Newspaper className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <p className="text-xl text-gray-500 font-medium">
                 Próximamente compartiremos nuestras novedades por aquí.
@@ -115,9 +110,8 @@ const NewsPage = () => {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full bg-brand-dark flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                           <span className="text-brand-gold font-bold text-lg text-center z-10">
+                        <div className="w-full h-full bg-brand-dark flex flex-col items-center justify-center p-6">
+                           <span className="text-brand-gold font-bold text-lg text-center">
                              Evolución Antoniana
                            </span>
                         </div>

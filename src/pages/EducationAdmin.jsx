@@ -225,7 +225,7 @@ const EducationAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-24 px-4 md:px-8">
+    <div className="min-h-screen bg-brand-sand pt-32 pb-24 px-4 md:px-8">
       <Helmet>
         <title>Gestión educativa - Fundación Evolución Antoniana</title>
         <meta name="description" content="Panel de gestión educativa." />

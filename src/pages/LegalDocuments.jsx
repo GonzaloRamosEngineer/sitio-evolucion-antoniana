@@ -2,10 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, ExternalLink, AlertTriangle, ShieldCheck, Download, Calendar, Mail, ArrowRight } from 'lucide-react';
+import { Eyebrow } from '@/components/ui/eyebrow';
+import { Loader2, FileText, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -43,15 +41,10 @@ const LegalDocuments = () => {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    in: { opacity: 1, y: 0 },
-    out: { opacity: 0, y: -20 },
-  };
-
-  const cardVariants = {
-    initial: { opacity: 0, scale: 0.95 },
-    in: { opacity: 1, scale: 1 },
+  const rise = {
+    initial: { opacity: 0, y: 18 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
   };
 
   if (loading) {
@@ -63,203 +56,132 @@ const LegalDocuments = () => {
   }
 
   return (
-    <motion.div
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-brand-sand font-sans"
-    >
+    <div className="min-h-screen bg-brand-sand">
       <Helmet>
         <title>Documentación Oficial - Fundación Evolución Antoniana</title>
         <meta name="description" content="Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana." />
         <link rel="canonical" href="https://www.evolucionantoniana.com/legal-documents" />
       </Helmet>
 
-      {/* --- HERO SECTION (Tech-Institucional) --- */}
-      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
-        </div>
-
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-               <ShieldCheck className="w-4 h-4 text-brand-gold" />
-               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Transparencia Institucional</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
-              Documentación <span className="text-brand-gold">Oficial</span>
-            </h1>
-            
-            <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Accede a nuestros estatutos, balances y reportes de gestión. La transparencia es la base de nuestra confianza.
-            </p>
-          </motion.div>
-        </div>
+      {/* ============ HERO ============ */}
+      <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+        <motion.div
+          {...rise}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+        >
+          <div className="mb-6">
+            <Eyebrow light>Transparencia institucional</Eyebrow>
+          </div>
+          <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            Documentación oficial
+          </h1>
+          <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
+            Accedé a nuestros estatutos, balances y reportes de gestión. La
+            transparencia es la base de nuestra confianza.
+          </p>
+        </motion.div>
       </section>
 
-      {/* --- CONTENIDO --- */}
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        
-        {/* Resumen (Stats) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="bg-brand-sand p-3 rounded-full text-brand-primary">
-                    <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                    <p className="text-2xl font-bold text-brand-dark">{documents.length}</p>
-                    <p className="text-sm text-gray-500">Documentos Publicados</p>
-                </div>
-            </div>
-            {/* Puedes agregar más stats aquí si tienes la data, por ahora placeholders visuales */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="bg-green-50 p-3 rounded-full text-green-600">
-                    <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                    <p className="text-lg font-bold text-brand-dark">Verificado</p>
-                    <p className="text-sm text-gray-500">Estado Legal</p>
-                </div>
-            </div>
-             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="bg-blue-50 p-3 rounded-full text-blue-600">
-                    <Calendar className="w-6 h-6" />
-                </div>
-                <div>
-                    <p className="text-lg font-bold text-brand-dark">{new Date().getFullYear()}</p>
-                    <p className="text-sm text-gray-500">Periodo Actual</p>
-                </div>
-            </div>
-        </div>
-
-        {/* Nota informativa: solicitud formal de información */}
+      {/* ============ LISTADO DE DOCUMENTOS ============ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-brand-gold/30 rounded-2xl shadow-sm p-6 mb-12 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          {...rise}
+          transition={{ ...rise.transition, delay: 0.1 }}
+          className="max-w-3xl"
         >
-          <div className="bg-brand-sand p-3 rounded-full text-brand-primary flex-shrink-0">
-            <Mail className="w-6 h-6" />
+          <div className="mb-5">
+            <Eyebrow>Documentos públicos</Eyebrow>
           </div>
-          <div className="flex-1">
-            <p className="font-bold text-brand-dark mb-1">¿Necesitás información completa y detallada?</p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Para solicitar la documentación completa y detallada, realizá una solicitud formal
-              al correo{' '}
-              <a
-                href="mailto:info@evolucionantoniana.com"
-                className="font-semibold text-brand-primary underline underline-offset-2 hover:text-brand-gold transition-colors"
-              >
-                info@evolucionantoniana.com
-              </a>
-              .
-            </p>
-          </div>
-        </motion.div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl flex items-center space-x-4 mb-8"
-          >
-            <AlertTriangle className="w-8 h-8 flex-shrink-0 text-red-500" />
-            <div>
-              <p className="font-bold text-lg">Error al cargar documentos</p>
-              <p className="text-sm opacity-90">{error}</p>
-            </div>
-          </motion.div>
-        )}
-
-        {documents.length === 0 && !loading && !error && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200"
-          >
-            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <FileText className="w-10 h-10 text-gray-300" />
-            </div>
-            <p className="text-xl font-bold text-brand-dark mb-2">
-              No hay documentos públicos disponibles.
-            </p>
-            <p className="text-gray-500">
-              Estamos actualizando nuestro repositorio. Por favor, vuelve a consultar pronto.
-            </p>
-          </motion.div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {documents.map((doc, index) => (
-            <motion.div
-              key={doc.id}
-              variants={cardVariants}
-              initial="initial"
-              animate="in"
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+          <p className="max-w-[36rem] text-gray-600 leading-relaxed mb-10">
+            Para solicitar la documentación completa y detallada, realizá una
+            solicitud formal al correo{' '}
+            <a
+              href="mailto:info@evolucionantoniana.com"
+              className="font-medium text-brand-primary hover:text-brand-action transition-colors"
             >
-              <Card className="h-full flex flex-col bg-white border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl group">
-                <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
-                  <div className="flex gap-4">
-                      <div className="mt-1 bg-brand-sand p-2.5 rounded-xl text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-colors">
-                          <FileText className="w-6 h-6" />
-                      </div>
-                      <div>
-                          <CardTitle className="text-xl font-poppins font-bold text-brand-dark leading-tight mb-2 group-hover:text-brand-action transition-colors">
-                            {doc.title}
-                          </CardTitle>
-                          <Badge 
-                            variant="secondary" 
-                            className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-0 font-medium px-2.5"
-                          >
-                            {doc.category}
-                          </Badge>
-                      </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="flex-grow pl-[5.5rem]">
-                  {doc.description && (
-                    <CardDescription className="text-gray-600 text-sm leading-relaxed mb-3">
-                      {doc.description}
-                    </CardDescription>
-                  )}
-                  <p className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Publicado el {new Date(doc.created_at).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </p>
-                </CardContent>
+              info@evolucionantoniana.com
+            </a>
+            .
+          </p>
 
-                <CardFooter className="pt-4 border-t border-gray-50 pl-[5.5rem]">
-                  <Button
-                    variant="ghost"
-                    asChild
-                    className="p-0 h-auto font-bold text-brand-primary hover:text-brand-action hover:bg-transparent transition-colors group/btn"
-                  >
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      Ver Documento
-                      <ArrowRight className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" />
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-sm flex items-start gap-4 mb-8">
+              <AlertTriangle aria-hidden="true" className="w-6 h-6 flex-shrink-0 text-red-500" />
+              <div>
+                <p className="font-semibold">Error al cargar documentos</p>
+                <p className="text-sm opacity-90">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {documents.length === 0 && !loading && !error && (
+            <div className="bg-white border border-dashed border-brand-dark/20 rounded-sm p-10">
+              <p className="font-poppins font-semibold text-brand-dark mb-1">
+                No hay documentos públicos disponibles.
+              </p>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Estamos actualizando nuestro repositorio. Por favor, volvé a
+                consultar pronto.
+              </p>
+            </div>
+          )}
+
+          {documents.length > 0 && (
+            <ul>
+              {documents.map((doc) => (
+                <li
+                  key={doc.id}
+                  className="border-t border-brand-dark/20 py-5 last:border-b"
+                >
+                  <div className="flex items-start gap-4">
+                    <FileText
+                      aria-hidden="true"
+                      className="w-5 h-5 text-brand-gold mt-0.5 flex-shrink-0"
+                      strokeWidth={1.75}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+                        <h3 className="font-poppins font-semibold text-brand-dark">
+                          {doc.title}
+                        </h3>
+                        {doc.category && (
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                            {doc.category}
+                          </span>
+                        )}
+                      </div>
+                      {doc.description && (
+                        <p className="text-sm text-gray-600 leading-relaxed mb-1.5">
+                          {doc.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Publicado el{' '}
+                        {new Date(doc.created_at).toLocaleDateString('es-AR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 mt-0.5 text-sm font-semibold text-brand-primary hover:text-brand-action transition-colors flex-shrink-0"
+                    >
+                      Ver documento
+                      <ArrowRight aria-hidden="true" className="w-4 h-4" />
                     </a>
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </motion.div>
+      </section>
+    </div>
   );
 };
 

@@ -18,8 +18,8 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        antoniano: 'bg-primary-antoniano text-white hover:bg-primary-antoniano/90 shadow-md hover:shadow-lg',
-        marron: 'bg-marron-legado text-blanco-fundacion hover:bg-marron-legado/90 shadow-md hover:shadow-lg',
+        action:
+          'bg-brand-action text-white font-bold hover:bg-red-800 shadow-md hover:shadow-lg',
       },
       size: {
         default: 'h-10 px-4 py-2',

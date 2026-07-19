@@ -4,41 +4,38 @@
 
 @layer base {
   :root {
-    --background: 220 20% 98%; /* Blanco Fundación: #F8F9F7 */
-    --foreground: 210 10% 23%; /* Marrón Legado Oscuro para texto principal */
-    
+    /* Los tokens shadcn (HSL) derivan de la paleta brand.* de tailwind.config.js.
+       No introducir otros azules/fondos: brand-primary #163A68 y brand-sand #F9F7F5
+       son la única fuente de verdad. */
+    --background: 30 25% 97%; /* brand-sand: #F9F7F5 */
+    --foreground: 214 66% 17%; /* brand-dark: #0F294A */
+
     --card: 0 0% 100%;
-    --card-foreground: 210 10% 23%;
-    
+    --card-foreground: 214 66% 17%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
-    
-    --primary: 208 65% 20%; /* Azul Antoniano: #103754 */
+    --popover-foreground: 214 66% 17%;
+
+    --primary: 214 65% 25%; /* brand-primary: #163A68 */
     --primary-foreground: 0 0% 100%;
-    
-    --secondary: 210 20% 92%; /* Celeste Complementario muy claro para fondos suaves: #D3E8FF (ajustado) */
-    --secondary-foreground: 208 65% 20%;
-    
+
+    --secondary: 210 20% 92%; /* azul-gris suave para fondos */
+    --secondary-foreground: 214 65% 25%;
+
     --muted: 210 20% 92%;
     --muted-foreground: 210 10% 45%;
-    
-    --accent: 210 20% 85%; /* Celeste Complementario más oscuro para hovers: #D3E8FF (ajustado) */
-    --accent-foreground: 208 65% 20%;
-    
+
+    --accent: 210 20% 85%; /* hover suave */
+    --accent-foreground: 214 65% 25%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 20% 88%;
     --input: 210 20% 88%;
-    --ring: 208 65% 35%; /* Azul Antoniano más claro para anillos de foco */
+    --ring: 214 65% 35%; /* brand-primary más claro para anillos de foco */
 
     --radius: 0.5rem;
-
-    /* Colores Institucionales */
-    --azul-antoniano: 208 65% 20%; /* #103754 */
-    --marron-legado: 28 46% 16%; /* #3D2612 */
-    --blanco-fundacion: 220 20% 98%; /* #F8F9F7 */
-    --celeste-complementario: 210 100% 91%; /* #D3E8FF */
   }
 }
 

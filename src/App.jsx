@@ -187,7 +187,7 @@ function App() {
           {/* Reset de scroll en cada navegación */}
           <ScrollToTop behavior="smooth" />
 
-          <div className="min-h-screen flex flex-col bg-blanco-fundacion">
+          <div className="min-h-screen flex flex-col bg-brand-sand">
             <Header />
             <main className="flex-1 font-inter pb-20 md:pb-0">
               <PageRoutes />

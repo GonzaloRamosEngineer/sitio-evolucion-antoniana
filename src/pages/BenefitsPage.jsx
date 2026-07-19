@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Gift, Tag, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import BenefitCard from '@/components/BenefitCard';
 import { getBenefits } from '@/lib/storage';
 
@@ -73,33 +74,25 @@ const BenefitsPage = () => {
         />
       </Helmet>
 
-      {/* --- HERO SECTION (Tech-Institucional) --- */}
-      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
-        </div>
-
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Comunidad</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
-              Club de <span className="text-brand-gold">Beneficios</span>
-            </h1>
-            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-               Descuentos exclusivos y ventajas especiales diseñadas para nuestra comunidad.
-            </p>
-          </motion.div>
-        </div>
+      {/* --- HERO (lenguaje editorial, patrón de Contact) --- */}
+      <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+        >
+          <div className="mb-6">
+            <Eyebrow light>Comunidad</Eyebrow>
+          </div>
+          <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            Club de beneficios
+          </h1>
+          <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
+            Descuentos y ventajas pensadas para nuestra comunidad.
+          </p>
+        </motion.div>
       </section>
 
       {/* --- BARRA DE BÚSQUEDA Y FILTROS --- */}

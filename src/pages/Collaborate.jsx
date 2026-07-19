@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
@@ -157,11 +158,12 @@ const Collaborate = () => {
           <Button
             onClick={handleOneTimeDonation}
             size="lg"
+            variant="action"
             disabled={isProcessingDonation}
-            className="w-full font-bold h-12 text-white bg-brand-action hover:bg-red-800 shadow-md hover:shadow-lg transition-all rounded-xl"
+            className="w-full h-12 rounded-xl"
           >
             {isProcessingDonation ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Heart className="mr-2 h-5 w-5" />}
-            Donar Ahora
+            Donar ahora
           </Button>
         </div>
       )
@@ -261,42 +263,38 @@ const Collaborate = () => {
       <div className="min-h-screen bg-brand-sand font-sans">
         
         {/* --- HERO SECTION --- */}
-        <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-            {/* Fondo Tech Sutil */}
-            <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-                <div className="absolute inset-0 opacity-10" 
-                        style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-                </div>
+        <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+          <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+          >
+            <div className="mb-6">
+              <Eyebrow light>Colaboración</Eyebrow>
             </div>
-
-            <div className="relative max-w-6xl mx-auto text-center z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-                        <Heart className="w-4 h-4 text-brand-gold fill-brand-gold" />
-                        <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Colaboración</span>
-                    </div>
-                    
-                    <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6 leading-tight">
-                        Sumá tu ayuda, <br/>
-                        <span className="text-brand-gold">Multiplicá oportunidades.</span>
-                    </h1>
-                    
-                    <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-  Cada aporte cuenta. Con una donación puntual o mensual, ayudás a crear experiencias formativas y becas que multiplican oportunidades para los chicos.
-</p>
-
-                </motion.div>
-            </div>
+            <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+              Sumá tu ayuda, multiplicá oportunidades
+            </h1>
+            <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
+              Cada aporte cuenta. Con una donación puntual o mensual, ayudás a crear
+              experiencias formativas y becas que multiplican oportunidades para los chicos.
+            </p>
+          </motion.div>
         </section>
 
         {/* --- OPCIONES DE COLABORACIÓN --- */}
-        <section className="py-16 md:py-20 px-4 -mt-10 relative z-20">
+        <section className="py-16 md:py-20 px-4">
           <div className="container mx-auto max-w-7xl">
+            <div className="mb-10">
+              <div className="mb-4">
+                <Eyebrow>Formas de colaborar</Eyebrow>
+              </div>
+              <h2 className="font-poppins font-bold text-3xl tracking-tight text-brand-dark">
+                Elegí cómo sumarte
+              </h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {collaborationOptions.map((option, index) => (
                 <motion.div

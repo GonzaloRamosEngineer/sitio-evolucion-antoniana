@@ -8,8 +8,8 @@ const ProtectedRoute = ({ children, requireAdmin = false, allowedRoles = null })
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blanco-fundacion">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-antoniano"></div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-sand">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-primary"></div>
       </div>
     );
   }

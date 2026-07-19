@@ -121,7 +121,7 @@ const NewsAdmin = () => {
         title="Gestión de Novedades"
         description="Publica noticias y actualizaciones para la comunidad."
         actions={
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+          <Button onClick={() => setIsDialogOpen(true)} variant="action">
             <Plus className="mr-2 h-4 w-4" />
             Nueva novedad
           </Button>
@@ -209,7 +209,7 @@ const NewsAdmin = () => {
               <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => setIsDialogOpen(false)} className="text-gray-500 font-bold">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-brand-action hover:bg-red-800 text-white font-bold px-8 rounded-xl shadow-lg">
+              <Button type="submit" disabled={isSubmitting} variant="action" className="px-8 rounded-xl">
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {editingNews ? 'Guardar Cambios' : 'Publicar Ahora'}
               </Button>
@@ -226,7 +226,7 @@ const NewsAdmin = () => {
               title="Todavía no hay noticias publicadas"
               description="Publicá la primera novedad para que aparezca en la web."
               action={
-                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                <Button onClick={() => setIsDialogOpen(true)} variant="action">
                   <Plus className="mr-2 h-4 w-4" />
                   Nueva novedad
                 </Button>

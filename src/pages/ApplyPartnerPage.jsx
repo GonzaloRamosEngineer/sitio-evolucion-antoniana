@@ -233,7 +233,7 @@ const ApplyPartnerPage = () => {
                 </div>
 
                 <div className="pt-6">
-                  <Button type="submit" size="lg" disabled={isSubmitting} className="w-full h-14 text-lg font-bold bg-brand-action hover:bg-red-800 text-white shadow-lg hover:shadow-xl transition-all rounded-xl">
+                  <Button type="submit" size="lg" disabled={isSubmitting} variant="action" className="w-full h-14 text-lg rounded-xl">
                     {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
                     {isSubmitting ? 'Enviando...' : 'Enviar Postulación'}
                   </Button>

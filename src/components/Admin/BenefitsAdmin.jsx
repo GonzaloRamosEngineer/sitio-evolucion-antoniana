@@ -185,7 +185,7 @@ const BenefitsAdmin = () => {
         title="Gestión de Beneficios"
         description="Administra los convenios y descuentos para la red solidaria."
         actions={
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+          <Button onClick={() => setIsDialogOpen(true)} variant="action">
             <Plus className="mr-2 h-4 w-4" />
             Nuevo beneficio
           </Button>
@@ -359,7 +359,7 @@ const BenefitsAdmin = () => {
               title="Todavía no hay beneficios cargados"
               description="Creá el primer convenio o descuento para la red solidaria."
               action={
-                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                <Button onClick={() => setIsDialogOpen(true)} variant="action">
                   <Plus className="mr-2 h-4 w-4" />
                   Nuevo beneficio
                 </Button>

@@ -123,9 +123,9 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`Home.jsx:51-72`), reconocimientos/autoridades de About (`:60-85`). Evaluar moverlos
   a BD (`fundacion_metrics` ya existe) para que no queden desactualizados.
 
-- [ ] **3.5 — Componentes de auth muertos en el repo.** `LoginForm.jsx` y
-  `RegisterForm.jsx` declarados "ya no se usan" pero siguen (con diseño divergente).
-  El login/registro real vive en `LoginPage`/`RegisterPage`. Borrar.
+- [x] **3.5 — Componentes de auth muertos en el repo. HECHO (2026-07-19, Sesión E).**
+  `LoginForm.jsx` y `RegisterForm.jsx` borrados (verificado: sin imports).
+  El login/registro real vive en `LoginPage`/`RegisterPage`.
 
 - [ ] **3.6 — Estado `inscrito` de educación sin métrica ni filtro.**
   El flujo permite marcar `inscrito` ("Finalizar Inscripción", `EducationAdmin.jsx:488`),
@@ -181,8 +181,10 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   `EducationForm` (es el patrón superior y ya funciona) y **estandarizar gradualmente**
   el resto de los forms al tocarlos en las Sesiones E/F, en vez de un refactor big-bang
   ahora. No se elimina la dependencia. Queda como deuda declarada e intencional, no como
-  inconsistencia accidental. **Pendiente (E/F):** migrar auth, contacto, colaborar,
-  partner y preinscripción a RHF+zod cuando se rediseñen.
+  inconsistencia accidental. **Avance (Sesión E, 2026-07-19):** `LoginPage` y
+  `RegisterPage` migradas a RHF+zod al rediseñarlas (schemas con mensajes en voseo,
+  errores por campo, `.refine()` para confirmación de contraseña). **Pendiente (F):**
+  contacto (`Contact.jsx`), colaborar (`ContactModal`) y partner (`ApplyPartnerPage`).
 
 - [x] **4.7 — Sin ESLint configurado ni tests. HECHO (2026-07-19, Sesión G).**
   - **ESLint flat config** (`eslint.config.js`) + script `npm run lint`. Base
@@ -219,19 +221,15 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 ### Problemas (path:línea)
 
-- [ ] **5.1 — CUATRO paletas superpuestas / 3 azules de marca / 3 fondos "blancos". [ALTA]**
-  En `tailwind.config.js:21-70` conviven tokens HSL, `primary.antoniano #103754`,
-  paleta legacy (`azul-profundo #1A2F48`, `celeste-complementario`) y paleta `brand.*`
-  (`brand-primary #163A68`, `brand-sand #F9F7F5`). Tres azules de marca distintos.
-  ~~**Home usa la paleta vieja**~~ **HECHO (2026-07):** Home migrada a `brand-*` +
-  `bg-hero-glow` (mismo hero que Activities/About); `.hero-pattern` eliminada de
-  `index.css`. **Pendiente:** colapsar tokens legacy que quedan en Auth forms,
-  `GuestRegistrationForm`, `ThemeSwitch`, `App.jsx:190`, `button.jsx:21-22`.
-  Fondos "blancos" distintos: `blanco-fundacion #F8F9F7`
-  (`App.jsx:190`), `brand-sand #F9F7F5`, `bg-[#F8FAFC]` (`Preinscripcion.jsx:43`),
-  `bg-[#FDFDFD]` (`Dashboard.jsx:127`).
-  **Acción:** colapsar a un set de tokens único (`brand.*`), eliminar paletas legacy,
-  migrar Home. **Esfuerzo:** ~2-3 días. **La mejora de diseño de mayor impacto.**
+- [x] **5.1 — CUATRO paletas superpuestas / 3 azules de marca / 3 fondos "blancos". HECHO (2026-07-19, Sesión E).**
+  Paleta única `brand.*`: eliminados de `tailwind.config.js` los tokens legacy
+  (`blanco-fundacion`, `marron-legado`, `celeste-complementario`, `azul-profundo`,
+  `primary.antoniano`) y sus CSS vars muertas de `index.css`. Los tokens shadcn (HSL)
+  ahora derivan de brand: `--primary` = brand-primary `#163A68`, `--background` =
+  brand-sand `#F9F7F5`, `--foreground` = brand-dark `#0F294A`. Migrados todos los usos
+  legacy (Auth forms, `GuestRegistrationForm`, `ProtectedRoute`, `App.jsx`) y los
+  fondos arbitrarios (`bg-[#F8FAFC]` en Preinscripcion/EducationAdmin, `bg-[#FDFDFD]`
+  en Dashboard) → `bg-brand-sand`. `grep` de tokens legacy en `src/` → 0.
 
 - [x] **5.2 — Errores de validación no renderizados en EducationForm.** (= 2.6) **HECHO (2026-07-19)**
 
@@ -267,16 +265,22 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   toggles con `aria-label`, `<h1 class="sr-only">Crear una cuenta</h1>`. El `<h1>` es
   `sr-only` para no alterar el diseño (el título visible sigue siendo el `CardTitle`).
 
-- [ ] **5.7 — Tipografía micro + valores arbitrarios. [MEDIA-ALTA]**
+- [~] **5.7 — Tipografía micro + valores arbitrarios. HECHO en superficie pública (2026-07-19, Sesión E).**
   ~~Logos de alianzas en Home a `text-[7px]` — ilegible.~~ **HECHO (2026-07):** alianzas
   refactorizadas a `<ul>` semántica con `text-lg`/`text-[11px]`.
-  Errores de form a `text-[9px]` (`EducationForm.jsx:95,102,107`). Labels a `text-[10px]`.
-  552 usos de `text-gray-*`/`text-[Npx]` arbitrarios en 60 archivos ignorando los tokens.
+  **HECHO (Sesión E):** errores de validación `text-[9px]` → `text-sm text-red-600`
+  (EducationForm, auth); labels `text-[10px] uppercase` → patrón unificado (ver 5.12);
+  micro-copy de forms/páginas públicas llevado a mínimos `text-xs`.
+  **Backlog opcional:** los paneles internos (Dashboard, EducationAdmin, Admin/*,
+  Comision/*) conservan micro-badges `text-[9-10px]` intencionales de su lenguaje de
+  tablas/badges; barrer solo si molesta en uso real.
 
-- [ ] **5.8 — Variantes de botón sin usar; CTA hardcodeado. [MEDIA]**
-  `button.jsx:21-22` define `antoniano`/`marron` que nadie usa; los CTA hardcodean
-  `bg-brand-action hover:bg-red-800` inline (`Activities.jsx:294`, `Collaborate.jsx:161`,
-  `Header.jsx:405`, `ApplyPartnerPage.jsx:209`…). **Acción:** crear `variant="action"`.
+- [x] **5.8 — Variantes de botón sin usar; CTA hardcodeado. HECHO (2026-07-19, Sesión E).**
+  `button.jsx`: variantes muertas `antoniano`/`marron` eliminadas; creada
+  `variant="action"` (granate `bg-brand-action`, hover `red-800`, font-bold, sombra).
+  Convertidos ~25 CTAs que hardcodeaban esas clases en páginas públicas, Header,
+  Admin/* y Comision/* (los `<span>` badge con bg-brand-action se conservan; los
+  botones outline-action de reintentar también, son otro patrón).
 
 - [x] **5.9 — `ApplyPartnerPage` sin estado loading → doble submit. HECHO (2026-07-19)**
   — `isSubmitting` + spinner + manejo del `null` que devuelve `addPartner` en error.
@@ -288,18 +292,21 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   `AdminPanel.jsx` (sticky móvil + aside) pasó de `top-24` a `top-20`, alineado con el
   header real `h-20` y con `CommissionPortal.jsx` (que ya usaba `top-20`).
 
-- [ ] **5.12 — Formularios con 3 estilos de label distintos. [MEDIA]**
-  `ApplyPartnerPage.jsx:115` (`text-brand-dark font-semibold`, correcto) vs páginas de
-  auth/educación (`text-[10px] text-gray-400 uppercase`). Unificar.
-  (Parcial 2026-07: `Contact.jsx` rediseñado ya usa el estilo correcto.)
+- [x] **5.12 — Formularios con 3 estilos de label distintos. HECHO (2026-07-19, Sesión E).**
+  Patrón único `text-brand-dark font-semibold` + sentence case aplicado a: LoginPage,
+  RegisterPage, EducationForm (13 labels + separadores de sección), Preinscripcion,
+  GuestRegistrationForm, RequestPasswordResetForm y UpdatePasswordForm. Inputs de forms
+  públicos con el estilo de Contact (`bg-brand-sand/70 border-brand-dark/15 rounded-sm`).
+  **Pendiente menor (F):** `ContactModal` (colaborar) al migrarlo a RHF+zod.
 
-- [ ] **5.13 — Propagar el lenguaje editorial de Home/Contact al resto. [MEDIA-ALTA]**
-  Home y Contact (rediseño 2026-07) definen el lenguaje visual de referencia (ver
-  sección "Lenguaje visual" en CLAUDE.md): `Eyebrow` (`src/components/ui/eyebrow.jsx`),
-  sentence case, voseo, filas/bandas hairline, `rounded-sm`, sin pills glassmórficos ni
-  grids de puntos. Pendientes: About, Activities, NewsPage, PartnersPage, BenefitsPage,
-  Collaborate, LegalDocuments, Login/Register, Preinscripcion (heroes y encabezados).
-  **Esfuerzo:** ~1 día (mecánico, página por página).
+- [x] **5.13 — Propagar el lenguaje editorial de Home/Contact al resto. HECHO (2026-07-19, Sesión E).**
+  Hero editorial (patrón de Contact: `bg-brand-primary` + `border-t-2 border-brand-gold`
+  + `bg-hero-glow` + `Eyebrow light` + h1 sentence case alineado a la izquierda)
+  aplicado a: About (rediseño completo de secciones), Activities, NewsPage,
+  PartnersPage, BenefitsPage, Collaborate, LegalDocuments (+ listado en filas hairline),
+  Login/Register (card sobria `rounded-sm`) y Preinscripcion. Eliminados los clichés:
+  grids de puntos (radial-gradient inline), pills glassmórficos, degradados de texto en
+  h1 y placeholders falsos de logos (chips MINISTERIO/FUNDACIÓN).
 
 ---
 
@@ -344,18 +351,18 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | C | Seguridad y auditoría | 2.4, 2.2, 2.8 (+5.9) | ~1,5 días | ✅ 2026-07-19 |
 | G | Infra de calidad | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (dark mode: eliminado), 4.6 (RHF+zod: híbrido) | ~1-2 días | ✅ 2026-07-19 |
 | D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ✅ 2026-07-19 |
-| **E** | **Identidad visual (SIGUIENTE)** | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 | ~2-3 días (partible) | ⬜ |
-| F | Robustez de datos | 4.1, 4.2, 4.3, 3.6 | ~3-4 días (partible) | ⬜ |
+| E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 (+4.6 auth) | ~2-3 días (partible) | ✅ 2026-07-19 |
+| **F** | **Robustez de datos (SIGUIENTE)** | 4.1, 4.2, 4.3, 3.6 (+4.6 resto, +ContactModal) | ~3-4 días (partible) | ⬜ |
 | H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
 
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
 decisión de la Fundación), 6.6 (dedup listado/detalle), 6.7 (upgrades de deps, al final).
 
-Notas de las sesiones D/E/F:
+Notas de las sesiones:
 - **G (hecha 2026-07-19):** decisiones tomadas — dark mode **eliminado** (4.4); RHF+zod
   **híbrido** (4.6, se estandariza gradualmente en E/F). Ya hay red de lint/tests.
-- **E:** aprovechar `npm run lint`/`npm test` al tocar ~60 archivos de estilos; al
-  rediseñar cada form migrar su validación a RHF+zod (cerrar 4.6).
+- **E (hecha 2026-07-19):** ver §8. Deja para F: RHF+zod en Contact/ContactModal/
+  ApplyPartnerPage y la unificación de estilos del form de `ContactModal`.
 - **F:** el refactor transversal de 4.1/4.2 ya tiene los tests de humo de G como red;
   ampliarlos al tocar la capa de datos.
 
@@ -412,6 +419,32 @@ Notas de las sesiones D/E/F:
   de `index.css` y las variantes `dark:`. `brand-dark` (color de marca) se conserva.
 - [~] 4.6 — Decisión del usuario: mantener RHF+zod **híbrido** (solo `EducationForm` hoy;
   estandarizar gradualmente en E/F). Documentado; sin cambio de código.
+
+**Sesión E — identidad visual (2026-07-19):**
+- [x] 5.1 — Paleta única `brand.*`: tokens legacy y `primary.antoniano` eliminados de
+  `tailwind.config.js`; CSS vars muertas fuera de `index.css`; tokens shadcn (HSL)
+  derivados de brand (`--primary` #163A68, `--background` = brand-sand, `--foreground`
+  = brand-dark); todos los usos legacy y fondos arbitrarios migrados. `grep` → 0.
+- [x] 5.8 — `variant="action"` en `button.jsx` (variantes muertas `antoniano`/`marron`
+  eliminadas); ~25 CTAs convertidos en públicas + Header + Admin/* + Comision/*.
+- [x] 5.13 — Lenguaje editorial (hero de Contact, Eyebrow, sentence case, voseo, filas
+  hairline, rounded-sm) propagado a About (rediseño completo), Activities,
+  ActivityDetailPage, NewsPage, PartnersPage, BenefitsPage, Collaborate, LegalDocuments,
+  Login/Register y Preinscripcion. Fuera: grids de puntos, pills glassmórficos,
+  degradados de texto, placeholders de logos.
+- [x] 5.12 / 5.7 — Labels unificados (`text-brand-dark font-semibold`, sentence case) e
+  inputs al estilo Contact en todos los forms públicos; errores de validación a
+  `text-sm text-red-600`. Micro-tipografía pública a mínimos `text-xs` (paneles
+  internos conservan sus micro-badges intencionales).
+- [x] 3.5 — `LoginForm.jsx`/`RegisterForm.jsx` muertos eliminados.
+- [~] 4.6 (avance) — `LoginPage`/`RegisterPage` migradas a react-hook-form + zod al
+  rediseñarlas; quedan Contact/ContactModal/ApplyPartnerPage para F.
+- Verificación: `npm run build` OK, `npm run lint` 0 errores (55 warnings de backlog,
+  antes 61), `npm test` 7/7 verdes.
+- Nota: la sesión se ejecutó con agentes en paralelo y un corte por límite de sesión a
+  mitad de camino; se auditó el estado real archivo por archivo y se completó a mano lo
+  que quedó a medias (BenefitsPage, RegisterPage, EducationForm, CTA de Collaborate y
+  un import de `ShieldCheck` roto).
 
 **Sesión C — seguridad y auditoría (2026-07-19, parcial):**
 - [x] 2.4 — Baseline completo del esquema público + RLS versionado en

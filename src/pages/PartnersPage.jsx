@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, ArrowRight, Handshake, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { getPartners } from '@/lib/storage';
 
 const PartnersPage = () => {
@@ -34,46 +35,37 @@ const PartnersPage = () => {
         <title>Partners Evolutivos - Fundación Evolución Antoniana</title>
         <meta
           name="description"
-          content="Conoce a nuestras marcas aliadas y los beneficios que ofrecen"
+          content="Conocé a nuestras marcas aliadas y los beneficios que ofrecen"
         />
+        <link rel="canonical" href="https://www.evolucionantoniana.com/partners" />
       </Helmet>
 
-      {/* --- HERO SECTION (Tech-Institucional) --- */}
-      <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
-        {/* Fondo Tech Sutil */}
-        <div className="absolute inset-0">
-           <div className="absolute inset-0 bg-hero-glow opacity-90"></div>
-           <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: 'radial-gradient(#C98E2A 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-           </div>
-        </div>
-
-        <div className="relative max-w-6xl mx-auto text-center z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-dark/40 border border-brand-gold/30 backdrop-blur-sm mb-6">
-               <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Alianzas Estratégicas</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl font-poppins font-bold text-white mb-6">
-              Partners <span className="text-brand-gold">Evolutivos</span>
-            </h1>
-            
-            <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Organizaciones líderes comprometidas con el desarrollo tecnológico y social de nuestra comunidad.
-            </p>
-            
-            <Link to="/postular-partner">
-              <Button size="lg" className="bg-brand-gold text-brand-dark hover:bg-white hover:text-brand-primary font-bold shadow-lg shadow-brand-gold/20 transition-all rounded-full h-12 px-8">
-                <Plus className="mr-2 h-5 w-5" />
-                Sumar mi Organización
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
+      {/* ============ HERO ============ */}
+      <section className="relative bg-brand-primary text-white overflow-hidden border-t-2 border-brand-gold">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow" />
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+        >
+          <div className="mb-6">
+            <Eyebrow light>Alianzas estratégicas</Eyebrow>
+          </div>
+          <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            Partners evolutivos
+          </h1>
+          <p className="max-w-[36rem] text-lg leading-relaxed text-white/75 mb-8">
+            Organizaciones líderes comprometidas con el desarrollo tecnológico y
+            social de nuestra comunidad.
+          </p>
+          <Link to="/postular-partner">
+            <Button variant="action" size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Sumar mi organización
+            </Button>
+          </Link>
+        </motion.div>
       </section>
 
       {/* --- CONTENIDO --- */}

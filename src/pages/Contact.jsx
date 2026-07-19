@@ -282,7 +282,8 @@ const Contact = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full h-12 font-semibold text-white bg-brand-action hover:bg-red-800 shadow-none"
+                variant="action"
+                className="w-full h-12 font-semibold"
                 disabled={loading}
               >
                 {loading ? (

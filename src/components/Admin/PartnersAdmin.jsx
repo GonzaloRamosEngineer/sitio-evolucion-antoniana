@@ -163,7 +163,7 @@ const PartnersAdmin = () => {
         title="Gestión de Partners"
         description="Administra las empresas y organizaciones aliadas."
         actions={
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+          <Button onClick={() => setIsDialogOpen(true)} variant="action">
             <Plus className="mr-2 h-4 w-4" />
             Nuevo partner
           </Button>
@@ -316,7 +316,7 @@ const PartnersAdmin = () => {
               title="Todavía no hay partners registrados"
               description="Registrá la primera organización aliada para que aparezca en el sitio."
               action={
-                <Button onClick={() => setIsDialogOpen(true)} className="bg-brand-action hover:bg-red-800 text-white font-bold">
+                <Button onClick={() => setIsDialogOpen(true)} variant="action">
                   <Plus className="mr-2 h-4 w-4" />
                   Nuevo partner
                 </Button>

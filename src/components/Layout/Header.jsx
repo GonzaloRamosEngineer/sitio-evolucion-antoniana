@@ -398,7 +398,8 @@ const Header = () => {
                   <Link to="/login">Ingresar</Link>
                 </Button>
                 <Button
-                  className="bg-brand-action text-white hover:bg-red-800 rounded-full px-5 font-bold shadow-md hover:shadow-lg transition-all"
+                  variant="action"
+                  className="rounded-full px-5"
                   asChild
                 >
                   <Link to="/register">Registrarse</Link>
@@ -520,7 +521,8 @@ const Header = () => {
                       </Link>
                     </Button>
                     <Button
-                      className="w-full bg-brand-action text-white"
+                      variant="action"
+                      className="w-full"
                       asChild
                     >
                       <Link to="/register" onClick={() => setIsMenuOpen(false)}>

@@ -124,7 +124,7 @@ const Dashboard = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-[#FDFDFD] pb-24 font-sans">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-brand-sand pb-24 font-sans">
       <Helmet>
         <title>Mi panel - Fundación Evolución Antoniana</title>
         <meta name="description" content="Panel personal de la Fundación Evolución Antoniana." />
