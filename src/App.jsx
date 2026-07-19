@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/Layout/Header";
 import Footer from "@/components/Layout/Footer";
 import BottomNavBar from "@/components/Layout/BottomNavBar";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 // Shell siempre presente (no se hace lazy: layout + guards + helpers)
@@ -176,26 +176,31 @@ const PageRoutes = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        {/* Reset de scroll en cada navegación */}
-        <ScrollToTop behavior="smooth" />
+    // reducedMotion="user" hace que framer-motion respete prefers-reduced-motion
+    // en todo el árbol (card.jsx + todos los whileInView): desactiva animaciones de
+    // transform/layout y conserva las de opacidad. Cumple WCAG 2.3.3 (ítem 5.4).
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <Router
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
+          {/* Reset de scroll en cada navegación */}
+          <ScrollToTop behavior="smooth" />
 
-        <div className="min-h-screen flex flex-col bg-blanco-fundacion">
-          <Header />
-          <main className="flex-1 font-inter pb-20 md:pb-0">
-            <PageRoutes />
-          </main>
-          <Footer />
-          <BottomNavBar />
-          {/* Botón flotante global */}
-          <BackToTop threshold={300} />
-          <Toaster />
-        </div>
-      </Router>
-    </AuthProvider>
+          <div className="min-h-screen flex flex-col bg-blanco-fundacion">
+            <Header />
+            <main className="flex-1 font-inter pb-20 md:pb-0">
+              <PageRoutes />
+            </main>
+            <Footer />
+            <BottomNavBar />
+            {/* Botón flotante global */}
+            <BackToTop threshold={300} />
+            <Toaster />
+          </div>
+        </Router>
+      </AuthProvider>
+    </MotionConfig>
   );
 }
 

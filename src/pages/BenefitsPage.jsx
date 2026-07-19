@@ -140,7 +140,7 @@ const BenefitsPage = () => {
       </section>
 
       {/* --- RESULTADOS --- */}
-      <main className="flex-1 py-12 px-4">
+      <div className="flex-1 py-12 px-4">
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <div className="flex justify-center py-24">
@@ -179,7 +179,7 @@ const BenefitsPage = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

@@ -185,7 +185,7 @@ const AdminPanel = () => {
       </section>
 
       {/* --- NAV MOBILE (chips scrolleables) --- */}
-      <div className="lg:hidden sticky top-24 z-30 bg-brand-sand/95 backdrop-blur-md px-4 py-2 border-b border-gray-200/60">
+      <div className="lg:hidden sticky top-20 z-30 bg-brand-sand/95 backdrop-blur-md px-4 py-2 border-b border-gray-200/60">
         <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
           {flatNavItems.map((item) => {
             const isActive = activeTab === item.value;
@@ -218,7 +218,7 @@ const AdminPanel = () => {
       <section className="px-4 py-6 lg:py-8">
         <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-6 items-start">
           {/* Sidebar desktop */}
-          <aside className="hidden lg:block sticky top-24">
+          <aside className="hidden lg:block sticky top-20">
             <nav className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 space-y-4">
               {NAV_GROUPS.map((group, gi) => (
                 <div key={group.label || gi}>
@@ -253,7 +253,7 @@ const AdminPanel = () => {
           </aside>
 
           {/* Contenido */}
-          <main className="min-h-[500px] min-w-0">
+          <div className="min-h-[500px] min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -265,7 +265,7 @@ const AdminPanel = () => {
                 {renderSection()}
               </motion.div>
             </AnimatePresence>
-          </main>
+          </div>
         </div>
       </section>
     </div>

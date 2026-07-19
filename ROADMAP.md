@@ -235,31 +235,37 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 - [x] **5.2 — Errores de validación no renderizados en EducationForm.** (= 2.6) **HECHO (2026-07-19)**
 
-- [ ] **5.3 — Contraste insuficiente pervasivo. [ALTA]**
-  `text-gray-400` (#9CA3AF) sobre blanco ≈ 2.85:1 (WCAG AA pide 4.5:1) usado como
-  patrón por defecto en labels/ayuda: `RegisterPage.jsx:109,117`, `LoginPage.jsx:103,112`,
-  `EducationForm.jsx:93`, `Collaborate.jsx:318`, `Preinscripcion.jsx:72`.
+- [x] **5.3 — Contraste insuficiente en labels/ayuda. HECHO (2026-07-19, Sesión D).**
+  `text-gray-400` (#9CA3AF, ≈2.85:1) → `text-gray-600` (#4B5563, ≈7:1, pasa AA) en el
+  texto de labels/descripciones/ayuda sobre fondo claro: LoginPage y RegisterPage
+  (labels, CardDescription, links de pie), EducationForm (13 labels + nota de pie),
+  Collaborate (subtítulos de opciones), Preinscripcion (aviso de privacidad).
+  **Criterio:** solo se tocaron instancias de **texto sobre fondo claro**; se dejaron a
+  propósito los iconos decorativos (`text-gray-400`/`text-gray-300` en lucide dentro de
+  inputs) y las instancias sobre fondo oscuro (donde el gris claro sí contrasta).
+  **Pendiente (barrido fino en E/5.7/5.12):** revisar caso por caso el resto de
+  `text-gray-*` verificando el fondo antes de cambiar.
 
-- [ ] **5.4 — Sin `prefers-reduced-motion` + animación global de cards. [ALTA]**
-  **Parcial (2026-07):** Home ya usa `useReducedMotion` (patrón `fadeIn`/`fadeUpInView`
-  reutilizable) + `viewport: once`. Falta el resto del sitio y `card.jsx`.
-  0 usos de `useReducedMotion`. `card.jsx:12-15` anima `whileInView` en **cada** card del
-  sitio (incluidas listas admin), + 17 `whileInView` extra. Incumple WCAG 2.3.3.
-  **Acción:** respetar `prefers-reduced-motion` (envolver o desactivar animaciones).
+- [x] **5.4 — `prefers-reduced-motion` + animación global de cards. HECHO (2026-07-19, Sesión D).**
+  Solución global en vez de tocar 6 archivos: `App.jsx` envuelve todo en
+  `<MotionConfig reducedMotion="user">`. framer-motion respeta ahora el ajuste del SO en
+  **todo** el árbol (card.jsx + los 14 `whileInView` + demás): desactiva animaciones de
+  transform/layout y conserva las de opacidad, así el contenido igual aparece (no queda
+  invisible). Cumple WCAG 2.3.3. El `useReducedMotion` manual de Home queda redundante
+  pero inofensivo.
 
-- [ ] **5.5 — `<main>` anidados/duplicados en ~9 páginas. [ALTA]**
-  `App.jsx:192` ya envuelve en `<main>`, pero también lo renderizan `NewsPage.jsx:72`,
-  `AdminPanel.jsx:256`, `ApplyPartnerPage.jsx:76`, `BenefitsPage.jsx:144`,
-  `BenefitDetailPage.jsx:140`, `PartnersPage.jsx:81`, `NewsDetailPage.jsx:167`,
-  `TermsOfUse.jsx:37`, `PrivacyPolicy.jsx:37`. HTML inválido, confunde lectores de
-  pantalla. **Acción:** dejar un solo `<main>` (el del shell) y cambiar los demás a `<div>`.
+- [x] **5.5 — `<main>` anidados/duplicados en 9 páginas. HECHO (2026-07-19, Sesión D).**
+  El `<main>` del shell (`App.jsx`) es ahora el único; los `<main>` de NewsPage,
+  AdminPanel, ApplyPartnerPage, BenefitsPage, BenefitDetailPage, PartnersPage,
+  NewsDetailPage, TermsOfUse y PrivacyPolicy pasaron a `<div>` (misma clase). `grep <main`
+  en `src/pages` → 0. HTML válido y un solo landmark `main` por documento.
 
-- [ ] **5.6 — Auth: labels sin `htmlFor/id`, toggles sin `aria-label`, sin `<h1>`. [ALTA]**
-  `LoginPage.jsx:112` (label sin `htmlFor`), `:115` (input sin `id`), `:142-148`
-  (toggle password sin `aria-label`); mismo patrón en `RegisterPage.jsx:117-127,146`.
-  El título visible usa `CardTitle` (`<h3>`), así que Login/Register **no tienen `<h1>`**.
-  (Curiosamente los componentes muertos `LoginForm/RegisterForm` sí tenían aria — se
-  perdió a11y al migrar a las páginas.)
+- [x] **5.6 — Auth: labels con `htmlFor/id`, toggles con `aria-label`, `<h1>`. HECHO (2026-07-19, Sesión D).**
+  LoginPage: 2 pares `htmlFor`/`id` (`login-email`, `login-password`), toggle de
+  contraseña con `aria-label` dinámico, `<h1 class="sr-only">Iniciar sesión</h1>`.
+  RegisterPage: 5 pares `htmlFor`/`id` (`reg-name/phone/email/password/confirm`), 2
+  toggles con `aria-label`, `<h1 class="sr-only">Crear una cuenta</h1>`. El `<h1>` es
+  `sr-only` para no alterar el diseño (el título visible sigue siendo el `CardTitle`).
 
 - [ ] **5.7 — Tipografía micro + valores arbitrarios. [MEDIA-ALTA]**
   ~~Logos de alianzas en Home a `text-[7px]` — ilegible.~~ **HECHO (2026-07):** alianzas
@@ -278,9 +284,9 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 - [x] **5.10 — `BottomNavBar` tapa 16px de contenido. HECHO (2026-07)**
   `App.jsx:192` ahora reserva `pb-20`.
 
-- [ ] **5.11 — Offsets sticky inconsistentes. [BAJA]**
-  `AdminPanel.jsx:188` usa `top-24` y `CommissionPortal.jsx:94` usa `top-20`, con header
-  real `h-20`. Unificar a `top-20`.
+- [x] **5.11 — Offsets sticky inconsistentes. HECHO (2026-07-19, Sesión D).**
+  `AdminPanel.jsx` (sticky móvil + aside) pasó de `top-24` a `top-20`, alineado con el
+  header real `h-20` y con `CommissionPortal.jsx` (que ya usaba `top-20`).
 
 - [ ] **5.12 — Formularios con 3 estilos de label distintos. [MEDIA]**
   `ApplyPartnerPage.jsx:115` (`text-brand-dark font-semibold`, correcto) vs páginas de
@@ -337,8 +343,8 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | B | Perfil de usuario | 2.1, 3.2 | ~medio día | ✅ 2026-07-19 |
 | C | Seguridad y auditoría | 2.4, 2.2, 2.8 (+5.9) | ~1,5 días | ✅ 2026-07-19 |
 | G | Infra de calidad | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (dark mode: eliminado), 4.6 (RHF+zod: híbrido) | ~1-2 días | ✅ 2026-07-19 |
-| **D** | **Accesibilidad (SIGUIENTE)** | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ⬜ |
-| E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 | ~2-3 días (partible) | ⬜ |
+| D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ✅ 2026-07-19 |
+| **E** | **Identidad visual (SIGUIENTE)** | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 | ~2-3 días (partible) | ⬜ |
 | F | Robustez de datos | 4.1, 4.2, 4.3, 3.6 | ~3-4 días (partible) | ⬜ |
 | H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
 
@@ -379,6 +385,18 @@ Notas de las sesiones D/E/F:
   `dni/birth_date/gender`; `updateUserProfile` devuelve la fila actualizada
   (`.select().single()`, la policy permite leer la fila propia); `EditProfileModal`
   normaliza opcionales vacíos a `null` (Postgres rechazaba `''` en `birth_date`).
+
+**Sesión D — accesibilidad (2026-07-19):**
+- [x] 5.5 — Un solo `<main>`: los 9 `<main>` anidados de páginas pasaron a `<div>`; queda
+  solo el del shell (`App.jsx`).
+- [x] 5.11 — Sticky offsets unificados a `top-20` (AdminPanel, alineado con el header `h-20`).
+- [x] 5.6 — A11y de Login/Register: `htmlFor`/`id` en todos los inputs, `aria-label` en
+  los toggles de contraseña, `<h1 class="sr-only">` por página.
+- [x] 5.3 — Contraste de labels/ayuda sobre fondo claro: `text-gray-400` → `text-gray-600`
+  en auth, EducationForm, Collaborate y Preinscripcion (solo texto sobre fondo claro; se
+  respetaron iconos decorativos y grises sobre fondo oscuro).
+- [x] 5.4 — `prefers-reduced-motion`: `<MotionConfig reducedMotion="user">` global en
+  `App.jsx` (cubre card.jsx + los 14 `whileInView`). WCAG 2.3.3.
 
 **Sesión G — infra de calidad (2026-07-19):**
 - [x] 4.7 — ESLint flat config (`eslint.config.js`) + `npm run lint` (0 errores, 61

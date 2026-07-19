@@ -69,7 +69,7 @@ const NewsPage = () => {
       </section>
 
       {/* --- CONTENIDO --- */}
-      <main className="flex-1 py-16 px-4">
+      <div className="flex-1 py-16 px-4">
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <div className="flex justify-center py-24">
@@ -159,7 +159,7 @@ const NewsPage = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

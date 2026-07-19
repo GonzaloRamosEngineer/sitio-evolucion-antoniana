@@ -164,7 +164,7 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
         <link rel="canonical" href={canonicalUrl} />
       </Helmet>
 
-      <main className="flex-1 py-12 px-4 md:px-6">
+      <div className="flex-1 py-12 px-4 md:px-6">
         <div className="max-w-4xl mx-auto">
           {/* Navegación Back */}
           <Link
@@ -352,7 +352,7 @@ const shareUrl = `${origin}/api/share/news/${encodeURIComponent(slugOrId)}`;
             </div>
           </motion.article>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

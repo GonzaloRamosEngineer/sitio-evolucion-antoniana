@@ -135,7 +135,7 @@ const BenefitDetailPage = () => {
         <meta name="description" content={benefit.descripcion} />
       </Helmet>
 
-      <main className="flex-1 py-12 px-4">
+      <div className="flex-1 py-12 px-4">
         <div className="max-w-5xl mx-auto">
           {/* Navegación Back */}
           <div className="mb-8">
@@ -321,7 +321,7 @@ const BenefitDetailPage = () => {
 
           </motion.div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

@@ -99,7 +99,7 @@ const ApplyPartnerPage = () => {
         }
       `}</style>
 
-      <main className="flex-1">
+      <div className="flex-1">
         {/* --- HERO SECTION --- */}
         <section className="relative bg-brand-primary overflow-hidden py-20 px-4">
             <div className="absolute inset-0">
@@ -249,7 +249,7 @@ const ApplyPartnerPage = () => {
             </motion.div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 };

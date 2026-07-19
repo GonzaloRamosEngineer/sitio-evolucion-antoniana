@@ -315,7 +315,7 @@ const Collaborate = () => {
                       <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">
                         {option.title}
                       </CardTitle>
-                      <p className="text-sm font-bold text-gray-400 uppercase tracking-wide mt-1">
+                      <p className="text-sm font-bold text-gray-600 uppercase tracking-wide mt-1">
                           {option.subtitle}
                       </p>
                     </CardHeader>

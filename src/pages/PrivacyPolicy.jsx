@@ -34,7 +34,7 @@ const PrivacyPolicy = () => {
          </div>
       </div>
 
-      <main className="flex-1 max-w-4xl mx-auto px-4 py-12 -mt-8 relative z-20">
+      <div className="flex-1 max-w-4xl mx-auto px-4 py-12 -mt-8 relative z-20">
         <motion.article
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,7 +118,7 @@ const PrivacyPolicy = () => {
              </Link>
           </div>
         </motion.article>
-      </main>
+      </div>
     </div>
   );
 };

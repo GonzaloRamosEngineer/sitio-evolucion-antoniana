@@ -84,7 +84,8 @@ const LoginPage = () => {
       >
         <Card className="shadow-2xl border-none bg-white/90 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
           <CardHeader className="space-y-4 text-center pt-12 pb-8">
-            <motion.div 
+            <h1 className="sr-only">Iniciar sesión</h1>
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -100,7 +101,7 @@ const LoginPage = () => {
               <CardTitle className="text-3xl font-black text-brand-dark tracking-tighter uppercase">
                 Bienvenido
               </CardTitle>
-              <CardDescription className="text-gray-400 font-medium text-xs uppercase tracking-widest">
+              <CardDescription className="text-gray-600 font-medium text-xs uppercase tracking-widest">
                 Gestión Digital Institucional
               </CardDescription>
             </div>
@@ -109,10 +110,11 @@ const LoginPage = () => {
           <CardContent className="px-8 pb-10">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Email Corporativo</Label>
+                <Label htmlFor="login-email" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Email Corporativo</Label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
                   <Input
+                    id="login-email"
                     name="email"
                     type="email"
                     placeholder="usuario@evolucionantoniana.com"
@@ -126,11 +128,12 @@ const LoginPage = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Contraseña</Label>
+                  <Label htmlFor="login-password" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Contraseña</Label>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
                   <Input
+                    id="login-password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
@@ -141,7 +144,8 @@ const LoginPage = () => {
                   />
                   <button
                     type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-brand-primary transition-colors"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-brand-primary transition-colors"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -162,7 +166,7 @@ const LoginPage = () => {
                   )}
                 </Button>
                 <div className="flex justify-center italic">
-                  <Link to="/request-password-reset" className="text-[10px] text-gray-400 hover:text-brand-primary transition-colors uppercase font-bold tracking-tighter">
+                  <Link to="/request-password-reset" className="text-[10px] text-gray-600 hover:text-brand-primary transition-colors uppercase font-bold tracking-tighter">
                     ¿Problemas de acceso? Recuperar cuenta
                   </Link>
                 </div>
@@ -170,7 +174,7 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-10 text-center border-t border-gray-50 pt-8">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-tighter">
                 ¿Nuevo integrante?{' '}
                 <Link to="/register" className="text-brand-action hover:underline underline-offset-4">
                   Crear perfil de acceso

@@ -52,7 +52,8 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 
 ## Arquitectura (big picture)
 
-- **Punto de entrada**: `src/main.jsx` → `src/App.jsx`. `App.jsx` arma el árbol `ThemeProvider > AuthProvider > Router` con shell fijo (Header/Footer/BottomNavBar) y define **todas las rutas**.
+- **Punto de entrada**: `src/main.jsx` (envuelve en `<HelmetProvider>`) → `src/App.jsx`. `App.jsx` arma el árbol `MotionConfig > AuthProvider > Router` con shell fijo (Header/Footer/BottomNavBar) y define **todas las rutas**. El shell tiene **un solo `<main>`**; las páginas NO deben renderizar su propio `<main>` (usar `<div>`).
+- **Animaciones y a11y**: `App.jsx` envuelve todo en `<MotionConfig reducedMotion="user">`, así que framer-motion respeta `prefers-reduced-motion` globalmente. No hace falta manejar `useReducedMotion` por componente; alcanza con usar `motion.*`/`whileInView` normal.
 - **Code splitting**: en `App.jsx` las páginas se importan con `React.lazy` y se envuelven en `<Suspense>`. Al agregar una página nueva, seguí ese patrón (lazy import + `<Route>`); el shell y `ProtectedRoute` van eager.
 - **Cliente Supabase ÚNICO**: `src/lib/supabase.js` exporta `supabase`. **No crear un segundo cliente** (había dos y causaba pantalla en blanco). Importá siempre de `@/lib/supabase`.
 - **Capa de datos**: `src/lib/storage.js` (partners/benefits/news) y `src/api/*.js` (activities/users/membership/education) envuelven las queries. Los getters de listado (`getNews`/`getPartners`/`getBenefits`) **lanzan** en error (no devuelven `[]`); el caller debe manejar loading/error/empty.

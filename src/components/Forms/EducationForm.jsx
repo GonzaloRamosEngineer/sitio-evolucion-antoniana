@@ -99,19 +99,19 @@ const EducationForm = ({ onSuccess }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Nombre Completo *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Nombre Completo *</Label>
             <Input placeholder="Ej: Juan Pérez" {...register('full_name')} className={inputBaseStyle} />
             {errors.full_name && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.full_name.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">DNI *</Label>
+                <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">DNI *</Label>
                 <Input placeholder="Sin puntos" {...register('dni')} className={inputBaseStyle} />
                 {errors.dni && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.dni.message}</p>}
             </div>
             <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Edad *</Label>
+                <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Edad *</Label>
                 <Input placeholder="Años" {...register('age')} className={inputBaseStyle} />
                 {errors.age && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.age.message}</p>}
             </div>
@@ -120,12 +120,12 @@ const EducationForm = ({ onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Email *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Email *</Label>
             <Input placeholder="correo@ejemplo.com" {...register('email')} className={inputBaseStyle} />
             {errors.email && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">WhatsApp *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">WhatsApp *</Label>
             <Input placeholder="387..." {...register('phone')} className={inputBaseStyle} />
             {errors.phone && <p className="text-red-500 text-[9px] font-bold ml-1">{errors.phone.message}</p>}
           </div>
@@ -141,7 +141,7 @@ const EducationForm = ({ onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Último año cursado *</Label>
+              <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Último año cursado *</Label>
               <Select onValueChange={(val) => setValue('last_year_completed', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
@@ -155,7 +155,7 @@ const EducationForm = ({ onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Nivel a iniciar *</Label>
+              <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Nivel a iniciar *</Label>
               <Select onValueChange={(val) => setValue('level_to_start', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir nivel" /></SelectTrigger>
                 <SelectContent>
@@ -169,7 +169,7 @@ const EducationForm = ({ onSuccess }) => {
         </div>
 
         <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Orientación</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Orientación</Label>
             <Select onValueChange={(val) => setValue('interest_area', val)}>
                 <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ const EducationForm = ({ onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Localidad *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Localidad *</Label>
             <Select onValueChange={(val) => setValue('location', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="¿Dónde vivís?" /></SelectTrigger>
               <SelectContent>
@@ -220,7 +220,7 @@ const EducationForm = ({ onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Vínculo con el Club *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Vínculo con el Club *</Label>
             <Select onValueChange={(val) => setValue('relationship_club', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Tu relación" /></SelectTrigger>
               <SelectContent>
@@ -236,7 +236,7 @@ const EducationForm = ({ onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Modalidad *</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Modalidad *</Label>
             <Select onValueChange={(val) => setValue('preferred_modality', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Elegir modalidad" /></SelectTrigger>
               <SelectContent>
@@ -248,7 +248,7 @@ const EducationForm = ({ onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Horario</Label>
+            <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Horario</Label>
             <Select onValueChange={(val) => setValue('preferred_schedule', val)}>
               <SelectTrigger className={inputBaseStyle}><SelectValue placeholder="Turno" /></SelectTrigger>
               <SelectContent>
@@ -262,7 +262,7 @@ const EducationForm = ({ onSuccess }) => {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Mensaje adicional</Label>
+        <Label className="text-[10px] font-bold text-gray-600 ml-1 uppercase">Mensaje adicional</Label>
         <Textarea 
           placeholder="Escribí aquí..." 
           {...register('message')} 
@@ -309,7 +309,7 @@ const EducationForm = ({ onSuccess }) => {
         )}
       </Button>
 
-      <div className="flex items-center gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest justify-center pt-4 border-t border-gray-50">
+      <div className="flex items-center gap-3 text-[10px] text-gray-600 font-bold uppercase tracking-widest justify-center pt-4 border-t border-gray-50">
         <ShieldCheck size={14} className="text-brand-gold" />
         Sistema de Registro Seguro - Fundación Evolución Antoniana
       </div>

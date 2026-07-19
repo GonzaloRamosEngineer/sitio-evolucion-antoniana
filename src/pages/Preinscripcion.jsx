@@ -67,7 +67,7 @@ const Preinscription = () => {
           {/* Componente Modular Inyectado */}
           <EducationForm onSuccess={() => setIsSuccess(true)} />
           
-          <div className="pt-8 mt-8 border-t border-gray-50 flex items-center gap-3 text-gray-400">
+          <div className="pt-8 mt-8 border-t border-gray-50 flex items-center gap-3 text-gray-600">
              <ShieldCheck size={16} className="text-brand-gold" />
              <p className="text-[10px] font-bold uppercase tracking-tighter leading-none">Tu información será utilizada únicamente con fines administrativos y de planificación educativa.</p>
           </div>

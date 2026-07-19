@@ -103,10 +103,11 @@ const RegisterPage = () => {
       >
         <Card className="shadow-2xl border-none bg-white/80 backdrop-blur-md rounded-[3rem] overflow-hidden">
           <CardHeader className="space-y-4 text-center pt-10 pb-6 bg-white/50 border-b border-gray-100">
+            <h1 className="sr-only">Crear una cuenta</h1>
             <img src="/img/logotransparente.png" alt="Logo" className="mx-auto w-20 h-20 object-contain drop-shadow-sm" />
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black text-brand-dark uppercase tracking-tight">Únete a la Comunidad</CardTitle>
-              <CardDescription className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em]">Crea tu perfil de acceso seguro</CardDescription>
+              <CardDescription className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.2em]">Crea tu perfil de acceso seguro</CardDescription>
             </div>
           </CardHeader>
 
@@ -114,46 +115,46 @@ const RegisterPage = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Nombre Completo</Label>
+                    <Label htmlFor="reg-name" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Nombre Completo</Label>
                     <div className="relative group">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
-                      <Input name="name" placeholder="Ej: Juan Pérez" value={formData.name} onChange={handleChange} className={inputStyle} required disabled={isSubmitting} />
+                      <Input id="reg-name" name="name" placeholder="Ej: Juan Pérez" value={formData.name} onChange={handleChange} className={inputStyle} required disabled={isSubmitting} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">WhatsApp</Label>
+                    <Label htmlFor="reg-phone" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">WhatsApp</Label>
                     <div className="relative group">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
-                      <Input name="phone" placeholder="387..." value={formData.phone} onChange={handleChange} className={inputStyle} disabled={isSubmitting} />
+                      <Input id="reg-phone" name="phone" placeholder="387..." value={formData.phone} onChange={handleChange} className={inputStyle} disabled={isSubmitting} />
                     </div>
                   </div>
               </div>
               
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Email Personal</Label>
+                <Label htmlFor="reg-email" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Email Personal</Label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
-                  <Input name="email" type="email" placeholder="tu@email.com" value={formData.email} onChange={handleChange} className={inputStyle} required disabled={isSubmitting} />
+                  <Input id="reg-email" name="email" type="email" placeholder="tu@email.com" value={formData.email} onChange={handleChange} className={inputStyle} required disabled={isSubmitting} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Contraseña</Label>
+                    <Label htmlFor="reg-password" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Contraseña</Label>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
-                      <Input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={formData.password} onChange={handleChange} className={inputStyle + " pr-10"} required disabled={isSubmitting} />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowPassword(!showPassword)}>
+                      <Input id="reg-password" name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••" value={formData.password} onChange={handleChange} className={inputStyle + " pr-10"} required disabled={isSubmitting} />
+                      <button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-gray-400 uppercase ml-1 tracking-widest">Confirmar</Label>
+                    <Label htmlFor="reg-confirm" className="text-[10px] font-black text-gray-600 uppercase ml-1 tracking-widest">Confirmar</Label>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-brand-primary transition-colors" />
-                      <Input name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••" value={formData.confirmPassword} onChange={handleChange} className={inputStyle + " pr-10"} required disabled={isSubmitting} />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      <Input id="reg-confirm" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••" value={formData.confirmPassword} onChange={handleChange} className={inputStyle + " pr-10"} required disabled={isSubmitting} />
+                      <button type="button" aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -177,7 +178,7 @@ const RegisterPage = () => {
             </form>
 
             <div className="mt-8 text-center border-t border-gray-100 pt-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-tighter">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-tighter">
                 ¿Ya tienes una cuenta?{' '}
                 <Link to="/login" className="text-brand-action hover:text-brand-dark transition-colors font-black">Inicia sesión aquí</Link>
               </p>
