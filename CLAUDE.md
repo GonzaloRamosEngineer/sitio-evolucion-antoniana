@@ -55,6 +55,22 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
 
+## Lenguaje visual (páginas públicas)
+
+- **Tipografía**: Poppins (display, 600–800) + Inter (texto) se cargan en `index.html`
+  vía Google Fonts. Estaban declaradas en Tailwind pero **nunca se cargaban** (todo caía
+  a la sans del sistema) — no quitar esos `<link>`.
+- **Lenguaje editorial** (Home y Contact son la referencia; propagarlo al resto):
+  eyebrows en versalitas con filete dorado (`src/components/ui/eyebrow.jsx`), headings
+  en *sentence case* y voseo, filas/bandas con bordes hairline en vez de cards con
+  sombra, `rounded-sm`, `brand-gold` como acento puntual (nunca degradados de texto),
+  animaciones con `useReducedMotion` + `viewport: once`. Evitar los clichés que se
+  quitaron: pills glassmórficos, grids de puntos, blobs desenfocados, todo-centrado.
+- **Logos de partners**: la Home usa versiones normalizadas (recorte de aire + masa
+  visual pareja) generadas por `tools/normalize-partner-logos.mjs` →
+  `public/img/partners/` + `src/data/partnerLogoOverrides.json` (fallback al `logo_url`
+  crudo de la DB). Re-correr el script al aprobar partners nuevos.
+
 ## Modelo de seguridad (CRÍTICO)
 
 La autorización del frontend (`ProtectedRoute`, `isAdmin`) es **solo UX, no una frontera de seguridad**. La seguridad real son las **políticas RLS de Supabase**: toda escritura sale del browser con la anon key (pública), así que cada tabla DEBE tener RLS bien configurado. Detalles ya implementados (no romper):
@@ -80,5 +96,9 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
 
 ## Deuda técnica conocida
 
+- **Ver `ROADMAP.md`** (raíz del repo): auditoría completa + hoja de ruta accionable de
+  bugs, deuda técnica y UI/UX, con `archivo:línea` y esfuerzo estimado. Mantener ese
+  documento al día en vez de re-auditar. Corrige 4 puntos desactualizados de este CLAUDE.md
+  (ver su última sección).
 - 3 vulns npm que requieren bumps breaking (`vite@8`, `uuid@14`) — migración aparte.
 - Sin tests ni lint configurados.

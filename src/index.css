@@ -103,12 +103,6 @@
 }
 
 /* Estilos de componentes adicionales */
-.hero-pattern {
-  background-image: 
-    radial-gradient(circle at 15% 25%, hsl(var(--celeste-complementario) / 0.3) 0%, transparent 40%),
-    radial-gradient(circle at 85% 75%, hsl(var(--azul-antoniano) / 0.15) 0%, transparent 50%);
-}
-
 .card-hover {
   @apply transition-all duration-300 ease-in-out;
 }

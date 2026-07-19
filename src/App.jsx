@@ -189,7 +189,7 @@ function App() {
 
           <div className="min-h-screen flex flex-col bg-blanco-fundacion dark:bg-background transition-colors duration-300">
             <Header />
-            <main className="flex-1 font-inter pb-16 md:pb-0">
+            <main className="flex-1 font-inter pb-20 md:pb-0">
               <PageRoutes />
             </main>
             <Footer />
