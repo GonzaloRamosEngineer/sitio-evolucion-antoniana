@@ -30,7 +30,7 @@ function guessMimeFromUrl(u = "") {
     if (lower.endsWith(".png")) return "image/png";
     if (lower.endsWith(".webp")) return "image/webp";
     if (lower.endsWith(".gif")) return "image/gif";
-  } catch {}
+  } catch { /* url mal formada: sin content-type */ }
   return null;
 }
 

@@ -1,6 +1,6 @@
 // src/pages/NewsPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, Newspaper, Loader2, AlertTriangle } from 'lucide-react'; // Agregué Newspaper para el placeholder

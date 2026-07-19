@@ -160,26 +160,49 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (novedades usa `slug.js`). **Acción:** timeout+retry+mensaje de cold-start; unificar
   naming. **Esfuerzo:** ~medio día. **Prioridad:** importante.
 
-- [ ] **4.4 — Dark mode = código muerto.** Tema forzado a claro
-  (`App.jsx:176-181`, `forcedTheme="light"`), pero existe paleta `.dark` completa
-  (`index.css:44-78`), 11-20 variantes `dark:` sueltas, `ThemeSwitch` importado y
-  dependencia `next-themes` viva. **Decisión:** completar dark mode **o** eliminar
-  `next-themes` + `ThemeSwitch` + variantes `dark:`. **Esfuerzo:** ~2-4h.
+- [x] **4.4 — Dark mode = código muerto. HECHO (2026-07-19, Sesión G).**
+  **Decisión del usuario: eliminarlo** (completar dark mode real era un trabajo de diseño
+  de 60+ archivos fuera del alcance de la sesión de calidad). Eliminados: dependencia
+  `next-themes`, `src/providers/ThemeProvider.jsx`, `src/components/ThemeSwitch.jsx`
+  (y su import comentado en Header), `forcedTheme`/wrapper en `App.jsx`, `darkMode: ["class"]`
+  en `tailwind.config.js`, la paleta `.dark` de `index.css` y las 3 variantes `dark:`
+  sueltas (App, checkbox). `grep dark:` → 0 en `src/`. (El token `brand-dark #0F294A`
+  NO es dark mode: es un color de marca, se conserva.)
 
-- [ ] **4.5 — `react-helmet` sin mantenimiento (27 archivos).** Sin publicar desde ~2020,
-  no soporta React 18 oficialmente, warnings con StrictMode. Migrar a
-  `react-helmet-async`. **Esfuerzo:** ~1 día (mecánico).
+- [x] **4.5 — `react-helmet` sin mantenimiento (28 archivos). HECHO (2026-07-19, Sesión G).**
+  Migrado a `react-helmet-async`: reemplazados los 28 imports (`Helmet`), `main.jsx`
+  ahora envuelve la app en `<HelmetProvider>`, y `react-helmet` salió de `package.json`.
+  La API de `<Helmet>` es idéntica, así que no cambió el markup de las páginas.
+  Build OK.
 
-- [ ] **4.6 — RHF+zod para un solo formulario.** `react-hook-form`, `zod`,
-  `@hookform/resolvers` se usan **solo** en `EducationForm.jsx`; el resto valida con
-  `useState` manual. Decidir: estandarizar RHF+zod en todos los forms **o** sacarlo.
-  **Esfuerzo:** ~1 día.
+- [~] **4.6 — RHF+zod para un solo formulario. DECIDIDO (2026-07-19, Sesión G): mantener híbrido.**
+  `react-hook-form`, `zod`, `@hookform/resolvers` se usan **solo** en `EducationForm.jsx`;
+  el resto valida con `useState` manual. **Decisión del usuario:** dejar RHF+zod en
+  `EducationForm` (es el patrón superior y ya funciona) y **estandarizar gradualmente**
+  el resto de los forms al tocarlos en las Sesiones E/F, en vez de un refactor big-bang
+  ahora. No se elimina la dependencia. Queda como deuda declarada e intencional, no como
+  inconsistencia accidental. **Pendiente (E/F):** migrar auth, contacto, colaborar,
+  partner y preinscripción a RHF+zod cuando se rediseñen.
 
-- [ ] **4.7 — Sin ESLint configurado ni tests.** ESLint instalado +
-  `eslint-config-react-app` pero **no hay** `.eslintrc*`/`eslint.config.js` ni script
-  `lint`. Cero tests. Única verificación: `npm run build` manual.
-  **Acción:** configurar ESLint (flat config) + script `lint`; agregar tests de humo
-  (Vitest). **Esfuerzo:** ~1-2 días. **Prioridad:** importante.
+- [x] **4.7 — Sin ESLint configurado ni tests. HECHO (2026-07-19, Sesión G).**
+  - **ESLint flat config** (`eslint.config.js`) + script `npm run lint`. Base
+    `js.recommended` + `eslint-plugin-react` (jsx-runtime, coherente con el runtime
+    automático de Vite) + `react-hooks` + `react-refresh`. Reglas calibradas contra el
+    código real: `no-unused-vars` como warning (ignora `React` y prefijo `_`),
+    `prop-types`/`no-unescaped-entities` off (no usamos PropTypes; copy en español).
+    Reemplaza a `eslint-config-react-app` (eslintrc, removido). El gate **falla en
+    errores** e informa 61 warnings preexistentes (imports sin usar, 2 exhaustive-deps)
+    como backlog para D/E — no bloquean. Estado inicial: **0 errores**.
+    De paso, el lint cazó y se arreglaron 4 errores reales: 2 `catch {}` vacíos
+    (`api/share/news/slug.js`, `membershipApi.js`), 1 escape inútil en regex
+    (`documentsApi.js`) y `fetchpriority`→`fetchPriority` en `Home.jsx` (React 18 solo
+    emite el atributo con el nombre camelCase).
+  - **Vitest + Testing Library + jsdom**: `vitest.config.js` aislado (no reusa
+    `vite.config.js` para no cargar los plugins del editor visual), `src/test/setup.js`
+    (jest-dom), scripts `npm test` / `npm run test:watch`. 3 tests de humo, 7 casos:
+    `cn()` (utils), `Honeypot` (anti-spam de 2.8) y `Eyebrow` (lenguaje visual). Todos verdes.
+  - Versiones fijadas por compatibilidad con `vite@4` (EOL, upgrade diferido en 6.7):
+    `vitest@0.34`, `jsdom@24`.
 
 ---
 
@@ -313,8 +336,8 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | A | Barrida rápida | 2.3, 2.5, 2.6/5.2, 3.3, 6.3, 2.7 | ~medio día | ✅ 2026-07-19 |
 | B | Perfil de usuario | 2.1, 3.2 | ~medio día | ✅ 2026-07-19 |
 | C | Seguridad y auditoría | 2.4, 2.2, 2.8 (+5.9) | ~1,5 días | ✅ 2026-07-19 |
-| **G** | **Infra de calidad (SIGUIENTE)** | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (decidir dark mode), 4.6 (decidir RHF+zod) | ~1-2 días | ⬜ |
-| D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ⬜ |
+| G | Infra de calidad | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (dark mode: eliminado), 4.6 (RHF+zod: híbrido) | ~1-2 días | ✅ 2026-07-19 |
+| **D** | **Accesibilidad (SIGUIENTE)** | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ⬜ |
 | E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 | ~2-3 días (partible) | ⬜ |
 | F | Robustez de datos | 4.1, 4.2, 4.3, 3.6 | ~3-4 días (partible) | ⬜ |
 | H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
@@ -322,11 +345,13 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
 decisión de la Fundación), 6.6 (dedup listado/detalle), 6.7 (upgrades de deps, al final).
 
-Notas de las sesiones G/D/E/F:
-- **G:** en 4.4 y 4.6 hay una decisión previa (¿dark mode sí o no? ¿RHF+zod en todos los
-  forms o eliminarlo?) — preguntar antes de tocar código.
-- **E:** conviene después de G para tener lint/build check al tocar ~60 archivos de estilos.
-- **F:** el refactor transversal de 4.1/4.2 necesita los tests de humo de G como red.
+Notas de las sesiones D/E/F:
+- **G (hecha 2026-07-19):** decisiones tomadas — dark mode **eliminado** (4.4); RHF+zod
+  **híbrido** (4.6, se estandariza gradualmente en E/F). Ya hay red de lint/tests.
+- **E:** aprovechar `npm run lint`/`npm test` al tocar ~60 archivos de estilos; al
+  rediseñar cada form migrar su validación a RHF+zod (cerrar 4.6).
+- **F:** el refactor transversal de 4.1/4.2 ya tiene los tests de humo de G como red;
+  ampliarlos al tocar la capa de datos.
 
 ---
 
@@ -354,6 +379,21 @@ Notas de las sesiones G/D/E/F:
   `dni/birth_date/gender`; `updateUserProfile` devuelve la fila actualizada
   (`.select().single()`, la policy permite leer la fila propia); `EditProfileModal`
   normaliza opcionales vacíos a `null` (Postgres rechazaba `''` en `birth_date`).
+
+**Sesión G — infra de calidad (2026-07-19):**
+- [x] 4.7 — ESLint flat config (`eslint.config.js`) + `npm run lint` (0 errores, 61
+  warnings de backlog); reemplaza `eslint-config-react-app`. Vitest + Testing Library +
+  jsdom (`vitest.config.js` aislado, `src/test/setup.js`, `npm test`/`test:watch`), 3
+  tests de humo (7 casos: `cn`, `Honeypot`, `Eyebrow`), todos verdes. El lint cazó y se
+  arreglaron 4 errores reales (2 `catch {}` vacíos, 1 escape inútil de regex,
+  `fetchpriority`→`fetchPriority` en Home).
+- [x] 4.5 — `react-helmet` → `react-helmet-async`: 28 imports migrados + `<HelmetProvider>`
+  en `main.jsx`; `react-helmet` fuera de `package.json`. API idéntica, build OK.
+- [x] 4.4 — Dark mode eliminado (decisión del usuario): fuera `next-themes`,
+  `ThemeProvider`, `ThemeSwitch`, `forcedTheme`, `darkMode` de Tailwind, paleta `.dark`
+  de `index.css` y las variantes `dark:`. `brand-dark` (color de marca) se conserva.
+- [~] 4.6 — Decisión del usuario: mantener RHF+zod **híbrido** (solo `EducationForm` hoy;
+  estandarizar gradualmente en E/F). Documentado; sin cambio de código.
 
 **Sesión C — seguridad y auditoría (2026-07-19, parcial):**
 - [x] 2.4 — Baseline completo del esquema público + RLS versionado en

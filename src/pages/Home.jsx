@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -298,7 +298,7 @@ const Home = () => {
                   src="/img/donativo_cancha.webp"
                   width="1280"
                   height="629"
-                  fetchpriority="high"
+                  fetchPriority="high"
                   alt="Entrega de donación en la cancha del Club Atlético Antoniano"
                 />
               </div>

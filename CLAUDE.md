@@ -10,7 +10,7 @@ Sitio web institucional de la **Fundación Evolución Antoniana** (Salta, Argent
 
 - **Vite 4 + React 18** (JavaScript, sin TypeScript), `react-router-dom` v6 (client-side routing, SPA).
 - **Supabase** como backend (auth + Postgres + Storage). La lógica de datos corre en el browser con la **anon key**; la única excepción es la **Edge Function `create-user`** (Deno), que usa la `service_role` para dar de alta usuarios desde el panel admin.
-- **Tailwind** + Radix/shadcn (`src/components/ui/`), `framer-motion`, `react-hook-form` + `zod`, `react-helmet`.
+- **Tailwind** + Radix/shadcn (`src/components/ui/`), `framer-motion`, `react-helmet-async`. Validación de forms **híbrida**: `react-hook-form` + `zod` en `EducationForm` (patrón a estandarizar gradualmente); el resto valida con `useState` manual.
 - Deploy en **Vercel**. Funciones serverless en `api/` (OG/share). `vercel.json` proxea `/api/*` a un webhook externo en Render.
 
 ## Comandos
@@ -20,10 +20,15 @@ npm ci          # instalar (NO npm install salvo para agregar deps; respeta pack
 npm run dev      # dev server (Vite, http://localhost:5173)
 npm run build    # build de producción a dist/
 npm run preview  # sirve el build de dist/ (build de producción real)
+npm run lint     # ESLint (flat config); falla en errores, informa warnings
+npm test         # Vitest (tests de humo, una sola pasada)
+npm run test:watch  # Vitest en watch
 ```
 
 - **Node 22** (ver `.nvmrc` = 22.12.0 y `engines`). Vercel buildea con la misma versión.
-- No hay scripts de test/lint/typecheck (ESLint está instalado pero sin configurar).
+- **ESLint** (`eslint.config.js`, flat) + **Vitest** (`vitest.config.js`) configurados en la
+  Sesión G. `npm run lint` es un gate que falla solo en errores; hoy quedan ~61 warnings
+  de backlog (imports sin usar, exhaustive-deps) para limpiar en las Sesiones D/E.
 
 ### Supabase (esquema y funciones, en `supabase/`)
 
@@ -39,7 +44,7 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 - `supabase/migrations/*.sql`: esquema (orden por timestamp, idempotentes). Se pueden aplicar con `db push` **o** pegándolas en el SQL Editor de Supabase (el dueño suele correrlas a mano ahí).
 - `supabase/data/*.sql`: cargas de datos puntuales (no son migraciones), p. ej. el proyecto real de la comisión.
 - `supabase/functions/`: Edge Functions (Deno). `create-user` usa `SUPABASE_SERVICE_ROLE_KEY` (inyectada por la plataforma; **nunca** se commitea).
-- **Verificación**: este proyecto no tiene tests. Para verificar cambios, corré `npm run build` y, cuando aplique, revisá el render real con `npm run preview` (las páginas dependen de datos de Supabase, así que un dump estático muestra el spinner de carga).
+- **Verificación**: hay tests de humo (`npm test`) que cubren utilidades y componentes puros, no el flujo completo. Para verificar cambios, corré `npm run build` + `npm run lint` + `npm test` y, cuando aplique, revisá el render real con `npm run preview` (las páginas dependen de datos de Supabase, así que un dump estático muestra el spinner de carga).
 
 ## Variables de entorno
 
@@ -89,8 +94,10 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
 ## Convenciones de trabajo
 
 - **Branch / deploy**: el historial commitea directo a `master` y el push dispara deploy en Vercel. Confirmar antes de pushear.
-- Correr `npm run build` antes de commitear cambios de código.
-- **Tema**: la app está forzada a claro (`forcedTheme="light"` en `App.jsx`). El dark mode es solo un esbozo y está deshabilitado a propósito (la paleta y los fondos son light-only); no agregar variantes `dark:` salvo que se reactive el tema.
+- Correr `npm run build` (y, si tocaste código, `npm run lint` + `npm test`) antes de commitear.
+- **Tema**: la app es **light-only**. El dark mode se eliminó en la Sesión G (no quedan
+  `next-themes`, `ThemeSwitch`, `forcedTheme`, paleta `.dark` ni variantes `dark:`). No
+  agregar variantes `dark:`; el token `brand-dark` es un color de marca, no dark mode.
 - **Nunca** versionar `node_modules` (está en `.gitignore`; estuvo versionado y rompía entre OS). Si hay binarios raros (ej. esbuild de otro SO, `.bin` sin permisos): `rm -rf node_modules && npm ci`.
 - Vercel: los **preview deployments dan 401** (protección); validar OG/social y comportamiento solo en **producción**, no en previews.
 
@@ -101,4 +108,5 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
   documento al día en vez de re-auditar. Corrige 4 puntos desactualizados de este CLAUDE.md
   (ver su última sección).
 - 3 vulns npm que requieren bumps breaking (`vite@8`, `uuid@14`) — migración aparte.
-- Sin tests ni lint configurados.
+- Tests de humo mínimos (Vitest); falta cobertura del flujo real. ESLint deja ~61 warnings
+  de backlog. Ambos se amplían/limpian en las Sesiones D/E/F.

@@ -28,7 +28,7 @@ export const deleteDocument = async (doc) => {
   return supabase.from('documents').delete().eq('id', doc.id);
 };
 
-const safeName = (name) => (name || 'archivo').replace(/[^\w.\-]+/g, '_');
+const safeName = (name) => (name || 'archivo').replace(/[^\w.-]+/g, '_');
 
 // Sube un archivo como nueva versión: lo guarda en Storage y registra la versión
 // de forma atómica (rpc add_document_version). Devuelve { data: versionNumber, error }.

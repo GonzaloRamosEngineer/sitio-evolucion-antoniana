@@ -40,42 +40,6 @@
     --blanco-fundacion: 220 20% 98%; /* #F8F9F7 */
     --celeste-complementario: 210 100% 91%; /* #D3E8FF */
   }
-
-  .dark {
-    /* Ajustar paleta dark si es necesario en el futuro */
-    --background: 208 65% 10%; 
-    --foreground: 220 20% 95%;
-    
-    --card: 208 65% 12%;
-    --card-foreground: 220 20% 95%;
-    
-    --popover: 208 65% 12%;
-    --popover-foreground: 220 20% 95%;
-    
-    --primary: 208 70% 70%; /* Celeste complementario para primario en dark */
-    --primary-foreground: 208 65% 10%;
-    
-    --secondary: 208 65% 20%;
-    --secondary-foreground: 220 20% 95%;
-    
-    --muted: 208 65% 20%;
-    --muted-foreground: 210 10% 65%;
-    
-    --accent: 208 65% 25%;
-    --accent-foreground: 220 20% 95%;
-    
-    --destructive: 0 63% 40%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 208 65% 25%;
-    --input: 208 65% 25%;
-    --ring: 208 70% 60%;
-
-    --azul-antoniano: 208 70% 70%;
-    --marron-legado: 28 30% 70%;
-    --blanco-fundacion: 208 65% 10%;
-    --celeste-complementario: 208 65% 25%;
-  }
 }
 
 @layer base {

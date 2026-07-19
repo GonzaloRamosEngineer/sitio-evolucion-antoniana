@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams } from 'react-router-dom';
 import ActivityForm from '@/components/Admin/ActivityForm';
 import { useActivities } from '@/hooks/useActivities';

@@ -68,7 +68,7 @@ async function callWebhook(path, options = {}) {
   let data = {};
   try {
     data = await res.json();
-  } catch {}
+  } catch { /* respuesta sin JSON válido */ }
 
   if (!res.ok) {
     const msg = data?.error ? JSON.stringify(data.error) : 'Error en la operación';

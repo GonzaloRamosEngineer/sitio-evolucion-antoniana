@@ -13,7 +13,6 @@ import Footer from "@/components/Layout/Footer";
 import BottomNavBar from "@/components/Layout/BottomNavBar";
 import { AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { ThemeProvider } from "@/providers/ThemeProvider";
 
 // Shell siempre presente (no se hace lazy: layout + guards + helpers)
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
@@ -177,34 +176,26 @@ const PageRoutes = () => {
 
 function App() {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
-      forcedTheme="light"
-      disableTransitionOnChange
-    >
-      <AuthProvider>
-        <Router
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
-          {/* Reset de scroll en cada navegación */}
-          <ScrollToTop behavior="smooth" />
+    <AuthProvider>
+      <Router
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        {/* Reset de scroll en cada navegación */}
+        <ScrollToTop behavior="smooth" />
 
-          <div className="min-h-screen flex flex-col bg-blanco-fundacion dark:bg-background transition-colors duration-300">
-            <Header />
-            <main className="flex-1 font-inter pb-20 md:pb-0">
-              <PageRoutes />
-            </main>
-            <Footer />
-            <BottomNavBar />
-            {/* Botón flotante global */}
-            <BackToTop threshold={300} />
-            <Toaster />
-          </div>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+        <div className="min-h-screen flex flex-col bg-blanco-fundacion">
+          <Header />
+          <main className="flex-1 font-inter pb-20 md:pb-0">
+            <PageRoutes />
+          </main>
+          <Footer />
+          <BottomNavBar />
+          {/* Botón flotante global */}
+          <BackToTop threshold={300} />
+          <Toaster />
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 // src/pages/ApplyPartnerPage.jsx
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Mail, Globe, FileText, Send, CheckCircle2, Loader2 } from 'lucide-react';

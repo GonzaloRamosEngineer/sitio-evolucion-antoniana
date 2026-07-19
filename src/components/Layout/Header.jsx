@@ -24,7 +24,6 @@ import {
   Briefcase
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -272,9 +271,6 @@ const Header = () => {
 
           {/* --- USUARIO / AUTH --- */}
           <div className="flex items-center gap-3">
-            {/* ThemeSwitch (Si lo usas, descomentar) */}
-            {/* <ThemeSwitch /> */}
-
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

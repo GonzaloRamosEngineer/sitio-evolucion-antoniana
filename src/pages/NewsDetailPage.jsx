@@ -1,6 +1,6 @@
 // src/pages/NewsDetailPage.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
