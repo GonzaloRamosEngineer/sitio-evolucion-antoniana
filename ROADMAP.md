@@ -46,7 +46,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`useAuth.jsx:29`), así que arrancan siempre vacíos.
   **Esfuerzo:** ~1-2h. **Prioridad:** alta.
 
-- [ ] **2.2 — 3 Edge Functions "fantasma" (invocadas, no versionadas).**
+- [x] **2.2 — 3 Edge Functions "fantasma" (invocadas, no versionadas). HECHO (2026-07-19)**
   `send-contact-email` (`Contact.jsx:47`, `ContactModal.jsx:32`),
   `send-activity-confirmation` (`useActivities.jsx:74`),
   `confirm-registration` (`ConfirmAttendancePage.jsx:31`).
@@ -352,8 +352,14 @@ Horizons 2.3, 404 2.5, errores de EducationForm 2.6) son de horas y sin riesgo.
   con valor se simula éxito sin escribir en la base.
 - [x] 5.9 — `ApplyPartnerPage`: `isSubmitting` + spinner (anti doble submit) y
   manejo de error de `addPartner` (antes mostraba éxito aunque fallara el insert).
-- [ ] 2.2 — Pendiente de personal access token (`sbp_...`) para descargar las 3
-  Edge Functions fantasma.
+- [x] 2.2 — Las 3 Edge Functions fantasma descargadas y versionadas en
+  `supabase/functions/` (`send-contact-email`, `send-activity-confirmation`,
+  `confirm-registration`; sin secretos hardcodeados, usan `Deno.env`). Además el
+  error del envío de confirmación ya no se traga: `useActivities` devuelve
+  `email_sent` y Activities/ActivityDetailPage avisan si el correo no salió.
+  Hallazgo: existe una Edge Function desplegada `crear-preferencia-mercadopago`
+  que el frontend NO invoca (los pagos van al microservicio de Render) — candidata
+  a legacy; revisar antes de borrar.
 
 ---
 

@@ -69,6 +69,8 @@ export const useActivities = () => {
     }
   }, []);
 
+  // Devuelve true si el correo salió. El fallo no aborta la inscripción
+  // (ya está registrada en la base), pero el caller debe avisarle al usuario.
   const invokeSendConfirmationEmail = async (registrationDetails) => {
     try {
       const { error: functionError } = await supabase.functions.invoke('send-activity-confirmation', {
@@ -77,9 +79,12 @@ export const useActivities = () => {
 
       if (functionError) {
         console.error('Error al invocar send-activity-confirmation:', functionError);
+        return false;
       }
+      return true;
     } catch (e) {
       console.error('Excepción al invocar send-activity-confirmation:', e);
+      return false;
     }
   };
 
@@ -104,20 +109,21 @@ export const useActivities = () => {
 
       if (dbError) throw dbError;
 
+      let emailSent = false;
       if (data) {
         const activity = activities.find(act => act.id === activityId);
-        await invokeSendConfirmationEmail({
+        emailSent = await invokeSendConfirmationEmail({
           registration_id: data.id,
           user_email: userEmail,
           user_name: userName,
           activity_id: activityId,
           activity_title: activity?.title || 'Actividad',
           confirmation_token: confirmationToken,
-          is_guest: false, 
+          is_guest: false,
         });
       }
-      
-      return data;
+
+      return data ? { ...data, email_sent: emailSent } : data;
     } catch (e) {
       const friendlyError = handleSupabaseError(e, 'registrar usuario en actividad');
       setError(friendlyError);

@@ -100,15 +100,23 @@ const ActivityDetailPage = () => {
     }
 
     try {
-      await registerForActivity(activity.id, user.id, user.email, user.name || user.user_metadata?.name || 'Usuario');
-      toast({
-        title: "¡Pre-Inscripción Exitosa!",
-        description: "Hemos enviado un correo para que confirmes tu asistencia. ¡Revisa tu bandeja de entrada!",
-        variant: "default",
-        className: "bg-brand-primary text-white border-none",
-        duration: 7000,
-        action: <MailCheck className="h-5 w-5 text-brand-gold" />
-      });
+      const registration = await registerForActivity(activity.id, user.id, user.email, user.name || user.user_metadata?.name || 'Usuario');
+      if (registration?.email_sent === false) {
+        toast({
+          title: "Inscripción registrada",
+          description: "Quedaste anotado, pero no pudimos enviarte el correo de confirmación. Escribinos si no te llega.",
+          duration: 9000,
+        });
+      } else {
+        toast({
+          title: "¡Pre-Inscripción Exitosa!",
+          description: "Hemos enviado un correo para que confirmes tu asistencia. ¡Revisa tu bandeja de entrada!",
+          variant: "default",
+          className: "bg-brand-primary text-white border-none",
+          duration: 7000,
+          action: <MailCheck className="h-5 w-5 text-brand-gold" />
+        });
+      }
       fetchActivityDetails();
       globalRefreshActivities();
     } catch (error) {
