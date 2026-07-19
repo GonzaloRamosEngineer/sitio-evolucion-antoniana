@@ -56,6 +56,9 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`useActivities.jsx:78-83`).
   **Acción:** exportar el código actual de las 3 funciones a `supabase/functions/` y
   versionarlas. **Esfuerzo:** ~medio día. **Prioridad:** alta.
+  _(2026-07-19: bloqueado a la espera de un personal access token `sbp_...` de
+  Supabase para `supabase functions download`; la secret key del proyecto no sirve
+  para la Management API.)_
 
 - [x] **2.3 — Scaffold de Hostinger Horizons corriendo en PRODUCCIÓN. HECHO (2026-07-19)**
   `vite.config.js:144-198` agrega `addTransformIndexHtml` **siempre** (fuera del guard
@@ -67,7 +70,8 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** borrar el bloque Horizons de `vite.config.js` y `public/.htaccess`.
   **Esfuerzo:** ~1h. **Prioridad:** alta (higiene/seguridad, cero riesgo de romper).
 
-- [ ] **2.4 — RLS de tablas públicas NO versionado.**
+- [x] **2.4 — RLS de tablas públicas NO versionado. HECHO (2026-07-19)** —
+  `supabase/migrations/20260719120000_baseline_public_schema_rls.sql`.
   Toda escritura sale del browser con la anon key, así que las políticas RLS **son** la
   seguridad real. Las de `projects/tasks/documents/document_versions` y el bucket están
   versionadas; las de `users` (base), `partners`, `benefits`, `news`, `activities`,
@@ -95,7 +99,9 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   About lista reconocimientos aspiracionales (`About.jsx:375`). En una fundación que
   publica transparencia, revisar/ajustar. **Esfuerzo:** ~1h (decisión + edición de copy).
 
-- [ ] **2.8 — Formularios públicos sin anti-spam.**
+- [x] **2.8 — Formularios públicos sin anti-spam. HECHO (2026-07-19)** — honeypot
+  compartido (`src/components/Forms/Honeypot.jsx`) en Contacto, modal de Colaborar,
+  Postular Partner y Preinscripción.
   Contacto, Postular Partner y Preinscripción escriben directo a BD/función con anon key,
   sin honeypot ni captcha. **Acción:** honeypot mínimo o rate-limit en la Edge Function.
   **Esfuerzo:** ~medio día.
@@ -243,10 +249,8 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   `bg-brand-action hover:bg-red-800` inline (`Activities.jsx:294`, `Collaborate.jsx:161`,
   `Header.jsx:405`, `ApplyPartnerPage.jsx:209`…). **Acción:** crear `variant="action"`.
 
-- [ ] **5.9 — `ApplyPartnerPage` sin estado loading → doble submit. [MEDIA]**
-  `handleSubmit` (`:24-46`) hace `await addPartner` pero el botón (`:209`) no se
-  deshabilita ni muestra spinner. Contrasta con Register/Login que sí manejan
-  `isSubmitting`.
+- [x] **5.9 — `ApplyPartnerPage` sin estado loading → doble submit. HECHO (2026-07-19)**
+  — `isSubmitting` + spinner + manejo del `null` que devuelve `addPartner` en error.
 
 - [x] **5.10 — `BottomNavBar` tapa 16px de contenido. HECHO (2026-07)**
   `App.jsx:192` ahora reserva `pb-20`.
@@ -334,6 +338,22 @@ Horizons 2.3, 404 2.5, errores de EducationForm 2.6) son de horas y sin riesgo.
   `dni/birth_date/gender`; `updateUserProfile` devuelve la fila actualizada
   (`.select().single()`, la policy permite leer la fila propia); `EditProfileModal`
   normaliza opcionales vacíos a `null` (Postgres rechazaba `''` en `birth_date`).
+
+**Sesión C — seguridad y auditoría (2026-07-19, parcial):**
+- [x] 2.4 — Baseline completo del esquema público + RLS versionado en
+  `supabase/migrations/20260719120000_baseline_public_schema_rls.sql` (15 tablas,
+  34 políticas, 17 funciones, triggers incl. los de `auth.users`, vistas, grants).
+  Origen: `supabase db dump` contra producción (vía pooler `aws-0-us-east-1`),
+  transformado a idempotente y validado ejecutándolo entero contra la base real
+  dentro de `BEGIN...ROLLBACK` sin errores. Las 4 políticas de storage
+  (`comision-docs`) ya estaban versionadas en la migración de fase 3.
+- [x] 2.8 — Honeypot anti-bots en los 4 formularios públicos (Contacto, modal de
+  Colaborar, Postular Partner, Preinscripción): campo `website` invisible; si viene
+  con valor se simula éxito sin escribir en la base.
+- [x] 5.9 — `ApplyPartnerPage`: `isSubmitting` + spinner (anti doble submit) y
+  manejo de error de `addPartner` (antes mostraba éxito aunque fallara el insert).
+- [ ] 2.2 — Pendiente de personal access token (`sbp_...`) para descargar las 3
+  Edge Functions fantasma.
 
 ---
 

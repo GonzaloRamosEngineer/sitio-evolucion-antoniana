@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { Honeypot } from '@/components/Forms/Honeypot';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -69,6 +70,7 @@ const Contact = () => {
     message: '',
   });
   const [loading, setLoading] = useState(false);
+  const [website, setWebsite] = useState('');
   const { toast } = useToast();
 
   const handleChange = (e) => {
@@ -81,6 +83,15 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
+    if (website) {
+      // Bot detectado: simular éxito sin enviar nada
+      toast({
+        title: '¡Mensaje enviado!',
+        description: 'Gracias por contactarnos. Te responderemos pronto.',
+        className: 'bg-green-600 text-white border-none',
+      });
+      return;
+    }
     setLoading(true);
 
     const emailBody = `
@@ -187,7 +198,8 @@ const Contact = () => {
               Completá el formulario y te respondemos a la brevedad.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 relative">
+              <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-brand-dark font-semibold">

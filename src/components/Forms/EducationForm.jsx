@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { createPreinscription } from '@/api/educationApi';
 import { useToast } from '@/components/ui/use-toast';
+import { Honeypot } from '@/components/Forms/Honeypot';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const educationSchema = z.object({
@@ -32,6 +33,7 @@ const educationSchema = z.object({
 
 const EducationForm = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [website, setWebsite] = useState('');
   const { toast } = useToast();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
@@ -46,6 +48,12 @@ const EducationForm = ({ onSuccess }) => {
   const selectedInterest = watch("interest_area");
 
   const onFormSubmit = async (data) => {
+    if (website) {
+      // Bot detectado: simular éxito sin escribir en la base
+      toast({ title: "¡Formulario Recibido!", description: "Tus datos han sido registrados correctamente.", className: "bg-brand-dark text-white rounded-2xl" });
+      if (onSuccess) onSuccess();
+      return;
+    }
     setIsSubmitting(true);
     try {
       // 🧠 LÓGICA DE NORMALIZACIÓN DE TELÉFONO PARA WHATSAPP (Mantenida)
@@ -79,8 +87,9 @@ const EducationForm = ({ onSuccess }) => {
   const inputBaseStyle = "rounded-xl border-gray-100 bg-gray-50/50 text-brand-dark placeholder:text-gray-400 focus:bg-white focus:ring-brand-primary/20 transition-all h-12";
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
-      
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10 relative">
+      <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
+
       {/* SECCIÓN 1: IDENTIDAD */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2">

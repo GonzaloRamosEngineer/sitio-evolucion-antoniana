@@ -6,17 +6,29 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
+import { Honeypot } from '@/components/Forms/Honeypot';
 import { Loader2, Send, User, Mail, MessageSquare } from 'lucide-react';
 
 const ContactModal = ({ open, onOpenChange, collaborationType }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [website, setWebsite] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (website) {
+      // Bot detectado: simular éxito sin enviar nada
+      toast({
+        title: "¡Mensaje Enviado!",
+        description: "Gracias por tu interés. Nos pondremos en contacto contigo pronto.",
+        className: "bg-green-600 text-white border-none"
+      });
+      onOpenChange(false);
+      return;
+    }
     setIsLoading(true);
 
     const subject = `Interés de colaboración: ${collaborationType}`;
@@ -78,7 +90,8 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
             </DialogHeader>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 relative">
+            <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
             <div className="space-y-2">
                 <Label htmlFor="name" className="text-brand-dark font-semibold">Nombre Completo</Label>
                 <div className="relative">

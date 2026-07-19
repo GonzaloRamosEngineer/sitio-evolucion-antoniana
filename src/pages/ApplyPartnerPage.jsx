@@ -3,16 +3,19 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Mail, Globe, FileText, Send, CheckCircle2 } from 'lucide-react';
+import { Building2, Mail, Globe, FileText, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { addPartner } from '@/lib/storage';
+import { Honeypot } from '@/components/Forms/Honeypot';
 
 const ApplyPartnerPage = () => {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [website, setWebsite] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -23,6 +26,7 @@ const ApplyPartnerPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!formData.nombre || !formData.descripcion || !formData.contacto_email) {
       toast({
@@ -33,8 +37,30 @@ const ApplyPartnerPage = () => {
       return;
     }
 
+    if (website) {
+      // Bot detectado: simular éxito sin escribir en la base
+      toast({
+        title: '¡Solicitud enviada! 🎉',
+        description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
+        className: 'bg-green-600 text-white border-none'
+      });
+      setTimeout(() => navigate('/partners'), 2000);
+      return;
+    }
+
+    setIsSubmitting(true);
     const newPartner = { ...formData, estado: 'pendiente' };
-    await addPartner(newPartner);
+    const created = await addPartner(newPartner);
+    setIsSubmitting(false);
+
+    if (!created) {
+      toast({
+        title: 'No pudimos enviar tu solicitud',
+        description: 'Ocurrió un error al guardar la postulación. Intentalo de nuevo en unos minutos.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     toast({
       title: '¡Solicitud enviada! 🎉',
@@ -110,7 +136,8 @@ const ApplyPartnerPage = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 border border-gray-100"
             >
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6 relative">
+                <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
                 <div>
                   <Label htmlFor="nombre" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     Nombre de la Organización *
@@ -206,9 +233,9 @@ const ApplyPartnerPage = () => {
                 </div>
 
                 <div className="pt-6">
-                  <Button type="submit" size="lg" className="w-full h-14 text-lg font-bold bg-brand-action hover:bg-red-800 text-white shadow-lg hover:shadow-xl transition-all rounded-xl">
-                    <Send className="mr-2 h-5 w-5" />
-                    Enviar Postulación
+                  <Button type="submit" size="lg" disabled={isSubmitting} className="w-full h-14 text-lg font-bold bg-brand-action hover:bg-red-800 text-white shadow-lg hover:shadow-xl transition-all rounded-xl">
+                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
+                    {isSubmitting ? 'Enviando...' : 'Enviar Postulación'}
                   </Button>
                 </div>
 
