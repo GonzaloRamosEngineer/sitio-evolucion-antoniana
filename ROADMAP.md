@@ -260,6 +260,15 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 - [ ] **5.12 — Formularios con 3 estilos de label distintos. [MEDIA]**
   `ApplyPartnerPage.jsx:115` (`text-brand-dark font-semibold`, correcto) vs páginas de
   auth/educación (`text-[10px] text-gray-400 uppercase`). Unificar.
+  (Parcial 2026-07: `Contact.jsx` rediseñado ya usa el estilo correcto.)
+
+- [ ] **5.13 — Propagar el lenguaje editorial de Home/Contact al resto. [MEDIA-ALTA]**
+  Home y Contact (rediseño 2026-07) definen el lenguaje visual de referencia (ver
+  sección "Lenguaje visual" en CLAUDE.md): `Eyebrow` (`src/components/ui/eyebrow.jsx`),
+  sentence case, voseo, filas/bandas hairline, `rounded-sm`, sin pills glassmórficos ni
+  grids de puntos. Pendientes: About, Activities, NewsPage, PartnersPage, BenefitsPage,
+  Collaborate, LegalDocuments, Login/Register, Preinscripcion (heroes y encabezados).
+  **Esfuerzo:** ~1 día (mecánico, página por página).
 
 ---
 
