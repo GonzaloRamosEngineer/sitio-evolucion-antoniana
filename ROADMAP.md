@@ -476,8 +476,30 @@ URLs feas `/api/share/...`.
   (los preview deployments de Vercel dan 401). Post-deploy: probar con
   https://developers.facebook.com/tools/debug/ y compartiendo por WhatsApp (cachea la
   preview, variar la URL para re-testear).
-- **Pendiente (fase 2, sesión aparte):** slugs para **actividades** (hoy usan UUID:
-  `/activities/<uuid>`) — requiere columna `slug` + backfill + ruta con fallback al UUID.
+
+**Previews de compartir — Fase 2: slugs de actividades (2026-07-19):**
+Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tienen slug.
+- [x] **Migración** `supabase/migrations/20260719130000_activities_slug.sql`: columna
+  `slug` + trigger `generate_activity_slug` (deriva del título, quita el prefijo de ciclo
+  `[Ciclo X · …] —`, translitera acentos, unicidad con sufijo md5; slug **estable** ante
+  ediciones de título, como news/benefits) + backfill de las filas existentes + índice
+  único + grants. **Idempotente.** Validada la lógica de slugify en JS contra los 12
+  títulos reales de producción: 12/12 slugs únicos, legibles, sin colisiones.
+- [x] **`getActivityById`** (useActivities) resuelve por UUID **o** slug (detecta el
+  formato). Los links viejos `/activities/<uuid>` siguen funcionando; la ruta
+  `/activities/:id` no cambió (el mismo param sirve para ambos).
+- [x] **Links** de listado (Activities), Home y Dashboard usan `activity.slug ||
+  activity.id`.
+- [x] **Función OG** `api/share/activities/slug.js` + rewrite por User-Agent en
+  `vercel.json` (completa el sistema de previews para actividades). Verificada contra
+  producción.
+- **Resiliencia de orden deploy/migración:** los puntos que dependen de la columna
+  (`Home`, join de registros del Dashboard, función OG) usan `select('*')` en vez de
+  pedir `slug` explícito, así **no se rompen si el código se deploya antes de correr la
+  migración** (el link cae al UUID hasta que exista la columna; el feature se auto-activa
+  al aplicarla). Aun así, lo ideal es **correr la migración primero**.
+- **IMPORTANTE:** la migración la corre el dueño (SQL Editor de Supabase o
+  `supabase db push`); recién ahí aparecen los slugs. Ver `supabase/README.md`.
 
 **Sesión C — seguridad y auditoría (2026-07-19, parcial):**
 - [x] 2.4 — Baseline completo del esquema público + RLS versionado en

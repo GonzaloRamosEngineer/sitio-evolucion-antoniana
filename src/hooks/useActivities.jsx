@@ -44,14 +44,19 @@ export const useActivities = () => {
     loadActivities();
   }, [loadActivities]);
 
-  const getActivityById = useCallback(async (id) => {
+  // Acepta un UUID o un slug. Los links viejos (/activities/<uuid>) siguen
+  // funcionando; los nuevos usan slug. Detecta el formato y filtra por la
+  // columna correcta (no se puede filtrar por `id` con un valor no-UUID: Postgres
+  // rechaza la sintaxis).
+  const getActivityById = useCallback(async (idOrSlug) => {
     setLoading(true);
     setError(null);
     try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idOrSlug || '');
       const { data, error: dbError } = await supabase
         .from('activities')
         .select('*')
-        .eq('id', id)
+        .eq(isUuid ? 'id' : 'slug', idOrSlug)
         .single();
 
       if (dbError) {
@@ -62,7 +67,7 @@ export const useActivities = () => {
       }
       return data;
     } catch (e) {
-      setError(handleSupabaseError(e, `obtener actividad ${id}`));
+      setError(handleSupabaseError(e, `obtener actividad ${idOrSlug}`));
       return null;
     } finally {
       setLoading(false);

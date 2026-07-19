@@ -9,13 +9,7 @@ export const getUserRegistrations = async (userId) => {
         id,
         registered_at,
         is_confirmed,
-        activity:activities (
-          id,
-          title,
-          date,
-          duration,
-          modality
-        )
+        activity:activities (*)
       `)
       .eq('user_id', userId)
       .order('registered_at', { ascending: false });

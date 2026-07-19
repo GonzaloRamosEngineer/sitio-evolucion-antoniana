@@ -276,7 +276,7 @@ const Dashboard = () => {
                                       </Badge>
                                       <span className="text-[10px] font-bold text-gray-300 uppercase italic">ID: #{reg.id.slice(0,8)}</span>
                                   </div>
-                                  <Link to={`/activities/${reg.activity.id}`}>
+                                  <Link to={`/activities/${reg.activity.slug || reg.activity.id}`}>
                                       <h3 className="text-3xl font-black text-brand-dark leading-tight group-hover:text-brand-primary transition-colors pr-6">{reg.activity.title}</h3>
                                   </Link>
                                   <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-50">

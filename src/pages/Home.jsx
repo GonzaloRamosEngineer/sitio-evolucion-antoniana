@@ -164,7 +164,9 @@ const Home = () => {
     let cancelled = false;
     supabase
       .from("activities")
-      .select("id, title, date, duration, modality, status, image_url")
+      // `*` (en vez de columnas explícitas) para no romper si la columna `slug`
+      // todavía no existe en la BD: el link cae a `id` hasta que corra la migración.
+      .select("*")
       .order("date", { ascending: true })
       .then(({ data, error }) => {
         if (!cancelled) setActivities(error ? [] : data || []);
@@ -440,7 +442,7 @@ const Home = () => {
                       {...inView({ transition: { duration: 0.6, delay: reduceMotion ? 0 : index * 0.08 } })}
                     >
                       <Link
-                        to={`/activities/${activity.id}`}
+                        to={`/activities/${activity.slug || activity.id}`}
                         className="group block border border-brand-dark/10 rounded-sm overflow-hidden bg-white hover:border-brand-primary/40 transition-colors h-full"
                       >
                         <div className="relative aspect-[16/10] overflow-hidden bg-brand-primary">

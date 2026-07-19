@@ -3,9 +3,11 @@
     { "source": "/novedades/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/news/slug?slug=:slug" },
     { "source": "/beneficios/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/benefits/slug?slug=:slug" },
     { "source": "/partners/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/partners/:slug" },
+    { "source": "/activities/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/activities/slug?slug=:slug" },
 
     { "source": "/api/share/news/(.*)", "destination": "/api/share/news/slug?slug=$1" },
     { "source": "/api/share/benefits/(.*)", "destination": "/api/share/benefits/slug?slug=$1" },
+    { "source": "/api/share/activities/(.*)", "destination": "/api/share/activities/slug?slug=$1" },
 
     { "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" },
 
@@ -42,6 +44,17 @@
     },
     {
       "source": "/api/share/partners/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
+        },
+        { "key": "Accept-Ranges", "value": "none" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/api/share/activities/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

@@ -539,7 +539,7 @@ const getCleanTitle = (title) => {
                   >
                     <Card className="h-full flex flex-col bg-white rounded-2xl border border-transparent hover:border-brand-primary/20 shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden group">
                       {/* Imagen Card */}
-                      <Link to={`/activities/${activity.id}`} className="block relative overflow-hidden aspect-[16/10]">
+                      <Link to={`/activities/${activity.slug || activity.id}`} className="block relative overflow-hidden aspect-[16/10]">
                         {activity.image_url ? (
                           <img
                             alt={activity.title || 'Imagen de actividad'}
@@ -598,7 +598,7 @@ const getCleanTitle = (title) => {
                       </Link>
 
                       <CardHeader className="pt-6 pb-2 px-6">
-                        <Link to={`/activities/${activity.id}`}>
+                        <Link to={`/activities/${activity.slug || activity.id}`}>
                           <CardTitle className="text-xl font-poppins font-bold text-brand-dark group-hover:text-brand-action transition-colors duration-200 leading-tight line-clamp-2">
                             {getCleanTitle(activity.title)}
                           </CardTitle>
