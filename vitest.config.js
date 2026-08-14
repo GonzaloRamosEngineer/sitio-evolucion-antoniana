@@ -19,5 +19,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
     include: ['src/**/*.{test,spec}.{js,jsx}'],
+    // Los `*.integration.test.js` necesitan la Supabase local de Docker; corren
+    // aparte con `npm run test:integration` (ver vitest.integration.config.js).
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.integration.test.{js,jsx}'],
   },
 });
