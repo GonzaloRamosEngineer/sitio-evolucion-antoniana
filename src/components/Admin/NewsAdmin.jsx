@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { getNews, addNews, updateNews, deleteNews } from '@/lib/storage';
+import { addNews, updateNews, deleteNews } from '@/lib/storage';
+import { useNews } from '@/hooks/useContentQueries';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
@@ -15,12 +16,9 @@ import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 
 const NewsAdmin = () => {
-  const [news, setNews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { query, setQuery, filtered: filteredNews } = useSearch(news, ['title']);
   const [editingNews, setEditingNews] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -29,18 +27,15 @@ const NewsAdmin = () => {
     body_md: '',
   });
 
-  const loadNews = async () => {
-    const { data, error } = await getNews();
-    if (error) {
+  // Lectura vía TanStack Query (ROADMAP 4.2): misma caché que NewsPage y Home.
+  const { data: news = [], isPending: isLoading, isError, refetch: loadNews } = useNews();
+  const { query, setQuery, filtered: filteredNews } = useSearch(news, ['title']);
+
+  useEffect(() => {
+    if (isError) {
       toast({ variant: 'destructive', title: 'Error al cargar noticias', description: 'No se pudieron obtener las noticias.' });
     }
-    setNews(data);
-    setIsLoading(false);
-  };
-  
-  useEffect(() => {
-    loadNews();
-  }, []);
+  }, [isError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

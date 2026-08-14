@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,7 +16,7 @@ import {
   Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getBenefits, getPartnerById } from "@/lib/storage";
+import { useAllBenefits, useAllPartners } from "@/hooks/useContentQueries";
 import { toast } from "@/components/ui/use-toast";
 
 // Util para comparar slugs
@@ -33,41 +33,24 @@ const BenefitDetailPage = () => {
   const params = useParams();
   const lookup = params.slug ?? params.id ?? "";
 
-  const [benefit, setBenefit] = useState(null);
-  const [partner, setPartner] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const fetchBenefit = async () => {
-      setLoading(true);
+  // Reusa la caché del listado y resuelve el beneficio sobre el dato cacheado.
+  const { data: benefit = null, isPending: loading } = useAllBenefits({
+    select: (all) =>
+      // 1) por ID exacto, 2) por slug guardado, 3) fallback slugify(titulo)
+      all.find((b) => String(b.id) === String(lookup)) ??
+      all.find((b) => b.slug && b.slug === lookup) ??
+      all.find((b) => slugify(b.titulo) === lookup) ??
+      null,
+  });
 
-      // `data` siempre es un array (vacío si la consulta falló), así que un error
-      // de red cae en el mismo "no encontrado" que un slug inexistente.
-      const { data: all } = await getBenefits();
-
-      // 1) por ID exacto
-      const found =
-        all.find((b) => String(b.id) === String(lookup)) ||
-        // 2) por slug guardado
-        all.find((b) => b.slug && b.slug === lookup) ||
-        // 3) fallback: slugify(titulo)
-        all.find((b) => slugify(b.titulo) === lookup);
-
-      setBenefit(found || null);
-
-      if (found?.partner_id) {
-        const { data: p } = await getPartnerById(found.partner_id);
-        setPartner(p);
-      } else {
-        setPartner(null);
-      }
-
-      setLoading(false);
-    };
-
-    fetchBenefit();
-  }, [lookup]);
+  // El partner del beneficio sale de la misma caché de partners que usa el resto
+  // del sitio, en vez de un `getPartnerById` suelto por cada visita al detalle.
+  const { data: partner = null } = useAllPartners({
+    enabled: Boolean(benefit?.partner_id),
+    select: (rows) => rows.find((p) => p.id === benefit?.partner_id) ?? null,
+  });
 
   const handleCopyCode = async () => {
     const code = benefit?.codigo || benefit?.codigo_descuento || "";

@@ -25,11 +25,15 @@ export const unwrap = async (resultPromise) => {
 /** Claves de query centralizadas: evita typos y hace fácil invalidar por prefijo. */
 export const queryKeys = {
   news: ['news'],
+  // Anidada bajo 'news' a propósito: invalidar `['news']` alcanza a los detalles.
+  newsItem: (slugOrId) => ['news', 'item', slugOrId],
   partners: ['partners'],
   benefits: ['benefits'],
   activities: ['activities'],
   userRegistrations: (userId) => ['registrations', userId],
   userMemberships: (userId) => ['memberships', userId],
+  userDonations: (userId) => ['donations', userId],
+  foundationMetrics: ['fundacion_metrics'],
   preinscriptions: ['preinscriptions'],
 };
 

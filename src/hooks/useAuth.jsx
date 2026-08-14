@@ -181,14 +181,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('dashboard_loaded_') || key === 'activities_loaded') {
-          sessionStorage.removeItem(key);
-        }
-      });
-      // Además de la caché casera de arriba, hay que limpiar la de TanStack: si
-      // no, lo que vio un usuario (por ejemplo los partners no aprobados que ve
-      // un admin) seguiría cacheado para quien se loguee después en el mismo tab.
+      // Limpiar la caché de queries es obligatorio: si no, lo que vio un usuario
+      // (por ejemplo los partners no aprobados que ve un admin) seguiría
+      // cacheado para quien se loguee después en el mismo tab.
+      //
+      // Antes acá había un barrido de claves de `sessionStorage`
+      // (`dashboard_loaded_*`, `activities_loaded`): quedó muerto al migrar a
+      // TanStack Query (ROADMAP 4.2), ya nadie las escribe.
       queryClient.clear();
     } catch (error) {
       console.error('Error in logout:', error.message);

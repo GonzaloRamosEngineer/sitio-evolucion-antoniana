@@ -12,16 +12,29 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/lib/storage', () => ({
   getNews: vi.fn(),
+  getNewsById: vi.fn(),
+  getNewsBySlug: vi.fn(),
   getPartners: vi.fn(),
   getBenefits: vi.fn(),
 }));
 
+vi.mock('@/api/educationApi', () => ({ getPreinscriptions: vi.fn() }));
+vi.mock('@/api/activitiesApi', () => ({ getUserRegistrations: vi.fn() }));
+vi.mock('@/api/membershipApi', () => ({ getUserMemberships: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
-const { getPartners, getBenefits, getNews } = await import('@/lib/storage');
-const { useApprovedPartners, useAllPartners, useActiveBenefits, useNews } = await import(
-  '@/hooks/useContentQueries'
+const { getPartners, getBenefits, getNews, getNewsById, getNewsBySlug } = await import(
+  '@/lib/storage'
 );
+const { getUserRegistrations } = await import('@/api/activitiesApi');
+const {
+  useApprovedPartners,
+  useAllPartners,
+  useActiveBenefits,
+  useNews,
+  useNewsItem,
+  useUserRegistrations,
+} = await import('@/hooks/useContentQueries');
 
 const PARTNERS = [
   { id: '1', nombre: 'Aprobado A', estado: 'aprobado' },
@@ -142,5 +155,92 @@ describe('useNews', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toHaveLength(3);
+  });
+});
+
+describe('useNewsItem', () => {
+  const UUID = '3f1a2b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
+
+  it('resuelve por id cuando el parámetro es un UUID', async () => {
+    getNewsById.mockResolvedValue({ data: { id: UUID }, error: null });
+
+    const { result } = renderHook(() => useNewsItem(UUID), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(getNewsById).toHaveBeenCalledWith(UUID);
+    expect(getNewsBySlug).not.toHaveBeenCalled();
+  });
+
+  it('resuelve por slug cuando no lo es', async () => {
+    getNewsBySlug.mockResolvedValue({ data: { slug: 'una-noticia' }, error: null });
+
+    const { result } = renderHook(() => useNewsItem('una-noticia'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(getNewsBySlug).toHaveBeenCalledWith('una-noticia');
+    expect(getNewsById).not.toHaveBeenCalled();
+  });
+
+  it('no consulta nada sin parámetro de ruta', async () => {
+    renderHook(() => useNewsItem(undefined), { wrapper });
+
+    // Un `await` para darle la chance de disparar si el `enabled` estuviera mal.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(getNewsById).not.toHaveBeenCalled();
+    expect(getNewsBySlug).not.toHaveBeenCalled();
+  });
+});
+
+describe('queries por usuario: guard `enabled`', () => {
+  it('NO consulta mientras no hay userId', async () => {
+    // Sin el `enabled`, esto dispararía una consulta con `undefined` y quedaría
+    // cacheada bajo una clave inútil — y en el Dashboard se ejecuta en cada
+    // render mientras auth resuelve.
+    const { result } = renderHook(() => useUserRegistrations(undefined), { wrapper });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(getUserRegistrations).not.toHaveBeenCalled();
+    // Una query deshabilitada sigue en `isPending`: por eso el Dashboard combina
+    // este estado con `Boolean(userId)` para no dejar el spinner colgado.
+    expect(result.current.isPending).toBe(true);
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('consulta en cuanto hay userId', async () => {
+    getUserRegistrations.mockResolvedValue({ data: [{ id: 'r1' }], error: null });
+
+    const { result } = renderHook(() => useUserRegistrations('u1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(getUserRegistrations).toHaveBeenCalledWith('u1');
+    expect(result.current.data).toEqual([{ id: 'r1' }]);
+  });
+});
+
+describe('detalle desde la caché del listado', () => {
+  it('resuelve un partner por slug sin pedir nada extra', async () => {
+    // Es lo que hace PartnerDetailPage: navegar del listado al detalle no
+    // dispara una consulta nueva.
+    const { result } = renderHook(
+      () =>
+        useAllPartners({
+          select: (rows) => rows.find((p) => p.nombre === 'Pendiente B') ?? null,
+        }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toMatchObject({ id: '2' });
+    expect(getPartners).toHaveBeenCalledTimes(1);
+  });
+
+  it('devuelve null si el slug no existe, sin romper', async () => {
+    const { result } = renderHook(
+      () => useAllPartners({ select: (rows) => rows.find((p) => p.slug === 'no-existe') ?? null }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toBeNull();
   });
 });

@@ -18,6 +18,7 @@ import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 import { useActivities } from '@/hooks/useActivities';
+import { useActivitiesQuery } from '@/hooks/useContentQueries';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -29,23 +30,24 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const ActivityList = ({ onAddRequest }) => {
-  const { activities, deleteActivity, loading: activitiesHookLoading, error: activitiesError, refreshActivities } = useActivities();
+  // Lectura vía TanStack Query (ROADMAP 4.2); de `useActivities` queda solo la
+  // mutación de borrado. Reemplaza al `useEffect` con la caché casera
+  // `sessionStorage('admin_activities_loaded')`, gemela de la que había en la
+  // página pública y con los mismos problemas.
+  const {
+    data: activities = [],
+    isPending: activitiesHookLoading,
+    error: activitiesError,
+    refetch: refreshActivities,
+  } = useActivitiesQuery();
+
+  const { deleteActivity } = useActivities();
   const { loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { query, setQuery, filtered } = useSearch(activities, ['title', 'description', 'status']);
-
-  useEffect(() => {
-    if (!authLoading) {
-      const hasLoaded = sessionStorage.getItem('admin_activities_loaded');
-      if (!hasLoaded || activities.length === 0) {
-        refreshActivities();
-        sessionStorage.setItem('admin_activities_loaded', 'true');
-      }
-    }
-  }, [authLoading, refreshActivities, activities.length]);
 
   const handleEdit = (activity) => {
     navigate(`/admin/activities/edit/${activity.id}`);
@@ -126,7 +128,8 @@ const ActivityList = ({ onAddRequest }) => {
     />
   );
 
-  const showInitialLoader = authLoading || (activitiesHookLoading && (activities.length === 0 && !sessionStorage.getItem('admin_activities_loaded')));
+  // `isPending` ya es false si hay dato cacheado: no hace falta la marca extra.
+  const showInitialLoader = authLoading || activitiesHookLoading;
 
   if (showInitialLoader) {
     return (

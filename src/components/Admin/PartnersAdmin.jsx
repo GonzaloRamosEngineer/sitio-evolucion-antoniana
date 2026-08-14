@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { getPartners, updatePartner, deletePartner, addPartner } from '@/lib/storage';
+import { updatePartner, deletePartner, addPartner } from '@/lib/storage';
+import { useAllPartners } from '@/hooks/useContentQueries';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
@@ -26,12 +27,9 @@ import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 
 const PartnersAdmin = () => {
-  const [partners, setPartners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { query, setQuery, filtered: filteredPartners } = useSearch(partners, ['nombre', 'contacto_email']);
   const [editingPartner, setEditingPartner] = useState(null);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -44,18 +42,18 @@ const PartnersAdmin = () => {
     orden: 1000,
   });
 
-  const loadPartners = async () => {
-    const { data, error } = await getPartners();
-    if (error) {
+  // Lectura vía TanStack Query (ROADMAP 4.2). El panel usa la variante sin
+  // filtrar: comparte caché con la vista pública, que filtra por aprobados.
+  const { data: partners = [], isPending: isLoading, isError, refetch: loadPartners } = useAllPartners();
+  const { query, setQuery, filtered: filteredPartners } = useSearch(partners, ['nombre', 'contacto_email']);
+
+  // El aviso de fallo de carga se mantiene como toast (antes salía dentro de
+  // `loadPartners`); ahora se dispara al pasar a estado de error.
+  useEffect(() => {
+    if (isError) {
       toast({ variant: 'destructive', title: 'Error al cargar socios', description: 'No se pudieron obtener los socios.' });
     }
-    setPartners(data);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    loadPartners();
-  }, []);
+  }, [isError]);
 
   const resetForm = () => {
     setEditingPartner(null);

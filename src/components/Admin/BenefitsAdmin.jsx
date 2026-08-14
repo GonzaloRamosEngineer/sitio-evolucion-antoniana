@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { getBenefits, addBenefit, updateBenefit, deleteBenefit } from '@/lib/storage';
+import { addBenefit, updateBenefit, deleteBenefit } from '@/lib/storage';
+import { useAllBenefits } from '@/hooks/useContentQueries';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
@@ -45,12 +46,9 @@ const categories = [
 ];
 
 const BenefitsAdmin = () => {
-  const [benefits, setBenefits] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { query, setQuery, filtered: filteredBenefits } = useSearch(benefits, ['titulo', 'categoria']);
   const [editingBenefit, setEditingBenefit] = useState(null);
   const [formData, setFormData] = useState({
     titulo: '',
@@ -63,18 +61,16 @@ const BenefitsAdmin = () => {
     orden: 1000,
   });
 
-  const loadBenefits = async () => {
-    const { data, error } = await getBenefits();
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error al cargar beneficios', description: 'No se pudieron obtener los beneficios.' });
-    }
-    setBenefits(data);
-    setIsLoading(false);
-  };
+  // Lectura vía TanStack Query (ROADMAP 4.2), sin filtrar por estado: comparte
+  // caché con la vista pública, que se queda solo con los activos.
+  const { data: benefits = [], isPending: isLoading, isError, refetch: loadBenefits } = useAllBenefits();
+  const { query, setQuery, filtered: filteredBenefits } = useSearch(benefits, ['titulo', 'categoria']);
 
   useEffect(() => {
-    loadBenefits();
-  }, []);
+    if (isError) {
+      toast({ variant: 'destructive', title: 'Error al cargar beneficios', description: 'No se pudieron obtener los beneficios.' });
+    }
+  }, [isError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

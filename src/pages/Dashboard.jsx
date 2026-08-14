@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserRegistrations } from '@/api/activitiesApi';
 import {
-  getUserMemberships,
   pauseMembership,
   resumeMembership,
   cancelMembership
 } from '@/api/membershipApi';
+import {
+  useUserRegistrations,
+  useUserMemberships,
+  useUserDonations,
+  useFoundationMetrics,
+} from '@/hooks/useContentQueries';
+import { queryKeys } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +27,6 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
 import SummaryMetrics from '@/components/Dashboard/SummaryMetrics';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
@@ -41,52 +46,44 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const [currentUser, setCurrentUser] = useState(user);
-  const [userRegistrations, setUserRegistrations] = useState([]);
-  const [userMemberships, setUserMemberships] = useState([]);
-  const [userDonations, setUserDonations] = useState([]); // Nueva Bitácora de Pagos
-  const [pageLoading, setPageLoading] = useState(true);
-  const [metrics, setMetrics] = useState({ total_donado: 0, total_suscripciones_activas: 0 });
-  const [metricsLoading, setMetricsLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => { setCurrentUser(user); }, [user]);
 
-  const fetchDashboardData = async (userId) => {
-    if (!userId) { setPageLoading(false); return; }
-    try {
-      const [registrationsResult, membershipsResult, metricsDataResult, donationsResult] = await Promise.all([
-        getUserRegistrations(userId),
-        getUserMemberships(userId, { onlyActive: false }),
-        supabase.from('fundacion_metrics').select('*').maybeSingle(),
-        supabase.from('donations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
-      ]);
+  // Las cuatro fuentes del dashboard, vía TanStack Query (ROADMAP 4.2). Antes
+  // era un `Promise.all` dentro de `fetchDashboardData` con seis `useState`.
+  // Las de usuario llevan `enabled`, así que no disparan nada hasta que auth
+  // resuelve y no cachean bajo una clave con `undefined`.
+  const userId = user?.id;
+  const registrationsQuery = useUserRegistrations(userId);
+  const membershipsQuery = useUserMemberships(userId);
+  const donationsQuery = useUserDonations(userId);
+  const { data: metricsRow } = useFoundationMetrics();
 
-      // La capa de datos garantiza un array en `data`, así que no hace falta
-      // el chequeo defensivo de Array.isArray que había antes.
-      setUserRegistrations(registrationsResult.data);
-      setUserMemberships(membershipsResult.data);
-      setUserDonations(donationsResult.data || []);
+  const userRegistrations = registrationsQuery.data ?? [];
+  const userMemberships = membershipsQuery.data ?? [];
+  const userDonations = donationsQuery.data ?? [];
+  const metrics = metricsRow ?? { total_donado: 0, total_suscripciones_activas: 0 };
 
-      if (metricsDataResult.data) setMetrics(metricsDataResult.data);
-
-      if (registrationsResult.error || membershipsResult.error) {
-        toast({ title: 'Sincronización parcial', description: 'Algunos datos no se pudieron cargar.', variant: 'destructive' });
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast({ title: 'Sincronización interrumpida', variant: 'destructive' });
-    } finally {
-      setPageLoading(false);
-      setMetricsLoading(false);
-    }
-  };
+  // Una query deshabilitada queda en `isPending`, así que sin el guard por
+  // `userId` un visitante sin sesión se quedaría con el spinner para siempre.
+  const pageLoading =
+    Boolean(userId) && (registrationsQuery.isPending || membershipsQuery.isPending);
 
   useEffect(() => {
-    if (!authLoading) {
-      if (isAuthenticated && user?.id) fetchDashboardData(user.id);
-      else setPageLoading(false);
+    if (registrationsQuery.isError || membershipsQuery.isError) {
+      toast({ title: 'Sincronización parcial', description: 'Algunos datos no se pudieron cargar.', variant: 'destructive' });
     }
-  }, [authLoading, isAuthenticated, user?.id]);
+  }, [registrationsQuery.isError, membershipsQuery.isError, toast]);
+
+  /** Refresca lo que puede cambiar tras operar sobre una membresía. */
+  const refreshMembershipData = () => {
+    if (!userId) return;
+    queryClient.invalidateQueries({ queryKey: queryKeys.userMemberships(userId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.userDonations(userId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.foundationMetrics });
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -121,7 +118,7 @@ const Dashboard = () => {
       }
 
       toast({ title: 'Estado actualizado', className: 'bg-brand-dark text-white rounded-2xl' });
-      if (user?.id) await fetchDashboardData(user.id);
+      refreshMembershipData();
     } finally { setActionLoadingId(null); }
   }
 

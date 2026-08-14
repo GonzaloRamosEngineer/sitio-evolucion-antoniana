@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info, CheckCircle2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
-import { getPartners } from '@/lib/storage';
+import { useAllPartners } from '@/hooks/useContentQueries';
 
 const slugify = (s = '') =>
   s
@@ -16,24 +16,15 @@ const slugify = (s = '') =>
 
 const PartnerDetailPage = () => {
   const { slug } = useParams();
-  const [partner, setPartner] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchPartner = async () => {
-      setLoading(true);
-      // `getPartners` siempre devuelve un array en `data` (vacío si falló), así
-      // que un error de red termina en el mismo "no encontrado" de siempre.
-      const { data } = await getPartners();
-      const found = data.find(
-        (p) => p.slug === slug || slugify(p.nombre) === slug
-      );
-      setPartner(found || null);
-      setLoading(false);
-    };
-
-    fetchPartner();
-  }, [slug]);
+  // Reusa la caché del listado: si venís de /partners, el detalle abre sin
+  // ninguna consulta nueva. El `select` resuelve el slug sobre el dato cacheado.
+  // Sin filtrar por estado a propósito: para el anon la RLS ya devuelve solo los
+  // aprobados, y así un admin puede previsualizar el detalle de uno pendiente.
+  const { data: partner = null, isPending: loading } = useAllPartners({
+    select: (rows) =>
+      rows.find((p) => p.slug === slug || slugify(p.nombre) === slug) ?? null,
+  });
 
   const pageTitle = partner
     ? `${partner.nombre} – Fundación Evolución Antoniana`

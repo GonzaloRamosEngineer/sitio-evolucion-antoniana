@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  getPreinscriptions,
-  updatePreinscriptionStatus,
-} from "@/api/educationApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { updatePreinscriptionStatus } from "@/api/educationApi";
+import { usePreinscriptions } from "@/hooks/useContentQueries";
+import { queryKeys } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,38 +45,36 @@ const tabTriggerStyles =
   "rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase";
 
 const EducationAdmin = () => {
-  const [list, setList] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table");
   const [activeFilter, setActiveFilter] = useState("all");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchList = async () => {
-    setLoading(true);
-    const { data, error } = await getPreinscriptions();
-    if (error) {
-      toast({ title: "Error de carga", variant: "destructive" });
-    }
-    setList(data);
-    setLoading(false);
-  };
+  // Lectura vía TanStack Query (ROADMAP 4.2).
+  const { data: list = [], isPending: loading, isError, refetch: fetchList } = usePreinscriptions();
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    if (isError) {
+      toast({ title: "Error de carga", variant: "destructive" });
+    }
+  }, [isError, toast]);
 
   // --- GESTIÓN DE ESTADOS (Actualización inmediata de UI) ---
   const handleStatusChange = async (id, status) => {
-    const previousList = [...list];
-    // Optimistic Update: Cambiamos en UI antes que en DB para mayor fluidez
-    setList((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: status } : item)),
+    // Optimistic update: igual que antes, pero escribiendo en la caché de la
+    // query en vez de en un `useState` local. El snapshot previo sale de la
+    // caché, así que el rollback revierte al estado real y no a una copia
+    // que pudo quedar desactualizada.
+    const previousList = queryClient.getQueryData(queryKeys.preinscriptions);
+
+    queryClient.setQueryData(queryKeys.preinscriptions, (current = []) =>
+      current.map((item) => (item.id === id ? { ...item, status } : item)),
     );
 
     const { error } = await updatePreinscriptionStatus(id, status);
     if (error) {
-      setList(previousList); // Revertir si falla
+      queryClient.setQueryData(queryKeys.preinscriptions, previousList); // Revertir si falla
       toast({
         title: "Error",
         description: "No se pudo sincronizar el cambio",

@@ -166,17 +166,17 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`dataResult.test.js`, `storage.test.js` con Supabase mockeado, y `membershipApi.test.js`
   actualizado al contrato).
 
-- [~] **4.2 — Caché de estado servidor. EN CURSO (2026-08-14, Sesión F3, tanda 1).**
-  **Hecho:** `@tanstack/react-query@5` instalado, `QueryClientProvider` en `main.jsx`,
-  contrato y claves en `src/lib/queryClient.js`, hooks de lectura en
-  `src/hooks/useContentQueries.js`. Migradas **Home, Activities, NewsPage,
-  PartnersPage y BenefitsPage**, y eliminada la caché casera de
-  `sessionStorage('activities_loaded')`.
-  **Falta (tanda 2):** `ActivityList` (admin, tiene su propio
-  `sessionStorage('admin_activities_loaded')`), los 3 paneles de Admin (partners/
-  beneficios/noticias, que además ganarían invalidación automática en vez de
-  `loadX()` a mano), Dashboard, EducationAdmin y las páginas de detalle.
-  Detalle de diseño en §8.
+- [x] **4.2 — Caché de estado servidor. HECHO (2026-08-14, Sesión F3, tandas 1 y 2).**
+  `@tanstack/react-query@5` con `QueryClientProvider` en `main.jsx`, contrato y claves en
+  `src/lib/queryClient.js` y los hooks de lectura en `src/hooks/useContentQueries.js`.
+  **Migradas 13 vistas:** Home, Activities, NewsPage, PartnersPage, BenefitsPage,
+  NewsDetailPage, PartnerDetailPage, BenefitDetailPage, PartnersAdmin, BenefitsAdmin,
+  NewsAdmin, ActivityList, EducationAdmin y Dashboard.
+  **Eliminadas las dos cachés caseras** de `sessionStorage` (`activities_loaded` y
+  `admin_activities_loaded`) y el barrido de claves del `logout`, que quedó muerto.
+  **Sin migrar (queda como deuda declarada):** `ActivityDetailPage` y los módulos del
+  portal de Comisión (`ProjectBoard`, `DocumentsManager`), que tienen su propio estado
+  local y bastante lógica de mutación; se migran al tocarlos. Detalle de diseño en §8.
   Cada página hace fetch manual con `useEffect` (18 páginas). `Activities.jsx:43-51` usa
   `sessionStorage('activities_loaded')` como caché casera frágil. No hay N+1 (los joins
   usan embedding de Supabase, correcto; `useAdminStats.js:37-97` usa `Promise.all`).
@@ -405,8 +405,8 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 (+4.6 auth) | ~2-3 días (partible) | ✅ 2026-07-19 |
 | F1 | Robustez de datos — lo barato | 4.3, 3.6, 4.6 (Contact/ContactModal/ApplyPartner) + 5.12 (ContactModal) | ~1 día | ✅ 2026-08-14 |
 | F2 | Contrato único de la capa de datos | 4.1 | ~2-3 días | ✅ 2026-08-14 |
-| **F3** | **Caché de estado servidor (SIGUIENTE)** | 4.2 (TanStack Query) — F2 ya está hecho, el terreno está parejo | ~3-4 días (partible) | ⬜ |
-| H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
+| F3 | Caché de estado servidor | 4.2 (TanStack Query), 13 vistas migradas | ~3-4 días | ✅ 2026-08-14 |
+| **H** | **Performance y limpieza (SIGUIENTE)** | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
 
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
 decisión de la Fundación), 6.6 (dedup listado/detalle), 6.7 (upgrades de deps, al final).
@@ -741,6 +741,47 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   saltee, propagación de errores y que dos hooks sobre la misma entidad hagan **una
   sola** llamada).
 - **Verificación:** lint 0 errores, `npm test` 61/61 (antes 48), build OK.
+
+**Sesión F3 — tanda 2: paneles, dashboard y detalles (2026-08-14):**
+- [x] 4.2 (cierre) — Migradas 8 vistas más: los 3 paneles de Admin (partners, beneficios,
+  noticias), `ActivityList`, `EducationAdmin`, `Dashboard`, `NewsDetailPage`,
+  `PartnerDetailPage` y `BenefitDetailPage`.
+- **Los detalles reusan la caché del listado.** `PartnerDetailPage` y `BenefitDetailPage`
+  resuelven el slug con un `select` sobre el listado cacheado: navegar del listado al
+  detalle **no dispara ninguna consulta nueva**. `BenefitDetailPage` de paso dejó de
+  hacer un `getPartnerById` suelto por visita: el partner sale de la misma caché de
+  partners que usa el resto del sitio. `NewsDetailPage` sí tiene query propia
+  (`useNewsItem`), porque un detalle se puede abrir directo desde un link compartido sin
+  pasar por el listado; su clave va anidada bajo `['news']` para que invalidar el listado
+  alcance también a los detalles.
+- **`EducationAdmin`: el optimistic update pasó a la caché.** Antes hacía `setList` sobre
+  estado local y guardaba una copia para el rollback; ahora usa
+  `queryClient.setQueryData` y toma el snapshot **de la caché**, así el rollback revierte
+  al estado real y no a una copia que pudo quedar desactualizada.
+- **`Dashboard`:** sus cuatro fuentes (inscripciones, membresías, donaciones y métricas)
+  pasaron de un `Promise.all` con seis `useState` a cuatro queries. Las de usuario llevan
+  `enabled: Boolean(userId)`.
+  **Sutileza que costó un guard:** una query deshabilitada **queda en `isPending`**, así
+  que calcular `pageLoading` solo con `isPending` dejaba a un visitante sin sesión con el
+  spinner colgado para siempre. De ahí el `Boolean(userId) && ...`. Hay un test que fija
+  ese comportamiento (`fetchStatus === 'idle'` con `isPending === true`).
+- **Limpieza que destapó la migración:** el `logout` barría claves de `sessionStorage`
+  (`dashboard_loaded_*`, `activities_loaded`) que **ya nadie escribía** — verificado con
+  grep: cero `sessionStorage.setItem` en `src/`. Quedó solo `queryClient.clear()`.
+- **Los tests de `PartnersAdmin` hubo que adaptarlos**, porque el componente ahora
+  necesita un `QueryClientProvider`: cliente nuevo por test, sin caché compartida entre
+  casos y con `retry: false`. Los 7 casos de regresión del "éxito falso" siguen verdes.
+- **Tests nuevos** (7, total 14 en `useContentQueries.test.jsx`): que `useNewsItem`
+  elija por UUID vs slug, que no consulte sin parámetro de ruta, el guard `enabled` de
+  las queries por usuario, y que el detalle se resuelva desde la caché del listado con
+  **una sola** llamada.
+- **Verificación:** lint 0 errores (53 warnings de backlog, antes 54), `npm test` 68/68
+  (antes 61), build OK.
+- **Para validar en pantalla (una migración de caché falla de formas que los tests no
+  ven):** navegar listado → detalle → volver (no debería haber spinner la segunda vez),
+  que la portada no muestre partners sin aprobar, que un alta desde el panel admin
+  aparezca en la página pública, y cerrar sesión y entrar con otro usuario para
+  confirmar que no queda nada cacheado del anterior.
 
 ---
 

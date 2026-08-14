@@ -1,5 +1,5 @@
 // src/pages/NewsDetailPage.jsx
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,12 +14,7 @@ import {
 } from "lucide-react";
 import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
-import { getNewsBySlug, getNewsById } from "@/lib/storage";
-
-const isUuid = (v = "") =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    v
-  );
+import { useNewsItem } from "@/hooks/useContentQueries";
 
 const toPlainText = (value = "") => {
   // Limpia saltos y espacios raros para que description quede linda
@@ -38,34 +33,14 @@ const NewsDetailPage = () => {
   const params = useParams();
   const routeParam = params.slug ?? params.id;
 
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      if (!routeParam) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const { data } = isUuid(routeParam)
-        ? await getNewsById(routeParam)
-        : await getNewsBySlug(routeParam);
-
-      if (active) {
-        setItem(data);
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [routeParam]);
+  // TanStack maneja el ciclo de vida, así que se va el flag `active` que evitaba
+  // setear estado después de desmontar (ROADMAP 4.2).
+  const { data: item = null, isPending } = useNewsItem(routeParam);
+  // Sin `routeParam` la query queda deshabilitada (y por lo tanto en `isPending`),
+  // pero no hay nada que esperar: no es "cargando", es "no hay qué mostrar".
+  const loading = Boolean(routeParam) && isPending;
 
   const slugOrId = useMemo(() => item?.slug || routeParam, [item, routeParam]);
 

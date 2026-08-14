@@ -8,7 +8,8 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // `fireEvent` en vez de `user-event`: alcanza para clicks y no suma una
 // dependencia nueva (el proyecto fija versiones por compatibilidad con vite@4).
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render as rtlRender, screen, waitFor, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const toast = vi.fn();
 vi.mock('@/components/ui/use-toast', () => ({
@@ -23,8 +24,23 @@ vi.mock('@/lib/storage', () => ({
   deletePartner: vi.fn(),
 }));
 
+// `useContentQueries` importa el cliente Supabase (para las actividades).
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
 const { getPartners, updatePartner, deletePartner } = await import('@/lib/storage');
 const PartnersAdmin = (await import('@/components/Admin/PartnersAdmin')).default;
+
+/**
+ * El panel lee vía TanStack Query (ROADMAP 4.2), así que necesita su provider.
+ * Cliente nuevo por test: sin caché compartida entre casos y sin retry, para que
+ * un fallo falle de una en vez de reintentar.
+ */
+const render = (ui) => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return rtlRender(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+};
 
 const pendingPartner = {
   id: 'p1',
