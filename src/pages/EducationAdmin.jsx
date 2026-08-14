@@ -41,6 +41,9 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const tabTriggerStyles =
+  "rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase";
+
 const EducationAdmin = () => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -337,34 +340,38 @@ const EducationAdmin = () => {
               className="w-full md:w-auto"
               onValueChange={setActiveFilter}
             >
+              {/* El TabsTrigger base deja `data-[state=active]:text-foreground`
+                  (brand-dark). Sobre estos rellenos saturados ese navy no contrasta
+                  para texto de 10px, así que cada tab fija su color de texto: blanco
+                  sobre los fondos oscuros, brand-dark sobre el ámbar claro. */}
               <TabsList className="bg-gray-100 p-1 rounded-2xl h-14 w-full flex overflow-x-auto no-scrollbar">
                 <TabsTrigger
                   value="all"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase"
+                  className={tabTriggerStyles}
                 >
                   TODOS
                 </TabsTrigger>
                 <TabsTrigger
                   value="pending"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-amber-500"
+                  className={`${tabTriggerStyles} data-[state=active]:bg-amber-500 data-[state=active]:text-brand-dark`}
                 >
                   PENDIENTES
                 </TabsTrigger>
                 <TabsTrigger
                   value="contacted"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-blue-600"
+                  className={`${tabTriggerStyles} data-[state=active]:bg-blue-600 data-[state=active]:text-white`}
                 >
                   CONTACTADOS
                 </TabsTrigger>
                 <TabsTrigger
                   value="inscrito"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-green-600"
+                  className={`${tabTriggerStyles} data-[state=active]:bg-green-700 data-[state=active]:text-white`}
                 >
                   INSCRITOS
                 </TabsTrigger>
                 <TabsTrigger
                   value="rejected"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-red-600"
+                  className={`${tabTriggerStyles} data-[state=active]:bg-red-600 data-[state=active]:text-white`}
                 >
                   DESCARTADOS
                 </TabsTrigger>

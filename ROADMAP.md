@@ -568,6 +568,16 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   `isSubmitting` se apagaba y el botón quedaba clickeable). El honeypot de 2.8 queda
   fuera del form de RHF a propósito, sin cambio de comportamiento.
 - [x] 5.12 (pendiente menor) — `ContactModal` al patrón visual de Contact.
+- [x] **A11y de los tabs de `EducationAdmin` (miss de la Sesión D, encontrado en F1).**
+  El `TabsTrigger` base deja `data-[state=active]:text-foreground` (brand-dark) y los
+  tabs solo sobrescribían el **fondo**: el tab activo quedaba navy oscuro sobre relleno
+  saturado, con contraste insuficiente para texto de 10px bold (ámbar pasaba, azul y
+  rojo no). D no lo cazó porque 5.3 barrió `text-gray-*` sobre fondo claro, no texto de
+  marca sobre fondos de color. Ahora cada tab fija su color de texto explícito (blanco
+  sobre azul/verde/rojo, brand-dark sobre ámbar) y el verde pasó a `green-700` para que
+  el blanco contraste bien. Las clases repetidas se extrajeron a `tabTriggerStyles`.
+  **Nota:** el realineado de colores de 3.6 había empeorado el tab de contactados
+  (verde → azul) sin revisar el texto; esto lo corrige.
 - **Extra (encontrado al tocar el código):** los mails de Contact y ContactModal
   interpolaban la entrada del usuario en `html_content` **sin escapar**, así que
   cualquiera podía inyectar markup o un enlace disfrazado en el mail que recibe la
