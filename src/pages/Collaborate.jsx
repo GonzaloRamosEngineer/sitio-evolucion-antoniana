@@ -64,7 +64,7 @@ const Collaborate = () => {
     } catch (err) {
       console.error('Error al crear preferencia de donación:', err);
       toast({
-        title: 'Error al Procesar Donación',
+        title: err?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Donación',
         description: err.message || 'No se pudo iniciar el proceso de pago. Inténtalo de nuevo.',
         variant: 'destructive',
       });
@@ -100,7 +100,7 @@ const Collaborate = () => {
     } catch (err) {
       console.error('Error al crear suscripción:', err);
       toast({
-        title: 'Error al Procesar Suscripción',
+        title: err?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Suscripción',
         description: err.message || 'No se pudo iniciar el proceso de suscripción. Inténtalo de nuevo.',
         variant: 'destructive',
       });

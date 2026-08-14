@@ -221,6 +221,7 @@ const EducationAdmin = () => {
     total: list.length,
     pending: list.filter((i) => i.status === "pending").length,
     contacted: list.filter((i) => i.status === "contacted").length,
+    inscrito: list.filter((i) => i.status === "inscrito").length,
     rejected: list.filter((i) => i.status === "rejected").length,
   };
 
@@ -280,12 +281,14 @@ const EducationAdmin = () => {
         </div>
 
         {/* DASHBOARD RÁPIDO */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Los colores acompañan a los de StatusBadge: pending=ámbar,
+            contacted=azul, inscrito=verde, rejected=rojo. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <MetricCard
             title="Total Registros"
             value={stats.total}
             icon={Users}
-            color="blue"
+            color="brand"
           />
           <MetricCard
             title="Por Contactar"
@@ -294,8 +297,14 @@ const EducationAdmin = () => {
             color="amber"
           />
           <MetricCard
-            title="Gestión Exitosa"
+            title="Contactados"
             value={stats.contacted}
+            icon={Phone}
+            color="blue"
+          />
+          <MetricCard
+            title="Inscritos"
+            value={stats.inscrito}
             icon={UserCheck}
             color="green"
           />
@@ -343,9 +352,15 @@ const EducationAdmin = () => {
                 </TabsTrigger>
                 <TabsTrigger
                   value="contacted"
-                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-green-600"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-blue-600"
                 >
                   CONTACTADOS
+                </TabsTrigger>
+                <TabsTrigger
+                  value="inscrito"
+                  className="rounded-xl px-6 font-bold text-[10px] tracking-widest uppercase data-[state=active]:bg-green-600"
+                >
+                  INSCRITOS
                 </TabsTrigger>
                 <TabsTrigger
                   value="rejected"
@@ -542,6 +557,8 @@ const EducationAdmin = () => {
 
 const MetricCard = ({ title, value, icon: Icon, color }) => {
   const colors = {
+    brand:
+      "text-brand-primary bg-brand-primary/5 border-brand-primary/10 shadow-brand-primary/5",
     blue: "text-blue-600 bg-blue-50 border-blue-100 shadow-blue-600/5",
     amber: "text-amber-600 bg-amber-50 border-amber-100 shadow-amber-600/5",
     green: "text-green-600 bg-green-50 border-green-100 shadow-green-600/5",

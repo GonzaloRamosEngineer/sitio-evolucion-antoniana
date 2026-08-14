@@ -3,7 +3,10 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Mail, Globe, FileText, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Building2, Mail, Globe, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,46 +15,71 @@ import { toast } from '@/components/ui/use-toast';
 import { addPartner } from '@/lib/storage';
 import { Honeypot } from '@/components/Forms/Honeypot';
 
+const urlSchema = z.string().url();
+
+/** URL opcional: acepta vacío, pero si hay algo tiene que ser una URL completa. */
+const optionalUrl = (message) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => value === '' || urlSchema.safeParse(value).success, { message });
+
+const partnerSchema = z.object({
+  nombre: z.string().trim().min(2, 'Ingresá el nombre de la organización'),
+  descripcion: z
+    .string()
+    .trim()
+    .min(20, 'Contanos en al menos 20 caracteres sobre tu organización y la alianza que buscás'),
+  contacto_email: z.string().trim().email('Ingresá un email válido'),
+  sitio_web: optionalUrl('Ingresá una URL completa (https://...)'),
+  logo_url: optionalUrl('Ingresá el enlace directo a la imagen (https://...)'),
+});
+
+const emptyPartner = {
+  nombre: '',
+  descripcion: '',
+  sitio_web: '',
+  contacto_email: '',
+  logo_url: '',
+};
+
 const ApplyPartnerPage = () => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // El honeypot no se valida ni se envía: queda fuera del form de RHF a propósito.
   const [website, setWebsite] = useState('');
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    sitio_web: '',
-    contacto_email: '',
-    logo_url: '',
+  // Ventana entre el toast de éxito y el redirect: el botón sigue bloqueado.
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(partnerSchema),
+    defaultValues: emptyPartner,
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+  const busy = isSubmitting || isRedirecting;
 
-    if (!formData.nombre || !formData.descripcion || !formData.contacto_email) {
-      toast({
-        title: 'Campos requeridos',
-        description: 'Por favor completa todos los campos obligatorios',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const finishWithSuccess = () => {
+    toast({
+      title: '¡Solicitud enviada! 🎉',
+      description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
+      className: 'bg-green-600 text-white border-none'
+    });
+    setIsRedirecting(true);
+    setTimeout(() => navigate('/partners'), 2000);
+  };
 
+  const onSubmit = async (data) => {
     if (website) {
       // Bot detectado: simular éxito sin escribir en la base
-      toast({
-        title: '¡Solicitud enviada! 🎉',
-        description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
-        className: 'bg-green-600 text-white border-none'
-      });
-      setTimeout(() => navigate('/partners'), 2000);
+      finishWithSuccess();
       return;
     }
 
-    setIsSubmitting(true);
-    const newPartner = { ...formData, estado: 'pendiente' };
-    const created = await addPartner(newPartner);
-    setIsSubmitting(false);
+    // `addPartner` devuelve null en error (contrato heredado, ver ROADMAP 4.1).
+    const created = await addPartner({ ...data, estado: 'pendiente' });
 
     if (!created) {
       toast({
@@ -62,17 +90,7 @@ const ApplyPartnerPage = () => {
       return;
     }
 
-    toast({
-      title: '¡Solicitud enviada! 🎉',
-      description: 'Tu postulación será revisada por nuestro equipo. Te contactaremos pronto.',
-      className: 'bg-green-600 text-white border-none'
-    });
-
-    setTimeout(() => navigate('/partners'), 2000);
-  };
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    finishWithSuccess();
   };
 
   return (
@@ -136,106 +154,113 @@ const ApplyPartnerPage = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 border border-gray-100"
             >
-              <form onSubmit={handleSubmit} className="space-y-6 relative">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative" noValidate>
                 <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
                 <div>
-                  <Label htmlFor="nombre" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                  <Label htmlFor="partner-nombre" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     Nombre de la Organización *
                   </Label>
                   <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Building2 aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <Input
-                        id="nombre"
-                        name="nombre"
+                        id="partner-nombre"
                         type="text"
-                        required
-                        value={formData.nombre}
-                        onChange={handleChange}
                         placeholder="Ej: Empresa ABC S.A."
                         className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                        disabled={busy}
+                        {...register('nombre')}
                       />
                   </div>
+                  {errors.nombre && (
+                    <p className="text-sm text-red-600 mt-2">{errors.nombre.message}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="descripcion" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                  <Label htmlFor="partner-descripcion" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     Descripción *
                   </Label>
-                  <div className="relative">
-                      <Textarea
-                        id="descripcion"
-                        name="descripcion"
-                        required
-                        value={formData.descripcion}
-                        onChange={handleChange}
-                        placeholder="Cuéntanos brevemente sobre tu organización y qué tipo de alianza te interesa..."
-                        rows={5}
-                        className="bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl p-4"
-                      />
-                  </div>
+                  <Textarea
+                    id="partner-descripcion"
+                    placeholder="Contanos brevemente sobre tu organización y qué tipo de alianza te interesa..."
+                    rows={5}
+                    className="bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl p-4"
+                    disabled={busy}
+                    {...register('descripcion')}
+                  />
+                  {errors.descripcion && (
+                    <p className="text-sm text-red-600 mt-2">{errors.descripcion.message}</p>
+                  )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                        <Label htmlFor="contacto_email" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                        <Label htmlFor="partner-email" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                             Email de Contacto *
                         </Label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Mail aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <Input
-                                id="contacto_email"
-                                name="contacto_email"
+                                id="partner-email"
                                 type="email"
-                                required
-                                value={formData.contacto_email}
-                                onChange={handleChange}
                                 placeholder="contacto@empresa.com"
+                                autoComplete="email"
                                 className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                                disabled={busy}
+                                {...register('contacto_email')}
                             />
                         </div>
+                        {errors.contacto_email && (
+                          <p className="text-sm text-red-600 mt-2">{errors.contacto_email.message}</p>
+                        )}
                     </div>
 
                     <div>
-                        <Label htmlFor="sitio_web" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                        <Label htmlFor="partner-sitio-web" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                             Sitio Web
                         </Label>
                         <div className="relative">
-                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Globe aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <Input
-                                id="sitio_web"
-                                name="sitio_web"
+                                id="partner-sitio-web"
                                 type="url"
-                                value={formData.sitio_web}
-                                onChange={handleChange}
                                 placeholder="https://www.empresa.com"
                                 className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                                disabled={busy}
+                                {...register('sitio_web')}
                             />
                         </div>
+                        {errors.sitio_web && (
+                          <p className="text-sm text-red-600 mt-2">{errors.sitio_web.message}</p>
+                        )}
                     </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="logo_url" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
+                  <Label htmlFor="partner-logo-url" className="flex items-center gap-2 mb-2 text-brand-dark font-semibold">
                     URL del Logo (Opcional)
                   </Label>
                   <Input
-                    id="logo_url"
-                    name="logo_url"
+                    id="partner-logo-url"
                     type="url"
-                    value={formData.logo_url}
-                    onChange={handleChange}
                     placeholder="https://ejemplo.com/logo.png"
                     className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl"
+                    disabled={busy}
+                    {...register('logo_url')}
                   />
-                  <p className="text-xs text-gray-500 mt-2 ml-1">
-                    Recomendamos un enlace directo a una imagen PNG o JPG cuadrada.
-                  </p>
+                  {errors.logo_url ? (
+                    <p className="text-sm text-red-600 mt-2">{errors.logo_url.message}</p>
+                  ) : (
+                    <p className="text-xs text-gray-600 mt-2 ml-1">
+                      Recomendamos un enlace directo a una imagen PNG o JPG cuadrada.
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-6">
-                  <Button type="submit" size="lg" disabled={isSubmitting} variant="action" className="w-full h-14 text-lg rounded-xl">
-                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
-                    {isSubmitting ? 'Enviando...' : 'Enviar Postulación'}
+                  <Button type="submit" size="lg" disabled={busy} variant="action" className="w-full h-14 text-lg rounded-xl">
+                    {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Send className="mr-2 h-5 w-5" />}
+                    {busy ? 'Enviando...' : 'Enviar Postulación'}
                   </Button>
                 </div>
 

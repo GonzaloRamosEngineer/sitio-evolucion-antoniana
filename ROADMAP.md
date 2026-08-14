@@ -12,6 +12,7 @@
 >
 > **Última revisión de la auditoría:** 2026-07-18
 > **Último commit auditado:** `76cf6d91` (verificación de usuarios + filtro por rol)
+> **Último avance registrado:** 2026-08-14, Sesión F1 (ver §7 y §8)
 
 ---
 
@@ -127,10 +128,14 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   `LoginForm.jsx` y `RegisterForm.jsx` borrados (verificado: sin imports).
   El login/registro real vive en `LoginPage`/`RegisterPage`.
 
-- [ ] **3.6 — Estado `inscrito` de educación sin métrica ni filtro.**
-  El flujo permite marcar `inscrito` ("Finalizar Inscripción", `EducationAdmin.jsx:488`),
-  pero las tarjetas de métricas y los tabs (`:220-225,338-355`) solo contemplan
-  pending/contacted/rejected. Un `inscrito` solo aparece en "TODOS" y no se cuenta.
+- [x] **3.6 — Estado `inscrito` de educación sin métrica ni filtro. HECHO (2026-08-14, Sesión F1).**
+  `EducationAdmin.jsx`: `stats.inscrito` + quinta `MetricCard` "Inscritos" (grid a
+  `lg:grid-cols-5`) + `TabsTrigger value="inscrito"`. De paso los colores de las tarjetas
+  se alinearon con `StatusBadge` (pending=ámbar, contacted=azul, inscrito=verde,
+  rejected=rojo; total pasó a `brand`) y la tarjeta de contactados se renombró
+  "Gestión Exitosa" → "Contactados", porque con `inscrito` visible había dos tarjetas
+  que se leían como el estado final exitoso. El export CSV ya usaba el status crudo,
+  así que `inscrito` sale bien sin cambios.
 
 ---
 
@@ -151,7 +156,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **Acción:** migrar a TanStack Query incrementalmente; elimina cientos de líneas de
   loading/error boilerplate. **Esfuerzo:** ~3-4 días. **Prioridad:** importante.
 
-- [ ] **4.3 — Proxy a Render frágil (pagos).**
+- [x] **4.3 — Proxy a Render frágil (pagos). HECHO (2026-08-14, Sesión F1).**
   `vercel.json:6` reescribe `/api/*` → microservicio Render. `membershipApi.js:59-78`
   (`callWebhook`) hace `fetch` **sin timeout, sin retry, sin manejo de cold-start**.
   El free-tier de Render duerme; el usuario ve "Error en la operación" (`:74`) sin
@@ -159,8 +164,14 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   partners~~ **HECHO (2026-07-19, Sesión E — previews):** se eliminó el rewrite roto de
   partners (el archivo es `[slug].js`, ruta dinámica; el rewrite apuntaba a un `slug`
   inexistente) y se unificó el sistema de share (ver §8 "Previews de compartir").
-  **Pendiente de 4.3:** solo la resiliencia del proxy a Render (timeout+retry+mensaje de
-  cold-start en `callWebhook`). **Esfuerzo:** ~medio día. **Prioridad:** importante.
+  **HECHO (2026-08-14, Sesión F1):** `callWebhook` con timeout por `AbortController`
+  (10s el primer intento para cortar rápido si Render duerme, 25s los reintentos para
+  darle tiempo a despertar), 3 intentos con backoff 800ms/2500ms, y clase `WebhookError`
+  con flags `isColdStart`/`status`. Los 4xx **no** se reintentan (son errores reales del
+  negocio) y conservan el mensaje del servidor; los 5xx y los fallos de red sí, y al
+  agotarse devuelven `COLD_START_MESSAGE` explícito. `Dashboard.performAction` dejó de
+  tragarse el mensaje (era el síntoma que reportaba este ítem) y `Collaborate` titula
+  distinto el cold-start. Cubierto por `src/api/membershipApi.test.js` (6 casos).
 
 - [x] **4.4 — Dark mode = código muerto. HECHO (2026-07-19, Sesión G).**
   **Decisión del usuario: eliminarlo** (completar dark mode real era un trabajo de diseño
@@ -177,7 +188,7 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   La API de `<Helmet>` es idéntica, así que no cambió el markup de las páginas.
   Build OK.
 
-- [~] **4.6 — RHF+zod para un solo formulario. DECIDIDO (2026-07-19, Sesión G): mantener híbrido.**
+- [x] **4.6 — RHF+zod. DECIDIDO híbrido (Sesión G); superficie pública COMPLETA (2026-08-14, Sesión F1).**
   `react-hook-form`, `zod`, `@hookform/resolvers` se usan **solo** en `EducationForm.jsx`;
   el resto valida con `useState` manual. **Decisión del usuario:** dejar RHF+zod en
   `EducationForm` (es el patrón superior y ya funciona) y **estandarizar gradualmente**
@@ -185,8 +196,16 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   ahora. No se elimina la dependencia. Queda como deuda declarada e intencional, no como
   inconsistencia accidental. **Avance (Sesión E, 2026-07-19):** `LoginPage` y
   `RegisterPage` migradas a RHF+zod al rediseñarlas (schemas con mensajes en voseo,
-  errores por campo, `.refine()` para confirmación de contraseña). **Pendiente (F):**
-  contacto (`Contact.jsx`), colaborar (`ContactModal`) y partner (`ApplyPartnerPage`).
+  errores por campo, `.refine()` para confirmación de contraseña).
+  **HECHO (2026-08-14, Sesión F1):** migrados los 3 que quedaban de la lista —
+  `Contact.jsx`, `ContactModal.jsx` y `ApplyPartnerPage.jsx`. Cada uno con schema zod
+  en voseo, error por campo (`text-sm text-red-600`), `noValidate`, `isSubmitting` de
+  RHF en lugar de estado manual y `reset()` en vez de limpiar campo por campo. El
+  honeypot queda **fuera** del form de RHF a propósito (no se valida ni se envía).
+  **Deuda declarada que sigue abierta (intencional, no accidental):**
+  `GuestRegistrationForm`, `RequestPasswordResetForm` y `UpdatePasswordForm` son los
+  últimos formularios públicos con validación manual; los internos (Admin/*, Comision/*)
+  se estandarizan solo al tocarlos.
 
 - [x] **4.7 — Sin ESLint configurado ni tests. HECHO (2026-07-19, Sesión G).**
   - **ESLint flat config** (`eslint.config.js`) + script `npm run lint`. Base
@@ -299,7 +318,9 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   RegisterPage, EducationForm (13 labels + separadores de sección), Preinscripcion,
   GuestRegistrationForm, RequestPasswordResetForm y UpdatePasswordForm. Inputs de forms
   públicos con el estilo de Contact (`bg-brand-sand/70 border-brand-dark/15 rounded-sm`).
-  **Pendiente menor (F):** `ContactModal` (colaborar) al migrarlo a RHF+zod.
+  **HECHO (2026-08-14, Sesión F1):** `ContactModal` migrado al patrón al pasarlo a
+  RHF+zod (inputs `bg-brand-sand/70 border-brand-dark/15 rounded-sm`, botón
+  `variant="action"`, labels en sentence case, copy en voseo).
 
 - [x] **5.13 — Propagar el lenguaje editorial de Home/Contact al resto. HECHO (2026-07-19, Sesión E).**
   Hero editorial (patrón de Contact: `bg-brand-primary` + `border-t-2 border-brand-gold`
@@ -341,7 +362,8 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 ## 7. Plan de sesiones de trabajo (acordado 2026-07-19)
 
 Los ítems pendientes se agrupan en sesiones que se potencian entre sí (mismo archivo,
-mismo tema, mismo riesgo). Orden acordado: **A → B → C → G → D → E → F → H**.
+mismo tema, mismo riesgo). Orden acordado: **A → B → C → G → D → E → F → H**
+(F se partió en F1/F2/F3 el 2026-08-14, ver tabla).
 La lógica: primero bugs y lo barato (A, B), cerrar seguridad (C), luego la red de
 seguridad de lint/tests (G) *antes* de los refactors grandes (D, E, F), y performance
 al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
@@ -354,7 +376,9 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | G | Infra de calidad | 4.7 (ESLint flat + Vitest humo), 4.5 (react-helmet-async), 4.4 (dark mode: eliminado), 4.6 (RHF+zod: híbrido) | ~1-2 días | ✅ 2026-07-19 |
 | D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ✅ 2026-07-19 |
 | E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 (+4.6 auth) | ~2-3 días (partible) | ✅ 2026-07-19 |
-| **F** | **Robustez de datos (SIGUIENTE)** | 4.1, 4.2, 4.3, 3.6 (+4.6 resto, +ContactModal) | ~3-4 días (partible) | ⬜ |
+| F1 | Robustez de datos — lo barato | 4.3, 3.6, 4.6 (Contact/ContactModal/ApplyPartner) + 5.12 (ContactModal) | ~1 día | ✅ 2026-08-14 |
+| **F2** | **Contrato único de la capa de datos (SIGUIENTE)** | 4.1 | ~2-3 días | ⬜ |
+| F3 | Caché de estado servidor | 4.2 (TanStack Query) — **requiere F2 hecho** | ~3-4 días (partible) | ⬜ |
 | H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
 
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
@@ -365,8 +389,11 @@ Notas de las sesiones:
   **híbrido** (4.6, se estandariza gradualmente en E/F). Ya hay red de lint/tests.
 - **E (hecha 2026-07-19):** ver §8. Deja para F: RHF+zod en Contact/ContactModal/
   ApplyPartnerPage y la unificación de estilos del form de `ContactModal`.
-- **F:** el refactor transversal de 4.1/4.2 ya tiene los tests de humo de G como red;
-  ampliarlos al tocar la capa de datos.
+- **F1 (hecha 2026-08-14):** ver §8. Cerró 4.3, 3.6, 4.6 y el pendiente de 5.12.
+- **F2/F3:** el refactor transversal de 4.1/4.2 ya tiene los tests de humo de G como red;
+  ampliarlos al tocar la capa de datos (F1 sumó `membershipApi.test.js` y los casos de
+  `escapeHtml`). **F2 va antes que F3 a propósito:** migrar a TanStack Query sobre los 3
+  contratos de retorno actuales obligaría a tocar las mismas 18 páginas dos veces.
 
 ---
 
@@ -522,6 +549,41 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   Hallazgo: existe una Edge Function desplegada `crear-preferencia-mercadopago`
   que el frontend NO invoca (los pagos van al microservicio de Render) — candidata
   a legacy; revisar antes de borrar.
+
+**Sesión F1 — robustez de datos, primera tanda (2026-08-14):**
+- [x] 4.3 — Resiliencia del proxy a Render en `src/api/membershipApi.js`: `callWebhook`
+  con timeout por `AbortController` (10s el primer intento, 25s los reintentos), 3
+  intentos con backoff 800ms/2500ms, y `WebhookError` con `isColdStart`/`status`
+  exportado junto a `COLD_START_MESSAGE`. Los 4xx no se reintentan y conservan el
+  mensaje del servidor (string u objeto serializado); los 5xx y los fallos de red sí.
+  Peor caso ≈63s antes de rendirse. `Dashboard.performAction` y los 2 handlers de
+  `Collaborate` ahora distinguen cold-start de fallo real en el toast.
+- [x] 3.6 — `EducationAdmin`: métrica + tab del estado `inscrito`, colores de las
+  `MetricCard` alineados con `StatusBadge`, "Gestión Exitosa" → "Contactados".
+- [x] 4.6 (cierre de la lista declarada) — `Contact.jsx`, `ContactModal.jsx` y
+  `ApplyPartnerPage.jsx` migrados a react-hook-form + zod: schemas en voseo, error por
+  campo, `noValidate`, `isSubmitting` de RHF, `reset()`. En `ApplyPartnerPage` las URLs
+  opcionales (sitio web, logo) validan formato solo si vienen con valor, y un estado
+  `isRedirecting` mantiene el botón bloqueado durante los 2s previos al redirect (antes
+  `isSubmitting` se apagaba y el botón quedaba clickeable). El honeypot de 2.8 queda
+  fuera del form de RHF a propósito, sin cambio de comportamiento.
+- [x] 5.12 (pendiente menor) — `ContactModal` al patrón visual de Contact.
+- **Extra (encontrado al tocar el código):** los mails de Contact y ContactModal
+  interpolaban la entrada del usuario en `html_content` **sin escapar**, así que
+  cualquiera podía inyectar markup o un enlace disfrazado en el mail que recibe la
+  Fundación. Agregados `escapeHtml`/`escapeHtmlMultiline` en `src/lib/utils.js` y
+  aplicados en ambos. `ContactModal` además ahora manda `reply_to` (Contact ya lo hacía).
+- **Tests:** nuevo `src/api/membershipApi.test.js` (6 casos: éxito, retry de 503, retry
+  de red → cold-start, 4xx sin retry, abort por timeout, error no-string) y 6 casos más
+  de `escapeHtml`/`escapeHtmlMultiline` en `utils.test.js`. Total 4 archivos, 19 casos.
+- **Verificación:** `npm run lint` 0 errores (54 warnings de backlog, antes 61),
+  `npm test` 19/19 verdes, `npm run build` OK.
+- **Detectado, NO hecho (queda para una pasada de E):** `ApplyPartnerPage` conserva el
+  lenguaje visual viejo que 5.13 eliminó del resto — pill glassmórfico, grid de puntos
+  por `radial-gradient` inline, card `rounded-3xl shadow-2xl`, inputs `rounded-xl`. Se
+  migró la lógica del form pero **no** el estilo: meter inputs `rounded-sm` dentro de
+  esa card quedaría peor que dejarla coherente consigo misma. Necesita el hero editorial
+  completo, que es trabajo de identidad visual, no de robustez de datos.
 
 ---
 

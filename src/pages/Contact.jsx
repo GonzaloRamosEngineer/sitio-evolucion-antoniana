@@ -1,6 +1,9 @@
 // src/pages/Contact.jsx
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
 
 const contactChannels = [
   {
@@ -60,80 +64,76 @@ const faqs = [
 const inputStyles =
   'h-11 bg-brand-sand/70 border-brand-dark/15 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-sm';
 
+const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Ingresá tu nombre completo'),
+  email: z.string().trim().email('Ingresá un email válido'),
+  phone: z.string().trim().optional(),
+  subject: z.string().trim().min(3, 'Contanos brevemente el motivo de tu consulta'),
+  message: z.string().trim().min(10, 'Escribinos un mensaje de al menos 10 caracteres'),
+});
+
+const emptyContact = { name: '', email: '', phone: '', subject: '', message: '' };
+
 const Contact = () => {
   const reduceMotion = useReducedMotion();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: '',
-  });
-  const [loading, setLoading] = useState(false);
+  // El honeypot no se valida ni se envía: queda fuera del form de RHF a propósito.
   const [website, setWebsite] = useState('');
   const { toast } = useToast();
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(contactSchema),
+    defaultValues: emptyContact,
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
+  const notifySent = () =>
+    toast({
+      title: '¡Mensaje enviado!',
+      description: 'Gracias por contactarnos. Te responderemos pronto.',
+      className: 'bg-green-600 text-white border-none',
+    });
+
+  const onSubmit = async (data) => {
     if (website) {
       // Bot detectado: simular éxito sin enviar nada
-      toast({
-        title: '¡Mensaje enviado!',
-        description: 'Gracias por contactarnos. Te responderemos pronto.',
-        className: 'bg-green-600 text-white border-none',
-      });
+      notifySent();
       return;
     }
-    setLoading(true);
 
+    const phone = data.phone || 'No proporcionado';
     const emailBody = `
-      Nombre: ${formData.name}
-      Email: ${formData.email}
-      Teléfono: ${formData.phone || 'No proporcionado'}
-      Asunto: ${formData.subject}
+      Nombre: ${data.name}
+      Email: ${data.email}
+      Teléfono: ${phone}
+      Asunto: ${data.subject}
       Mensaje:
-      ${formData.message}
+      ${data.message}
     `;
 
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
           recipient_email: 'info@evolucionantoniana.com',
-          subject: `Nuevo Mensaje de Contacto: ${formData.subject}`,
+          subject: `Nuevo Mensaje de Contacto: ${data.subject}`,
           text_content: emailBody,
-          html_content: `<p><strong>Nombre:</strong> ${formData.name}</p>
-                         <p><strong>Email:</strong> ${formData.email}</p>
-                         <p><strong>Teléfono:</strong> ${formData.phone || 'No proporcionado'}</p>
-                         <p><strong>Asunto:</strong> ${formData.subject}</p>
+          html_content: `<p><strong>Nombre:</strong> ${escapeHtml(data.name)}</p>
+                         <p><strong>Email:</strong> ${escapeHtml(data.email)}</p>
+                         <p><strong>Teléfono:</strong> ${escapeHtml(phone)}</p>
+                         <p><strong>Asunto:</strong> ${escapeHtml(data.subject)}</p>
                          <p><strong>Mensaje:</strong></p>
-                         <p>${formData.message.replace(/\n/g, '<br>')}</p>`,
-          reply_to: formData.email,
+                         <p>${escapeHtmlMultiline(data.message)}</p>`,
+          reply_to: data.email,
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: '¡Mensaje enviado!',
-        description: 'Gracias por contactarnos. Te responderemos pronto.',
-        className: 'bg-green-600 text-white border-none',
-      });
-
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: '',
-      });
+      notifySent();
+      reset(emptyContact);
     } catch (error) {
       console.error('Error sending contact email:', error);
       toast({
@@ -142,8 +142,6 @@ const Contact = () => {
           'Hubo un problema al enviar tu mensaje. Por favor, intentalo de nuevo más tarde.',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -198,85 +196,98 @@ const Contact = () => {
               Completá el formulario y te respondemos a la brevedad.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-6 relative">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-6 relative"
+              noValidate
+            >
               <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-brand-dark font-semibold">
+                  <Label htmlFor="contact-name" className="text-brand-dark font-semibold">
                     Nombre completo
                   </Label>
                   <Input
-                    id="name"
-                    name="name"
+                    id="contact-name"
                     placeholder="Tu nombre"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
+                    autoComplete="name"
                     className={inputStyles}
+                    disabled={isSubmitting}
+                    {...register('name')}
                   />
+                  {errors.name && (
+                    <p className="text-sm text-red-600">{errors.name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-brand-dark font-semibold">
+                  <Label htmlFor="contact-email" className="text-brand-dark font-semibold">
                     Email
                   </Label>
                   <Input
-                    id="email"
-                    name="email"
+                    id="contact-email"
                     type="email"
                     placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
+                    autoComplete="email"
                     className={inputStyles}
+                    disabled={isSubmitting}
+                    {...register('email')}
                   />
+                  {errors.email && (
+                    <p className="text-sm text-red-600">{errors.email.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-brand-dark font-semibold">
+                  <Label htmlFor="contact-phone" className="text-brand-dark font-semibold">
                     Teléfono <span className="font-normal text-gray-500">(opcional)</span>
                   </Label>
                   <Input
-                    id="phone"
-                    name="phone"
+                    id="contact-phone"
                     type="tel"
                     placeholder="+54 387..."
-                    value={formData.phone}
-                    onChange={handleChange}
+                    autoComplete="tel"
                     className={inputStyles}
+                    disabled={isSubmitting}
+                    {...register('phone')}
                   />
+                  {errors.phone && (
+                    <p className="text-sm text-red-600">{errors.phone.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subject" className="text-brand-dark font-semibold">
+                  <Label htmlFor="contact-subject" className="text-brand-dark font-semibold">
                     Asunto
                   </Label>
                   <Input
-                    id="subject"
-                    name="subject"
+                    id="contact-subject"
                     placeholder="Motivo de consulta"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
                     className={inputStyles}
+                    disabled={isSubmitting}
+                    {...register('subject')}
                   />
+                  {errors.subject && (
+                    <p className="text-sm text-red-600">{errors.subject.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message" className="text-brand-dark font-semibold">
+                <Label htmlFor="contact-message" className="text-brand-dark font-semibold">
                   Mensaje
                 </Label>
                 <Textarea
-                  id="message"
-                  name="message"
+                  id="contact-message"
                   rows={5}
                   className="bg-brand-sand/70 border-brand-dark/15 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-sm p-4"
                   placeholder="Escribí tu mensaje acá..."
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
+                  disabled={isSubmitting}
+                  {...register('message')}
                 />
+                {errors.message && (
+                  <p className="text-sm text-red-600">{errors.message.message}</p>
+                )}
               </div>
 
               <Button
@@ -284,9 +295,9 @@ const Contact = () => {
                 size="lg"
                 variant="action"
                 className="w-full h-12 font-semibold"
-                disabled={loading}
+                disabled={isSubmitting}
               >
-                {loading ? (
+                {isSubmitting ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   <Send className="w-4 h-4 mr-2" />

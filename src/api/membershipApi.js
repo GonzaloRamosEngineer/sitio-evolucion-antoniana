@@ -56,25 +56,119 @@ function buildUrl(path) {
   return `${WEBHOOK_BASE}${p}`.replace(/([^:]\/)\/+/g, '$1');
 }
 
+/**
+ * Resiliencia del proxy a Render (ROADMAP 4.3).
+ *
+ * El free-tier de Render duerme tras un rato sin tráfico: el primer request
+ * después de la inactividad paga un "cold-start" de decenas de segundos. Sin
+ * timeout el fetch queda colgado indefinidamente; sin retry, un cold-start se
+ * ve exactamente igual que una caída real y el usuario recibe un mensaje
+ * genérico que no le dice qué hacer.
+ *
+ * Estrategia: primer intento corto (si duerme, cortamos rápido en vez de
+ * quedarnos colgados), reintentos con ventana larga para darle tiempo a
+ * despertar, y mensaje explícito de cold-start cuando el fallo es de red o del
+ * servidor. Los 4xx NO se reintentan: son errores reales del negocio.
+ * Peor caso ≈ 63s antes de rendirse.
+ */
+const FIRST_ATTEMPT_TIMEOUT_MS = 10000;
+const RETRY_TIMEOUT_MS = 25000;
+const MAX_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = [800, 2500];
+
+export const COLD_START_MESSAGE =
+  'El servicio de pagos está iniciándose y puede tardar hasta un minuto. ' +
+  'Esperá unos segundos y volvé a intentar.';
+
+/** Error de la capa de pagos, con la info que el llamador necesita para el mensaje. */
+export class WebhookError extends Error {
+  constructor(message, { cause, isColdStart = false, status = null } = {}) {
+    super(message);
+    this.name = 'WebhookError';
+    this.isColdStart = isColdStart;
+    this.status = status;
+    if (cause) this.cause = cause;
+  }
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** `AbortSignal.timeout` no está en todos los browsers objetivo → AbortController. */
+async function fetchWithTimeout(url, init, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Extrae el mensaje de error del body, o '' si no hay JSON válido / campo `error`. */
+async function readErrorMessage(res) {
+  try {
+    const data = await res.json();
+    if (!data?.error) return '';
+    return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+  } catch {
+    return '';
+  }
+}
+
 async function callWebhook(path, options = {}) {
   const url = buildUrl(path);
-
-  const res = await fetch(url, {
+  const init = {
     method: options.method || 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: options.body ? JSON.stringify(options.body) : undefined
-  });
+  };
 
-  let data = {};
-  try {
-    data = await res.json();
-  } catch { /* respuesta sin JSON válido */ }
+  let transientError = null;
 
-  if (!res.ok) {
-    const msg = data?.error ? JSON.stringify(data.error) : 'Error en la operación';
-    throw new Error(msg);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) {
+      await sleep(RETRY_BACKOFF_MS[attempt - 2] ?? RETRY_BACKOFF_MS.at(-1));
+    }
+
+    let res;
+    try {
+      res = await fetchWithTimeout(
+        url,
+        init,
+        attempt === 1 ? FIRST_ATTEMPT_TIMEOUT_MS : RETRY_TIMEOUT_MS
+      );
+    } catch (err) {
+      // Abort por timeout o fallo de red: reintentable y típico de cold-start.
+      transientError = err;
+      continue;
+    }
+
+    // 5xx (incluye el 502/504 que devuelve el proxy mientras Render levanta):
+    // reintentable. Si el server manda un mensaje propio, lo conservamos.
+    if (res.status >= 500) {
+      const detail = await readErrorMessage(res);
+      transientError = new WebhookError(detail || COLD_START_MESSAGE, {
+        status: res.status,
+        isColdStart: !detail
+      });
+      continue;
+    }
+
+    if (!res.ok) {
+      const detail = await readErrorMessage(res);
+      throw new WebhookError(detail || 'Error en la operación', { status: res.status });
+    }
+
+    try {
+      return await res.json();
+    } catch {
+      return {}; // respuesta OK sin JSON válido
+    }
   }
-  return data;
+
+  throw transientError instanceof WebhookError
+    ? transientError
+    : new WebhookError(COLD_START_MESSAGE, { cause: transientError, isColdStart: true });
 }
 
 /* ============================

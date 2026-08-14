@@ -102,7 +102,12 @@ const Dashboard = () => {
       toast({ title: 'Estado actualizado', className: 'bg-brand-dark text-white rounded-2xl' });
       if (user?.id) await fetchDashboardData(user.id);
     } catch (e) {
-      toast({ title: 'Error en la operación', variant: 'destructive' });
+      // El mensaje distingue cold-start del microservicio de un fallo real (ROADMAP 4.3).
+      toast({
+        title: e?.isColdStart ? 'El servicio está iniciándose' : 'Error en la operación',
+        description: e?.message,
+        variant: 'destructive'
+      });
     } finally { setActionLoadingId(null); }
   }
 

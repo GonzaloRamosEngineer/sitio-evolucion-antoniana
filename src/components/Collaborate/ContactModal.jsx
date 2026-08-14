@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,151 +9,174 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
+import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { Loader2, Send, User, Mail, MessageSquare } from 'lucide-react';
 
+const collaborationSchema = z.object({
+  name: z.string().trim().min(2, 'Ingresá tu nombre completo'),
+  email: z.string().trim().email('Ingresá un email válido'),
+  message: z.string().trim().min(10, 'Contanos en al menos 10 caracteres cómo querés participar'),
+});
+
+const emptyForm = { name: '', email: '', message: '' };
+
+// Mismo estilo de input que Contact (ROADMAP 5.12): fondo arena, borde hairline
+// y esquinas rectas, en vez del gris/rounded-xl que traía este modal.
+const inputStyles =
+  'h-11 bg-brand-sand/70 border-brand-dark/15 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-sm';
+
 const ContactModal = ({ open, onOpenChange, collaborationType }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  // El honeypot no se valida ni se envía: queda fuera del form de RHF a propósito.
   const [website, setWebsite] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(collaborationSchema),
+    defaultValues: emptyForm,
+  });
+
+  const closeWithSuccess = () => {
+    toast({
+      title: '¡Mensaje enviado!',
+      description: 'Gracias por tu interés. Nos pondremos en contacto con vos pronto.',
+      className: 'bg-green-600 text-white border-none',
+    });
+    reset(emptyForm);
+    onOpenChange(false);
+  };
+
+  const onSubmit = async (data) => {
     if (website) {
       // Bot detectado: simular éxito sin enviar nada
-      toast({
-        title: "¡Mensaje Enviado!",
-        description: "Gracias por tu interés. Nos pondremos en contacto contigo pronto.",
-        className: "bg-green-600 text-white border-none"
-      });
-      onOpenChange(false);
+      closeWithSuccess();
       return;
     }
-    setIsLoading(true);
 
-    const subject = `Interés de colaboración: ${collaborationType}`;
     const emailBody = `
-      Nombre: ${name}
-      Email: ${email}
+      Nombre: ${data.name}
+      Email: ${data.email}
       Tipo de Colaboración: ${collaborationType}
       Mensaje:
-      ${message}
+      ${data.message}
     `;
 
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          recipient_email: 'info@evolucionantoniana.com', 
-          subject: subject,
+          recipient_email: 'info@evolucionantoniana.com',
+          subject: `Interés de colaboración: ${collaborationType}`,
           text_content: emailBody,
-          html_content: `<p><strong>Nombre:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Tipo de Colaboración:</strong> ${collaborationType}</p><p><strong>Mensaje:</strong></p><p>${message.replace(/\n/g, '<br>')}</p>`,
+          html_content:
+            `<p><strong>Nombre:</strong> ${escapeHtml(data.name)}</p>` +
+            `<p><strong>Email:</strong> ${escapeHtml(data.email)}</p>` +
+            `<p><strong>Tipo de Colaboración:</strong> ${escapeHtml(collaborationType)}</p>` +
+            `<p><strong>Mensaje:</strong></p>` +
+            `<p>${escapeHtmlMultiline(data.message)}</p>`,
+          reply_to: data.email,
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: "¡Mensaje Enviado!",
-        description: "Gracias por tu interés. Nos pondremos en contacto contigo pronto.",
-        className: "bg-green-600 text-white border-none"
-      });
-      setName('');
-      setEmail('');
-      setMessage('');
-      onOpenChange(false);
+      closeWithSuccess();
     } catch (error) {
-      console.error("Error sending contact email:", error);
+      console.error('Error sending contact email:', error);
       toast({
-        title: "Error al enviar mensaje",
-        description: "Hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo más tarde.",
-        variant: "destructive",
+        title: 'Error al enviar mensaje',
+        description: 'Hubo un problema al enviar tu mensaje. Por favor, intentalo de nuevo más tarde.',
+        variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-2xl shadow-2xl border-none p-0 overflow-hidden">
-        
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-sm shadow-2xl border-none p-0 overflow-hidden">
+
         {/* Header con estilo de marca */}
-        <div className="bg-brand-sand p-6 border-b border-gray-100">
+        <div className="bg-brand-sand p-6 border-b border-brand-dark/10">
             <DialogHeader>
             <DialogTitle className="text-2xl font-bold font-poppins text-brand-dark flex items-center gap-2">
-                <MessageSquare className="w-6 h-6 text-brand-primary" />
+                <MessageSquare aria-hidden="true" className="w-6 h-6 text-brand-primary" />
                 Hablemos
             </DialogTitle>
-            <DialogDescription className="text-gray-500 text-base">
-                ¿Te interesa colaborar como {collaborationType?.toLowerCase() || 'partner'}? Déjanos tus datos y te contactaremos.
+            <DialogDescription className="text-gray-600 text-base">
+                ¿Te interesa colaborar como {collaborationType?.toLowerCase() || 'partner'}? Dejanos tus datos y te contactamos.
             </DialogDescription>
             </DialogHeader>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 relative">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5 relative" noValidate>
             <Honeypot value={website} onChange={(e) => setWebsite(e.target.value)} />
             <div className="space-y-2">
-                <Label htmlFor="name" className="text-brand-dark font-semibold">Nombre Completo</Label>
+                <Label htmlFor="collab-name" className="text-brand-dark font-semibold">Nombre completo</Label>
                 <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <User aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10 h-11 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
+                        id="collab-name"
                         placeholder="Tu nombre"
-                        required
+                        autoComplete="name"
+                        className={inputStyles + ' pl-10'}
+                        disabled={isSubmitting}
+                        {...register('name')}
                     />
                 </div>
+                {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="email" className="text-brand-dark font-semibold">Email de Contacto</Label>
+                <Label htmlFor="collab-email" className="text-brand-dark font-semibold">Email de contacto</Label>
                 <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                        id="email"
+                        id="collab-email"
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-11 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl transition-all"
                         placeholder="tu@email.com"
-                        required
+                        autoComplete="email"
+                        className={inputStyles + ' pl-10'}
+                        disabled={isSubmitting}
+                        {...register('email')}
                     />
                 </div>
+                {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="message" className="text-brand-dark font-semibold">Tu Mensaje</Label>
+                <Label htmlFor="collab-message" className="text-brand-dark font-semibold">Tu mensaje</Label>
                 <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-xl p-4 min-h-[120px]"
-                    placeholder="Cuéntanos cómo te gustaría participar o qué dudas tienes..."
-                    required
+                    id="collab-message"
+                    className="bg-brand-sand/70 border-brand-dark/15 focus:bg-white focus:border-brand-primary focus:ring-brand-primary rounded-sm p-4 min-h-[120px]"
+                    placeholder="Contanos cómo te gustaría participar o qué dudas tenés..."
+                    disabled={isSubmitting}
+                    {...register('message')}
                 />
+                {errors.message && <p className="text-sm text-red-600">{errors.message.message}</p>}
             </div>
 
             <DialogFooter className="pt-2 gap-2 sm:gap-0">
-                <Button 
-                    type="button" 
-                    variant="ghost" 
-                    onClick={() => onOpenChange(false)} 
-                    className="text-gray-500 hover:text-brand-dark hover:bg-gray-100"
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isSubmitting}
+                    className="text-gray-600 hover:text-brand-dark hover:bg-gray-100"
                 >
                     Cancelar
                 </Button>
-                <Button 
-                    type="submit" 
-                    className="bg-brand-primary hover:bg-brand-dark text-white font-bold px-6 rounded-xl shadow-md transition-all"
-                    disabled={isLoading}
+                <Button
+                    type="submit"
+                    variant="action"
+                    className="px-6"
+                    disabled={isSubmitting}
                 >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                    Enviar Mensaje
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Enviar mensaje
                 </Button>
             </DialogFooter>
         </form>
