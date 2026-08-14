@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import { queryClient } from '@/lib/queryClient';
 
 const AuthContext = createContext();
 
@@ -185,6 +186,10 @@ export const AuthProvider = ({ children }) => {
           sessionStorage.removeItem(key);
         }
       });
+      // Además de la caché casera de arriba, hay que limpiar la de TanStack: si
+      // no, lo que vio un usuario (por ejemplo los partners no aprobados que ve
+      // un admin) seguiría cacheado para quien se loguee después en el mismo tab.
+      queryClient.clear();
     } catch (error) {
       console.error('Error in logout:', error.message);
       setUser(null); 

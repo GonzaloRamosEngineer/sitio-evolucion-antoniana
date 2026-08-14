@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useActivities } from '@/hooks/useActivities';
+import { useActivitiesQuery } from '@/hooks/useContentQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -31,28 +32,26 @@ const Activities = () => {
   const [filter, setFilter] = useState('all'); // modalidad: all | presencial | virtual
   const [cycleFilter, setCycleFilter] = useState('all'); // ciclo: all | A | B | C
 
-  const { activities, loading: activitiesLoading, error: activitiesError, registerForActivity, refreshActivities } =
-    useActivities();
+  // La lectura de actividades sale de TanStack Query; de `useActivities` solo
+  // usamos la mutación de inscripción (ROADMAP 4.2).
+  //
+  // Antes acá había dos `useEffect` con una caché casera en
+  // `sessionStorage('activities_loaded')`: uno decidía si refetchear y el otro
+  // limpiaba la marca al desloguear. Era frágil (la marca sobrevivía a datos
+  // vacíos y se desincronizaba del estado real) y ahora la reemplaza el
+  // `staleTime` del queryClient.
+  const {
+    data: activities = [],
+    isPending: activitiesLoading,
+    error: activitiesError,
+    refetch: refreshActivities,
+  } = useActivitiesQuery();
+
+  const { registerForActivity } = useActivities();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    if (!authLoading) {
-      const hasLoaded = sessionStorage.getItem('activities_loaded');
-      if (!hasLoaded || activities.length === 0) {
-        refreshActivities();
-        sessionStorage.setItem('activities_loaded', 'true');
-      }
-    }
-  }, [authLoading, refreshActivities, activities.length]);
-
-  useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      sessionStorage.removeItem('activities_loaded');
-    }
-  }, [isAuthenticated, authLoading]);
 
   // -----------------------------
   // Helpers: ciclo desde el title
@@ -324,8 +323,9 @@ const getCleanTitle = (title) => {
     animate: { opacity: 1, y: 0 },
   };
 
-  const showInitialLoader =
-    authLoading || (activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded'));
+  // `isPending` ya es false cuando hay dato cacheado, así que no hace falta
+  // consultar ninguna marca extra para evitar el spinner en la segunda visita.
+  const showInitialLoader = authLoading || activitiesLoading;
 
   if (showInitialLoader) {
     return (
@@ -478,7 +478,7 @@ const getCleanTitle = (title) => {
       {/* --- GRID DE ACTIVIDADES --- */}
       <section className="py-12 md:py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          {activitiesLoading && activities.length === 0 && !sessionStorage.getItem('activities_loaded') ? (
+          {activitiesLoading ? (
             <div className="flex justify-center items-center min-h-[300px]">
               <Loader2 className="h-12 w-12 animate-spin text-brand-primary" />
             </div>
@@ -490,7 +490,9 @@ const getCleanTitle = (title) => {
             >
               <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
               <p className="text-xl text-red-700 font-bold mb-2">Error al cargar actividades</p>
-              <p className="text-gray-600 mb-6">{activitiesError || 'Ocurrió un error inesperado.'}</p>
+              {/* `activitiesError` ahora es un Error (antes era un string): hay que
+                  leer `.message`, si no React intenta renderizar un objeto y explota. */}
+              <p className="text-gray-600 mb-6">{activitiesError?.message || 'Ocurrió un error inesperado.'}</p>
               <Button onClick={refreshActivities} variant="destructive">
                 Intentar de nuevo
               </Button>

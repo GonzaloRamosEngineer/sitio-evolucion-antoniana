@@ -1,30 +1,17 @@
 // src/pages/NewsPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, Newspaper, Loader2, AlertTriangle } from 'lucide-react'; // Agregué Newspaper para el placeholder
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { getNews } from '@/lib/storage';
+import { useNews } from '@/hooks/useContentQueries';
 
 const NewsPage = () => {
-  const [news, setNews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    const { data, error: fetchError } = await getNews();
-    if (fetchError) setError(true);
-    setNews(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // Antes: useState(news/loading/error) + useEffect + fetchData manual.
+  // El caché de TanStack hace que volver a esta página no muestre spinner.
+  const { data: news = [], isPending: loading, isError: error, refetch: fetchData } = useNews();
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">

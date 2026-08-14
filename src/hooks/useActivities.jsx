@@ -1,6 +1,16 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+
+// Migración incremental a TanStack Query (ROADMAP 4.2): la **lectura** de
+// actividades de las páginas públicas ya sale de `useActivitiesQuery`, mientras
+// este hook sigue manejando las mutaciones con estado local. Para que los dos
+// mundos no se desincronicen, cada mutación invalida la queryKey compartida: si
+// no, un alta desde el panel admin no se vería en la página pública hasta que
+// venciera el `staleTime`.
+const invalidateActivities = () =>
+  queryClient.invalidateQueries({ queryKey: queryKeys.activities });
 
 const handleSupabaseError = (error, context) => {
   console.error(`Error en ${context}:`, error);
@@ -160,6 +170,7 @@ export const useActivities = () => {
         .single();
       if (dbError) throw dbError;
       refreshActivities();
+      invalidateActivities();
       return data;
     } catch (e) {
       const friendlyError = handleSupabaseError(e, 'crear actividad');
@@ -192,6 +203,7 @@ export const useActivities = () => {
         .single();
       if (dbError) throw dbError;
       refreshActivities();
+      invalidateActivities();
       return data;
     } catch (e) {
       const friendlyError = handleSupabaseError(e, `actualizar actividad ${activityId}`);
@@ -212,6 +224,7 @@ export const useActivities = () => {
         .eq('id', activityId);
       if (dbError) throw dbError;
       refreshActivities();
+      invalidateActivities();
     } catch (e) {
       const friendlyError = handleSupabaseError(e, `eliminar actividad ${activityId}`);
       setError(friendlyError);

@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,11 @@ import {
   MapPin,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { getNews, getPartners } from "@/lib/storage";
+import {
+  useActivitiesQuery,
+  useNews,
+  useApprovedPartners,
+} from "@/hooks/useContentQueries";
 // Logos normalizados (recorte de aire + masa visual pareja) generados con
 // tools/normalize-partner-logos.mjs; fallback al logo_url crudo si falta.
 import partnerLogoOverrides from "@/data/partnerLogoOverrides.json";
@@ -155,36 +158,20 @@ const SkeletonCard = () => (
 const Home = () => {
   const reduceMotion = useReducedMotion();
 
-  // --- Contenido vivo (Supabase); null = cargando ---
-  const [activities, setActivities] = useState(null);
-  const [news, setNews] = useState(null);
-  const [partners, setPartners] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from("activities")
-      // `*` (en vez de columnas explícitas) para no romper si la columna `slug`
-      // todavía no existe en la BD: el link cae a `id` hasta que corra la migración.
-      .select("*")
-      .order("date", { ascending: true })
-      .then(({ data, error }) => {
-        if (!cancelled) setActivities(error ? [] : data || []);
-      });
-    // `data` siempre es un array (vacío si la consulta falló), así que la Home
-    // degrada a secciones vacías sin necesidad de un catch por fetch.
-    getNews().then(({ data }) => !cancelled && setNews(data.slice(0, 3)));
-    getPartners().then(
-      ({ data }) =>
-        !cancelled &&
-        setPartners(data.filter((p) => p.estado === "aprobado").slice(0, 10))
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const activitiesLoading = activities === null;
+  // --- Contenido vivo, vía TanStack Query (ROADMAP 4.2) ---
+  // Antes eran tres `useState(null)` + un `useEffect` con flag `cancelled` para
+  // evitar setear estado después de desmontar. TanStack ya maneja ese ciclo de
+  // vida, y comparte caché con Activities/NewsPage/PartnersPage: al navegar de
+  // la Home a esas páginas el dato ya está y no se vuelve a pedir.
+  //
+  // `isPending` reemplaza al centinela `null = cargando`. Los `select` recortan
+  // sobre el dato cacheado, así que la Home no tiene su propia entrada de caché.
+  const { data: activities = [], isPending: activitiesLoading } = useActivitiesQuery();
+  const { data: news = [] } = useNews({ select: (rows) => rows.slice(0, 3) });
+  // El filtro de aprobados lo garantiza el hook; acá solo recortamos.
+  const { data: partners = [] } = useApprovedPartners({
+    select: (rows) => rows.slice(0, 10),
+  });
   const upcomingActivities = useMemo(() => {
     const list = activities || [];
     const today = new Date();

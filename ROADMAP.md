@@ -166,7 +166,17 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   (`dataResult.test.js`, `storage.test.js` con Supabase mockeado, y `membershipApi.test.js`
   actualizado al contrato).
 
-- [ ] **4.2 — Sin caché de estado servidor (no react-query/SWR).**
+- [~] **4.2 — Caché de estado servidor. EN CURSO (2026-08-14, Sesión F3, tanda 1).**
+  **Hecho:** `@tanstack/react-query@5` instalado, `QueryClientProvider` en `main.jsx`,
+  contrato y claves en `src/lib/queryClient.js`, hooks de lectura en
+  `src/hooks/useContentQueries.js`. Migradas **Home, Activities, NewsPage,
+  PartnersPage y BenefitsPage**, y eliminada la caché casera de
+  `sessionStorage('activities_loaded')`.
+  **Falta (tanda 2):** `ActivityList` (admin, tiene su propio
+  `sessionStorage('admin_activities_loaded')`), los 3 paneles de Admin (partners/
+  beneficios/noticias, que además ganarían invalidación automática en vez de
+  `loadX()` a mano), Dashboard, EducationAdmin y las páginas de detalle.
+  Detalle de diseño en §8.
   Cada página hace fetch manual con `useEffect` (18 páginas). `Activities.jsx:43-51` usa
   `sessionStorage('activities_loaded')` como caché casera frágil. No hay N+1 (los joins
   usan embedding de Supabase, correcto; `useAdminStats.js:37-97` usa `Promise.all`).
@@ -692,6 +702,45 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   Docker sano (la misma imagen corre bien a mano) y config completa. Por eso la validación
   se hizo con Postgres pelado + psql. Los `*.integration.test.js` quedan listos para
   cuando el stack levante.
+
+**Sesión F3 — caché de estado servidor, tanda 1 (2026-08-14):**
+- [~] 4.2 — `@tanstack/react-query@5` (peer React 18 ✓, compatible con vite@4).
+- **`unwrap`, la pieza clave** (`src/lib/queryClient.js`): la capa de datos **nunca
+  lanza** (F2), pero TanStack necesita que el `queryFn` **lance** para marcar la query
+  como fallida. La conversión inversa se hace ahí, en el borde, y **nunca en la capa** —
+  si la capa volviera a lanzar perderíamos todo lo ganado en F2. Sin esto un fallo se
+  vería como `data: []` con `isSuccess: true` y la página mostraría su estado vacío en
+  lugar del de error (hay un test que fija exactamente eso).
+- **Defaults del cliente:** `staleTime` 5 min (contenido institucional que cambia poco),
+  `refetchOnWindowFocus: false` (en un sitio institucional molesta más de lo que aporta y
+  multiplica las llamadas a Supabase), `retry: 1` (los errores que llegan acá suelen ser
+  de RLS, no transitorios).
+- **Migradas:** Home, Activities, NewsPage, PartnersPage, BenefitsPage. **Eliminada la
+  caché casera** `sessionStorage('activities_loaded')` y sus dos `useEffect`: era frágil
+  (la marca sobrevivía a datos vacíos y se desincronizaba del estado real) y la reemplaza
+  el `staleTime`. En Home se fueron 3 `useState(null)` + el `useEffect` con flag
+  `cancelled`; en BenefitsPage, el `useEffect` que escribía `filteredBenefits` pasó a un
+  `useMemo` (era estado derivado duplicado, con un render extra por tecla).
+- **Coherencia del híbrido:** el panel admin sigue usando `useActivities` con estado
+  local, así que sus mutaciones ahora **invalidan la queryKey compartida**. Sin eso, un
+  alta desde el panel no se veía en la página pública hasta que venciera el `staleTime`.
+- **Logout:** además de la caché casera, `logout()` ahora hace `queryClient.clear()`. Si
+  no, lo que vio un usuario (por ejemplo los partners no aprobados que ve un admin)
+  quedaba cacheado para quien se logueara después en el mismo tab.
+- **Trampa del primer diseño, encontrada y corregida:** como las opciones del caller se
+  esparcen al final, un `select` del consumidor **reemplazaba el filtro del hook en
+  silencio** — la Home pidiendo `.slice(0, 10)` habría mostrado **partners sin aprobar en
+  la portada**. Ahora los filtros se componen con `composeSelect` y no se pueden perder.
+  Verificado revirtiendo el diseño viejo: el test falla mostrando `Pendiente B`.
+- **Cambio de tipo a tener en cuenta al migrar el resto:** el `error` de TanStack es un
+  `Error`, no el string que devolvía `useActivities`. En `Activities.jsx` había un
+  `{activitiesError}` que habría intentado renderizar un objeto y roto la página; ahora
+  lee `.message`. Revisar ese patrón en cada página que se migre.
+- **Tests:** `queryClient.test.js` (6 casos del puente y de las claves) y
+  `useContentQueries.test.jsx` (7 casos: filtros, que el `select` del caller no los
+  saltee, propagación de errores y que dos hooks sobre la misma entidad hagan **una
+  sola** llamada).
+- **Verificación:** lint 0 errores, `npm test` 61/61 (antes 48), build OK.
 
 ---
 

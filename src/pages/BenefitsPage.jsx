@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Search, Filter, Gift, Tag, Loader2, AlertTriangle } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import BenefitCard from '@/components/BenefitCard';
-import { getBenefits } from '@/lib/storage';
+import { useActiveBenefits } from '@/hooks/useContentQueries';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -20,45 +20,31 @@ const categories = [
 ];
 
 const BenefitsPage = () => {
-  const [benefits, setBenefits] = useState([]);
-  const [filteredBenefits, setFilteredBenefits] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('todos');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    const { data, error: fetchError } = await getBenefits();
-    if (fetchError) setError(true);
-    const activeBenefits = data.filter((b) => b.estado === 'activo');
-    setBenefits(activeBenefits);
-    setFilteredBenefits(activeBenefits);
-    setLoading(false);
-  }, []);
+  // El filtro por `estado === 'activo'` vive en el hook.
+  const {
+    data: benefits = [],
+    isPending: loading,
+    isError: error,
+    refetch: fetchData,
+  } = useActiveBenefits();
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    let filtered = benefits;
-
-    if (selectedCategory !== 'todos') {
-      filtered = filtered.filter((b) => b.categoria === selectedCategory);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (b) =>
-          b.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          b.descripcion.toLowerCase().includes(searchTerm.toLowerCase()),
+  // Antes esto era un `useEffect` que escribía en `filteredBenefits`: estado
+  // derivado duplicado, con un render extra por cada tecla. Es un valor
+  // calculable, así que va en `useMemo`.
+  const filteredBenefits = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return benefits.filter((b) => {
+      if (selectedCategory !== 'todos' && b.categoria !== selectedCategory) return false;
+      if (!term) return true;
+      return (
+        b.titulo?.toLowerCase().includes(term) ||
+        b.descripcion?.toLowerCase().includes(term)
       );
-    }
-
-    setFilteredBenefits(filtered);
-  }, [searchTerm, selectedCategory, benefits]);
+    });
+  }, [benefits, searchTerm, selectedCategory]);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
