@@ -652,9 +652,46 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
 - **Verificación:** `npm run lint` 0 errores (54 warnings de backlog), `npm test` 41/41
   verdes (antes 19), `npm run build` OK. Barrido con grep de los ~25 nombres exportados
   para confirmar que no quedó ningún call site con el contrato viejo.
-- **Pendiente de validar en prod (no lo cubren los tests):** el alta/edición/borrado en
-  los 3 paneles de admin y el alta de preinscripción, que son los caminos donde cambió el
-  manejo de error.
+- **Validado contra un Postgres real (Docker, 2026-08-14).** Se levantó la imagen
+  `supabase/postgres:17.6.1.158` pelada, se aplicó el baseline de 2.4 y se probaron las
+  políticas con `SET LOCAL ROLE anon` / `authenticated`. Resultados:
+  - ✅ `partners`: el anon **solo ve los aprobados**; INSERT con `estado='pendiente'`
+    permitido; INSERT con `estado='aprobado'` **rechazado con SQLSTATE 42501**.
+  - ✅ **Un anon NO puede leer de vuelta la fila que acaba de insertar** (0 filas
+    visibles). Esto **prueba** que la decisión de F2 de no ponerle `.select()` a
+    `addPartner` era la correcta: con `.select()` el formulario público de postulación
+    habría fallado en producción, y ningún test con mocks lo habría detectado.
+  - ✅ `benefits`: el anon solo ve `estado='activo'` (la RLS ya filtra, así que el filtro
+    en `BenefitsPage` es redundante pero inofensivo). `news`: lectura pública total.
+    El anon **no** puede insertar en `news` (42501).
+  - ⚠️ **Un DELETE sin policy no da error: borra 0 filas y devuelve OK.** O sea que
+    `error === null` NO alcanza para afirmar "se borró". No es algo que F2 haya
+    introducido ni que el contrato pueda detectar (Postgres no lo reporta como error);
+    en la práctica solo afecta a un caller sin permiso, que no llega al panel. Queda
+    documentado: si algún día importa, hay que mirar la cantidad de filas afectadas.
+  - ⚠️ **`trg_prevent_privilege_escalation` revierte `role` en silencio**: el UPDATE
+    reporta 1 fila y sin error, pero el rol queda igual. Mismo caveat que el anterior,
+    para `users`.
+  - Hallazgo extra: `handle_new_user()` inserta `raw_user_meta_data->>'name'` en una
+    columna NOT NULL, así que crear un usuario de auth **sin `name` en la metadata falla**.
+- **Hallazgo de auditoría sobre 2.4 (migraciones):** las 5 migraciones de junio
+  **fallan en una base desde cero** (`relation "public.users" does not exist`), porque
+  preceden al baseline que crea esa tabla. Como `supabase db push`/`supabase start`
+  aplican en orden de timestamp, **el set de migraciones no puede reconstruir la base
+  desde cero**, al contrario de lo que dice el header del baseline. El baseline **solo**
+  sí aplica limpio, y 3 de las 5 de junio funcionan si va primero. Las otras 2 necesitan
+  el servicio de Storage (`storage.buckets`) y permisos de `supabase_auth_admin`, así que
+  no se pueden juzgar con Postgres pelado. **Acción sugerida:** marcar las 5 previas como
+  superadas por el baseline (o squashearlas), para que el orden por timestamp funcione.
+- **Pendiente de validar en prod (lo que ni los tests ni Docker cubren):** el
+  alta/edición/borrado en los 3 paneles de admin y el alta de preinscripción **a través
+  de la UI** — la lógica de error ya está cubierta por `PartnersAdmin.test.jsx` y las RLS
+  por lo de arriba, así que lo que falta es solo el recorrido visual.
+- **Nota sobre `npx supabase start`:** en esta máquina falla con
+  `LegacyDbSetupError: error running container: exit 255` en "Initialising schema", con
+  Docker sano (la misma imagen corre bien a mano) y config completa. Por eso la validación
+  se hizo con Postgres pelado + psql. Los `*.integration.test.js` quedan listos para
+  cuando el stack levante.
 
 ---
 

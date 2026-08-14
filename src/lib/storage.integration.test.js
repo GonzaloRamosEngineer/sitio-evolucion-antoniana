@@ -17,6 +17,7 @@
 // si la URL no es local. Nunca lo relajes: sin él, un `npm run test:integration`
 // mal configurado escribiría en la base de la Fundación.
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 
 const LOCAL_URL = process.env.SUPABASE_LOCAL_URL;
@@ -52,6 +53,34 @@ const admin = configured && LOCAL_SERVICE_KEY
   : null;
 
 const suite = configured ? describe : describe.skip;
+
+/**
+ * SQL directo contra el Postgres local, salteando PostgREST.
+ *
+ * Hace falta para promover al usuario de prueba a admin: la tabla `users` tiene
+ * el trigger `trg_prevent_privilege_escalation`, que si `check_is_admin()` da
+ * falso **revierte `role` en silencio** (sin error). Y `check_is_admin()` mira
+ * `auth.uid()`, que con la service_role vía PostgREST es NULL — así que un
+ * `update({role:'admin'})` "funcionaría" sin cambiar nada y el test fallaría
+ * de forma engañosa. Acá desactivamos el trigger, promovemos y lo reactivamos.
+ */
+const runSql = (sql) => {
+  const container = execFileSync(
+    'docker',
+    ['ps', '--filter', 'name=supabase_db_', '--format', '{{.Names}}'],
+    { encoding: 'utf8' }
+  )
+    .trim()
+    .split(/\r?\n/)[0];
+
+  if (!container) throw new Error('No encontré el contenedor de la base local.');
+
+  return execFileSync(
+    'docker',
+    ['exec', '-i', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c', sql],
+    { encoding: 'utf8' }
+  );
+};
 
 // Prefijo para poder limpiar solo lo que creamos estos tests.
 const TAG = 'ZZTEST-F2';
@@ -163,13 +192,23 @@ suite('camino de admin autenticado', () => {
   beforeAll(async () => {
     if (!admin) return;
 
-    // Creamos el usuario y lo promovemos a admin con la service key.
+    // Creamos el usuario (el trigger de auth.users le crea el perfil con rol
+    // 'user') y lo promovemos por SQL directo — ver el comentario de `runSql`.
     await admin.auth.admin.createUser({ email, password, email_confirm: true });
     const { data: list } = await admin.auth.admin.listUsers();
     const user = (list?.users || []).find((u) => u.email === email);
     if (!user) return;
 
-    await admin.from('users').update({ role: 'admin' }).eq('id', user.id);
+    runSql(`
+      ALTER TABLE public.users DISABLE TRIGGER trg_prevent_privilege_escalation;
+      UPDATE public.users SET role = 'admin' WHERE id = '${user.id}';
+      ALTER TABLE public.users ENABLE TRIGGER trg_prevent_privilege_escalation;
+    `);
+
+    // Verificamos que la promoción quedó: si el trigger la hubiera revertido,
+    // los tests de abajo fallarían por el motivo equivocado.
+    const { data: profile } = await admin.from('users').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') return;
 
     const { error: signInError } = await anonClient.auth.signInWithPassword({ email, password });
     if (signInError) return;
@@ -214,5 +253,46 @@ suite('camino de admin autenticado', () => {
 
     const { data: rows } = await admin.from('partners').select('id').eq('id', partnerId);
     expect(rows).toHaveLength(0);
+  });
+});
+
+suite('caveat: cambios que la base revierte en silencio', () => {
+  const email = 'zztest-f2-plain@example.com';
+  const password = 'test-password-1234';
+  let userId = null;
+  let ready = false;
+
+  beforeAll(async () => {
+    if (!admin) return;
+    const { data } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    userId = data?.user?.id ?? null;
+    if (!userId) return;
+    const { error } = await anonClient.auth.signInWithPassword({ email, password });
+    ready = !error;
+  });
+
+  afterAll(async () => {
+    if (!admin) return;
+    await anonClient.auth.signOut();
+    if (userId) await admin.auth.admin.deleteUser(userId);
+  });
+
+  it('updateUserRole no falla pero tampoco cambia nada si el caller no es admin', async () => {
+    if (!ready) return expect(ready).toBe(true);
+
+    // `trg_prevent_privilege_escalation` NO rechaza: reasigna `new.role := old.role`
+    // y devuelve OK. O sea que `error` viene null y el contrato `{data, error}`
+    // reporta éxito sobre un cambio que no ocurrió.
+    //
+    // No es un bug que F2 haya introducido ni que el contrato pueda detectar: es
+    // una propiedad del modelo de seguridad (ignora el intento en silencio en vez
+    // de delatar el filtro). Queda acá documentado y fijado, porque significa que
+    // "error === null" NO alcanza para afirmar "el cambio se aplicó" en `users`.
+    const { updateUserRole } = await import('@/api/userApi');
+    const { error } = await updateUserRole(userId, 'admin');
+    expect(error).toBeNull(); // no hubo error...
+
+    const { data: profile } = await admin.from('users').select('role').eq('id', userId).single();
+    expect(profile.role).toBe('user'); // ...pero el rol sigue igual
   });
 });
