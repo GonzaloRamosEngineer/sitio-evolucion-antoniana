@@ -54,14 +54,12 @@ const EducationAdmin = () => {
 
   const fetchList = async () => {
     setLoading(true);
-    try {
-      const data = await getPreinscriptions();
-      setList(data || []);
-    } catch (e) {
+    const { data, error } = await getPreinscriptions();
+    if (error) {
       toast({ title: "Error de carga", variant: "destructive" });
-    } finally {
-      setLoading(false);
     }
+    setList(data);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -76,21 +74,22 @@ const EducationAdmin = () => {
       prev.map((item) => (item.id === id ? { ...item, status: status } : item)),
     );
 
-    try {
-      await updatePreinscriptionStatus(id, status);
-      toast({
-        title: "Estado Actualizado",
-        description: `Registro movido a ${status.toUpperCase()}`,
-        className: "bg-brand-dark text-white border-none rounded-2xl",
-      });
-    } catch (e) {
+    const { error } = await updatePreinscriptionStatus(id, status);
+    if (error) {
       setList(previousList); // Revertir si falla
       toast({
         title: "Error",
         description: "No se pudo sincronizar el cambio",
         variant: "destructive",
       });
+      return;
     }
+
+    toast({
+      title: "Estado Actualizado",
+      description: `Registro movido a ${status.toUpperCase()}`,
+      className: "bg-brand-dark text-white border-none rounded-2xl",
+    });
   };
 
   // --- EXPORTACIÓN FORMATO TABLA EXCEL (Standard Salta/Argentina) ---

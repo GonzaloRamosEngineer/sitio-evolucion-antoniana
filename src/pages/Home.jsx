@@ -171,16 +171,14 @@ const Home = () => {
       .then(({ data, error }) => {
         if (!cancelled) setActivities(error ? [] : data || []);
       });
-    getNews()
-      .then((data) => !cancelled && setNews((data || []).slice(0, 3)))
-      .catch(() => !cancelled && setNews([]));
-    getPartners()
-      .then(
-        (data) =>
-          !cancelled &&
-          setPartners((data || []).filter((p) => p.estado === "aprobado").slice(0, 10))
-      )
-      .catch(() => !cancelled && setPartners([]));
+    // `data` siempre es un array (vacío si la consulta falló), así que la Home
+    // degrada a secciones vacías sin necesidad de un catch por fetch.
+    getNews().then(({ data }) => !cancelled && setNews(data.slice(0, 3)));
+    getPartners().then(
+      ({ data }) =>
+        !cancelled &&
+        setPartners(data.filter((p) => p.estado === "aprobado").slice(0, 10))
+    );
     return () => {
       cancelled = true;
     };

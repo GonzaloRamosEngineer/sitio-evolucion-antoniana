@@ -1,9 +1,13 @@
+// src/api/activitiesApi.js
+// Contrato único: devuelve `{ data, error }` y no lanza (ver `src/lib/dataResult.js`).
 import { supabase } from '@/lib/supabase';
+import { listResult } from '@/lib/dataResult';
 
 export const getUserRegistrations = async (userId) => {
-  if (!userId) return [];
-  try {
-    const { data, error } = await supabase
+  if (!userId) return { data: [], error: null };
+
+  return listResult(
+    await supabase
       .from('registrations')
       .select(`
         id,
@@ -12,12 +16,7 @@ export const getUserRegistrations = async (userId) => {
         activity:activities (*)
       `)
       .eq('user_id', userId)
-      .order('registered_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error("Error fetching user registrations from API:", err);
-    return []; 
-  }
+      .order('registered_at', { ascending: false }),
+    'getUserRegistrations'
+  );
 };

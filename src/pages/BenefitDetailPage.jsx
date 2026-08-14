@@ -42,32 +42,28 @@ const BenefitDetailPage = () => {
     const fetchBenefit = async () => {
       setLoading(true);
 
-      try {
-        const all = await getBenefits();
+      // `data` siempre es un array (vacío si la consulta falló), así que un error
+      // de red cae en el mismo "no encontrado" que un slug inexistente.
+      const { data: all } = await getBenefits();
 
-        // 1) por ID exacto
-        let found =
-          (all || []).find((b) => String(b.id) === String(lookup)) ||
-          // 2) por slug guardado
-          (all || []).find((b) => b.slug && b.slug === lookup) ||
-          // 3) fallback: slugify(titulo)
-          (all || []).find((b) => slugify(b.titulo) === lookup);
+      // 1) por ID exacto
+      const found =
+        all.find((b) => String(b.id) === String(lookup)) ||
+        // 2) por slug guardado
+        all.find((b) => b.slug && b.slug === lookup) ||
+        // 3) fallback: slugify(titulo)
+        all.find((b) => slugify(b.titulo) === lookup);
 
-        setBenefit(found || null);
+      setBenefit(found || null);
 
-        if (found?.partner_id) {
-          const p = await getPartnerById(found.partner_id);
-          setPartner(p || null);
-        } else {
-          setPartner(null);
-        }
-      } catch (e) {
-        console.error("Error cargando beneficio:", e);
-        setBenefit(null);
+      if (found?.partner_id) {
+        const { data: p } = await getPartnerById(found.partner_id);
+        setPartner(p);
+      } else {
         setPartner(null);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     fetchBenefit();

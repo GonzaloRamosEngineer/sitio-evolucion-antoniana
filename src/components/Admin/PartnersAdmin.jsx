@@ -45,16 +45,12 @@ const PartnersAdmin = () => {
   });
 
   const loadPartners = async () => {
-    try {
-      const data = await getPartners();
-      setPartners(data);
-    } catch (e) {
-      console.error('Error cargando socios:', e);
-      setPartners([]);
+    const { data, error } = await getPartners();
+    if (error) {
       toast({ variant: 'destructive', title: 'Error al cargar socios', description: 'No se pudieron obtener los socios.' });
-    } finally {
-      setIsLoading(false);
     }
+    setPartners(data);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -81,22 +77,27 @@ const PartnersAdmin = () => {
     };
 
     setIsSubmitting(true);
-    try {
-      if (editingPartner) {
-        await updatePartner(editingPartner.id, payload);
-        toast({ title: 'Partner actualizado ✅', description: 'Los datos se sincronizaron correctamente.' });
-      } else {
-        await addPartner(payload);
-        toast({ title: 'Partner creado ✅', description: 'El nuevo aliado ha sido registrado.' });
-      }
-      resetForm();
-      loadPartners();
-      setIsDialogOpen(false);
-    } catch (error) {
+    const { error } = editingPartner
+      ? await updatePartner(editingPartner.id, payload)
+      : await addPartner(payload);
+    setIsSubmitting(false);
+
+    // Antes esto iba en un try/catch, pero la capa devolvía `null` en error en
+    // vez de lanzar: el catch no se ejecutaba nunca y el panel mostraba "✅"
+    // aunque el insert hubiera fallado.
+    if (error) {
       toast({ title: 'Error', description: 'No se pudo procesar la solicitud.', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    toast(
+      editingPartner
+        ? { title: 'Partner actualizado ✅', description: 'Los datos se sincronizaron correctamente.' }
+        : { title: 'Partner creado ✅', description: 'El nuevo aliado ha sido registrado.' }
+    );
+    resetForm();
+    loadPartners();
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (partner) => {
@@ -114,14 +115,24 @@ const PartnersAdmin = () => {
     setIsDialogOpen(true);
   };
 
+  // Estos tres no chequeaban el resultado y avisaban "✅" incluso si la RLS
+  // rechazaba la operación. Con el contrato único el chequeo es una línea.
   const handleApprove = async (id) => {
-    await updatePartner(id, { estado: 'aprobado' });
+    const { error } = await updatePartner(id, { estado: 'aprobado' });
+    if (error) {
+      toast({ title: 'No se pudo aprobar', description: 'La operación fue rechazada.', variant: 'destructive' });
+      return;
+    }
     loadPartners();
     toast({ title: 'Partner aprobado ✅', description: 'Ahora es visible en la sección de aliados.' });
   };
 
   const handleReject = async (id) => {
-    await updatePartner(id, { estado: 'rechazado' });
+    const { error } = await updatePartner(id, { estado: 'rechazado' });
+    if (error) {
+      toast({ title: 'No se pudo rechazar', description: 'La operación fue rechazada.', variant: 'destructive' });
+      return;
+    }
     loadPartners();
     toast({ title: 'Partner rechazado', description: 'El estado se ha actualizado a rechazado.', variant: 'destructive' });
   };
@@ -129,13 +140,14 @@ const PartnersAdmin = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este aliado? Esta acción es permanente.')) {
       setDeletingId(id);
-      try {
-        await deletePartner(id);
-        loadPartners();
-        toast({ title: 'Partner eliminado', description: 'El registro ha sido borrado.' });
-      } finally {
-        setDeletingId(null);
+      const { error } = await deletePartner(id);
+      setDeletingId(null);
+      if (error) {
+        toast({ title: 'No se pudo eliminar', description: 'La operación fue rechazada.', variant: 'destructive' });
+        return;
       }
+      loadPartners();
+      toast({ title: 'Partner eliminado', description: 'El registro ha sido borrado.' });
     }
   };
 

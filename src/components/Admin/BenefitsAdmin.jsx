@@ -64,16 +64,12 @@ const BenefitsAdmin = () => {
   });
 
   const loadBenefits = async () => {
-    try {
-      const data = await getBenefits();
-      setBenefits(data);
-    } catch (e) {
-      console.error('Error cargando beneficios:', e);
-      setBenefits([]);
+    const { data, error } = await getBenefits();
+    if (error) {
       toast({ variant: 'destructive', title: 'Error al cargar beneficios', description: 'No se pudieron obtener los beneficios.' });
-    } finally {
-      setIsLoading(false);
     }
+    setBenefits(data);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -88,32 +84,28 @@ const BenefitsAdmin = () => {
     };
 
     setIsSubmitting(true);
-    try {
-      if (editingBenefit) {
-        await updateBenefit(editingBenefit.id, payload);
-        toast({ 
-          title: 'Beneficio actualizado ✅', 
-          description: 'Los cambios se han guardado correctamente.' 
-        });
-      } else {
-        await addBenefit(payload);
-        toast({ 
-          title: 'Beneficio creado ✅', 
-          description: 'El nuevo beneficio ya está disponible.' 
-        });
-      }
-      resetForm();
-      loadBenefits();
-      setIsDialogOpen(false);
-    } catch (err) {
+    const { error } = editingBenefit
+      ? await updateBenefit(editingBenefit.id, payload)
+      : await addBenefit(payload);
+    setIsSubmitting(false);
+
+    if (error) {
       toast({
         title: 'Error',
         description: 'Hubo un problema al guardar el beneficio.',
         variant: 'destructive'
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    toast(
+      editingBenefit
+        ? { title: 'Beneficio actualizado ✅', description: 'Los cambios se han guardado correctamente.' }
+        : { title: 'Beneficio creado ✅', description: 'El nuevo beneficio ya está disponible.' }
+    );
+    resetForm();
+    loadBenefits();
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (benefit) => {
@@ -134,16 +126,21 @@ const BenefitsAdmin = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este beneficio? Esta acción es permanente.')) {
       setDeletingId(id);
-      try {
-        await deleteBenefit(id);
-        loadBenefits();
+      const { error } = await deleteBenefit(id);
+      setDeletingId(null);
+      if (error) {
         toast({
-          title: 'Beneficio eliminado',
-          description: 'El registro ha sido borrado de la base de datos.'
+          title: 'No se pudo eliminar',
+          description: 'La operación fue rechazada.',
+          variant: 'destructive'
         });
-      } finally {
-        setDeletingId(null);
+        return;
       }
+      loadBenefits();
+      toast({
+        title: 'Beneficio eliminado',
+        description: 'El registro ha sido borrado de la base de datos.'
+      });
     }
   };
 

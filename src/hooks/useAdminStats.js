@@ -72,6 +72,12 @@ export function useAdminStats() {
         getBenefits(),
       ]);
 
+      // La capa de datos ya no lanza: los fallos vienen en `error`. Los
+      // propagamos para que el panel siga mostrando su estado de error en vez
+      // de un tablero de ceros que parece real.
+      const dataLayerError = partners.error || benefits.error;
+      if (dataLayerError) throw dataLayerError;
+
       setStats({
         totalUsers,
         adminUsers,
@@ -81,11 +87,11 @@ export function useAdminStats() {
         pendingConfirmations,
         totalDonations,
         totalLegalDocuments,
-        totalPartners: partners.length,
-        approvedPartners: partners.filter((p) => p.estado === 'aprobado').length,
-        pendingPartners: partners.filter((p) => p.estado === 'pendiente').length,
-        totalBenefits: benefits.length,
-        activeBenefits: benefits.filter((b) => b.estado === 'activo').length,
+        totalPartners: partners.data.length,
+        approvedPartners: partners.data.filter((p) => p.estado === 'aprobado').length,
+        pendingPartners: partners.data.filter((p) => p.estado === 'pendiente').length,
+        totalBenefits: benefits.data.length,
+        activeBenefits: benefits.data.filter((b) => b.estado === 'activo').length,
       });
       setRecentActivities(recent);
     } catch (err) {

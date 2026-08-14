@@ -54,18 +54,24 @@ const Dashboard = () => {
   const fetchDashboardData = async (userId) => {
     if (!userId) { setPageLoading(false); return; }
     try {
-      const [registrationsData, membershipsResult, metricsDataResult, donationsResult] = await Promise.all([
+      const [registrationsResult, membershipsResult, metricsDataResult, donationsResult] = await Promise.all([
         getUserRegistrations(userId),
         getUserMemberships(userId, { onlyActive: false }),
-        supabase.from('fundacion_metrics').select('*').single(),
+        supabase.from('fundacion_metrics').select('*').maybeSingle(),
         supabase.from('donations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
       ]);
 
-      setUserRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
-      setUserMemberships(Array.isArray(membershipsResult) ? membershipsResult : []);
+      // La capa de datos garantiza un array en `data`, así que no hace falta
+      // el chequeo defensivo de Array.isArray que había antes.
+      setUserRegistrations(registrationsResult.data);
+      setUserMemberships(membershipsResult.data);
       setUserDonations(donationsResult.data || []);
-      
+
       if (metricsDataResult.data) setMetrics(metricsDataResult.data);
+
+      if (registrationsResult.error || membershipsResult.error) {
+        toast({ title: 'Sincronización parcial', description: 'Algunos datos no se pudieron cargar.', variant: 'destructive' });
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast({ title: 'Sincronización interrumpida', variant: 'destructive' });
@@ -96,18 +102,26 @@ const Dashboard = () => {
     if (!preapprovalId) return;
     try {
       setActionLoadingId(preapprovalId);
-      if (kind === 'pause') await pauseMembership(preapprovalId);
-      if (kind === 'resume') await resumeMembership(preapprovalId);
-      if (kind === 'cancel') await cancelMembership(preapprovalId);
+      const action =
+        kind === 'pause' ? pauseMembership
+        : kind === 'resume' ? resumeMembership
+        : kind === 'cancel' ? cancelMembership
+        : null;
+      if (!action) return;
+
+      const { error } = await action(preapprovalId);
+      if (error) {
+        // El mensaje distingue cold-start del microservicio de un fallo real (ROADMAP 4.3).
+        toast({
+          title: error.isColdStart ? 'El servicio está iniciándose' : 'Error en la operación',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       toast({ title: 'Estado actualizado', className: 'bg-brand-dark text-white rounded-2xl' });
       if (user?.id) await fetchDashboardData(user.id);
-    } catch (e) {
-      // El mensaje distingue cold-start del microservicio de un fallo real (ROADMAP 4.3).
-      toast({
-        title: e?.isColdStart ? 'El servicio está iniciándose' : 'Error en la operación',
-        description: e?.message,
-        variant: 'destructive'
-      });
     } finally { setActionLoadingId(null); }
   }
 

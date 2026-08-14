@@ -13,16 +13,12 @@ const PartnersPage = () => {
   const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(false);
-      const data = await getPartners();
-      setPartners((data || []).filter((p) => p.estado === 'aprobado'));
-    } catch (e) {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(false);
+    const { data, error: fetchError } = await getPartners();
+    if (fetchError) setError(true);
+    setPartners(data.filter((p) => p.estado === 'aprobado'));
+    setLoading(false);
   }, []);
 
   useEffect(() => {

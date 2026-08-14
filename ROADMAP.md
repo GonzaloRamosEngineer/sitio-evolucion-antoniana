@@ -12,7 +12,7 @@
 >
 > **Última revisión de la auditoría:** 2026-07-18
 > **Último commit auditado:** `76cf6d91` (verificación de usuarios + filtro por rol)
-> **Último avance registrado:** 2026-08-14, Sesión F1 (ver §7 y §8)
+> **Último avance registrado:** 2026-08-14, Sesiones F1 y F2 (ver §7 y §8)
 
 ---
 
@@ -141,13 +141,30 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 ## 4. Deuda técnica — arquitectura
 
-- [ ] **4.1 — Capa de datos con 3 contratos de retorno distintos.**
-  En el mismo `src/lib/storage.js`: getters **lanzan** (`getPartners:10-23`), `addPartner`
-  devuelve `null` en error (`:25-46`), `deletePartner` **devuelve** el error (`:60-68`).
-  Además `api/activitiesApi.js:24-27` y `membershipApi.js:20-22` **silencian** devolviendo
-  `[]`; `educationApi.js` re-lanza; `projectsApi/documentsApi` devuelven `{data,error}`
-  crudo. **Acción:** unificar a un contrato único (recomendado: `{data, error}`).
-  **Esfuerzo:** ~2-3 días (refactor transversal). **Prioridad:** importante.
+- [x] **4.1 — Capa de datos con 3 contratos de retorno distintos. HECHO (2026-08-14, Sesión F2).**
+  Era: getters que **lanzan**, `addPartner` que devuelve `null` en error, `deletePartner`
+  que **devuelve el error como valor de retorno**, `activitiesApi`/`membershipApi` que
+  **silencian** con `[]`, `educationApi` que re-lanza, y `projectsApi`/`documentsApi` que
+  ya devolvían `{data, error}`.
+  **Ahora:** contrato único documentado en `src/lib/dataResult.js` — **toda** función de
+  la capa devuelve `{ data, error }` y **nunca lanza**. Cuatro helpers
+  (`listResult`/`rowResult`/`voidResult`/`attempt`) normalizan cada forma de query.
+  Decisiones de diseño:
+  - En el fallo de una lista, `data` es `[]` y no `null`, para que un consumidor que
+    renderiza antes de mirar `error` muestre vacío en vez de romperse. El error no se
+    oculta: viaja entero en `error`.
+  - Los getters de fila única pasaron de `.single()` a `.maybeSingle()`: "no existe" es
+    `{data: null, error: null}`, no un PGRST116. Antes el consumidor no podía distinguir
+    "no encontrado" de "se cayó la consulta".
+  - `attempt` preserva la instancia de error original, así el flag `isColdStart` de
+    `WebhookError` (4.3) sigue llegando al consumidor.
+  - Los `console.error` de la capa quedaron centralizados en `dataResult.js`: cuando se
+    haga 6.4 (logger con no-op) hay **un** lugar que tocar en vez de repartidos.
+  Migrados 4 módulos de la capa (`storage.js`, `activitiesApi`, `educationApi`,
+  `membershipApi`) y sus **16 archivos consumidores**. `userApi`, `projectsApi` y
+  `documentsApi` ya cumplían y no se tocaron. **Cubierto por 21 tests nuevos**
+  (`dataResult.test.js`, `storage.test.js` con Supabase mockeado, y `membershipApi.test.js`
+  actualizado al contrato).
 
 - [ ] **4.2 — Sin caché de estado servidor (no react-query/SWR).**
   Cada página hace fetch manual con `useEffect` (18 páginas). `Activities.jsx:43-51` usa
@@ -377,8 +394,8 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | D | Accesibilidad | 5.3, 5.4, 5.5, 5.6, 5.11 | ~1 día | ✅ 2026-07-19 |
 | E | Identidad visual | 5.1, 5.7, 5.12, 5.8, 5.13, 3.5 (+4.6 auth) | ~2-3 días (partible) | ✅ 2026-07-19 |
 | F1 | Robustez de datos — lo barato | 4.3, 3.6, 4.6 (Contact/ContactModal/ApplyPartner) + 5.12 (ContactModal) | ~1 día | ✅ 2026-08-14 |
-| **F2** | **Contrato único de la capa de datos (SIGUIENTE)** | 4.1 | ~2-3 días | ⬜ |
-| F3 | Caché de estado servidor | 4.2 (TanStack Query) — **requiere F2 hecho** | ~3-4 días (partible) | ⬜ |
+| F2 | Contrato único de la capa de datos | 4.1 | ~2-3 días | ✅ 2026-08-14 |
+| **F3** | **Caché de estado servidor (SIGUIENTE)** | 4.2 (TanStack Query) — F2 ya está hecho, el terreno está parejo | ~3-4 días (partible) | ⬜ |
 | H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
 
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
@@ -390,10 +407,17 @@ Notas de las sesiones:
 - **E (hecha 2026-07-19):** ver §8. Deja para F: RHF+zod en Contact/ContactModal/
   ApplyPartnerPage y la unificación de estilos del form de `ContactModal`.
 - **F1 (hecha 2026-08-14):** ver §8. Cerró 4.3, 3.6, 4.6 y el pendiente de 5.12.
-- **F2/F3:** el refactor transversal de 4.1/4.2 ya tiene los tests de humo de G como red;
-  ampliarlos al tocar la capa de datos (F1 sumó `membershipApi.test.js` y los casos de
-  `escapeHtml`). **F2 va antes que F3 a propósito:** migrar a TanStack Query sobre los 3
-  contratos de retorno actuales obligaría a tocar las mismas 18 páginas dos veces.
+- **F2 (hecha 2026-08-14):** ver §8. Contrato único `{data, error}` en toda la capa.
+  Fue antes que F3 a propósito: migrar a TanStack Query sobre los 3 contratos viejos
+  habría obligado a tocar las mismas 18 páginas dos veces.
+- **F3:** ahora que la capa devuelve siempre `{data, error}` y nunca lanza, los
+  `queryFn` de TanStack Query son envoltorios de una línea
+  (`const {data, error} = await getX(); if (error) throw error; return data;`).
+  Ojo: TanStack **espera que el queryFn lance** para marcar la query como fallida, o sea
+  que la conversión inversa se hace ahí, en el borde, y no en la capa.
+  Empezar por las páginas públicas de listado (Activities, NewsPage, PartnersPage,
+  BenefitsPage), que son las que más se benefician del caché, y de paso sacar el
+  `sessionStorage('activities_loaded')` casero de `Activities.jsx`.
 
 ---
 
@@ -594,6 +618,43 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   migró la lógica del form pero **no** el estilo: meter inputs `rounded-sm` dentro de
   esa card quedaría peor que dejarla coherente consigo misma. Necesita el hero editorial
   completo, que es trabajo de identidad visual, no de robustez de datos.
+
+**Sesión F2 — contrato único de la capa de datos (2026-08-14):**
+- [x] 4.1 — Ver el detalle de diseño en §4. Nuevo `src/lib/dataResult.js` con el contrato
+  y sus 4 helpers; migrados `src/lib/storage.js`, `src/api/activitiesApi.js`,
+  `src/api/educationApi.js` y las lecturas de `src/api/membershipApi.js`, más los 16
+  archivos consumidores.
+- **Bugs reales que el contrato viejo escondía y quedaron arreglados de paso:**
+  - `PartnersAdmin.handleSubmit` envolvía la mutación en `try/catch`, pero la capa
+    devolvía `null` en error en vez de lanzar: **el catch no corría nunca** y el panel
+    mostraba "Partner creado ✅" aunque el insert hubiera fallado. Mismo patrón en
+    `BenefitsAdmin` y `NewsAdmin`.
+  - `handleApprove`, `handleReject` y `handleDelete` (partners), y los `handleDelete` de
+    beneficios y noticias, **no miraban el resultado**: si la RLS rechazaba la operación,
+    el admin veía el toast de éxito igual.
+  - `useAdminStats` dependía de que `getPartners`/`getBenefits` lanzaran para setear su
+    estado de error; ahora chequea `error` explícito, para que un fallo no se vea como un
+    tablero de ceros que parece real.
+  - `createPreinscription` llamaba a `supabase.auth.getSession()` sin protección: un token
+    corrupto en `localStorage` habría hecho fallar la preinscripción entera. Ahora, si
+    falla, sigue como anónimo (la preinscripción vale igual, solo queda sin vincular).
+- **Limpieza:** `membershipApi.getUserMembership` era **código muerto** (verificado por
+  grep: `useMembership.jsx` define su propia versión y consulta Supabase directo) y se
+  eliminó en vez de migrarlo. `getPartnerBySlug` **también está sin consumidores** pero se
+  migró y se conserva, por simetría con `getNewsBySlug` — candidato para 6.5.
+  También salió el `{ returning: 'minimal' }` de `addPartner`, herencia de supabase-js v1
+  que en v2 no hace nada.
+- **Tests:** `src/lib/dataResult.test.js` (13 casos: contrato de los 4 helpers + que el
+  logging pase una sola vez y no loguee en éxito) y `src/lib/storage.test.js` (8 casos
+  contra un Supabase mockeado, para probar que la capa *usa* bien los helpers, no solo que
+  los helpers funcionen). `membershipApi.test.js` actualizado al contrato, con un caso
+  explícito de "nunca lanza".
+- **Verificación:** `npm run lint` 0 errores (54 warnings de backlog), `npm test` 41/41
+  verdes (antes 19), `npm run build` OK. Barrido con grep de los ~25 nombres exportados
+  para confirmar que no quedó ningún call site con el contrato viejo.
+- **Pendiente de validar en prod (no lo cubren los tests):** el alta/edición/borrado en
+  los 3 paneles de admin y el alta de preinscripción, que son los caminos donde cambió el
+  manejo de error.
 
 ---
 

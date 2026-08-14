@@ -30,16 +30,12 @@ const NewsAdmin = () => {
   });
 
   const loadNews = async () => {
-    try {
-      const data = await getNews();
-      setNews(data);
-    } catch (e) {
-      console.error('Error cargando noticias:', e);
-      setNews([]);
+    const { data, error } = await getNews();
+    if (error) {
       toast({ variant: 'destructive', title: 'Error al cargar noticias', description: 'No se pudieron obtener las noticias.' });
-    } finally {
-      setIsLoading(false);
     }
+    setNews(data);
+    setIsLoading(false);
   };
   
   useEffect(() => {
@@ -50,22 +46,24 @@ const NewsAdmin = () => {
     e.preventDefault();
 
     setIsSubmitting(true);
-    try {
-        if (editingNews) {
-            await updateNews(editingNews.id, formData);
-            toast({ title: "Noticia actualizada ✅", description: "Los cambios se guardaron correctamente." });
-        } else {
-            await addNews({ ...formData });
-            toast({ title: "Noticia creada ✅", description: "La noticia ya está disponible en la web." });
-        }
-        resetForm();
-        loadNews();
-        setIsDialogOpen(false);
-    } catch (error) {
-        toast({ title: "Error", description: "No se pudo procesar la solicitud", variant: "destructive" });
-    } finally {
-        setIsSubmitting(false);
+    const { error } = editingNews
+      ? await updateNews(editingNews.id, formData)
+      : await addNews({ ...formData });
+    setIsSubmitting(false);
+
+    if (error) {
+      toast({ title: "Error", description: "No se pudo procesar la solicitud", variant: "destructive" });
+      return;
     }
+
+    toast(
+      editingNews
+        ? { title: "Noticia actualizada ✅", description: "Los cambios se guardaron correctamente." }
+        : { title: "Noticia creada ✅", description: "La noticia ya está disponible en la web." }
+    );
+    resetForm();
+    loadNews();
+    setIsDialogOpen(false);
   };
 
   const handleEdit = (newsItem) => {
@@ -82,13 +80,14 @@ const NewsAdmin = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.')) {
       setDeletingId(id);
-      try {
-        await deleteNews(id);
-        loadNews();
-        toast({ title: "Noticia eliminada", description: "El registro ha sido borrado." });
-      } finally {
-        setDeletingId(null);
+      const { error } = await deleteNews(id);
+      setDeletingId(null);
+      if (error) {
+        toast({ title: "No se pudo eliminar", description: "La operación fue rechazada.", variant: "destructive" });
+        return;
       }
+      loadNews();
+      toast({ title: "Noticia eliminada", description: "El registro ha sido borrado." });
     }
   };
 

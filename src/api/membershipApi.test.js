@@ -38,7 +38,10 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     const promise = donate();
     await flushRetries();
 
-    await expect(promise).resolves.toEqual({ init_point: 'https://mp/checkout' });
+    await expect(promise).resolves.toEqual({
+      data: { init_point: 'https://mp/checkout' },
+      error: null,
+    });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -50,7 +53,10 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     const promise = donate();
     await flushRetries();
 
-    await expect(promise).resolves.toEqual({ init_point: 'https://mp/checkout' });
+    await expect(promise).resolves.toEqual({
+      data: { init_point: 'https://mp/checkout' },
+      error: null,
+    });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
@@ -58,13 +64,11 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     fetch.mockRejectedValue(new Error('Failed to fetch'));
 
     const promise = donate();
-    const assertion = expect(promise).rejects.toMatchObject({
-      isColdStart: true,
-      message: COLD_START_MESSAGE,
-    });
     await flushRetries();
+    const { data, error } = await promise;
 
-    await assertion;
+    expect(data).toBeNull();
+    expect(error).toMatchObject({ isColdStart: true, message: COLD_START_MESSAGE });
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 
@@ -72,14 +76,15 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     fetch.mockResolvedValue(jsonResponse(400, { error: 'Monto inválido' }));
 
     const promise = donate();
-    const assertion = expect(promise).rejects.toMatchObject({
+    await flushRetries();
+    const { data, error } = await promise;
+
+    expect(data).toBeNull();
+    expect(error).toMatchObject({
       isColdStart: false,
       status: 400,
       message: 'Monto inválido',
     });
-    await flushRetries();
-
-    await assertion;
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -95,11 +100,11 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     );
 
     const promise = donate();
-    const assertion = expect(promise).rejects.toBeInstanceOf(WebhookError);
     // 10s del primer intento + 25s de cada reintento + los dos backoff.
     await vi.advanceTimersByTimeAsync(70000);
+    const { error } = await promise;
 
-    await assertion;
+    expect(error).toBeInstanceOf(WebhookError);
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 
@@ -107,11 +112,19 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
     fetch.mockResolvedValue(jsonResponse(422, { error: { code: 'invalid_payer' } }));
 
     const promise = donate();
-    const assertion = expect(promise).rejects.toMatchObject({
-      message: '{"code":"invalid_payer"}',
-    });
+    await flushRetries();
+    const { error } = await promise;
+
+    expect(error.message).toBe('{"code":"invalid_payer"}');
+  });
+
+  it('nunca lanza: los fallos vuelven en `error` (contrato de la capa)', async () => {
+    fetch.mockRejectedValue(new Error('boom'));
+
+    const promise = donate();
     await flushRetries();
 
-    await assertion;
+    // Si escapara una excepción, este await rompería el test en vez de resolver.
+    await expect(promise).resolves.toMatchObject({ data: null });
   });
 });

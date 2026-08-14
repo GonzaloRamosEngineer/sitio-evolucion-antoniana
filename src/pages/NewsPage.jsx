@@ -14,16 +14,12 @@ const NewsPage = () => {
   const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(false);
-      const data = await getNews();
-      setNews(data || []);
-    } catch (e) {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(false);
+    const { data, error: fetchError } = await getNews();
+    if (fetchError) setError(true);
+    setNews(data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {

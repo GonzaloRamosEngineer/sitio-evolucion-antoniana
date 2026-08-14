@@ -1,39 +1,23 @@
 // src/api/membershipApi.js
+// Contrato único: devuelve `{ data, error }` y no lanza (ver `src/lib/dataResult.js`).
 import { supabase } from '@/lib/supabase';
+import { listResult, attempt } from '@/lib/dataResult';
 
 /* ============================
    Lectura directa desde Supabase
    ============================ */
 export const getUserMemberships = async (userId, { onlyActive = false } = {}) => {
-  if (!userId) return [];
-  try {
-    let query = supabase
-      .from('memberships')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+  if (!userId) return { data: [], error: null };
 
-    if (onlyActive) query = query.eq('status', 'active');
+  let query = supabase
+    .from('memberships')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error fetching user memberships from API:', err);
-    return [];
-  }
-};
+  if (onlyActive) query = query.eq('status', 'active');
 
-export const getUserMembership = async (userId) => {
-  if (!userId) return null;
-  try {
-    const data = await getUserMemberships(userId);
-    if (!data || data.length === 0) return null;
-    return data[0];
-  } catch (err) {
-    console.error('Error fetching user membership from API:', err);
-    return null;
-  }
+  return listResult(await query, 'getUserMemberships');
 };
 
 /* ==========================================
@@ -174,50 +158,69 @@ async function callWebhook(path, options = {}) {
 /* ============================
    CRUD de suscripciones Render
    ============================ */
+// `callWebhook` es la primitiva de bajo nivel y sí lanza (necesita distinguir
+// reintentable de definitivo dentro del loop). Las funciones exportadas lo
+// envuelven con `attempt` para cumplir el contrato de la capa: el `WebhookError`
+// llega entero al consumidor, con su flag `isColdStart`.
 export const pauseMembership = (preapprovalId) =>
-  callWebhook(`/api/suscripciones/${preapprovalId}/pausar`);
+  attempt(
+    () => callWebhook(`/api/suscripciones/${preapprovalId}/pausar`),
+    'pauseMembership'
+  );
 
 export const resumeMembership = (preapprovalId) =>
-  callWebhook(`/api/suscripciones/${preapprovalId}/activar`);
+  attempt(
+    () => callWebhook(`/api/suscripciones/${preapprovalId}/activar`),
+    'resumeMembership'
+  );
 
 export const cancelMembership = (preapprovalId) =>
-  callWebhook(`/api/suscripciones/${preapprovalId}/cancelar`);
+  attempt(
+    () => callWebhook(`/api/suscripciones/${preapprovalId}/cancelar`),
+    'cancelMembership'
+  );
 
 /**
  * Crear suscripción recurrente (Render)
  */
-export const createSubscription = async ({ userId, emailUsuario, amount = 50, currency = 'ARS' }) => {
-  return callWebhook(`/api/crear-suscripcion`, {
-    method: 'POST',
-    body: {
-      reason: 'Beca mensual Fundación Evolución Antoniana',
-      payer_email: emailUsuario,
-      user_id: userId,
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: 'months',
-        transaction_amount: Number(amount),
-        currency_id: currency
-      }
-    }
-  });
-};
+export const createSubscription = ({ userId, emailUsuario, amount = 50, currency = 'ARS' }) =>
+  attempt(
+    () =>
+      callWebhook(`/api/crear-suscripcion`, {
+        method: 'POST',
+        body: {
+          reason: 'Beca mensual Fundación Evolución Antoniana',
+          payer_email: emailUsuario,
+          user_id: userId,
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: Number(amount),
+            currency_id: currency
+          }
+        }
+      }),
+    'createSubscription'
+  );
 
 /**
  * Crear donación única (Render)
  */
-export const createOneTimeDonation = async ({ userId, emailUsuario, amount }) => {
-  return callWebhook(`/api/crear-preferencia`, {
-    method: 'POST',
-    body: {
-      amount: Number(amount),
-      description: 'Donación única a la Fundación Evolución Antoniana',
-      user_id: userId,
-      payer: {
-        name: 'Invitado',
-        surname: '',
-        email: emailUsuario
-      }
-    }
-  });
-};
+export const createOneTimeDonation = ({ userId, emailUsuario, amount }) =>
+  attempt(
+    () =>
+      callWebhook(`/api/crear-preferencia`, {
+        method: 'POST',
+        body: {
+          amount: Number(amount),
+          description: 'Donación única a la Fundación Evolución Antoniana',
+          user_id: userId,
+          payer: {
+            name: 'Invitado',
+            surname: '',
+            email: emailUsuario
+          }
+        }
+      }),
+    'createOneTimeDonation'
+  );

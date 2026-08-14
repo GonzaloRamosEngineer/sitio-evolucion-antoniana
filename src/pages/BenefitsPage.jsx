@@ -28,18 +28,14 @@ const BenefitsPage = () => {
   const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(false);
-      const data = await getBenefits();
-      const activeBenefits = (data || []).filter((b) => b.estado === 'activo');
-      setBenefits(activeBenefits);
-      setFilteredBenefits(activeBenefits);
-    } catch (e) {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(false);
+    const { data, error: fetchError } = await getBenefits();
+    if (fetchError) setError(true);
+    const activeBenefits = data.filter((b) => b.estado === 'activo');
+    setBenefits(activeBenefits);
+    setFilteredBenefits(activeBenefits);
+    setLoading(false);
   }, []);
 
   useEffect(() => {

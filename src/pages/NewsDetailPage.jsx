@@ -52,14 +52,13 @@ const NewsDetailPage = () => {
       }
 
       setLoading(true);
-      try {
-        const data = isUuid(routeParam)
-          ? await getNewsById(routeParam)
-          : await getNewsBySlug(routeParam);
+      const { data } = isUuid(routeParam)
+        ? await getNewsById(routeParam)
+        : await getNewsBySlug(routeParam);
 
-        if (active) setItem(data);
-      } finally {
-        if (active) setLoading(false);
+      if (active) {
+        setItem(data);
+        setLoading(false);
       }
     })();
 

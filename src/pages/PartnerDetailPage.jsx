@@ -21,25 +21,15 @@ const PartnerDetailPage = () => {
 
   useEffect(() => {
     const fetchPartner = async () => {
-      try {
-        setLoading(true);
-        const partners = await getPartners();
-        if (Array.isArray(partners)) {
-          const found = partners.find(
-            (p) =>
-              p.slug === slug ||
-              slugify(p.nombre) === slug
-          );
-          setPartner(found || null);
-        } else {
-          setPartner(null);
-        }
-      } catch (error) {
-        console.error('Error cargando partner:', error);
-        setPartner(null);
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      // `getPartners` siempre devuelve un array en `data` (vacío si falló), así
+      // que un error de red termina en el mismo "no encontrado" de siempre.
+      const { data } = await getPartners();
+      const found = data.find(
+        (p) => p.slug === slug || slugify(p.nombre) === slug
+      );
+      setPartner(found || null);
+      setLoading(false);
     };
 
     fetchPartner();

@@ -73,10 +73,16 @@ const EducationForm = ({ onSuccess }) => {
       delete payload.location_custom;
       delete payload.interest_custom;
 
-      await createPreinscription(payload);
+      const { error } = await createPreinscription(payload);
+      if (error) {
+        toast({ title: "Error al enviar", description: "No pudimos registrar tus datos. Intentalo de nuevo en unos minutos.", variant: "destructive" });
+        return;
+      }
       toast({ title: "¡Formulario Recibido!", description: "Tus datos han sido registrados correctamente.", className: "bg-brand-dark text-white rounded-2xl" });
       if (onSuccess) onSuccess();
-    } catch (error) {
+    } catch (err) {
+      // La capa de datos ya no lanza; este catch cubre la normalización de arriba.
+      console.error('Error preparando la preinscripción:', err);
       toast({ title: "Error al enviar", variant: "destructive" });
     } finally {
       setIsSubmitting(false);

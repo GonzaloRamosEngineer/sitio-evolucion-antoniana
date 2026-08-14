@@ -49,28 +49,25 @@ const Collaborate = () => {
     }
 
     setIsProcessingDonation(true);
-    try {
-      const data = await createOneTimeDonation({
-        userId: user?.id || null,
-        emailUsuario: user?.email || 'anon@fundacion.com',
-        amount
-      });
+    const { data, error } = await createOneTimeDonation({
+      userId: user?.id || null,
+      emailUsuario: user?.email || 'anon@fundacion.com',
+      amount
+    });
 
-      if (data?.init_point) {
-        window.location.href = data.init_point;
-      } else {
-        throw new Error('No se recibió el punto de inicio de MercadoPago.');
-      }
-    } catch (err) {
-      console.error('Error al crear preferencia de donación:', err);
-      toast({
-        title: err?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Donación',
-        description: err.message || 'No se pudo iniciar el proceso de pago. Inténtalo de nuevo.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProcessingDonation(false);
+    if (data?.init_point) {
+      // Redirige a MercadoPago: no apagamos el spinner, la página se va.
+      window.location.href = data.init_point;
+      return;
     }
+
+    setIsProcessingDonation(false);
+    toast({
+      title: error?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Donación',
+      description:
+        error?.message || 'No se pudo iniciar el proceso de pago. Inténtalo de nuevo.',
+      variant: 'destructive',
+    });
   };
 
   const handleSubscription = async () => {
@@ -85,28 +82,26 @@ const Collaborate = () => {
     }
 
     setIsProcessingSubscription(true);
-    try {
-      const data = await createSubscription({
-        userId: user?.id || null,
-        emailUsuario: user?.email || 'anon@fundacion.com',
-        amount
-      });
+    const { data, error } = await createSubscription({
+      userId: user?.id || null,
+      emailUsuario: user?.email || 'anon@fundacion.com',
+      amount
+    });
 
-      if (data?.init_point) {
-        window.location.href = data.init_point;
-      } else {
-        throw new Error('No se recibió el punto de inicio de MercadoPago para la suscripción.');
-      }
-    } catch (err) {
-      console.error('Error al crear suscripción:', err);
-      toast({
-        title: err?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Suscripción',
-        description: err.message || 'No se pudo iniciar el proceso de suscripción. Inténtalo de nuevo.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProcessingSubscription(false);
+    if (data?.init_point) {
+      // Redirige a MercadoPago: no apagamos el spinner, la página se va.
+      window.location.href = data.init_point;
+      return;
     }
+
+    setIsProcessingSubscription(false);
+    toast({
+      title: error?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Suscripción',
+      description:
+        error?.message ||
+        'No se pudo iniciar el proceso de suscripción. Inténtalo de nuevo.',
+      variant: 'destructive',
+    });
   };
 
   const collaborationOptions = [

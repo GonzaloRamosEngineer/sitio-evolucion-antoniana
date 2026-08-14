@@ -78,10 +78,9 @@ const ApplyPartnerPage = () => {
       return;
     }
 
-    // `addPartner` devuelve null en error (contrato heredado, ver ROADMAP 4.1).
-    const created = await addPartner({ ...data, estado: 'pendiente' });
+    const { error } = await addPartner({ ...data, estado: 'pendiente' });
 
-    if (!created) {
+    if (error) {
       toast({
         title: 'No pudimos enviar tu solicitud',
         description: 'Ocurrió un error al guardar la postulación. Intentalo de nuevo en unos minutos.',
