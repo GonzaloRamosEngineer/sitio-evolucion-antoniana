@@ -406,21 +406,23 @@ const PartnersAdmin = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Botones solo-icono: el `aria-label` nombra la acción Y la
+                            fila, si no un lector de pantalla anuncia solo "button". */}
                         {partner.estado === 'pendiente' && (
                           <div className="flex gap-1 mr-2 pr-2 border-r border-gray-200">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleApprove(partner.id)}>
-                              <CheckCircle2 size={16} />
+                            <Button size="icon" variant="ghost" aria-label={`Aprobar ${partner.nombre}`} className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleApprove(partner.id)}>
+                              <CheckCircle2 aria-hidden="true" size={16} />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => handleReject(partner.id)}>
-                              <AlertCircle size={16} />
+                            <Button size="icon" variant="ghost" aria-label={`Rechazar ${partner.nombre}`} className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => handleReject(partner.id)}>
+                              <AlertCircle aria-hidden="true" size={16} />
                             </Button>
                           </div>
                         )}
-                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white border border-gray-100 shadow-sm" onClick={() => handleEdit(partner)}>
-                          <Edit size={16} />
+                        <Button size="icon" variant="ghost" aria-label={`Editar ${partner.nombre}`} className="h-9 w-9 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white border border-gray-100 shadow-sm" onClick={() => handleEdit(partner)}>
+                          <Edit aria-hidden="true" size={16} />
                         </Button>
-                        <Button size="icon" variant="ghost" disabled={deletingId === partner.id} className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm" onClick={() => handleDelete(partner.id)}>
-                          {deletingId === partner.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        <Button size="icon" variant="ghost" aria-label={`Eliminar ${partner.nombre}`} disabled={deletingId === partner.id} className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-500 hover:text-white border border-gray-100 shadow-sm" onClick={() => handleDelete(partner.id)}>
+                          {deletingId === partner.id ? <Loader2 aria-hidden="true" size={16} className="animate-spin" /> : <Trash2 aria-hidden="true" size={16} />}
                         </Button>
                       </div>
                     </td>
