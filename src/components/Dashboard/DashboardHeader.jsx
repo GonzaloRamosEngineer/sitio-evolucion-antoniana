@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import EditProfileModal from './EditProfileModal';
+import { logger } from '@/lib/logger';
 
 const DashboardHeader = ({ user, onUpdateSuccess }) => {
   const [activeMembership, setActiveMembership] = useState(null);
@@ -28,7 +29,7 @@ const DashboardHeader = ({ user, onUpdateSuccess }) => {
           setActiveMembership(data);
         }
       } catch (err) {
-        console.error("Error validando membresía:", err);
+        logger.error("Error validando membresía:", err);
       } finally {
         setLoadingMember(false);
       }

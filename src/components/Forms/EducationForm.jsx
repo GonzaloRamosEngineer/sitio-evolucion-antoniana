@@ -12,6 +12,7 @@ import { createPreinscription } from '@/api/educationApi';
 import { useToast } from '@/components/ui/use-toast';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { motion, AnimatePresence } from 'framer-motion';
+import { logger } from '@/lib/logger';
 
 const educationSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -82,7 +83,7 @@ const EducationForm = ({ onSuccess }) => {
       if (onSuccess) onSuccess();
     } catch (err) {
       // La capa de datos ya no lanza; este catch cubre la normalización de arriba.
-      console.error('Error preparando la preinscripción:', err);
+      logger.error('Error preparando la preinscripción:', err);
       toast({ title: "Error al enviar", variant: "destructive" });
     } finally {
       setIsSubmitting(false);

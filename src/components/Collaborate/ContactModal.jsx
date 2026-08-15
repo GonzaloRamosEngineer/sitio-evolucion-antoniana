@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { Loader2, Send, User, Mail, MessageSquare } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 const collaborationSchema = z.object({
   name: z.string().trim().min(2, 'Ingresá tu nombre completo'),
@@ -86,7 +87,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
 
       closeWithSuccess();
     } catch (error) {
-      console.error('Error sending contact email:', error);
+      logger.error('Error sending contact email:', error);
       toast({
         title: 'Error al enviar mensaje',
         description: 'Hubo un problema al enviar tu mensaje. Por favor, intentalo de nuevo más tarde.',

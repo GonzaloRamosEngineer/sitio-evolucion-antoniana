@@ -12,6 +12,7 @@ import {
   MailCheck, LogIn, ImageOff, Instagram, Facebook, Linkedin, Twitter as TwitterIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { logger } from '@/lib/logger';
 
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -74,7 +75,7 @@ const ActivityDetailPage = () => {
       if (data) setActivity(data);
       else setError('Actividad no encontrada.');
     } catch (err) {
-      console.error("Error fetching activity details:", err);
+      logger.error("Error fetching activity details:", err);
       setError(err.message || 'Error al cargar la actividad.');
     } finally {
       setLoading(false);

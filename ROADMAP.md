@@ -362,19 +362,41 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
 
 ## 6. Nice-to-have / limpieza
 
-- [ ] **6.1 — Imágenes sin optimizar: ~7,1 MB de PNGs crudos.**
-  **Parcial (2026-07):** `donativo_cancha.png` 2,82 MB → `donativo_cancha.webp` 86 KB
-  (1280px, q82, con `width/height` + `fetchpriority="high"`); PNG eliminado. Faltan:
-  `mercadolibre_solidario.png` 1,57 MB, `fondo_blanco_logo.png` 891 KB,
-  `hogar_abuelos.png` 611 KB, `og-default.png` 527 KB. Convertir a WebP/AVIF +
-  redimensionar (~-80%). **La mejora de performance más barata.** ~2-3h.
-- [ ] **6.2 — Sin `manualChunks` de vendor** (`vite.config.js`). `framer-motion` (eager en
-  `App.jsx:14`, usado en 59 archivos) va al chunk inicial. ~2h.
+- [x] **6.1 — Imágenes sin optimizar. HECHO (2026-08-15, Sesión H).**
+  Cuatro imágenes de contenido a WebP redimensionadas al ancho de render real:
+  **2551 KB → 76 KB (-97%)**. `fondo_blanco_logo.png` (871 KB) resultó **sin ninguna
+  referencia en el repo** y se eliminó. Todas con `width`/`height` (evita saltos de
+  layout) y `loading="lazy"` salvo el logo de auth, que está sobre el pliegue.
+  Herramienta repetible en `tools/optimize-images.mjs`.
+  **`og-default.png` queda intencionalmente sin tocar:** la piden los scrapers de redes,
+  nunca un visitante, así que comprimirla no le ahorra un byte a nadie real, y a cambio
+  arriesga las previews de compartir (que solo se validan en producción) más el banding
+  que la cuantización a paleta puede meter en una imagen de marca.
+- [x] **6.2 — `manualChunks` de vendor. HECHO (2026-08-15, Sesión H).**
+  El chunk inicial pasó de **603 KB a 103 KB** y desapareció el warning de tamaño de
+  Vite. Seis chunks de vendor (react, motion, supabase, radix, query, forms). React y
+  react-dom van **juntos** a propósito: separarlos rompe el orden de inicialización.
+  Además mejora el cacheo entre deploys: tocar código de la app ya no invalida el chunk
+  de React ni el de Supabase.
 - [x] **6.3 — Ruta local del dev filtrada** en comentario línea 1 de 7 archivos. **HECHO (2026-07-19)**
-- [ ] **6.4 — 63 `console.*` sin gate** en `src/` van al bundle de prod. Logger con no-op. ~2h.
-- [ ] **6.5 — Restos muertos:** `plugins/visual-editor/` (810 líneas, solo dev),
-  `public/.htaccess` (Apache, muerto en Vercel), `public/s/novedades/test.html`
-  (prueba en prod), `tools/generate-llms.js` (verificar uso). ~2-3h.
+- [x] **6.4 — Logging con gate. HECHO (2026-08-15, Sesión H).**
+  **La premisa del ítem había cambiado:** no eran 63 sino **40**, y **todos eran `error`
+  o `warn`** — ni un `console.log` de depuración (F2 ya había centralizado los de la capa
+  de datos). Con eso, un no-op total habría sido contraproducente: sin servicio de
+  tracking, esos errores son la única herramienta de soporte que hay.
+  `src/lib/logger.js`: `debug`/`info` se anulan en producción (para que nadie meta una
+  traza y termine en el bundle), `warn`/`error` pasan siempre. El valor real es tener
+  **un solo lugar** donde enchufar Sentry el día que haga falta. 21 archivos migrados.
+- [x] **6.5 — Restos muertos. HECHO (2026-08-15, Sesión H).**
+  Eliminados `plugins/visual-editor/` (810 líneas del scaffold de Hostinger Horizons),
+  `public/s/novedades/test.html` y `public/img/fondo_blanco_logo.png` (871 KB sin
+  referencias). `public/.htaccess` ya no existía desde la Sesión A.
+  Al sacar el editor visual también salió el `rollupOptions.external` con los paquetes
+  de Babel de `vite.config.js`: **existía solo porque esos plugins parseaban JSX**,
+  verificado con grep (cero usos de `@babel/*` en `src/`, `api/` y `tools/`).
+  **`tools/generate-llms.js` se conserva:** no está referenciado en scripts ni CI y no
+  se le ve output en el repo, pero es una herramienta manual inofensiva; borrarla sin
+  saber si el dueño la corre a mano sería una pérdida neta.
 - [ ] **6.6 — Duplicación listado/detalle:** `PartnersPage/PartnerDetailPage`,
   `BenefitsPage/BenefitDetailPage`, `NewsPage/NewsDetailPage` repiten esqueleto. Extraer
   hook `useResourceBySlug` + componente `<SanitizedHtml>`. ~1-2 días.
@@ -406,7 +428,10 @@ al final. Al iniciar una sesión de trabajo nueva, retomar desde acá.
 | F1 | Robustez de datos — lo barato | 4.3, 3.6, 4.6 (Contact/ContactModal/ApplyPartner) + 5.12 (ContactModal) | ~1 día | ✅ 2026-08-14 |
 | F2 | Contrato único de la capa de datos | 4.1 | ~2-3 días | ✅ 2026-08-14 |
 | F3 | Caché de estado servidor | 4.2 (TanStack Query), 13 vistas migradas | ~3-4 días | ✅ 2026-08-14 |
-| **H** | **Performance y limpieza (SIGUIENTE)** | 6.1, 6.2, 6.4, 6.5 | ~1 día | ⬜ |
+| H | Performance y limpieza | 6.1, 6.2, 6.4, 6.5 | ~1 día | ✅ 2026-08-15 |
+
+**Todas las sesiones planificadas están cerradas.** Lo que queda son los sueltos
+(3.1, 3.4, 6.6, 6.7) y la deuda declarada que se fue anotando en §8.
 
 Sueltos para intercalar: 3.1 (rutas admin), 3.4 (datos institucionales a BD — requiere
 decisión de la Fundación), 6.6 (dedup listado/detalle), 6.7 (upgrades de deps, al final).
@@ -704,7 +729,7 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   cuando el stack levante.
 
 **Sesión F3 — caché de estado servidor, tanda 1 (2026-08-14):**
-- [~] 4.2 — `@tanstack/react-query@5` (peer React 18 ✓, compatible con vite@4).
+- [x] 4.2 (tanda 1) — `@tanstack/react-query@5` (peer React 18 ✓, compatible con vite@4).
 - **`unwrap`, la pieza clave** (`src/lib/queryClient.js`): la capa de datos **nunca
   lanza** (F2), pero TanStack necesita que el `queryFn` **lance** para marcar la query
   como fallida. La conversión inversa se hace ahí, en el borde, y **nunca en la capa** —
@@ -782,6 +807,35 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   que la portada no muestre partners sin aprobar, que un alta desde el panel admin
   aparezca en la página pública, y cerrar sesión y entrar con otro usuario para
   confirmar que no queda nada cacheado del anterior.
+
+**Sesión H — performance y limpieza (2026-08-15):**
+- [x] 6.1, 6.2, 6.4, 6.5 — ver el detalle de cada uno en §6.
+- **Números:** las imágenes de contenido bajaron **2551 KB → 76 KB (-97%)** y el chunk
+  inicial de JS **603 KB → 103 KB**. Sumado al PNG muerto de 871 KB, son ~3,3 MB menos
+  de descarga en la primera visita.
+- **Dos premisas del ROADMAP habían caducado** y conviene saberlo para no repetir el
+  error de trabajar sobre datos viejos:
+  - 6.4 hablaba de "63 `console.*`". Eran **40**, y todos `error`/`warn`: F2 ya había
+    centralizado los de la capa de datos. Un no-op total habría sido peor que no hacer
+    nada (ver §6).
+  - 6.1 listaba `fondo_blanco_logo.png` para convertir; en realidad **no la usa nadie**,
+    así que se borró en vez de optimizarse.
+- **Corregida una instrucción falsa del repo:** `normalize-partner-logos.mjs` documentaba
+  `npm exec --yes --package=sharp -- node tools/...`, que **no funciona** — npm exec deja
+  el paquete en un temp que un script ESM del proyecto no resuelve. Lo que sí funciona
+  (`npm i -D sharp && node tools/... && npm un -D sharp`) quedó documentado en
+  `optimize-images.mjs`. `sharp` no quedó como dependencia.
+- **Test del logger, y por qué importa:** su comportamiento depende de
+  `import.meta.env.PROD`, que se resuelve en build. El primer intento usaba
+  `vi.stubEnv`, que **convierte el valor a string** — y como `"false"` es truthy, los
+  casos de dev y de prod daban los dos "producción" y el suite pasaba por el motivo
+  equivocado. Se asigna el booleano directo.
+- **Verificación:** lint 0 errores, `npm test` 72/72 (antes 68), build OK y **sin el
+  warning de chunk grande** que aparecía en todos los builds anteriores.
+- **Para validar en pantalla:** que se vean las imágenes de Colaborar (logo de Mercado
+  Pago), Nosotros (foto y retrato del fundador) y el logo de Login/Registro — son las
+  cuatro que cambiaron de archivo. Y que el sitio siga cargando bien en general, porque
+  el reparto de chunks toca cómo arranca la app.
 
 ---
 

@@ -6,6 +6,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { Loader2, FileText, AlertTriangle, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 
 const LegalDocuments = () => {
   const [documents, setDocuments] = useState([]);
@@ -25,7 +26,7 @@ const LegalDocuments = () => {
       if (dbError) throw dbError;
       setDocuments(data || []);
     } catch (err) {
-      console.error('Error fetching legal documents:', err);
+      logger.error('Error fetching legal documents:', err);
       setError('No se pudieron cargar los documentos legales.');
       toast({
         title: 'Error al cargar documentos',

@@ -40,6 +40,7 @@ import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 import FilterChips from '@/components/Comision/FilterChips';
 import { USER_ROLES, createUser, updateUserRole, verifyUser, resendVerificationEmail } from '@/api/userApi';
+import { logger } from '@/lib/logger';
 
 // Presentación visual de cada rol (label + estilo + icono).
 const ROLE_META = {
@@ -104,7 +105,7 @@ const UserList = () => {
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      logger.error('Error fetching users:', error);
       setFetchError(true);
       toast({ title: "Error", description: "No se pudieron cargar los usuarios.", variant: "destructive" });
     } finally {

@@ -27,6 +27,7 @@ import { useToast } from '@/components/ui/use-toast';
 import SearchBar from '@/components/Admin/shared/SearchBar';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { getTasks, createTask, updateTask, deleteTask } from '@/api/projectsApi';
+import { logger } from '@/lib/logger';
 import {
   TASK_COLUMNS, TASK_STATUS_LABELS, PRIORITIES,
   statusLabelMeta, priorityMeta, formatDateShort, isOverdue, projectStatusMeta,
@@ -153,7 +154,7 @@ const ProjectBoard = ({ project, currentUserId, onBack, onTasksChanged }) => {
     setLoading(true);
     const { data, error } = await getTasks(project.id);
     if (error) {
-      console.error('Error fetching tasks:', error);
+      logger.error('Error fetching tasks:', error);
       toast({ title: 'Error', description: 'No se pudieron cargar las tareas.', variant: 'destructive' });
     } else {
       setTasks(data || []);

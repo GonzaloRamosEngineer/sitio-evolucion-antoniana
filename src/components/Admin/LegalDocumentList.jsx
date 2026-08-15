@@ -23,6 +23,7 @@ import {
   AlertTriangle, FileText, ShieldCheck, Calendar, Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { logger } from '@/lib/logger';
 
 const CATEGORIES = ["Estatuto", "Balance", "Política", "Términos de Uso", "Informe", "Otro"];
 
@@ -166,7 +167,7 @@ const LegalDocumentList = () => {
       if (error) throw error;
       setDocuments(data || []);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      logger.error('Error fetching documents:', error);
       toast({ title: "Error", description: "No se pudieron cargar los documentos.", variant: "destructive" });
     } finally {
       setLoading(false);

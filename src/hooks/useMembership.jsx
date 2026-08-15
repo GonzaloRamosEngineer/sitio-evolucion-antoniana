@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 export const useMembership = () => {
   const [memberships, setMemberships] = useState([]);
@@ -21,7 +22,7 @@ export const useMembership = () => {
       if (fetchError) throw fetchError;
       setMemberships(data || []);
     } catch (err) {
-      console.error('Error loading memberships:', err);
+      logger.error('Error loading memberships:', err);
       setError(err);
       setMemberships([]);
     } finally {
@@ -53,7 +54,7 @@ export const useMembership = () => {
       }
       return data;
     } catch (err) {
-      console.error('Error getting user membership:', err);
+      logger.error('Error getting user membership:', err);
       setError(err);
       return null; // Devuelve null en caso de error
     } finally {
@@ -76,7 +77,7 @@ export const useMembership = () => {
       setMemberships(prev => [data, ...prev].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)));
       return data;
     } catch (err) {
-      console.error('Error creating membership:', err);
+      logger.error('Error creating membership:', err);
       setError(err);
       throw err;
     } finally {
@@ -103,7 +104,7 @@ export const useMembership = () => {
       );
       return data;
     } catch (err) {
-      console.error('Error updating membership status:', err);
+      logger.error('Error updating membership status:', err);
       setError(err);
       throw err;
     } finally {

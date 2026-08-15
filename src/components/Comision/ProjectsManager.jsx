@@ -38,6 +38,7 @@ import {
   PROJECT_STATUS_OPTIONS, projectStatusMeta, formatDateShort, isOverdue,
 } from './projectConstants';
 import ProjectBoard from './ProjectBoard';
+import { logger } from '@/lib/logger';
 
 const emptyProject = () => ({ name: '', description: '', status: 'activo', start_date: '', end_date: '' });
 
@@ -101,7 +102,7 @@ const ProjectsManager = () => {
     setError(false);
     const { data, error: err } = await getProjects();
     if (err) {
-      console.error('Error fetching projects:', err);
+      logger.error('Error fetching projects:', err);
       setError(true);
     } else {
       setProjects(data || []);

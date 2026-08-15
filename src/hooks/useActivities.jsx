@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { queryClient, queryKeys } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 // Migración incremental a TanStack Query (ROADMAP 4.2): la **lectura** de
 // actividades de las páginas públicas ya sale de `useActivitiesQuery`, mientras
@@ -13,7 +14,7 @@ const invalidateActivities = () =>
   queryClient.invalidateQueries({ queryKey: queryKeys.activities });
 
 const handleSupabaseError = (error, context) => {
-  console.error(`Error en ${context}:`, error);
+  logger.error(`Error en ${context}:`, error);
   if (error.code === '42501') { 
     return 'No tienes permiso para realizar esta acción. Por favor, verifica tus credenciales o contacta al administrador.';
   }
@@ -93,12 +94,12 @@ export const useActivities = () => {
       });
 
       if (functionError) {
-        console.error('Error al invocar send-activity-confirmation:', functionError);
+        logger.error('Error al invocar send-activity-confirmation:', functionError);
         return false;
       }
       return true;
     } catch (e) {
-      console.error('Excepción al invocar send-activity-confirmation:', e);
+      logger.error('Excepción al invocar send-activity-confirmation:', e);
       return false;
     }
   };

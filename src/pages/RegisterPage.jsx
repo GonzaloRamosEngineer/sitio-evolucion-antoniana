@@ -109,9 +109,12 @@ const RegisterPage = () => {
         <div className="bg-white border border-brand-dark/10 rounded-sm p-6 sm:p-10">
           <div className="text-center mb-8">
             <img
-              src="/img/logotransparente.png"
+              src="/img/logotransparente.webp"
               alt="Logo Fundación Evolución Antoniana"
               className="mx-auto w-20 h-20 object-contain mb-6"
+              width="320"
+              height="320"
+              decoding="async"
             />
             <div className="flex justify-center mb-4">
               <Eyebrow>Registro</Eyebrow>

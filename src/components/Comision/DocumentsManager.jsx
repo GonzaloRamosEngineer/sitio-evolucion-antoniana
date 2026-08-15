@@ -34,6 +34,7 @@ import { getDocuments, createDocument, updateDocument, deleteDocument } from '@/
 import { DOC_CATEGORIES, formatDateTime } from './documentConstants';
 import DocumentDetail from './DocumentDetail';
 import FilterChips from '@/components/Comision/FilterChips';
+import { logger } from '@/lib/logger';
 
 const NONE = 'none';
 const ALL = 'all';
@@ -102,7 +103,7 @@ const DocumentsManager = () => {
     setError(false);
     const { data, error: err } = await getDocuments();
     if (err) {
-      console.error('Error fetching documents:', err);
+      logger.error('Error fetching documents:', err);
       setError(true);
     } else {
       setDocuments(data || []);

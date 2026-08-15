@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getPartners, getBenefits } from '@/lib/storage';
+import { logger } from '@/lib/logger';
 
 const INITIAL_STATS = {
   totalUsers: 0,
@@ -95,7 +96,7 @@ export function useAdminStats() {
       });
       setRecentActivities(recent);
     } catch (err) {
-      console.error('Error fetching admin stats:', err);
+      logger.error('Error fetching admin stats:', err);
       setError(err);
     } finally {
       setLoading(false);

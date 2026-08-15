@@ -15,6 +15,7 @@ import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 const contactChannels = [
   {
@@ -135,7 +136,7 @@ const Contact = () => {
       notifySent();
       reset(emptyContact);
     } catch (error) {
-      console.error('Error sending contact email:', error);
+      logger.error('Error sending contact email:', error);
       toast({
         title: 'Error al enviar mensaje',
         description:

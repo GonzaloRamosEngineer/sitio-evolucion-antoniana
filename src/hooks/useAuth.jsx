@@ -2,6 +2,7 @@ import React, { useState, useEffect, createContext, useContext, useCallback } fr
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 const AuthContext = createContext();
 
@@ -32,7 +33,7 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error && error.code !== 'PGRST116') { 
-        console.error('Error fetching user profile:', error.message);
+        logger.error('Error fetching user profile:', error.message);
         setUser({ ...authUser, name: authUser.email, email: authUser.email, isAdmin: false, role: 'user' }); 
         toast({
           title: "Error al cargar perfil",
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }) => {
           isAdmin: profile.role === 'admin',
         });
       } else {
-         console.warn("User profile not found in public.users for ID:", authUser.id);
+         logger.warn("User profile not found in public.users for ID:", authUser.id);
          const metadataRole = authUser.user_metadata?.role || (authUser.app_metadata?.claims_admin ? 'admin' : 'user');
          setUser({
            ...authUser,
@@ -62,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       return profile;
 
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error.message);
+      logger.error('Error in fetchUserProfile:', error.message);
       setUser({ ...authUser, name: authUser.email, email: authUser.email, isAdmin: false, role: 'user' }); 
       toast({
         title: "Error Crítico de Perfil",
@@ -90,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true); 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession(); 
     if (sessionError) {
-      console.error("Error refreshing session in refreshUser:", sessionError.message);
+      logger.error("Error refreshing session in refreshUser:", sessionError.message);
       // setUser(null) y setLoading(false) serán manejados por handleAuthStateChange
       await handleAuthStateChange('REFRESH_ERROR', null); // Asegura que el estado se actualice
       toast({
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     const syncSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error){
-        console.error("Error in syncSession getSession:", error.message);
+        logger.error("Error in syncSession getSession:", error.message);
       }
       await handleAuthStateChange('INITIAL_SESSION', session);
     };
@@ -141,7 +142,7 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
       return data.user;
     } catch (error) {
-      console.error('Error in login:', error.message);
+      logger.error('Error in login:', error.message);
       if (error.message.includes("Invalid login credentials")) {
         throw new Error('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
       } else if (error.message.includes("Email not confirmed")) {
@@ -167,7 +168,7 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
       return data.user;
     } catch (error) {
-      console.error('Error in register:', error.message);
+      logger.error('Error in register:', error.message);
       if (error.message.includes("User already registered")) {
         throw new Error('Este email ya está registrado. Intenta iniciar sesión o recuperar tu contraseña.');
       } else if (error.message.includes("Database error saving new user")) {
@@ -190,7 +191,7 @@ export const AuthProvider = ({ children }) => {
       // TanStack Query (ROADMAP 4.2), ya nadie las escribe.
       queryClient.clear();
     } catch (error) {
-      console.error('Error in logout:', error.message);
+      logger.error('Error in logout:', error.message);
       setUser(null); 
       setLoading(false); 
       toast({ title: "Error", description: "Error al cerrar sesión.", variant: "destructive" });
@@ -204,7 +205,7 @@ export const AuthProvider = ({ children }) => {
       });
       if (error) throw error;
     } catch (error) {
-      console.error('Error sending password reset email:', error.message);
+      logger.error('Error sending password reset email:', error.message);
       throw new Error(error.message || "No se pudo enviar el correo de reestablecimiento.");
     } 
   };
@@ -215,7 +216,7 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
       return data.user;
     } catch (error) {
-      console.error('Error updating password:', error.message);
+      logger.error('Error updating password:', error.message);
       throw new Error(error.message || "No se pudo actualizar la contraseña.");
     }
   };

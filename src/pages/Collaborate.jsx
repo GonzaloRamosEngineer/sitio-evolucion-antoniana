@@ -362,7 +362,11 @@ const Collaborate = () => {
                          <img
                             className="w-full max-w-[250px] object-contain"
                             alt="Logo de Mercado Pago Solidario"
-                            src="/img/mercadolibre_solidario.png"
+                            src="/img/mercadolibre_solidario.webp"
+                            width="1200"
+                            height="800"
+                            loading="lazy"
+                            decoding="async"
                         />
                     </div>
                 </div>

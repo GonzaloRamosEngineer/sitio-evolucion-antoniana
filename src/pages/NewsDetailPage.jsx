@@ -15,6 +15,7 @@ import {
 import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { useNewsItem } from "@/hooks/useContentQueries";
+import { logger } from '@/lib/logger';
 
 const toPlainText = (value = "") => {
   // Limpia saltos y espacios raros para que description quede linda
@@ -99,7 +100,7 @@ const NewsDetailPage = () => {
       if (navigator.vibrate) navigator.vibrate(40);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      console.warn("No se pudo copiar el enlace");
+      logger.warn("No se pudo copiar el enlace");
     }
   };
 

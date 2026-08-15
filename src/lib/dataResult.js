@@ -16,11 +16,12 @@
 // (lanzar, devolver `null`, devolver el error como valor) y cada página las
 // manejaba distinto, así que el mismo fallo se veía de tres maneras según la ruta.
 //
-// Los `console.error` de la capa de datos viven acá centralizados a propósito:
-// cuando se haga 6.4 (logger con no-op en producción) hay un solo lugar que tocar.
+// Los logs de fallo de la capa de datos viven acá centralizados a propósito.
+// Eso pagó en 6.4: migrar toda la capa al logger fue tocar este único lugar.
+import { logger } from './logger';
 
 const logFailure = (context, error) => {
-  console.error(`[data] ${context}:`, error);
+  logger.error(`[data] ${context}:`, error);
 };
 
 /** Normaliza el resultado de una query que devuelve una lista. */

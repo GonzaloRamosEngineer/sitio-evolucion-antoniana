@@ -13,6 +13,7 @@ import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import { logger } from '@/lib/logger';
 
 const DonationList = () => {
   const [donations, setDonations] = useState([]);
@@ -39,7 +40,7 @@ const DonationList = () => {
       if (error) throw error;
       setDonations(data || []);
     } catch (error) {
-      console.error('Error fetching donations:', error);
+      logger.error('Error fetching donations:', error);
       setFetchError(true);
       toast({ title: "Error", description: "No se pudieron cargar las donaciones.", variant: "destructive" });
     } finally {

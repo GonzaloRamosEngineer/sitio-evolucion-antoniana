@@ -13,6 +13,7 @@ import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import { logger } from '@/lib/logger';
 
 const MembershipList = () => {
   const [memberships, setMemberships] = useState([]);
@@ -39,7 +40,7 @@ const MembershipList = () => {
       if (error) throw error;
       setMemberships(data || []);
     } catch (error) {
-      console.error('Error fetching memberships:', error);
+      logger.error('Error fetching memberships:', error);
       setFetchError(true);
       toast({ title: "Error", description: "Error al cargar suscripciones.", variant: "destructive" });
     } finally {

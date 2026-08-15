@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
+import { logger } from '@/lib/logger';
 
 const ConfirmAttendancePage = () => {
   const [searchParams] = useSearchParams();
@@ -33,7 +34,7 @@ const ConfirmAttendancePage = () => {
         });
 
         if (invokeError) {
-          console.error("Error invocando función:", invokeError);
+          logger.error("Error invocando función:", invokeError);
           setStatus('error');
           setMessage('Hubo un problema técnico al confirmar. Intenta nuevamente.');
           return;
@@ -68,7 +69,7 @@ const ConfirmAttendancePage = () => {
         setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
 
       } catch (e) {
-        console.error('Excepción al confirmar:', e);
+        logger.error('Excepción al confirmar:', e);
         setStatus('error');
         setMessage('Ocurrió un error inesperado. Por favor contacta a soporte.');
       }

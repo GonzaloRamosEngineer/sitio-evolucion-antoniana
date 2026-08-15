@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { logger } from './logger';
 
 export const generateGoogleCalendarLink = (activity) => {
   if (!activity || !activity.title || !activity.date) {
@@ -59,7 +60,7 @@ export const generateGoogleCalendarLink = (activity) => {
     return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(activity.title)}&dates=${formattedStartDate}/${formattedEndDate}&details=${details}&location=${location}`;
 
   } catch (error) {
-    console.error("Error generating Google Calendar link:", error);
+    logger.error("Error generating Google Calendar link:", error);
     return '#';
   }
 };

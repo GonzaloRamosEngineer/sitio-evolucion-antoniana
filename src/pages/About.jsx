@@ -66,7 +66,7 @@ const founders = [
     role: 'Fundador',
     description:
       'Referente institucional y cofundador, comprometido con el desarrollo social, educativo y deportivo de la comunidad.',
-    image: '/img/juan_carlos_palavecino.png'
+    image: '/img/juan_carlos_palavecino.webp'
   }
 ];
 
@@ -176,7 +176,11 @@ const About = () => {
                 <img
                   className="relative w-full h-[420px] lg:h-[500px] object-cover rounded-sm"
                   alt="Equipo de la fundación trabajando"
-                  src="/img/hogar_abuelos.png"
+                  src="/img/hogar_abuelos.webp"
+                  width="598"
+                  height="661"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <p className="mt-6 flex items-center gap-2 text-sm text-gray-600">
@@ -258,7 +262,15 @@ const About = () => {
                     <div className="flex flex-col sm:flex-row">
                       <div className="sm:w-32 sm:h-auto h-48 w-full relative bg-brand-sand flex-shrink-0">
                         {founder.image ? (
-                          <img src={founder.image} alt={founder.name} className="w-full h-full object-cover" />
+                          <img
+                            src={founder.image}
+                            alt={founder.name}
+                            className="w-full h-full object-cover"
+                            width="580"
+                            height="430"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-brand-primary text-white text-2xl font-bold">
                             {founder.name.charAt(0)}
