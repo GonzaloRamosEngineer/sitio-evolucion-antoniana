@@ -27,26 +27,30 @@ logger.error = (msg, options) => {
  * `framer-motion`: se importa de forma eager en `App.jsx` y se usa en 59
  * archivos, así que entraba entero en el bundle de arranque.
  *
- * Separarlo por librería mejora el cacheo entre deploys: cambiar código de la
- * app ya no invalida el chunk de React ni el de Supabase, que son los que menos
- * cambian. React y react-dom van **juntos** a propósito — separarlos rompe el
- * orden de inicialización.
+ * **Se usa la forma de objeto, no una función `(id) => ...`, y eso es lo
+ * importante acá.** El primer intento fue una función que clasificaba por
+ * substring del path, y rompió la producción con
+ * `Cannot read properties of undefined (reading 'forwardRef')`:
+ * `react` y `react-dom` matcheaban, pero **`scheduler`** — del que depende
+ * `react-dom` — no matcheaba ningún patrón y caía en el chunk principal. Eso
+ * arma un ciclo entre chunks (`index → vendor-radix → vendor-react → index`),
+ * y con un ciclo Radix corre su `React.forwardRef` de nivel de módulo antes de
+ * que React esté inicializado.
+ *
+ * La forma de objeto no tiene ese problema: se declaran los paquetes de entrada
+ * y **Rollup arrastra solo las dependencias transitivas** (`scheduler`,
+ * `loose-envify`, `js-tokens`, `@remix-run/router`) al chunk que corresponde,
+ * sin que haya que mantener a mano una lista que se desactualiza en silencio.
+ *
+ * Si se agrega un vendor acá, **verificar el sitio en un navegador**: este tipo
+ * de fallo no lo detectan ni el build, ni el lint, ni los tests.
  */
-const manualChunks = (id) => {
-	if (!id.includes('node_modules')) return undefined;
-
-	if (id.includes('framer-motion')) return 'vendor-motion';
-	if (id.includes('@supabase')) return 'vendor-supabase';
-	if (id.includes('@tanstack')) return 'vendor-query';
-	if (id.includes('@radix-ui')) return 'vendor-radix';
-	if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('/zod/')) {
-		return 'vendor-forms';
-	}
-	if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('react-router')) {
-		return 'vendor-react';
-	}
-
-	return undefined;
+const manualChunks = {
+	'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+	'vendor-motion': ['framer-motion'],
+	'vendor-supabase': ['@supabase/supabase-js'],
+	'vendor-query': ['@tanstack/react-query'],
+	'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
 };
 
 export default defineConfig({

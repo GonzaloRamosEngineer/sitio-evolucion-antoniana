@@ -376,11 +376,23 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   arriesga las previews de compartir (que solo se validan en producción) más el banding
   que la cuantización a paleta puede meter en una imagen de marca.
 - [x] **6.2 — `manualChunks` de vendor. HECHO (2026-08-15, Sesión H).**
-  El chunk inicial pasó de **603 KB a 103 KB** y desapareció el warning de tamaño de
-  Vite. Seis chunks de vendor (react, motion, supabase, radix, query, forms). React y
-  react-dom van **juntos** a propósito: separarlos rompe el orden de inicialización.
-  Además mejora el cacheo entre deploys: tocar código de la app ya no invalida el chunk
-  de React ni el de Supabase.
+  El chunk inicial pasó de **603 KB a 193 KB** y desapareció el warning de tamaño de
+  Vite. Cinco chunks de vendor (react, motion, supabase, query, forms) y mejor cacheo
+  entre deploys: tocar código de la app ya no invalida el chunk de React ni el de
+  Supabase.
+  **⚠️ El primer intento rompió la producción — leer antes de tocar esto.** Clasificaba
+  con una función `(id) => ...` por substring del path. `react` y `react-dom`
+  matcheaban, pero **`scheduler`** — del que depende `react-dom` — no matcheaba ningún
+  patrón y caía en el chunk principal. Eso arma un ciclo entre chunks
+  (`index → vendor-radix → vendor-react → index`) y Radix ejecutaba su
+  `React.forwardRef` de nivel de módulo antes de que React existiera:
+  `Cannot read properties of undefined (reading 'forwardRef')`, sitio en blanco.
+  **La forma de objeto no tiene ese problema**: se declaran los paquetes de entrada y
+  Rollup arrastra solo las dependencias transitivas al chunk correcto, sin listas
+  mantenidas a mano que se desactualizan en silencio.
+  **Lo grave no fue el bug sino que se deployó:** `npm run build`, `lint` y los 72 tests
+  pasaban los tres en verde con el sitio roto. Ninguno carga la página. Procedimiento
+  obligatorio al tocar el bundle, en §9.
 - [x] **6.3 — Ruta local del dev filtrada** en comentario línea 1 de 7 archivos. **HECHO (2026-07-19)**
 - [x] **6.4 — Logging con gate. HECHO (2026-08-15, Sesión H).**
   **La premisa del ítem había cambiado:** no eran 63 sino **40**, y **todos eran `error`
@@ -854,6 +866,26 @@ no de la auditoría original de julio: donde la premisa vieja había caducado, s
 
 Orden sugerido si se retoma: **I → 3.1 → 6.6 → 3.4**. La sesión I es la única con
 urgencia real; el resto es mejora, no riesgo.
+
+### ⚠️ Antes de tocar el bundle: verificar en un navegador
+
+En la Sesión H, un `manualChunks` mal armado dejó **el sitio en blanco en producción**
+con `build`, `lint` y los 72 tests **los tres en verde**. Ninguna de esas tres cosas
+carga la página, así que ninguna podía verlo. Al tocar `vite.config.js`, lazy loading,
+orden de imports o cualquier cosa que cambie cómo arranca la app, verificar así:
+
+```bash
+npm run build
+npx vite preview --port 4179 &
+# Chrome headless ejecuta el JS y vuelca el DOM ya renderizado.
+chrome --headless=new --disable-gpu --virtual-time-budget=7000        --dump-dom http://localhost:4179/ > dom.html
+```
+
+Un sitio sano da **~58 KB** de DOM en la home con `<nav>` y `<footer>` presentes; el
+roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/actividades`,
+`/colaborar`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
+Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
+vez contra el build roto, si no, no se sabe si sirve.
 
 ### 🔴 Sesión I (nueva, propuesta) — Seguridad de dependencias
 
