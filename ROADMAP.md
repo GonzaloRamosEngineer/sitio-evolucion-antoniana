@@ -10,6 +10,9 @@
 > perder el historial. Para contexto de arquitectura y modelo de seguridad, ver
 > `CLAUDE.md` (este documento no lo reemplaza, lo complementa).
 >
+> **¿Retomás el proyecto?** Todas las sesiones planificadas (A-H) están cerradas.
+> Lo que queda, con alternativas y recomendación para cada cosa, está en **§9**.
+>
 > **Última revisión de la auditoría:** 2026-07-18
 > **Último commit auditado:** `76cf6d91` (verificación de usuarios + filtro por rol)
 > **Último avance registrado:** 2026-08-14, Sesiones F1 y F2 (ver §7 y §8)
@@ -397,9 +400,13 @@ server-side, historial de git prolijo con pasadas de seguridad/SEO/performance.
   **`tools/generate-llms.js` se conserva:** no está referenciado en scripts ni CI y no
   se le ve output en el repo, pero es una herramienta manual inofensiva; borrarla sin
   saber si el dueño la corre a mano sería una pérdida neta.
-- [ ] **6.6 — Duplicación listado/detalle:** `PartnersPage/PartnerDetailPage`,
-  `BenefitsPage/BenefitDetailPage`, `NewsPage/NewsDetailPage` repiten esqueleto. Extraer
-  hook `useResourceBySlug` + componente `<SanitizedHtml>`. ~1-2 días.
+- [ ] **6.6 — Duplicación listado/detalle. PREMISA REVISADA (2026-08-15).**
+  ~~Extraer hook `useResourceBySlug`~~ — F3 ya se llevó la duplicación de *carga*: las
+  tres páginas de detalle resuelven desde la caché con un `select`, así que ese hook ya
+  no tiene sentido. Lo que **sigue** duplicado es la presentación: bloque de loading,
+  bloque de "no encontrado" y el patrón de `DOMPurify` (en 2 de las 3).
+  **Acción revisada:** extraer `<ResourceState>` + `<SanitizedHtml>`. ~medio día.
+  **Ver el análisis completo y la recomendación en §9.**
 - [ ] **6.7 — Upgrades de deps (incremental):** `vite@4` (EOL, bloquea vuln), `eslint@8`
   (EOL, v9 flat config), `tailwindcss@3`→v4, `framer-motion@10`→`motion` (costoso, 59 usos),
   `date-fns@3`→v4 (3 archivos), `uuid@9` (1 solo uso; `documentsApi.js:36` ya usa
@@ -836,6 +843,164 @@ Antes las actividades se compartían con UUID (`/activities/<uuid>`); ahora tien
   Pago), Nosotros (foto y retrato del fundador) y el logo de Login/Registro — son las
   cuatro que cambiaron de archivo. Y que el sitio siga cargando bien en general, porque
   el reparto de chunks toca cómo arranca la app.
+
+---
+
+## 9. Qué queda: decisiones pendientes (2026-08-15)
+
+Cerradas todas las sesiones A-H, esto es **todo** lo que queda, con alternativas y
+recomendación para cada cosa. Los datos son de una revisión del código del 2026-08-15,
+no de la auditoría original de julio: donde la premisa vieja había caducado, se aclara.
+
+Orden sugerido si se retoma: **I → 3.1 → 6.6 → 3.4**. La sesión I es la única con
+urgencia real; el resto es mejora, no riesgo.
+
+### 🔴 Sesión I (nueva, propuesta) — Seguridad de dependencias
+
+No estaba en el plan original y hoy es **lo más urgente que queda**. `npm audit`
+reporta **9 vulnerabilidades (5 high, 4 moderate)** más una crítica en `vitest`.
+Tres de ellas se resuelven casi gratis:
+
+**I.a — `@babel/*` quedaron como dependencias muertas.** `@babel/generator`, `parser`,
+`traverse` y `types` siguen en `package.json`, pero **sus únicos consumidores eran los
+plugins del editor visual que se borraron en H**. Verificado: cero usos en `src/`,
+`api/` y `tools/`.
+→ **Recomendado: eliminarlas.** Cuatro dependencias menos y menos superficie de audit.
+Riesgo nulo, 5 minutos.
+
+**I.b — `uuid` tiene una vulnerabilidad y un solo uso.** `useActivities.jsx:111` lo usa
+para generar el token de confirmación. `documentsApi.js:36` **ya usa
+`crypto.randomUUID()` nativo** para lo mismo.
+→ **Recomendado: reemplazar el único uso por `crypto.randomUUID()` y sacar la
+dependencia.** Elimina la vuln sin actualizar a `uuid@14` (que es breaking). Soportado
+por todos los navegadores objetivo en contexto seguro (HTTPS), que es como corre el
+sitio. ~15 minutos.
+→ *Alternativa:* `npm audit fix --force` sube a `uuid@14`. Peor: mantiene una
+dependencia que no hace falta.
+
+**I.c — `vite@4` es EOL y arrastra la mayoría de las vulns** (vite, esbuild, y de
+rebote vitest). Es el ítem 6.7 y el más caro.
+→ Ver abajo.
+
+**Esfuerzo I.a + I.b:** ~30 minutos, riesgo bajo, y bajan las vulns directas de 4 a 2.
+
+### 6.7 — Upgrades de dependencias
+
+**Lo que hay:** `vite@4` (EOL), `eslint@8` (EOL), `tailwindcss@3`, `framer-motion@10`,
+`date-fns@3`, `react-router-dom` con vuln moderada, y ~19 paquetes de Radix con
+versiones menores atrasadas.
+
+**Alternativas:**
+- **(a) Todo junto.** Un salto grande, difícil de bisectar si algo rompe. No.
+- **(b) Solo `vite@4 → v6/v7`.** Resuelve el grueso de las vulns (vite, esbuild,
+  vitest). Es el que más paga. Riesgo medio: cambia la config de build y puede requerir
+  tocar `vitest.config.js`. Los 72 tests y el build son la red.
+- **(c) Radix + menores primero.** Bajo riesgo, poco beneficio: son versiones menores
+  sin vulns.
+- **(d) `framer-motion@10 → motion`.** 59 archivos afectados. Alto costo, cero urgencia.
+- **(e) `eslint@8 → v9`.** La config ya es flat, así que el salto es menos duro de lo
+  que suena. Beneficio: salir de EOL. Sin vulns asociadas.
+
+→ **Recomendado: (b) solo, en su propia rama y su propio deploy.** Es el único con
+urgencia (EOL + vulns) y el único cuyo fallo se detecta enseguida (no compila).
+Después, (e) cuando haya ganas. Diferir (d) indefinidamente: 59 archivos de riesgo a
+cambio de nada concreto.
+→ **No hacer `npm audit fix --force` a ciegas:** sube vite y vitest a mayores de golpe,
+que es exactamente la opción (a) sin control.
+
+### 3.1 — Orden de las rutas admin de actividades
+
+**Estado real:** en `App.jsx`, `/admin/*` (línea 145) se declara **antes** que
+`/admin/activities/new` (153) y `/admin/activities/edit/:id` (161). React Router v6
+resuelve por especificidad, no por orden, así que **hoy funciona bien**. El ítem es de
+fragilidad, no de bug: el orden sugiere una precedencia que no existe, y alguien que
+agregue una ruta asumiendo "gana la primera" se va a equivocar.
+
+**Alternativas:**
+- **(a) Reordenar** para que el orden del archivo refleje la especificidad real.
+- **(b) Anidar** las rutas de actividades dentro de `/admin/*`.
+- **(c) Dejarlo y comentar** por qué el orden no importa.
+
+→ **Recomendado: (a) + un comentario corto.** Es cosmético pero barato (~30 min) y
+elimina una trampa para el próximo que toque el router. (b) es más correcto
+conceptualmente pero implica reestructurar `AdminPanel`, y no paga.
+
+### 6.6 — Duplicación listado/detalle
+
+**Estado real (revisado post-F3, la premisa cambió):** F3 ya se llevó la duplicación de
+*carga de datos* — las tres páginas de detalle ahora resuelven desde la caché con un
+`select`. Lo que **queda** duplicado es la **estructura de presentación**: las tres
+tienen su propio bloque de loading, su propio "no encontrado" y dos de ellas repiten el
+patrón de `DOMPurify` (`NewsDetailPage`, `PartnerDetailPage`; `BenefitDetailPage` no
+usa HTML enriquecido). Tamaños: detalles 229-336 líneas, listados 141-161.
+
+**Alternativas:**
+- **(a) Extraer `<ResourceState>`** (loading / no encontrado / error) y `<SanitizedHtml>`.
+  Ataca lo que de verdad se repite. ~medio día.
+- **(b) El plan original completo** (`useResourceBySlug` + componente compartido).
+  **Ya no aplica:** ese hook lo reemplazó el `select` de TanStack en F3.
+- **(c) No hacer nada.** Tres copias de un bloque de 15 líneas es tolerable.
+
+→ **Recomendado: (a), y solo cuando haya que tocar esas páginas por otro motivo.**
+Es refactor cosmético sobre código que funciona y está cubierto; hacerlo aislado gasta
+presupuesto de riesgo sin beneficio para nadie. **Actualizar el ítem 6.6: el
+`useResourceBySlug` que proponía ya no tiene sentido.**
+
+### 3.4 — Datos institucionales hardcodeados ⚠️ requiere decisión de la Fundación
+
+**Qué es:** las métricas de la Home (`Home.jsx:51-72`) y los reconocimientos y
+autoridades de Nosotros (`About.jsx:60-85`) están escritos en el código. Cambiar un
+número o un nombre de la Comisión Directiva **requiere un deploy**.
+
+**Esto no es una decisión técnica.** La pregunta real es: *¿quién mantiene esos datos y
+cada cuánto cambian?*
+
+**Alternativas:**
+- **(a) Dejarlo en código.** Correcto si cambia una o dos veces al año y siempre lo
+  toca alguien con acceso al repo. Cero trabajo.
+- **(b) Moverlo a la base.** La tabla `fundacion_metrics` **ya existe** y el Dashboard
+  ya la lee. Habría que crear el CRUD en el panel admin. ~1-2 días. Se justifica si la
+  Fundación quiere editarlo sin depender de un desarrollador.
+- **(c) Mixto:** las métricas (números que cambian) a la base; autoridades y
+  reconocimientos (que cambian con cada elección de comisión) en código.
+
+→ **Recomendado: preguntar antes de codificar.** Si la respuesta es "lo actualizamos
+una vez por año cuando cambia la comisión", **(a) es la respuesta correcta** y el ítem
+se cierra como "no se hace". Si es "queremos cambiar las métricas cada trimestre",
+entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que **(a) o
+(c)** alcanzan — pero es su decisión, no nuestra.
+
+### Deuda menor declarada (no bloquea nada)
+
+| Qué | Dónde quedó | Recomendación |
+|---|---|---|
+| `ApplyPartnerPage` con el lenguaje visual viejo (pill glassmórfico, grid de puntos, `rounded-3xl`) que 5.13 eliminó del resto | §8, Sesión F1 | Hacerlo en una pasada de identidad visual, no suelto. Es la última página pública fuera del sistema. |
+| `GuestRegistrationForm`, `RequestPasswordResetForm`, `UpdatePasswordForm` con validación manual | §4, ítem 4.6 | Migrar **al tocarlos**. Es la política acordada desde la Sesión G, no una omisión. |
+| `ActivityDetailPage` y los módulos de Comisión sin TanStack Query | §4, ítem 4.2 | Igual: al tocarlos. Tienen bastante lógica de mutación propia. |
+| `getPartnerBySlug` sin consumidores | §8, Sesión F2 | Borrar en la próxima limpieza. Se conservó por simetría con `getNewsBySlug`. |
+| 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
+| Micro-tipografía `text-[9-10px]` en paneles internos | §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
+
+### 🟠 Las migraciones no reconstruyen la base desde cero
+
+Hallazgo de la validación con Docker (ver §8, Sesión F2). Las 5 migraciones de junio
+fallan en una base nueva con `relation "public.users" does not exist`, porque preceden
+al baseline que crea esa tabla. Como `supabase db push` aplica por timestamp, **hoy no
+se puede reconstruir la base desde el repo** — que es justo lo que el ítem 2.4 buscaba
+garantizar.
+
+**Alternativas:**
+- **(a) Squashear** las 5 previas dentro del baseline. Historia más limpia, se pierde
+  el detalle de cómo se llegó.
+- **(b) Renombrarlas** con un timestamp posterior al baseline. Feo pero conserva todo.
+- **(c) Documentar el orden correcto** y no tocar los archivos. Cero riesgo, pero el
+  comando estándar sigue fallando.
+
+→ **Recomendado: (a), y verificarlo levantando la base desde cero con
+`supabase/checks/`** (el procedimiento ya está documentado). Es la única forma de que
+la afirmación "el esquema está versionado" sea cierta de punta a punta. ~2-3 horas.
+**No urgente** mientras la base de producción exista y esté respaldada; **urgente el
+día que haga falta recrearla**, que es exactamente cuando no se quiere descubrir esto.
 
 ---
 
