@@ -1130,10 +1130,34 @@ también se crea ahí.
 inicializaba. `pg_isready` da OK antes de que terminen los scripts de setup de la imagen.
 Señal confiable: el **segundo** `database system is ready to accept connections`.
 
-⚠️ **Al hacer el próximo `supabase db push`:** el historial remoto tiene registradas las
-5 migraciones eliminadas. Si el CLI se queja de discrepancia, se resuelve con
-`supabase migration repair`. No se pudo comprobar de antemano porque requiere
-credenciales del proyecto.
+**Comprobado con `supabase migration list` (2026-08-16):**
+
+```
+   Local          | Remote | Time (UTC)
+  ----------------|--------|---------------------
+   20260719120000 |        | 2026-07-19 12:00:00
+   20260719130000 |        | 2026-07-19 13:00:00
+   20260719140000 |        | 2026-07-19 14:00:00
+```
+
+**El historial remoto está vacío.** No hay discrepancia y no hace falta
+`migration repair`: el esquema de producción se aplicó pegando SQL en el editor web
+(Opción A del README de `supabase/`), así que nunca se registró nada en
+`supabase_migrations.schema_migrations`. Borrar las 5 de junio no dejó ningún huérfano.
+
+⚠️ **Pero cambia el significado de correr `supabase db push` contra producción:** al ver
+el historial vacío, el CLI intentaría aplicar **las tres** migraciones. En principio
+convergen sin cambios —el baseline está construido para eso y las otras dos son
+idempotentes—, y cada migración corre en su propia transacción, así que un
+`DROP POLICY` + `CREATE POLICY` no deja ventana sin RLS. Aun así **no es una operación
+de rutina**: son ~1.100 líneas de DDL contra la base viva. Si se hace, con backup
+reciente y fuera de horario.
+
+⚠️ **Producción corre PostgreSQL 15; la validación de esta fase se hizo sobre la imagen
+17.6.1** (la que documenta `supabase/checks/`). El CLI lo advierte al linkear
+(`major_version = 15`). El DDL usado es estándar y no toca nada específico de 16/17, así
+que el riesgo es bajo, pero **la validación no se hizo sobre la misma major que
+producción**. Para cerrarlo del todo habría que repetirla con una imagen 15.x.
 
 ---
 
