@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  History, ShieldCheck, CreditCard, 
+import {
+  History, ShieldCheck, CreditCard,
   CheckCircle2, Clock, Info, ArrowDownRight,
-  ExternalLink, Gem, Heart
+  ExternalLink, Gem, Heart, XCircle, HelpCircle
 } from 'lucide-react';
+import { ESTADOS_HISTORIAL, describirEstado } from '@/lib/estadosPago';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -111,17 +112,27 @@ const TransactionHistory = ({ donations = [], memberships = [], loading = false 
                       </td>
                       <td className="px-10 py-8 text-right">
                         <div className="flex justify-end">
-                          {item.status === 'approved' || item.status === 'active' ? (
-                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-50 text-green-600 border border-green-100 shadow-sm transition-transform group-hover:scale-105">
-                              <CheckCircle2 size={12} />
-                              <span className="text-[10px] font-black uppercase tracking-widest">Validado</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 shadow-sm italic">
-                              <Clock size={12} className="animate-spin-slow" />
-                              <span className="text-[10px] font-black uppercase tracking-widest">{item.status}</span>
-                            </div>
-                          )}
+                          {(() => {
+                            // Antes esto era un ternario: "aprobado" o, si no,
+                            // el estado CRUDO en inglés con un reloj girando.
+                            // O sea que un pago cancelado se mostraba como si
+                            // estuviera en curso. Ahora cada tono tiene su
+                            // propia forma. Ver @/lib/estadosPago.
+                            const { label, tono } = describirEstado(ESTADOS_HISTORIAL, item.status);
+                            const estilo = {
+                              ok: { caja: 'bg-green-50 text-green-600 border-green-100 shadow-sm transition-transform group-hover:scale-105', Icono: CheckCircle2, girar: false },
+                              curso: { caja: 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm italic', Icono: Clock, girar: true },
+                              cerrado: { caja: 'bg-gray-50 text-gray-400 border-gray-200', Icono: XCircle, girar: false },
+                              desconocido: { caja: 'bg-gray-50 text-gray-500 border-gray-200', Icono: HelpCircle, girar: false },
+                            }[tono];
+                            const { Icono } = estilo;
+                            return (
+                              <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border ${estilo.caja}`}>
+                                <Icono size={12} className={estilo.girar ? 'animate-spin-slow' : undefined} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>
