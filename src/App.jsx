@@ -141,14 +141,17 @@ const PageRoutes = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requireAdmin>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
+
+        {/* Rutas de admin, de la más específica a la más general (ROADMAP 3.1).
+            **El orden acá no es lo que decide**: React Router v6 resuelve por
+            especificidad, así que `/admin/activities/new` le gana a `/admin/*`
+            esté donde esté. Se ordenan así para que el archivo no sugiera una
+            precedencia que no existe — antes el comodín venía primero y se
+            leía como si atrapara todo, que es una trampa para quien agregue la
+            próxima ruta. Si alguna vez se migra a un router que **sí** resuelve
+            por orden, esta disposición ya es la correcta.
+            (`/admin/education` queda arriba, junto a `/comision`: se agrupa por
+            rol, no por prefijo — es de `educacion_manager`, no de admin puro.) */}
         <Route
           path="/admin/activities/new"
           element={
@@ -162,6 +165,14 @@ const PageRoutes = () => {
           element={
             <ProtectedRoute requireAdmin>
               <EditActivityPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requireAdmin>
+              <AdminPanel />
             </ProtectedRoute>
           }
         />

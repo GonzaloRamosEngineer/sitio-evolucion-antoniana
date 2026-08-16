@@ -3,8 +3,9 @@ import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info, CheckCircle2 } from 'lucide-react';
-import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
+import { SanitizedHtml } from '@/components/ui/sanitized-html';
+import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
 import { useAllPartners } from '@/hooks/useContentQueries';
 
 const slugify = (s = '') =>
@@ -31,40 +32,18 @@ const PartnerDetailPage = () => {
     : 'Alianzas estratégicas';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-brand-sand flex items-center justify-center">
-        <Helmet>
-          <title>Cargando alianza… – Fundación Evolución Antoniana</title>
-        </Helmet>
-        <div className="animate-pulse flex flex-col items-center">
-             <div className="h-16 w-16 bg-brand-primary/20 rounded-full mb-4 animate-bounce"></div>
-             <div className="h-4 w-32 bg-brand-primary/20 rounded"></div>
-        </div>
-      </div>
-    );
+    return <ResourceLoading title="Cargando alianza… – Fundación Evolución Antoniana" />;
   }
 
   if (!partner) {
     return (
-      <div className="min-h-screen bg-brand-sand flex flex-col items-center justify-center px-4">
-        <Helmet>
-          <title>Alianza no encontrada – Fundación Evolución Antoniana</title>
-        </Helmet>
-        <div className="max-w-md w-full bg-white rounded-sm p-8 text-center border border-brand-dark/10">
-          <Info className="w-12 h-12 text-brand-gold mx-auto mb-4" />
-          <h1 className="text-2xl font-bold font-poppins text-brand-dark mb-3">
-            Alianza no encontrada
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Es posible que el vínculo haya cambiado o que el enlace no sea correcto.
-          </p>
-          <Link to="/partners">
-            <Button variant="outline">
-                Volver al listado
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <ResourceNotFound
+        icon={Info}
+        title="Alianza no encontrada"
+        description="Es posible que el vínculo haya cambiado o que el enlace no sea correcto."
+        backTo="/partners"
+        backLabel="Volver al listado"
+      />
     );
   }
 
@@ -186,7 +165,9 @@ const PartnerDetailPage = () => {
                         </div>
 
                         {partner.colaboracion_detalle ? (
-                        <article
+                        <SanitizedHtml
+                            as="article"
+                            html={partner.colaboracion_detalle}
                             className="
                                 prose prose-slate max-w-none text-gray-600
                                 prose-headings:font-poppins prose-headings:font-bold prose-headings:text-brand-dark
@@ -194,9 +175,6 @@ const PartnerDetailPage = () => {
                                 prose-strong:text-brand-dark
                                 prose-li:marker:text-brand-gold
                             "
-                            dangerouslySetInnerHTML={{
-                            __html: DOMPurify.sanitize(partner.colaboracion_detalle),
-                            }}
                         />
                         ) : (
                         <div className="text-center py-8">

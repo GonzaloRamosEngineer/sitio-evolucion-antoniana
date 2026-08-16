@@ -946,7 +946,7 @@ cambio de nada concreto.
 → **No hacer `npm audit fix --force` a ciegas:** sube vite y vitest a mayores de golpe,
 que es exactamente la opción (a) sin control.
 
-### 3.1 — Orden de las rutas admin de actividades
+### ✅ 3.1 — Orden de las rutas admin (HECHO 2026-08-16)
 
 **Estado real:** en `App.jsx`, `/admin/*` (línea 145) se declara **antes** que
 `/admin/activities/new` (153) y `/admin/activities/edit/:id` (161). React Router v6
@@ -959,11 +959,17 @@ agregue una ruta asumiendo "gana la primera" se va a equivocar.
 - **(b) Anidar** las rutas de actividades dentro de `/admin/*`.
 - **(c) Dejarlo y comentar** por qué el orden no importa.
 
-→ **Recomendado: (a) + un comentario corto.** Es cosmético pero barato (~30 min) y
-elimina una trampa para el próximo que toque el router. (b) es más correcto
-conceptualmente pero implica reestructurar `AdminPanel`, y no paga.
+→ **Hecha la (a) + comentario.** Las rutas de admin quedan de la más específica a la
+más general y el comentario deja dicho que el orden **no** es lo que decide, para que
+nadie lo lea como precedencia. `/admin/education` se dejó arriba con `/comision`: se
+agrupa por rol (`educacion_manager`), no por prefijo.
+**Cambio de comportamiento: ninguno**, y eso es lo esperado — mover líneas no altera un
+router que rankea por especificidad. Verificado en navegador que las 4 rutas de admin
+siguen existiendo y protegidas, y que una ruta inventada sigue cayendo en el 404.
+*Límite de esa verificación:* sin sesión, todas redirigen a login antes de renderizar,
+así que confirma que la ruta existe, no qué componente monta.
 
-### 6.6 — Duplicación listado/detalle
+### ✅ 6.6 — Duplicación listado/detalle (HECHO 2026-08-16)
 
 **Estado real (revisado post-F3, la premisa cambió):** F3 ya se llevó la duplicación de
 *carga de datos* — las tres páginas de detalle ahora resuelven desde la caché con un
@@ -979,10 +985,27 @@ usa HTML enriquecido). Tamaños: detalles 229-336 líneas, listados 141-161.
   **Ya no aplica:** ese hook lo reemplazó el `select` de TanStack en F3.
 - **(c) No hacer nada.** Tres copias de un bloque de 15 líneas es tolerable.
 
-→ **Recomendado: (a), y solo cuando haya que tocar esas páginas por otro motivo.**
-Es refactor cosmético sobre código que funciona y está cubierto; hacerlo aislado gasta
-presupuesto de riesgo sin beneficio para nadie. **Actualizar el ítem 6.6: el
-`useResourceBySlug` que proponía ya no tiene sentido.**
+→ **Hecha la (a).** `<ResourceLoading>` + `<ResourceNotFound>` en
+`src/components/ui/resource-state.jsx` y `<SanitizedHtml>` en
+`src/components/ui/sanitized-html.jsx`.
+
+**Resultó menos cosmético de lo que parecía, por dos motivos:**
+
+1. **No era sólo código repetido, eran tres experiencias distintas.** El loading de
+   novedades era un punto de 4px con texto y los otros dos un círculo de 64px; el "no
+   encontrado" de alianzas tenía tarjeta e ícono y los otros no. El mismo hecho —el
+   recurso no existe— se veía de tres formas según por dónde entrara el visitante.
+   Al unificar se tomó de cada uno lo mejor: el esqueleto de 64px (2 de 3) y la tarjeta
+   con ícono de alianzas (la que sigue el lenguaje de la Sesión E). De paso el estado de
+   carga ganó `role="status"` + `aria-live` (antes un lector de pantalla no anunciaba
+   nada) y el "no encontrado" un `noindex`, que es un callejón sin salida.
+2. **`<SanitizedHtml>` es un punto de control de seguridad, no un DRY.** Eran tres
+   llamadas sueltas a `DOMPurify.sanitize()`. El mismo día que se hizo esto hubo que
+   subir `dompurify` por tres bypasses de XSS (Sesión I): con las llamadas sueltas,
+   cualquier mitigación hay que aplicarla N veces y alcanza olvidarse de una.
+   **Y la sanitización pasó de 0 tests a 6**, incluidos `<script>`, `onerror`/`onclick`
+   y `javascript:`. Se confirmó que detectan el fallo desactivando la sanitización: 3 de
+   los 6 se ponen en rojo.
 
 ### 3.4 — Datos institucionales hardcodeados ⚠️ requiere decisión de la Fundación
 

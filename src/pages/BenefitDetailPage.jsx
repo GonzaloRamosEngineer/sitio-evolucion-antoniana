@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAllBenefits, useAllPartners } from "@/hooks/useContentQueries";
 import { toast } from "@/components/ui/use-toast";
+import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 
 // Util para comparar slugs
 const slugify = (s = "") =>
@@ -80,30 +81,18 @@ const BenefitDetailPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-brand-sand">
-        <div className="animate-pulse flex flex-col items-center">
-            <div className="h-16 w-16 bg-brand-primary/20 rounded-full mb-4 animate-bounce"></div>
-            <div className="h-4 w-32 bg-brand-primary/20 rounded"></div>
-        </div>
-      </div>
-    );
+    return <ResourceLoading title="Cargando beneficio… – Fundación Evolución Antoniana" />;
   }
 
   if (!benefit) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center bg-brand-sand px-4">
-        <Tag className="w-16 h-16 text-gray-400 mb-6" />
-        <h1 className="text-3xl font-bold font-poppins text-brand-dark mb-4">Beneficio no encontrado</h1>
-        <p className="text-gray-600 mb-8">
-          El beneficio que buscás no existe o fue eliminado.
-        </p>
-        <Link to="/beneficios">
-          <Button variant="outline">
-             Volver a beneficios
-          </Button>
-        </Link>
-      </div>
+      <ResourceNotFound
+        icon={Tag}
+        title="Beneficio no encontrado"
+        description="El beneficio que buscás no existe o fue eliminado."
+        backTo="/beneficios"
+        backLabel="Volver a beneficios"
+      />
     );
   }
 

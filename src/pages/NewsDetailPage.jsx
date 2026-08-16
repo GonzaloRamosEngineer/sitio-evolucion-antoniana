@@ -11,9 +11,11 @@ import {
   Copy,
   Check,
   Calendar,
+  Newspaper,
 } from "lucide-react";
-import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
+import { SanitizedHtml } from "@/components/ui/sanitized-html";
+import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 import { useNewsItem } from "@/hooks/useContentQueries";
 import { logger } from '@/lib/logger';
 
@@ -105,31 +107,18 @@ const NewsDetailPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-brand-sand">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-4 w-4 bg-brand-primary rounded-full mb-2 animate-bounce"></div>
-          <p className="text-brand-primary font-medium">Cargando noticia...</p>
-        </div>
-      </div>
-    );
+    return <ResourceLoading title="Cargando noticia… – Fundación Evolución Antoniana" />;
   }
 
   if (!item) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center bg-brand-sand px-4">
-        <h1 className="text-3xl font-bold text-brand-dark mb-4 font-poppins">
-          Noticia no encontrada
-        </h1>
-        <p className="text-gray-600 mb-8">
-          La noticia que buscás no existe o fue eliminada.
-        </p>
-        <Link to="/novedades">
-          <Button variant="outline">
-            Volver a novedades
-          </Button>
-        </Link>
-      </div>
+      <ResourceNotFound
+        icon={Newspaper}
+        title="Noticia no encontrada"
+        description="La noticia que buscás no existe o fue eliminada."
+        backTo="/novedades"
+        backLabel="Volver a novedades"
+      />
     );
   }
 
@@ -196,9 +185,9 @@ const NewsDetailPage = () => {
                 <hr className="border-gray-100 my-8" />
 
                 {/* Cuerpo Markdown (Estilizado para la marca) */}
-                {item.body_md && (
-                  <div
-                    className="
+                <SanitizedHtml
+                  html={item.body_md}
+                  className="
                       prose prose-lg max-w-none text-gray-700
                       prose-headings:font-poppins prose-headings:font-bold prose-headings:text-brand-dark
                       prose-a:text-brand-action hover:prose-a:text-brand-primary prose-a:no-underline hover:prose-a:underline
@@ -206,9 +195,7 @@ const NewsDetailPage = () => {
                       prose-blockquote:border-brand-primary prose-blockquote:bg-brand-sand prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:not-italic
                       prose-img:rounded-sm
                     "
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.body_md) }}
-                  />
-                )}
+                />
 
                 {/* Sección Compartir */}
                 <div className="mt-16 pt-8 border-t border-gray-100">
