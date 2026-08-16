@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Calendar, Heart, MailWarning, Gift, Handshake, Newspaper,
-  FileText, ShieldCheck, LayoutDashboard, ExternalLink,
+  FileText, ShieldCheck, LayoutDashboard, ExternalLink, Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +19,7 @@ import LegalDocumentList from '@/components/Admin/LegalDocumentList';
 import PartnersAdmin from '@/components/Admin/PartnersAdmin';
 import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
 import NewsAdmin from '@/components/Admin/NewsAdmin';
+import DestinosAdmin from '@/components/Admin/DestinosAdmin';
 
 const AdminPanel = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -75,6 +76,7 @@ const AdminPanel = () => {
           { value: 'users', label: 'Usuarios', icon: Users },
           { value: 'memberships', label: 'Colaboraciones', icon: Heart },
           { value: 'donations', label: 'Donaciones', icon: Gift },
+          { value: 'destinos', label: 'Destinos', icon: Target },
         ],
       },
       {
@@ -122,6 +124,8 @@ const AdminPanel = () => {
         return <BenefitsAdmin />;
       case 'news':
         return <NewsAdmin />;
+      case 'destinos':
+        return <DestinosAdmin />;
       case 'overview':
       default:
         return (

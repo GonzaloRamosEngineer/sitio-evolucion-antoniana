@@ -11,6 +11,7 @@ import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@
 import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
+import { getDestinos } from '@/api/destinosApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
@@ -170,5 +171,31 @@ export const useFoundationMetrics = (options = {}) =>
   useQuery({
     queryKey: queryKeys.foundationMetrics,
     queryFn: () => unwrap(fetchFoundationMetrics()),
+    ...options,
+  });
+
+/**
+ * Destinos (ROADMAP §10.9).
+ *
+ * `useDestinos` trae todos y es para el panel; `useDestinosActivos` aplica el
+ * filtro de negocio en el hook —no en cada página— para que ningún consumidor
+ * pueda saltearlo con un `select` propio. Es la misma regla que en beneficios.
+ *
+ * Ojo: las RLS ya limitan lo que ve cada rol (anon solo los `activo`), así que
+ * este filtro es de UX, no una frontera de seguridad.
+ */
+export const useDestinos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.destinos,
+    queryFn: () => unwrap(getDestinos()),
+    select,
+    ...options,
+  });
+
+export const useDestinosActivos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.destinos,
+    queryFn: () => unwrap(getDestinos()),
+    select: composeSelect((rows) => rows.filter((d) => d.estado === 'activo'), select),
     ...options,
   });
