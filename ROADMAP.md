@@ -1307,3 +1307,38 @@ meta. Sugerido:
 El resto queda en borrador, listo para publicar cuando toque —"Vuelta a clases" en
 febrero, "Seguros y aptos" antes del inicio del torneo—. **Una campaña con temporada
 propia rinde más que un pedido genérico todo el año.**
+
+#### ✅ Publicado el 2026-08-16: las tres primeras
+
+Decidido con el dueño. Están **activas en producción**:
+
+| Destino | Puntual | Recurrente |
+|---|---|---|
+| Sostenimiento institucional | ✓ | ✓ |
+| Equipamiento deportivo | ✓ | |
+| **Apadriná una categoría** | ✓ | ✓ |
+
+Entre las dos formas de apadrinamiento se eligió **la categoría por sobre la beca
+individual**, por lo del apartado anterior: mismo tirón emocional, cero exposición de
+menores, y escala mejor. "Beca formativa" queda en borrador por si más adelante conviene
+tener las dos.
+
+Verificado en el sitio construido: `/collaborate` ya muestra el desplegable de destino en
+las dos tarjetas —apareció solo, porque antes había un único destino y ahora hay varios— y
+`/rendicion` lista los tres con los $7.141 ya imputados.
+
+**Salieron sin `meta_monto` a propósito**, y es una decisión, no una omisión: publicar hoy
+sin barra de progreso vale más que esperar semanas a tener los precios. Se muestra cuánto
+se juntó; el día que se carguen las metas, la barra aparece sola y no hay que rehacer nada.
+
+⚠️ **Lo que queda pendiente de la entidad, y es lo único que bloquea el potencial de esto:**
+
+| Destino | Qué falta |
+|---|---|
+| Equipamiento deportivo | `meta_monto` = Σ (precio unitario × cantidad) de pelotas, conos y pecheras |
+| Apadriná una categoría | `meta_monto` = costo mensual de sostener una categoría, y `cupos_totales` = cuántas categorías hay |
+| Sostenimiento institucional | Nada. **Va sin meta y está bien**: no tiene final, no es "juntemos $X" |
+
+Y el corolario de copy, que es donde está el verdadero valor del número: si una pelota
+sale $25.000, la campaña puede decir *"cada $25.000 = una pelota"*. **Eso convierte un
+monto en una decisión**, y donar "una pelota" es mucho más fácil que donar "un monto".
