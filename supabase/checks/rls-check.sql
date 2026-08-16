@@ -36,11 +36,17 @@ VALUES ('ZZ NoLeible','x','e@t.com','pendiente');
 SELECT count(*) AS filas_visibles FROM public.partners WHERE nombre = 'ZZ NoLeible';
 ROLLBACK;
 
-\echo '=== T5: anon DELETE sin policy -> 0 filas, SIN error (exito silencioso) ==='
+\echo '=== T5: anon DELETE -> ahora falla FUERTE (permission denied) ==='
+\echo '   OJO: este test cambio de comportamiento el 2026-08-16.'
+\echo '   ANTES: anon tenia el GRANT de DELETE, asi que Postgres dejaba correr la'
+\echo '   sentencia y las RLS la filtraban -> "DELETE 0", exito silencioso.'
+\echo '   AHORA: la migracion 20260816120000 le revoco el GRANT, asi que corta'
+\echo '   antes de llegar a las RLS -> ERROR 42501. Fallar ruidoso es mejor:'
+\echo '   el borrado silencioso es indistinguible de "no habia nada que borrar".'
 BEGIN;
 SET LOCAL ROLE anon;
 DELETE FROM public.partners WHERE nombre = 'ZZ Aprobado';
-\echo '   ^ mirar el DELETE 0: no hay error, simplemente no borro nada'
+\echo '   ^ esperado: ERROR permission denied for table partners'
 ROLLBACK;
 
 \echo '=== T6: el trigger revierte role en silencio si el caller no es admin ==='
@@ -71,3 +77,44 @@ ROLLBACK;
 DELETE FROM public.partners WHERE nombre LIKE 'ZZ %';
 DELETE FROM public.users WHERE id='11111111-1111-1111-1111-111111111111';
 DELETE FROM auth.users WHERE id='11111111-1111-1111-1111-111111111111';
+
+-- =============================================================================
+-- T8-T10: regresión del puenteo de RLS por vistas (auditoría 2026-08-16)
+--
+-- La fuga original: una vista OWNER TO postgres SIN security_invoker corre con
+-- los permisos del dueño y devuelve filas que las RLS de la tabla de origen
+-- niegan. Estos checks fallan si alguien recrea una vista con ese patrón.
+-- =============================================================================
+
+\echo '=== T8: NINGUNA vista de public puede quedar sin security_invoker ==='
+\echo '   (esperado: 0 filas — cualquier fila listada es una fuga potencial)'
+SELECT c.relname AS vista_sin_security_invoker
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relkind IN ('v','m')
+  AND COALESCE(
+        (SELECT option_value
+           FROM pg_options_to_table(c.reloptions)
+          WHERE option_name = 'security_invoker'),
+        'false') <> 'true'
+  -- fundacion_metrics es la excepción DELIBERADA: agrega sobre todas las filas
+  -- para el Dashboard. Se la protege revocándole el acceso a anon (ver T9),
+  -- no con security_invoker, que la dejaría en cero.
+  AND c.relname <> 'fundacion_metrics';
+
+\echo '=== T9: anon NO puede leer fundacion_metrics (es la facturacion) ==='
+\echo '   (esperado: ERROR de permiso denegado)'
+BEGIN;
+SET LOCAL ROLE anon;
+SELECT count(*) FROM public.fundacion_metrics;
+ROLLBACK;
+
+\echo '=== T10: anon no conserva privilegios destructivos en ninguna tabla ==='
+\echo '   (esperado: 0 filas)'
+SELECT table_name, privilege_type
+FROM information_schema.role_table_grants
+WHERE grantee = 'anon'
+  AND table_schema = 'public'
+  AND privilege_type IN ('DELETE','UPDATE','TRUNCATE','REFERENCES','TRIGGER')
+ORDER BY table_name, privilege_type;
