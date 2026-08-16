@@ -159,9 +159,6 @@ describe('el destino del aporte viaja en el body', () => {
 
     const body = ultimoBody();
     expect(body.destino_id).toBe('d-123');
-    // Es el ÚNICO campo que MercadoPago devuelve intacto en el webhook: por ahí
-    // es por donde el destino sobrevive el viaje de ida y vuelta.
-    expect(body.external_reference).toBe('destino:d-123');
     expect(body.description).toContain('Pelotas y conos');
   });
 
@@ -175,7 +172,6 @@ describe('el destino del aporte viaja en el body', () => {
 
     const body = ultimoBody();
     expect(body.destino_id).toBe('d-9');
-    expect(body.external_reference).toBe('destino:d-9');
     expect(body.reason).toContain('Apadriná una beca');
     // El auto_recurring que ya funcionaba no se toca.
     expect(body.auto_recurring).toMatchObject({
@@ -191,7 +187,29 @@ describe('el destino del aporte viaja en el body', () => {
 
     const body = ultimoBody();
     expect(body).not.toHaveProperty('destino_id');
-    expect(body).not.toHaveProperty('external_reference');
+  });
+
+  // ⚠️ EL TEST QUE EVITA QUE VUELVA A PASAR (ver `camposDestino`).
+  //
+  // El microservicio arma su propio `external_reference` con un esquema que el
+  // webhook después parsea para saber de quién es el pago
+  // (`user:<uuid>:suscripcion`, verificado en produccion). Si el front manda uno
+  // propio y el microservicio lo prioriza, se pierde la identificacion del
+  // usuario en cada suscripcion: entra la plata y no se sabe de quien es.
+  it('NUNCA manda external_reference, ni con destino elegido', async () => {
+    const p1 = createOneTimeDonation({
+      userId: 'u1', emailUsuario: 'a@b.com', amount: 1000, destinoId: 'd-1',
+    });
+    await flushRetries();
+    await p1;
+    expect(ultimoBody()).not.toHaveProperty('external_reference');
+
+    const p2 = createSubscription({
+      userId: 'u1', emailUsuario: 'a@b.com', amount: 5000, destinoId: 'd-1',
+    });
+    await flushRetries();
+    await p2;
+    expect(ultimoBody()).not.toHaveProperty('external_reference');
   });
 
   // La marca sale de entidad.js: si vuelve a quedar escrita a mano, cada cliente

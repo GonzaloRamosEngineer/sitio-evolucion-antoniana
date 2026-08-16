@@ -185,23 +185,28 @@ export const cancelMembership = (preapprovalId) =>
    El destino del aporte
    ============================ */
 /**
- * Campos que llevan el destino elegido hasta MercadoPago (ROADMAP §10.7).
+ * Campo que lleva el destino elegido hasta el microservicio (ROADMAP §10.7).
  *
- * `external_reference` es el único dato que MercadoPago devuelve intacto en el
- * webhook, así que es el canal por el que el destino sobrevive el viaje de ida
- * y vuelta. `destino_id` va además suelto para que el microservicio no tenga
- * que parsear el string si no quiere.
+ * ⚠️ ACÁ NO SE MANDA `external_reference`, Y ES DELIBERADO — corrige lo que se
+ * hizo el 2026-08-16 por la mañana.
+ *
+ * El microservicio ya arma el suyo con un esquema propio, verificable en los
+ * datos de producción: `anon:suscripcion` y `user:<uuid>:suscripcion`. Ese
+ * string es cómo el webhook vuelve a identificar al usuario cuando MercadoPago
+ * le avisa del cobro. Si el front manda un `external_reference` propio y el
+ * microservicio lo prioriza sobre el suyo, **se pierde la identificación del
+ * usuario en cada suscripción**: la plata entra y no se sabe de quién es.
+ *
+ * Hoy no hay suscripciones reales, así que el daño fue cero — pero el
+ * `external_reference` correcto lo tiene que seguir armando quien conoce ese
+ * esquema, que es el microservicio. Lo que se manda desde acá es el dato crudo,
+ * y él decide cómo codificarlo (lo natural sería extender su propio esquema:
+ * `user:<uuid>:suscripcion:destino:<uuid>`).
  *
  * Sin destino se devuelve `{}` y el body queda IDÉNTICO al de siempre: una
  * función nueva no puede cambiar el payload del cobro que ya funciona.
- *
- * ⚠️ La otra mitad vive en el microservicio de Render, que es el que escribe en
- * la base y todavía no lee esto (§10.10). Hasta que lo lea, el aportante elige
- * destino y la elección viaja, pero no aterriza en `aportes`. Se manda igual
- * porque el día que se toque Render el dato ya va a estar llegando.
  */
-const camposDestino = (destinoId) =>
-  destinoId ? { destino_id: destinoId, external_reference: `destino:${destinoId}` } : {};
+const camposDestino = (destinoId) => (destinoId ? { destino_id: destinoId } : {});
 
 /** Título que ve el aportante en el checkout de MercadoPago. */
 const tituloAporte = (destinoNombre, porDefecto) =>
