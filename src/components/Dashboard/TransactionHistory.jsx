@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   History, ShieldCheck, CreditCard,
   CheckCircle2, Clock, Info, ArrowDownRight,
-  ExternalLink, Gem, Heart, XCircle, HelpCircle
+  ExternalLink, Gem, Heart, XCircle, HelpCircle, AlertTriangle
 } from 'lucide-react';
 import { ESTADOS_HISTORIAL, describirEstado } from '@/lib/estadosPago';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -122,6 +122,7 @@ const TransactionHistory = ({ donations = [], memberships = [], loading = false 
                             const estilo = {
                               ok: { caja: 'bg-green-50 text-green-600 border-green-100 shadow-sm transition-transform group-hover:scale-105', Icono: CheckCircle2, girar: false },
                               curso: { caja: 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm italic', Icono: Clock, girar: true },
+                              atencion: { caja: 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm', Icono: AlertTriangle, girar: false },
                               cerrado: { caja: 'bg-gray-50 text-gray-400 border-gray-200', Icono: XCircle, girar: false },
                               desconocido: { caja: 'bg-gray-50 text-gray-500 border-gray-200', Icono: HelpCircle, girar: false },
                             }[tono];

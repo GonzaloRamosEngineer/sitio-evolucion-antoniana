@@ -21,12 +21,22 @@
 // disfraza del estado que tenemos a mano.** Acá se declaran todos, y lo que no
 // esté declarado se muestra tal cual para que se note.
 
-/** Estados de `memberships` (CHECK del esquema: pending|active|paused|cancelled). */
+/**
+ * Estados de `memberships`.
+ * CHECK del esquema tras 20260816130000: pending|active|paused|cancelled|expired.
+ *
+ * `expired` se agregó porque MercadoPago tiene "Vencida" —dejó de cobrar por
+ * fallo del medio de pago— y no había dónde guardarlo. Es distinto de
+ * `cancelled` y la diferencia es de negocio, no cosmética: a quien se le venció
+ * la tarjeta se le pide que la actualice y vuelve; quien canceló, decidió irse.
+ * Por eso lleva tono 'atencion' y no 'cerrado'.
+ */
 export const ESTADOS_MEMBRESIA = {
   active: { label: 'Activa', tono: 'ok' },
   pending: { label: 'Pendiente', tono: 'curso' },
   paused: { label: 'Pausada', tono: 'curso' },
   cancelled: { label: 'Cancelada', tono: 'cerrado' },
+  expired: { label: 'Vencida', tono: 'atencion' },
 };
 
 /**
@@ -43,7 +53,20 @@ export const ESTADOS_HISTORIAL = {
   cancelled: { label: 'Cancelada', tono: 'cerrado' },
   rejected: { label: 'Rechazado', tono: 'cerrado' },
   refunded: { label: 'Reintegrado', tono: 'cerrado' },
+  expired: { label: 'Vencida', tono: 'atencion' },
 };
+
+/**
+ * Los tonos que las vistas saben pintar. Está acá y no repartido por los
+ * componentes para que agregar un tono obligue a mirar quién lo dibuja.
+ *
+ *  ok        -> salió bien
+ *  curso     -> está pasando, no requiere nada
+ *  atencion  -> se cortó por un problema recuperable: la persona puede volver
+ *  cerrado   -> terminó y no hay nada que hacer
+ *  desconocido -> no lo tenemos declarado; se muestra crudo
+ */
+export const TONOS = ['ok', 'curso', 'atencion', 'cerrado', 'desconocido'];
 
 /**
  * Busca un estado en el mapa que se le pase. Si no lo conoce devuelve el valor

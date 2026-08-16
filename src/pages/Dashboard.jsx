@@ -129,6 +129,7 @@ const Dashboard = () => {
   const CLASE_TONO = {
     ok: 'bg-green-500/10 text-green-600 shadow-sm',
     curso: 'bg-brand-primary/10 text-brand-primary',
+    atencion: 'bg-amber-500/15 text-amber-700',
     cerrado: 'bg-gray-100 text-gray-400',
     desconocido: 'bg-gray-100 text-gray-500',
   };
