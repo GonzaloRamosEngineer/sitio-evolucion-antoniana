@@ -1096,6 +1096,354 @@ día que haga falta recrearla**, que es exactamente cuando no se quiere descubri
 
 ---
 
+## 10. Modelo de dominio: aporte → acceso (propuesta, 2026-08-16)
+
+### 10.0 — Por qué existe esta sección
+
+El proyecto creció de forma iterativa: cada módulo se enganchó cuando hizo falta. Eso
+funcionó — las secciones 1 a 9 muestran que **cada módulo está bien construido por
+separado**. Lo que nunca se escribió es la **regla que los conecta**: por qué existen
+juntos socios, cuota, donaciones, beneficios, sponsors y actividades.
+
+Esa regla existe y es del dueño del proyecto (relevada el 2026-08-16):
+
+> Hay **dos maneras de aportar** — cuota social recurrente o donación puntual — y **una
+> sola consecuencia**: acceder a beneficios y descuentos (sponsors, cursos, actividades
+> pagas). Lo único que varía entre las dos es **cuánto dura ese acceso**.
+
+Esta sección documenta el estado actual verificado contra el código, propone cómo
+codificar esa regla, y deja anotadas las decisiones de negocio que no son técnicas.
+
+**A diferencia del resto del ROADMAP, esto no es deuda: es funcionalidad que falta.**
+Ninguno de los ítems de abajo es un bug. Son piezas del modelo que nunca se escribieron.
+
+---
+
+### 10.1 — Estado actual (verificado 2026-08-16)
+
+- [ ] **10.1.a — No existe la entidad socio.**
+  Existen `users` (cuenta de login, `baseline:583`) y `memberships` (suscripción de
+  cobro de MercadoPago, `baseline:446`). No existe número de socio, fecha de alta como
+  socio, categoría ni estado institucional. `memberships` modela **un cobro recurrente**,
+  no una membresía. Buscado `is_socio|socio_activo|estado_socio|member_since|numero_socio`
+  en `src/` y `supabase/`: **cero resultados**.
+
+- [ ] **10.1.b — La cuota no habilita nada. ← el nudo del asunto**
+  Verificado: `BenefitsPage.jsx`, `BenefitDetailPage.jsx`, `BenefitCard.jsx`,
+  `Activities.jsx` y `ActivityDetailPage.jsx` **no consultan `memberships` en ningún
+  punto**. Un visitante sin cuenta ve y usa exactamente lo mismo que un socio que paga
+  hace tres años. El sistema cobra una cuota que, dentro del sistema, no otorga ningún
+  privilegio. **Esta es la causa de que los módulos se sientan sueltos**: no falta
+  pegamento entre ellos, falta el concepto que los enhebra.
+
+- [ ] **10.1.c — Cuatro identidades paralelas de la misma persona.**
+  | Dónde | Campos | Se vincula a `users`? |
+  |---|---|---|
+  | `users` | `email` (unique), `dni`, `phone` | es la cuenta |
+  | `registrations` | `guest_name`, `guest_email` | **no** — el CHECK `check_registration_type` fuerza que sea `user_id` **o** invitado, nunca ambos |
+  | `education_preinscriptions` | `email`, `full_name`, `dni`, `phone` | solo si había sesión abierta al enviar (`educationApi.js:41`); si no, queda huérfano |
+  | `memberships` | `payer_email` | es el mail de MercadoPago, puede diferir del de la cuenta |
+  Nada reconcilia los cuatro. La misma persona puede donar, preinscribir a un hijo,
+  anotarse de invitada y ser socia, y el sistema la ve como cuatro personas distintas.
+
+- [ ] **10.1.d — Las actividades no tienen precio.**
+  `activities` (`baseline:333`) tiene título, descripción, fecha, duración, modalidad,
+  cupo, imágenes y redes. **Ningún campo de precio, arancel o costo.** La distinción
+  "algunas actividades son gratis y otras pagas" —que es la mitad del valor de ser
+  socio— hoy no existe en la base.
+
+- [ ] **10.1.e — No hay campañas; `donation_type` es texto libre sin escritor.**
+  `donations.donation_type` (`baseline:405`) es `text NOT NULL`, pero el único lugar del
+  código que lo menciona es `DonationList.jsx:35`, que **lo lee**. No hay tabla de
+  campañas ni iniciativas. "Doné para esta causa puntual" no está modelado.
+
+- [ ] **10.1.f — Un socio puede acumular varias membresías activas.**
+  Sin restricción de unicidad sobre `memberships`. `getUserMemberships` y el Dashboard ya
+  operan sobre un array, así que la UI lo asume. Un doble pago deja dos suscripciones
+  cobrando en paralelo.
+
+- [ ] **10.1.g — Permisos de `anon` más amplios de lo necesario.**
+  `baseline:1029-1065`: `GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE`
+  a `anon` sobre `users`, `memberships`, `donations`, `registrations` y
+  `education_preinscriptions`.
+  **No es un agujero hoy**: RLS está habilitado en las 15 tablas (`baseline:893-955`) y
+  deniega por defecto toda operación sin policy; además PostgREST no expone `TRUNCATE`.
+  Pero deja el margen de error en cero: **cualquier policy nueva mal escrita pasa de ser
+  demasiado permisiva a ser destructiva.** Se vuelve crítico con `aportes` (10.2), que es
+  la tabla que otorga privilegios.
+
+---
+
+### 10.2 — Diseño propuesto
+
+**Decisión de diseño central: la entidad protagonista es el _acceso_, no el _socio_.**
+
+Si se modela "socio" como concepto central, el donante queda como ciudadano de segunda
+—tiene beneficios pero no es socio— y toda consulta termina en un `OR` incómodo.
+Modelando **acceso**, los dos caminos tienen la misma forma y el sistema entero hace una
+sola pregunta: *¿esta persona tiene acceso vigente, y hasta cuándo?*
+
+Eso **no elimina** la entidad socio: la separa. Son dos cosas distintas y conviene que lo
+sigan siendo:
+
+| Concepto | Qué es | Se deriva de |
+|---|---|---|
+| **Acceso** | Derecho a beneficios y descuentos, con vencimiento | Los aportes (calculado) |
+| **Socio** | Condición institucional: número, antigüedad, categoría, voto | Decisión de la entidad (dato propio) |
+
+Un socio suspendido por la comisión no es lo mismo que un socio atrasado en el pago, y
+con esta separación se pueden expresar los dos.
+
+#### Tablas nuevas
+
+```sql
+-- 1) Categorías de socio (necesaria apenas haya más de un monto de cuota)
+create table public.categorias_socio (
+  id                        uuid primary key default gen_random_uuid(),
+  nombre                    text not null,              -- 'Activo', 'Adherente', 'Protector'
+  cuota_mensual             numeric not null check (cuota_mensual >= 0),
+  descuento_actividades_pct integer not null default 0
+                              check (descuento_actividades_pct between 0 and 100),
+  otorga_voto               boolean not null default true,
+  activa                    boolean not null default true,
+  orden                     integer not null default 0,
+  created_at                timestamptz not null default now()
+);
+
+-- 2) Campañas / iniciativas puntuales (le da destino a la donación)
+create table public.campanas (
+  id           uuid primary key default gen_random_uuid(),
+  nombre       text not null,
+  slug         text not null unique,
+  descripcion  text,
+  meta_monto   numeric check (meta_monto > 0),
+  fecha_inicio date,
+  fecha_fin    date,
+  imagen_url   text,
+  estado       text not null default 'borrador'
+                 check (estado in ('borrador','activa','cerrada')),
+  created_at   timestamptz not null default now(),
+  constraint campanas_fechas_chk check (fecha_fin is null or fecha_fin >= fecha_inicio)
+);
+
+-- 3) APORTES — el libro único. Todo lo que entra cae acá.
+create table public.aportes (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid references public.users(id) on delete set null,
+  tipo           text not null check (tipo in ('cuota','donacion')),
+  monto          numeric not null check (monto > 0),
+  fecha          timestamptz not null default now(),
+  membership_id  uuid references public.memberships(id) on delete set null,
+  donation_id    uuid references public.donations(id)   on delete set null,
+  campana_id     uuid references public.campanas(id)    on delete set null,
+  acceso_desde   date not null,
+  acceso_hasta   date not null,
+  -- identidad de respaldo: permite reconciliar a quien aportó sin cuenta (10.1.c)
+  email_aportante  text,
+  nombre_aportante text,
+  created_at     timestamptz not null default now(),
+  constraint aportes_origen_chk check (
+    (tipo = 'cuota'    and membership_id is not null and donation_id   is null) or
+    (tipo = 'donacion' and donation_id   is not null and membership_id is null)
+  ),
+  constraint aportes_rango_chk check (acceso_hasta >= acceso_desde)
+);
+create index idx_aportes_user_vig  on public.aportes(user_id, acceso_hasta desc);
+create index idx_aportes_email     on public.aportes(lower(email_aportante));
+create index idx_aportes_campana   on public.aportes(campana_id);
+```
+
+**Por qué un libro y no calcularlo al vuelo desde `memberships` + `donations`:** es el
+historial que se le muestra al socio ("aportaste 14 veces desde 2023"), es lo que se le
+pasa al contador, es lo que hace computable la antigüedad, y sobre todo **desacopla el
+acceso del medio de pago** — el día que entre otro proveedor además de MercadoPago, o un
+aporte en efectivo cargado a mano, `aportes` no cambia.
+
+```sql
+-- 4) Socios — la condición institucional, que NO se deriva del pago
+create table public.socios (
+  user_id       uuid primary key references public.users(id) on delete cascade,
+  numero_socio  bigint generated always as identity unique,
+  categoria_id  uuid references public.categorias_socio(id) on delete set null,
+  fecha_alta    date not null default current_date,
+  fecha_baja    date,
+  estado        text not null default 'activo'
+                  check (estado in ('activo','suspendido','baja')),
+  observaciones text,
+  constraint socios_baja_chk check (fecha_baja is null or fecha_baja >= fecha_alta)
+);
+
+-- 5) Regla de conversión donación → acceso (configurable POR CLIENTE, ver 10.5)
+create table public.reglas_acceso (
+  id                uuid primary key default gen_random_uuid(),
+  cuota_referencia  numeric not null check (cuota_referencia > 0),
+  piso_monto        numeric not null default 0,   -- debajo: se agradece, no da acceso
+  meses_minimos     integer not null default 1,
+  meses_maximos     integer not null default 12,
+  vigente           boolean not null default true
+);
+```
+
+#### La función que consulta todo el sistema
+
+```sql
+create or replace function public.acceso_vigente(p_user_id uuid)
+returns table (tiene_acceso boolean, vence_el date, origen text)
+language sql stable security definer set search_path = public as $$
+  select
+    coalesce(max(acceso_hasta) >= current_date, false),
+    max(acceso_hasta),
+    (array_agg(tipo order by acceso_hasta desc))[1]
+  from public.aportes
+  where user_id = p_user_id;
+$$;
+
+-- Versión booleana, para usar dentro de policies RLS sin recursión
+create or replace function public.tiene_acceso(p_user_id uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.aportes
+    where user_id = p_user_id and acceso_hasta >= current_date
+  );
+$$;
+```
+
+**Una sola función.** Beneficios, actividades, cursos y el panel del socio la consultan;
+la lógica no se reparte por la UI. Es el mismo patrón que `is_board_member()`
+(`CLAUDE.md`, modelo de seguridad), que ya demostró funcionar.
+
+#### Cambios a tablas existentes
+
+```sql
+alter table public.activities
+  add column precio_general numeric not null default 0 check (precio_general >= 0),
+  add column precio_socio   numeric check (precio_socio >= 0);
+  -- precio_general = 0  → actividad gratuita (resuelve 10.1.d)
+  -- precio_socio NULL   → aplica el descuento de la categoría del socio
+
+alter table public.benefits
+  add column requiere_acceso boolean not null default false;
+  -- false = beneficio abierto (comportamiento actual, no rompe nada)
+  -- true  = solo para quien tiene acceso vigente
+
+alter table public.donations
+  add column campana_id uuid references public.campanas(id) on delete set null;
+```
+
+Los cursos del módulo educación necesitan el mismo par de precios, pero hoy no existe
+tabla `cursos` — solo `education_preinscriptions`. Se resuelve cuando exista.
+
+#### RLS — el punto más delicado
+
+`aportes` **es la tabla que otorga privilegios**. Si alguien puede insertar ahí, se
+autoconcede beneficios. Reglas mínimas:
+
+- `aportes`: **`anon` sin ningún permiso.** `INSERT`/`UPDATE` exclusivamente con
+  `service_role` desde el webhook de pagos. `SELECT` propio para el socio, total para
+  admin y comisión. **No repetir el patrón de GRANTs amplios de 10.1.g.**
+- `socios`: lectura propia + admin/comisión; escritura solo admin.
+- `campanas`: lectura pública de las `activa`; escritura admin.
+- `categorias_socio`: lectura pública (hay que mostrar los planes); escritura admin.
+- `reglas_acceso`: lectura pública no hace falta; escritura admin.
+
+---
+
+### 10.3 — Orden de implementación
+
+El orden importa: cada fase se apoya en la anterior y **la fase 2 es la que responde la
+pregunta original** (por qué los módulos se sienten desconectados).
+
+| Fase | Qué | Esfuerzo | Deja algo usable? |
+|---|---|---|---|
+| **0** | Arreglar el orden de migraciones (ver §9, 🟠) **antes** de agregar 5 migraciones nuevas sobre una cadena que ya no reconstruye | ~2-3 h | Prerrequisito |
+| **1** | `aportes` + `acceso_vigente()` + `tiene_acceso()` + backfill | ~2-3 días | Historial de aportes en el panel del socio |
+| **2** | `precio_general`/`precio_socio` en actividades + `requiere_acceso` en beneficios | ~2-3 días | **Acá la cuota empieza a valer algo** |
+| **3** | `campanas` + FK desde donaciones + barra de progreso pública | ~2 días | Donaciones dirigidas |
+| **4** | `socios` + `categorias_socio` + número y antigüedad | ~2 días | Carnet, antigüedad, categorías |
+| **5** | Unicidad de membresía activa (10.1.f) + achicar GRANTs (10.1.g) | ~medio día | Higiene |
+
+**La fase 0 no es opcional.** §9 documenta que las migraciones ya **no reconstruyen la
+base desde cero**; agregar cinco migraciones más encima agranda el problema justo cuando
+el objetivo es poder levantar clientes nuevos (10.6).
+
+#### Backfill (parte de la fase 1, no la subestimes)
+
+Hay que volcar `memberships` y `donations` existentes a `aportes`. Requisitos:
+- **Idempotente**, como el resto de las migraciones del repo.
+- Decisión previa: *¿desde qué fecha se reconoce antigüedad?* Si se toma
+  `memberships.created_at`, quien pausó y retomó pierde continuidad.
+- Verificar contra Docker con `supabase/checks/` antes de tocar producción — el
+  procedimiento ya está documentado (§8, Sesión F2).
+
+---
+
+### 10.4 — Decisiones de negocio pendientes (no son técnicas)
+
+Ninguna de estas la puede tomar quien escribe el código:
+
+1. **¿Cuántos meses de acceso otorga una donación puntual?**
+   → **Recomendado: proporcional, no fijo.**
+   `meses = least(máximos, greatest(mínimos, floor(monto / cuota_referencia)))`, y solo
+   si `monto >= piso_monto`.
+   **Por qué no un plazo fijo:** "cualquier donación da 6 meses" canibaliza la cuota — con
+   una donación chica se obtiene medio año y nadie paga todos los meses. Proporcional es
+   auto-explicable ("donaste el equivalente a 3 cuotas, tenés 3 meses") y donar nunca
+   sale más barato que ser socio.
+
+2. **¿El donante accede a los mismos beneficios que el socio?**
+   → **Recomendado: al mismo catálogo de descuentos, pero el socio conserva lo que el
+   donante no puede tener**: antigüedad acumulada, número de socio, carnet, prioridad de
+   cupo y voz en asamblea. Si los dos obtienen exactamente lo mismo, la cuota pierde el
+   sentido simbólico que se busca. Además coincide con la realidad legal: en una
+   asociación civil el socio tiene derechos estatutarios que el donante no tiene.
+
+3. **¿Hay período de gracia cuando falla el cobro?**
+   → **Recomendado: 30 días.** Los cobros recurrentes fallan por motivos técnicos
+   (tarjeta vencida, límite) más que por decisión. Cortar el acceso al día siguiente
+   genera bronca y llamados a la comisión por algo que se resuelve solo.
+
+4. **¿La antigüedad se pierde al darse de baja y volver?** Afecta `socios.fecha_alta`
+   y si se conserva o se reasigna el `numero_socio`.
+
+5. **¿Los beneficios exclusivos son la regla o la excepción?** Define el default de
+   `benefits.requiere_acceso`. Se propone `false` para no cambiar el comportamiento
+   actual al aplicar la migración.
+
+---
+
+### 10.5 — Por qué esto se configura y no se hardcodea
+
+Todo lo de 10.4 son **parámetros de la entidad, no del software**. Un club va a querer
+gracia de 60 días y tope de 24 meses; una fundación, 30 y 12. Por eso `reglas_acceso` y
+`categorias_socio` son tablas y no constantes en el código.
+
+Es el mismo criterio que el ítem 3.4 (datos institucionales hardcodeados) y el mismo que
+hará falta para el objetivo multi-cliente: **lo que varía por entidad va en datos.**
+
+---
+
+### 10.6 — Impacto en el objetivo "producto multi-cliente"
+
+Este modelo es lo que convierte el proyecto de *sitio de una fundación* en *producto para
+entidades con socios*: **aporte → acceso** es exactamente el modelo de un club, una
+mutual, una cámara o una cooperativa de servicios.
+
+Los tres bloqueantes reales para un segundo cliente, en orden:
+
+1. **`src/lib/supabase.js:8-13` cae a la URL y anon key de producción** si faltan las
+   variables de entorno. Un fork mal configurado escribe en la base de la Fundación **sin
+   fallar**. Es el más barato de arreglar y el más grave: debe romper el build, no
+   silenciarse.
+2. **Las migraciones no reconstruyen desde cero** (§9, 🟠). Sin esto, "levantar un cliente
+   nuevo" es trabajo manual, no un comando. Es la fase 0 de 10.3.
+3. **Marca y textos hardcodeados** en ~40 archivos (ítem 3.4 y afines).
+
+Ninguno de los tres es este modelo de dominio — pero **conviene resolver el 2 antes de
+empezar la fase 1**, porque cada migración nueva agranda ese problema.
+
+---
+
 ## Correcciones aplicadas a `CLAUDE.md` durante la auditoría
 
 Puntos donde la doc previa estaba desactualizada (verificado en código):
