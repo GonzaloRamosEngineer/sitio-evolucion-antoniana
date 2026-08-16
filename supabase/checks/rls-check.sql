@@ -118,3 +118,30 @@ WHERE grantee = 'anon'
   AND table_schema = 'public'
   AND privilege_type IN ('DELETE','UPDATE','TRUNCATE','REFERENCES','TRIGGER')
 ORDER BY table_name, privilege_type;
+
+-- =============================================================================
+-- T11-T13: destinos y aportes (fase 1, migración 20260816140000)
+-- =============================================================================
+
+\echo '=== T11: anon NO puede leer aportes (es la tabla que otorga privilegios) ==='
+\echo '   (esperado: ERROR permission denied)'
+BEGIN;
+SET LOCAL ROLE anon;
+SELECT count(*) FROM public.aportes;
+ROLLBACK;
+
+\echo '=== T12: anon ve solo destinos activos, nunca borradores ==='
+\echo '   (esperado: 0 filas — ningun destino no-activo visible para anon)'
+BEGIN;
+SET LOCAL ROLE anon;
+SELECT nombre, estado FROM public.destinos WHERE estado <> 'activo';
+ROLLBACK;
+
+\echo '=== T13: el progreso publico sale de destinos, sin tocar aportes ==='
+\echo '   (esperado: la consulta funciona; asi se dibuja la barra sin exponer'
+\echo '    los datos de cada persona, que fue el error de las vistas)'
+BEGIN;
+SET LOCAL ROLE anon;
+SELECT count(*) AS destinos_con_progreso_visible
+FROM public.destinos WHERE estado='activo' AND monto_recaudado >= 0;
+ROLLBACK;
