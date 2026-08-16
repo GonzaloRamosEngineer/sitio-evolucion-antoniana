@@ -130,7 +130,12 @@ chrome --headless=new --disable-gpu --virtual-time-budget=7000 \n       --dump-d
 
 Un sitio sano da **~58 KB** de DOM en la home con `<nav>` y `<footer>` presentes; el
 roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/actividades`,
-`/colaborar`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
+`/collaborate`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
+
+⚠️ **Las rutas van tal cual están en `App.jsx`.** Esta lista decía `/colaborar` y la ruta
+real es `/collaborate`: el check pegaba en el 404, que **también** tiene `<nav>`, `<footer>`
+y un tamaño verosímil, así que pasaba en verde sin haber mirado la página. Confirmar
+siempre algo del contenido —un título, un botón— y no solo el esqueleto.
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
