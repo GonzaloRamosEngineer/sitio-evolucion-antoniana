@@ -12,6 +12,7 @@ import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
 import { getDestinos } from '@/api/destinosApi';
+import { getAportes } from '@/api/aportesApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
@@ -197,5 +198,20 @@ export const useDestinosActivos = ({ select, ...options } = {}) =>
     queryKey: queryKeys.destinos,
     queryFn: () => unwrap(getDestinos()),
     select: composeSelect((rows) => rows.filter((d) => d.estado === 'activo'), select),
+    ...options,
+  });
+
+/**
+ * Aportes — el libro único (ROADMAP §10.11).
+ *
+ * Sin filtro de negocio en el hook a propósito: acá el recorte lo hacen las
+ * RLS, que le muestran todo a la comisión y solo lo propio a cualquier otro. Un
+ * filtro extra en el cliente daría la ilusión de que la frontera está acá.
+ */
+export const useAportes = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.aportes,
+    queryFn: () => unwrap(getAportes()),
+    select,
     ...options,
   });

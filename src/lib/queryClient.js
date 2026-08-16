@@ -39,6 +39,7 @@ export const queryKeys = {
   // Anidada bajo 'destinos' a propósito, igual que newsItem: invalidar
   // `['destinos']` alcanza también a los detalles.
   destino: (slug) => ['destinos', 'item', slug],
+  aportes: ['aportes'],
 };
 
 export const queryClient = new QueryClient({

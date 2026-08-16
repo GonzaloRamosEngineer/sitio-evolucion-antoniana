@@ -105,6 +105,7 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | `ActivityDetailPage` y los módulos de Comisión sin TanStack Query | `HISTORIAL.md` §4, ítem 4.2 | Igual: al tocarlos. Tienen bastante lógica de mutación propia. |
 | `getPartnerBySlug` sin consumidores | `HISTORIAL.md` §8, Sesión F2 | Borrar en la próxima limpieza. Se conservó por simetría con `getNewsBySlug`. |
 | 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | `HISTORIAL.md` §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
+| `handle_new_user()` explota si el alta no trae `name` en `raw_user_meta_data` | Detectado el 2026-08-16 al arreglar el check T6 | El trigger inserta en `public.users`, donde `name` es NOT NULL, leyendo `raw_user_meta_data->>'name'`. Un alta sin ese campo **falla entera**. El registro propio sí lo manda; el riesgo es un proveedor OAuth que use otra clave (`full_name`). Un `COALESCE(name, full_name, email)` lo cerraría. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | `HISTORIAL.md` §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
 
 ---
@@ -1018,13 +1019,37 @@ porque el costo de mandarlo es cero: sin destino el payload queda idéntico al d
 justamente porque **los webhooks de pago reintentan**: sin él, un mismo cobro entra dos
 veces al libro y la rendición queda mal para siempre.
 
-#### El camino que SÍ cierra hoy: la carga manual
+#### El camino que SÍ cierra hoy: la carga manual ✅ implementado
 
-`aportes` acepta `origen = 'manual'` desde el día uno, con RLS que lo limita a
-`is_board_member()`. Eso no es un parche mientras se arregla Render: **una entidad recibe
-efectivo, transferencias y cheques**, y esa plata tiene que entrar al mismo libro que la
-digital o la rendición no cuadra. El circuito manual es independiente de cualquier
-pasarela y funciona de punta a punta.
+`/admin → Libro de aportes` permite registrar efectivo, transferencias y cheques contra
+un destino. Eso no es un parche mientras se arregla Render: **una entidad recibe plata
+por fuera de cualquier pasarela**, y esa plata tiene que entrar al mismo libro que la
+digital o la rendición no cuadra. Es el único circuito que hoy funciona de punta a punta.
+
+Dos invariantes de esa pantalla, que son del modelo y no de la UI:
+
+- **Ninguna fila ofrece borrar.** `aportes` no tiene policy de DELETE: un libro contable
+  no se borra, se corrige y queda el rastro.
+- **Solo se editan los aportes manuales.** Corregir a mano lo que informó una pasarela
+  haría que el libro diverja de lo que MercadoPago dice que pasó, que es justo el
+  problema de §10.10.
+
+**Verificado contra producción** con transacciones que revierten (checks T14-T16 de
+`supabase/checks/rls-check.sql`, permanentes desde ahora):
+
+| Check | Qué prueba | Resultado |
+|---|---|---|
+| T14 | Un usuario común **no** puede cargar un aporte | `violates row-level security policy` |
+| T15 | La comisión sí, y el trigger actualiza el destino | `0 → 40.000 / 2`, y al corregir un aporte de 15.000 a 5.000 → **30.000 / 2** |
+| T16 | La comisión **no** puede declarar `origen = 'donacion'` a mano | `violates row-level security policy` |
+
+T15 es el que importa más de lo que parece: el contador **recalcula**, no vuelve a sumar.
+Ese es el bug clásico de un contador por trigger, y habría inflado la recaudación
+publicada cada vez que alguien corrigiera un monto.
+
+⚠️ **Lo que falta para que esto sea rendición de verdad**: los egresos (`gastos`, fase 2).
+Hoy hay un libro de lo que entra y a dónde va. Rendir es mostrar también **en qué se
+gastó**, con comprobante. Sin eso hay recaudación con destino declarado, no rendición.
 
 #### Inconsistencia de copy pendiente (decisión de la entidad, no técnica)
 
