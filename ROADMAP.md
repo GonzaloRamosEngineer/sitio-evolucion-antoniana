@@ -1492,3 +1492,99 @@ Una donación de prueba de $100 lo cierra.
 | Las 6 suscripciones con `anon:suscripcion` idéntico | Bloquean el match inequívoco. Son todas de prueba (§10.10): lo más limpio es cancelarlas en MercadoPago y darlas de baja |
 | `MP_WEBHOOK_SECRET` sin definir | Sin él **no se valida la firma** de los webhooks: hoy cualquiera que sepa la URL puede postear un evento falso. Es la mejora de seguridad más barata que queda |
 | Portar a Vercel | Sigue valiendo por el cold start de 22 s y por tener un solo repo. Ya sin urgencia |
+
+---
+
+## 11. Cierre de la jornada del 2026-08-16
+
+Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
+producción. Esta sección es el resumen ejecutable: **qué quedó funcionando, qué falta y en
+qué orden conviene atacarlo.** El detalle de cada decisión está en §10.11 a §10.16.
+
+### 11.1 — El circuito, demostrado de punta a punta
+
+A las 23:33 UTC entró una donación real de $100 eligiendo "Equipamiento deportivo", y
+recorrió los nueve pasos sin intervención:
+
+```
+sitio → destino_id → servicio de pagos → external_reference → MercadoPago
+  → webhook → donations.destino_id → trigger → aportes → destinos.monto_recaudado
+  → /rendicion pública
+```
+
+**Esa mañana el sistema recibía plata y no sabía para qué.**
+
+Dato lateral que cerró un misterio: esa donación tiene `updated_at` **3 segundos** después
+de `created_at`. Las viejas tenían 10 días. Confirma que aquel patrón era el aviso de
+liberación de fondos de MercadoPago, no un proceso por lotes sin documentar.
+
+### 11.2 — Estado de producción
+
+| | |
+|---|---|
+| Migraciones | 9, todas aplicadas y reconstruyen la base desde cero |
+| Checks de RLS | 24 (T1–T23), verificados contra producción sin dejar residuo |
+| Tests | 177, 0 errores de lint (53 warnings de backlog) |
+| Destinos | 3 activos, 8 en borrador |
+| Libro de aportes | 5 aportes, **$7.241** |
+| Gastos | 0 — la rendición todavía no se estrenó |
+| Servicio de pagos | `2026-08-16.destino`, desplegado y verificado por `/health` |
+
+### 11.3 — Lo siguiente a resolver, en orden
+
+**1. `MP_WEBHOOK_SECRET` — seguridad, y es lo más urgente.**
+`/health` dice `valida_firma_mp: false`. El webhook ahora **escribe en el libro contable**,
+así que sin validar la firma cualquiera que conozca la URL puede inventar aportes en la
+rendición pública. El código ya soporta la validación (`verifyMPSignature`): solo falta
+generar el secreto en el panel de MercadoPago y cargarlo como variable en Render.
+
+**2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
+que falta para demostrar el circuito de egresos como se demostró el de ingresos. Sin
+gastos, `/rendicion` es una página correcta y a medias.
+
+**3. Rotar la contraseña de la base.** Quedó en `.env.db` — fuera de git, pero en disco.
+
+**4. Los cupos de la Novena.** Falta el número de chicos de la categoría, y **falta el
+contador**: `cupos_totales` existe como columna pero nada cuenta los ocupados. Hace falta un
+contador de suscripciones activas por destino, hermano de los que ya existen para aportes y
+gastos.
+
+**5. Las 6 suscripciones con `anon:suscripcion` idéntico.** Bloquean el match inequívoco
+cuando llegue un cobro recurrente real: el webhook no actualiza ninguna antes que actualizar
+la equivocada. Son todas de prueba (§10.10) — lo más limpio es cancelarlas en MercadoPago.
+
+**6. `react-router-dom` por encima de `7.17.0`.** La única vulnerabilidad viva (open
+redirect). Es un major sobre el router de toda la app: rama propia y verificación de todas
+las rutas, no de una muestra.
+
+**7. Sin CI, sin Sentry, sin ErrorBoundary.** Hoy cada verificación la corre una persona a
+mano. Es lo que más se va a notar cuando entre alguien más al proyecto.
+
+**8. Portar el servicio de pagos a Vercel.** Sigue valiendo por los 22 s de cold start y por
+tener un solo repo con tests, pero ya sin urgencia: el servicio hace lo que tiene que hacer.
+
+### 11.4 — Tres lecciones que se ganaron rompiendo cosas
+
+**Una verificación que no puede fallar no verifica nada.** Pasó tres veces el mismo día, de
+tres formas distintas: un check de RLS abortado por un `ERROR` previo devolvía "current
+transaction is aborted" y se leía igual que si hubiera pasado; un check de navegador
+apuntaba a `/colaborar`, una ruta que no existe, y el 404 tiene `<nav>`, `<footer>` y un
+tamaño verosímil; y un deploy fallido dejó viva la versión anterior, que siguió
+respondiendo 200. **Ninguna de las tres fallaba de forma visible.** De ahí salió
+`GET /health`: sin un dato que distinga una versión de otra, un deploy roto se ve igual que
+uno bueno.
+
+**Antes de razonar sobre un sistema que no controlás, leelo.** Se dieron dos diagnósticos
+seguros y los dos estaban mal. Que el `external_reference` del front "iba a romper la
+primera suscripción" — falso: los controladores arman el suyo e ignoran el del body. Y que
+el `package-lock.json` había roto el build — falso: Render corre Node 22 con `npm install`,
+y el problema real era que **había perdido el acceso al repo**. Los dos errores fueron
+conservadores y no rompieron nada, pero los dos se resolvieron leyendo: el código en un
+caso, el log en el otro.
+
+**Lo que varía por entidad va en datos; lo que es igual para todas, en código.** Sostuvo
+tres decisiones que se tomaron distinto por eso: los destinos de la Fundación fueron a
+`supabase/data/` y no a una migración; `categoria` en `gastos` quedó sin CHECK porque un
+refugio dice "veterinaria" donde un club dice "arbitraje"; y `visibilidad_beneficiario` es
+una columna y no una regla del código, porque en una fundación con menores el beneficiario
+no se puede mostrar y en un refugio mostrarlo es el motor de la recaudación.
