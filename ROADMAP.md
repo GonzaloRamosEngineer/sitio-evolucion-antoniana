@@ -1402,3 +1402,93 @@ Tres cosas que **no dependen del código** y sin las cuales no se puede completa
 ⚠️ Y la trampa que ya está documentada en §10.13, que conviene releer antes de empezar:
 `vercel.json` manda todo `/api/(.*)` a Render. Las funciones nuevas necesitan su rewrite
 **antes** del catch-all, o Vercel las ignora sin ningún error visible.
+
+### 10.16 — El servicio de pagos, arreglado en origen (2026-08-16)
+
+Se consiguió acceso a Render y **al repo del microservicio**:
+`GonzaloRamosEngineer/mp-supabase-webhook`. Eso cambió el plan de §10.13, y con razón:
+son **483 líneas claras y funcionando**. La decisión de portarlo a Vercel se había tomado
+sin ver el código; con el código a la vista, los arreglos que faltaban eran ~40 líneas ahí
+adentro. **Se arregló primero; el traslado a Vercel queda como tarea aparte y sin apuro.**
+
+#### Lo que el código reveló, y que ninguna consulta a la base podía decir
+
+| Hallazgo | Consecuencia |
+|---|---|
+| Los controladores desestructuran solo los campos que conocen | El `destino_id` que el front manda desde §10.11 **se descartaba en silencio** |
+| `if (ext.kind === 'donacion')` en la rama de pagos | **Causa raíz** de que el canal recurrente nunca llegara al libro: MercadoPago sí avisa de cada cobro mensual, y el aviso se tiraba |
+| Nadie escribe `last_payment_id` | Por eso estaba vacío en las 16 filas. No era un webhook perdido: no existía el código |
+| El webhook está en `/webhook`, no en `/api/...` | Por eso las sondas de §10.13 daban 404. MercadoPago pega directo a Render vía `MP_NOTIFICATION_URL`, **sin pasar por el proxy de Vercel** |
+
+#### El misterio de los 10 días: cerrado
+
+```js
+created_at: new Date(pago.date_created).toISOString(),  // fecha del pago
+updated_at: new Date().toISOString()                    // ahora
+```
+
+La fila se actualiza cuando MercadoPago manda `payment.updated`, y MP lo manda **al
+liberar el dinero** — en Argentina, típicamente 10 días después. **No hay ningún cron
+fantasma.** §10.13 sospechaba un proceso por lotes no documentado; era el ciclo de
+acreditación de MercadoPago.
+
+#### Una afirmación propia que hay que corregir
+
+§10.13 dijo que el `external_reference` que mandaba el front "quedaba armado para perder
+la identificación del usuario en la primera suscripción". **Es falso, y el código lo
+prueba:** ambos controladores arman el suyo e ignoran el del body. Nunca hubo riesgo real.
+Sacarlo siguió siendo lo correcto, pero el peligro estaba sobreestimado.
+
+**La lección, que ya había aparecido en §10.13 y esta vez cortó para el otro lado:** sin
+leer el código solo se puede razonar sobre el contrato observable, y ese razonamiento
+tiende a ser conservador de más. Vale igual — el conservadurismo no rompió nada — pero
+conviene decir "no lo sé" en vez de afirmar un mecanismo.
+
+#### Qué se cambió
+
+**El destino viaja dentro de `external_reference`**, el único campo que MercadoPago
+devuelve intacto tanto en un `payment` como en un `preapproval`. El formato **extiende** el
+que ya existía:
+
+```
+antes:  user:<uuid>:donacion          | anon:suscripcion
+ahora:  user:<uuid>:donacion:destino:<uuid>
+```
+
+Las 20 referencias que ya están en producción no tienen el sufijo y se siguen leyendo
+igual — hay pruebas que lo fijan. Y el destino se busca **por token, no por posición**: la
+posición del sufijo cambia según haya `user:` o `anon:` adelante, y hardcodear dos índices
+distintos es donde se esconden los bugs.
+
+**Las renovaciones ya no se descartan.** Se registran como `donations` con
+`donation_type = 'suscripción'`, y de ahí el trigger de §10.13 crea el aporte. En una
+renovación además se escribe `last_payment_id` en la suscripción — pero **solo si el match
+por `external_reference` es inequívoco**: hoy hay 6 filas compartiendo `anon:suscripcion`,
+y actualizar "alguna" sería peor que no tocar ninguna, porque escribiría el cobro de una
+persona en la suscripción de otra.
+
+**La regla de oro, la misma que en el trigger:** el registro del cobro no se puede perder.
+`destino_id` es una FK; si apunta a un destino borrado, el insert entero falla y el cobro
+queda sin registrar. Por eso ante cualquier fallo se reintenta una vez sin ese campo, y un
+destino mal formado se omite en silencio en vez de rechazar la donación.
+
+#### Verificado
+
+- **15 pruebas** del ida y vuelta del destino (`npm test` en el repo del servicio),
+  incluida la compatibilidad con las referencias viejas y siete formas de destino inválido.
+- Deploy en Render OK: `/webhook` responde 200 y `/api/crear-preferencia` sigue validando.
+- Preferencia real creada **con un `destino_id` de producción**: MercadoPago la aceptó y
+  devolvió `init_point`.
+
+⚠️ **Lo único que no se puede verificar sin mover plata de verdad** es el circuito
+completo: pago real → webhook → `donations.destino_id` → aporte en la campaña correcta.
+Una donación de prueba de $100 lo cierra.
+
+#### Lo que queda
+
+| Qué | Estado |
+|---|---|
+| El `origen` del aporte de una renovación dice `donacion`, no `membresia` | Imprecisión conocida. `aportes.origen = 'membresia'` exige `membership_id`, y ligarlo requiere resolver la ambigüedad de las 6 filas con el mismo `external_reference` |
+| Las 6 suscripciones con `anon:suscripcion` idéntico | Bloquean el match inequívoco. Son todas de prueba (§10.10): lo más limpio es cancelarlas en MercadoPago y darlas de baja |
+| `MP_WEBHOOK_SECRET` sin definir | Sin él **no se valida la firma** de los webhooks: hoy cualquiera que sepa la URL puede postear un evento falso. Es la mejora de seguridad más barata que queda |
+| Portar a Vercel | Sigue valiendo por el cold start de 22 s y por tener un solo repo. Ya sin urgencia |
