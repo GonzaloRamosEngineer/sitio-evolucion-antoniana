@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { v4 as uuidv4 } from 'uuid';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
@@ -108,7 +107,11 @@ export const useActivities = () => {
     setLoading(true);
     setError(null);
     try {
-      const confirmationToken = uuidv4();
+      // `crypto.randomUUID()` nativo en vez del paquete `uuid` (ROADMAP I.b):
+      // mismo UUID v4, sin dependencia y sin la vulnerabilidad que arrastraba.
+      // Requiere contexto seguro — se cumple: el sitio corre en HTTPS y en dev
+      // sobre localhost, que el navegador también considera seguro.
+      const confirmationToken = crypto.randomUUID();
       const registrationData = {
         activity_id: activityId,
         user_id: userId,

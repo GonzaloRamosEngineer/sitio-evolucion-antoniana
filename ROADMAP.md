@@ -887,34 +887,40 @@ roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/acti
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
-### 🔴 Sesión I (nueva, propuesta) — Seguridad de dependencias
+### 🟡 Sesión I — Seguridad de dependencias (I.a e I.b hechas, queda I.c)
 
 No estaba en el plan original y hoy es **lo más urgente que queda**. `npm audit`
 reporta **9 vulnerabilidades (5 high, 4 moderate)** más una crítica en `vitest`.
 Tres de ellas se resuelven casi gratis:
 
-**I.a — `@babel/*` quedaron como dependencias muertas.** `@babel/generator`, `parser`,
-`traverse` y `types` siguen en `package.json`, pero **sus únicos consumidores eran los
-plugins del editor visual que se borraron en H**. Verificado: cero usos en `src/`,
-`api/` y `tools/`.
-→ **Recomendado: eliminarlas.** Cuatro dependencias menos y menos superficie de audit.
-Riesgo nulo, 5 minutos.
+- [x] **I.a — `@babel/*` eran dependencias muertas. HECHO (2026-08-16).**
+  `@babel/generator`, `parser`, `traverse` y `types` estaban en `package.json`, pero
+  **sus únicos consumidores eran los plugins del editor visual borrados en H**.
+  Eliminadas las 4 declaraciones. Siguen en el árbol como dependencia **transitiva** de
+  `@vitejs/plugin-react` — que legítimamente usa Babel para el fast refresh — y eso está
+  bien: lo que sobraba era declararlas nosotros.
+  **Corrección a la estimación original:** se dijo que esto bajaría las vulns directas.
+  Es falso, **los `@babel/*` no tenían ninguna**. Elimina 4 declaraciones muertas, que
+  es valor real pero distinto del que se le atribuyó.
 
-**I.b — `uuid` tiene una vulnerabilidad y un solo uso.** `useActivities.jsx:111` lo usa
-para generar el token de confirmación. `documentsApi.js:36` **ya usa
-`crypto.randomUUID()` nativo** para lo mismo.
-→ **Recomendado: reemplazar el único uso por `crypto.randomUUID()` y sacar la
-dependencia.** Elimina la vuln sin actualizar a `uuid@14` (que es breaking). Soportado
-por todos los navegadores objetivo en contexto seguro (HTTPS), que es como corre el
-sitio. ~15 minutos.
-→ *Alternativa:* `npm audit fix --force` sube a `uuid@14`. Peor: mantiene una
-dependencia que no hace falta.
+- [x] **I.b — `uuid` fuera, `crypto.randomUUID()` en su lugar. HECHO (2026-08-16).**
+  Tenía una vulnerabilidad moderada y **un solo uso** (`useActivities.jsx`, el token de
+  confirmación de inscripción), mientras `documentsApi.js:36` ya usaba el nativo para lo
+  mismo. Se reemplazó y se sacó la dependencia, sin pasar a `uuid@14`, que es breaking.
+  Verificado que el token no se valida por formato en ningún lado: se guarda, viaja en la
+  URL y se busca con `.eq()` en la Edge Function `confirm-registration`. Ambos
+  generadores producen UUID v4 idéntico en formato.
+  **Efecto medido:** vulnerabilidades de producción **9 → 8**, dependencias directas
+  **-5**, y el lockfile solo perdió la entrada de `uuid` (sin cambios de versión
+  colaterales, verificado con `git diff`).
 
 **I.c — `vite@4` es EOL y arrastra la mayoría de las vulns** (vite, esbuild, y de
-rebote vitest). Es el ítem 6.7 y el más caro.
-→ Ver abajo.
+rebote vitest). Es el ítem 6.7 y el más caro. **Es lo que queda de la Sesión I.**
+→ Ver 6.7 abajo.
 
-**Esfuerzo I.a + I.b:** ~30 minutos, riesgo bajo, y bajan las vulns directas de 4 a 2.
+**Estado tras I.a + I.b:** 8 vulns en producción (3 moderate, 5 high), 5 directas:
+`dompurify`, `postcss`, `react-router-dom`, `vite`, `vitest`. **Las tres últimas se
+resuelven subiendo Vite**, así que el próximo paso concentra casi todo lo que queda.
 
 ### 6.7 — Upgrades de dependencias
 

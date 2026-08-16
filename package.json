@@ -50,14 +50,9 @@
     "react-router-dom": "^6.23.1",
     "tailwind-merge": "^1.1.4",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^9.0.1",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@babel/generator": "^7.27.0",
-    "@babel/parser": "^7.27.0",
-    "@babel/traverse": "^7.27.0",
-    "@babel/types": "^7.27.0",
     "@eslint/js": "^8.57.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.3.1",
