@@ -18,7 +18,7 @@
 ## Estado
 
 Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
-producción, con lint en 0 errores, 127 tests y `vite@7`.
+producción, con lint en 0 errores, 174 tests y `vite@7`.
 
 Lo que queda son **dos cosas de naturaleza distinta**:
 
@@ -32,9 +32,17 @@ Ver 6.7.
 
 ✅ **Cerrado el 2026-08-16:** la fuga de datos financieros (dos vistas puenteaban las RLS
 y exponían a `anon` el historial de pagos de cada persona) **está tapada en producción y
-verificada**. Ver §C. Junto con ella se aplicó la **fase 1 del modelo de aportes**:
-`destinos` y `aportes`, el libro único con destino. Ver §10.11 para qué quedó funcionando
-y cuál es el único eslabón que falta.
+verificada** (§C). Junto con ella se aplicaron las **fases 1 y 2 del modelo de aportes**:
+
+| | Qué quedó | Detalle |
+|---|---|---|
+| **Fase 1** | `destinos` + `aportes`: el libro único con destino, y la carga manual | §10.11 |
+| **Fase 2** | `gastos` + comprobante + `/rendicion` pública: `saldo = recaudado − rendido` | §10.12 |
+
+Queda **un solo eslabón técnico abierto**: el microservicio de Render no escribe en
+`aportes`, así que los ingresos digitales no entran solos al libro (§10.11). Y queda lo
+que no es técnico: **cargar los datos reales**, sin los cuales la rendición es una página
+correcta y vacía.
 
 ---
 
@@ -1063,3 +1071,67 @@ tres viñetas escritas a mano, de cuando había una sola campaña implícita. Ah
 destino se elige abajo, ese texto puede contradecir lo elegido. **No se tocó a propósito:
 es contenido de la entidad, no del sistema.** Se resuelve moviendo esa copy a la
 `descripcion` de cada destino, que es donde ahora corresponde vivir.
+
+### 10.12 — Fase 2 aplicada: la rendición (2026-08-16)
+
+Migración `20260816150000_gastos_y_rendicion.sql`, **en producción**. Cierra lo que §10.11
+dejó declarado: hasta acá había recaudación con destino; ahora hay rendición.
+
+```
+saldo(destino) = monto_recaudado − monto_rendido
+```
+
+#### Qué se construyó
+
+| Pieza | Dónde |
+|---|---|
+| Tabla `gastos` con comprobante | migración `20260816150000` |
+| `destinos.monto_rendido` + `cantidad_gastos_rendidos`, por trigger | ídem |
+| Panel de carga, publicación y comprobantes | `/admin → Gastos y rendición` |
+| **Rendición pública** | `/rendicion`, enlazada desde Colaborar y el footer |
+
+#### Las cuatro decisiones que definen el modelo
+
+1. **"Rendido" no es "gastado".** `monto_rendido` suma **solo los gastos publicados**. Si
+   sumara todos, el público vería un total que no coincide con la lista que puede ver, y
+   un total que no cierra se lee como que algo se esconde — justo lo contrario de lo que
+   esta tabla existe para lograr. La comisión ve los dos números por separado en el panel.
+
+2. **Publicar un gasto lo publica entero**, notas incluidas. No hay publicación por
+   columna: las RLS filtran filas, no columnas, y fingir lo contrario con grants por
+   columna produce un modelo que nadie puede razonar. La regla que se sigue de eso es
+   simple y verificable: **lo que no pueda ser público no se escribe en un gasto**, y la
+   UI lo advierte donde se escriben las notas.
+
+3. **El comprobante no se publica nunca**, ni siquiera con el gasto publicado: una factura
+   trae CUIT, domicilio y a veces la firma de un tercero que no consintió. Vive en el
+   bucket privado `comision-docs` bajo el prefijo `gastos/`, reusando sus cuatro policies
+   —cero policies de storage nuevas—. Lo que sí ve el público es `tiene_comprobante`.
+
+4. **Publicar NO exige comprobante, y los gastos sin comprobante se muestran marcados.**
+   Se evaluó exigirlo y se descartó: hay gastos legítimos sin respaldo (un pago chico en
+   efectivo), y obligar empujaría a no publicarlos. **Mostrar el hueco es más transparente
+   que esconder la fila**, y es lo que hace creíble al resto.
+
+#### Verificado contra producción (checks T17-T20, permanentes)
+
+| Check | Resultado |
+|---|---|
+| T17 | `anon` ve **solo** gastos publicados de destinos activos — ni los internos, ni los de un destino en borrador |
+| T18 | Publicar mueve la rendición y despublicar la devuelve: `10.000/1 → 0/0 → 10.000/1`. **Recalcula**, no suma deltas |
+| T19a/b | Un usuario común no puede cargar (`ERROR` de RLS) **ni** publicar (0 filas alcanzadas) |
+| T20 | **Nadie** borra un gasto, ni la comisión: `permission denied` |
+
+T19 nació roto y se arregló en el acto: estaba en un solo savepoint, y como el `ERROR` de
+la primera mitad aborta la transacción, la segunda devolvía *"current transaction is
+aborted"* en vez de ejecutarse. **Un check que no corre se lee igual que uno que pasa.**
+
+#### Lo que falta para que la rendición sirva de verdad
+
+Nada de esto es técnico: **hay que cargar datos.** Con 0 aportes y 0 gastos, `/rendicion`
+muestra correctamente "todavía no se publicaron gastos" — que es cierto, y también inútil.
+La página se vuelve valiosa recién cuando la entidad carga sus destinos reales, sus
+aportes y sus gastos.
+
+Y sigue abierto el eslabón de §10.11: **Render no escribe en `aportes`**, así que el lado
+de los ingresos solo se llena con la carga manual.

@@ -406,8 +406,10 @@ const Collaborate = () => {
                             Reportes de impacto trimestrales.
                         </li>
                     </ul>
+                    {/* Antes apuntaba a /contact, que no mostraba ninguna gestión
+                        financiera. Ahora hay una rendición de verdad para enlazar. */}
                     <Button variant="link" className="text-brand-action font-bold p-0 h-auto hover:text-brand-dark" asChild>
-                        <Link to="/contact">Conocé más sobre nuestra gestión financiera →</Link>
+                        <Link to="/rendicion">Mirá en qué se usó cada aporte →</Link>
                     </Button>
                 </div>
 

@@ -46,6 +46,7 @@ const Footer = () => {
         { name: 'Sobre Nosotros', href: '/about' },
         { name: 'Actividades', href: '/activities' },
         { name: 'Colaborá', href: '/collaborate' },
+        { name: 'Rendición de cuentas', href: '/rendicion' },
         { name: 'Contacto', href: '/contact' },
       ],
     },

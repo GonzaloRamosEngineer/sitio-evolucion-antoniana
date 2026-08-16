@@ -238,3 +238,85 @@ ROLLBACK;
 \echo '=== control: los checks T14-T16 no dejaron nada ==='
 \echo '   (esperado: 0)'
 SELECT count(*) AS residuo FROM public.destinos WHERE slug='zz-check-aportes';
+
+-- =============================================================================
+-- T17-T20: gastos y rendición (fase 2, migración 20260816150000)
+--
+-- `gastos` es la tabla que hace pública la plata: lo que entra ahí y se publica
+-- lo ve cualquiera. Los cuatro checks cubren las cuatro formas de equivocarse.
+-- Todo dentro de savepoints: no queda nada.
+-- =============================================================================
+BEGIN;
+
+INSERT INTO public.destinos (tipo, nombre, slug, estado)
+VALUES ('campana','ZZ Activo','zz-g-activo','activo'),
+       ('campana','ZZ Borrador','zz-g-borrador','borrador');
+
+INSERT INTO public.gastos (destino_id, concepto, monto, publicado)
+SELECT id,'ZZ publicado',10000,true  FROM public.destinos WHERE slug='zz-g-activo';
+INSERT INTO public.gastos (destino_id, concepto, monto, publicado)
+SELECT id,'ZZ sin publicar',7000,false FROM public.destinos WHERE slug='zz-g-activo';
+INSERT INTO public.gastos (destino_id, concepto, monto, publicado)
+SELECT id,'ZZ en borrador',5000,true  FROM public.destinos WHERE slug='zz-g-borrador';
+
+SELECT id AS zz_g_board FROM public.users
+ WHERE role IN ('admin','comision_directiva') LIMIT 1 \gset
+SELECT id AS zz_g_plain FROM public.users WHERE role = 'user' LIMIT 1 \gset
+
+\echo '=== T17: anon ve SOLO gastos publicados de destinos activos ==='
+\echo '   (esperado: 1 fila, "ZZ publicado". Ni el sin publicar, ni el que'
+\echo '    cuelga de un destino en borrador — ese es el atajo por la puerta'
+\echo '    de atras que la policy cierra pidiendo estado=activo explicito)'
+SAVEPOINT t17;
+SET LOCAL ROLE anon;
+SELECT concepto, monto FROM public.gastos WHERE concepto LIKE 'ZZ %' ORDER BY concepto;
+ROLLBACK TO SAVEPOINT t17;
+
+\echo '=== T18: publicar mueve la rendicion, y despublicar la devuelve ==='
+\echo '   (esperado: 10000/1, luego 0/0, luego 10000/1 — el contador'
+\echo '    RECALCULA; si sumara deltas quedaria inflado para siempre)'
+SAVEPOINT t18;
+SELECT monto_rendido, cantidad_gastos_rendidos FROM public.destinos WHERE slug='zz-g-activo';
+UPDATE public.gastos SET publicado=false WHERE concepto='ZZ publicado';
+SELECT monto_rendido, cantidad_gastos_rendidos FROM public.destinos WHERE slug='zz-g-activo';
+UPDATE public.gastos SET publicado=true WHERE concepto='ZZ publicado';
+SELECT monto_rendido, cantidad_gastos_rendidos FROM public.destinos WHERE slug='zz-g-activo';
+ROLLBACK TO SAVEPOINT t18;
+
+\echo '=== T19a: un usuario comun no puede CARGAR un gasto ==='
+\echo '   (esperado: ERROR violates row-level security policy)'
+SAVEPOINT t19a;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', :'zz_g_plain', true) \g /dev/null
+INSERT INTO public.gastos (destino_id, concepto, monto)
+SELECT id,'ZZ colado',1 FROM public.destinos WHERE slug='zz-g-activo';
+ROLLBACK TO SAVEPOINT t19a;
+
+-- ⚠️ Savepoint APARTE, y no es cosmético: el ERROR de T19a aborta la
+-- transacción, y todo lo que siguiera dentro del mismo savepoint devolvería
+-- "current transaction is aborted" en vez de ejecutarse. Un check que no corre
+-- se lee igual que uno que pasa. Pasó acá el 2026-08-16.
+\echo '=== T19b: un usuario comun no puede PUBLICAR un gasto ==='
+\echo '   (esperado: 0 — el UPDATE no falla, simplemente no alcanza ninguna fila)'
+SAVEPOINT t19b;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', :'zz_g_plain', true) \g /dev/null
+WITH a AS (UPDATE public.gastos SET publicado=true WHERE concepto='ZZ sin publicar' RETURNING 1)
+SELECT count(*) AS filas_que_pudo_publicar FROM a;
+ROLLBACK TO SAVEPOINT t19b;
+
+\echo '=== T20: NADIE borra un gasto, ni la comision ==='
+\echo '   (esperado: ERROR permission denied. La policy board es FOR ALL e'
+\echo '    incluiria DELETE: lo que lo impide es el GRANT revocado, y hacen'
+\echo '    falta las dos cosas para borrar)'
+SAVEPOINT t20;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', :'zz_g_board', true) \g /dev/null
+DELETE FROM public.gastos WHERE concepto='ZZ publicado';
+ROLLBACK TO SAVEPOINT t20;
+
+ROLLBACK;
+
+\echo '=== control: los checks T17-T20 no dejaron nada ==='
+\echo '   (esperado: 0)'
+SELECT count(*) AS residuo FROM public.destinos WHERE slug LIKE 'zz-g-%';

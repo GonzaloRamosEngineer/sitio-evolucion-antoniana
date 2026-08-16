@@ -13,6 +13,7 @@ import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
 import { getDestinos } from '@/api/destinosApi';
 import { getAportes } from '@/api/aportesApi';
+import { getGastos } from '@/api/gastosApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
@@ -212,6 +213,23 @@ export const useAportes = ({ select, ...options } = {}) =>
   useQuery({
     queryKey: queryKeys.aportes,
     queryFn: () => unwrap(getAportes()),
+    select,
+    ...options,
+  });
+
+/**
+ * Gastos — la rendición (ROADMAP §10.9, fase 2).
+ *
+ * Sin filtro de negocio en el hook, igual que en aportes: acá el recorte lo
+ * hacen las RLS. Y la asimetría con `useAportes` es la que da valor: este mismo
+ * hook sirve al panel de la comisión —que ve todo— y a la rendición pública
+ * —que ve solo los gastos publicados de destinos activos—, sin que la página
+ * tenga que saber cuál de las dos cosas es.
+ */
+export const useGastos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.gastos,
+    queryFn: () => unwrap(getGastos()),
     select,
     ...options,
   });

@@ -40,6 +40,7 @@ export const queryKeys = {
   // `['destinos']` alcanza también a los detalles.
   destino: (slug) => ['destinos', 'item', slug],
   aportes: ['aportes'],
+  gastos: ['gastos'],
 };
 
 export const queryClient = new QueryClient({
