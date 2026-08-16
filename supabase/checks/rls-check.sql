@@ -320,3 +320,50 @@ ROLLBACK;
 \echo '=== control: los checks T17-T20 no dejaron nada ==='
 \echo '   (esperado: 0)'
 SELECT count(*) AS residuo FROM public.destinos WHERE slug LIKE 'zz-g-%';
+
+-- =============================================================================
+-- T21-T23: las donaciones entran solas al libro (migración 20260816160000)
+--
+-- La pieza más delicada del trigger no es que funcione, sino que **no pueda
+-- hacer fallar el registro de una donación**: si se propagara el error, se
+-- perdería el cobro entero y MercadoPago reintentaría para siempre. Un libro
+-- incompleto se repara; una donación que nunca se registró, no.
+-- Todo dentro de savepoints: no queda nada.
+-- =============================================================================
+BEGIN;
+
+\echo '=== T21: una donacion aprobada entra sola al libro, y una pending no ==='
+\echo '   (esperado: 0 aportes con la pending; 1 al aprobarla)'
+SAVEPOINT t21;
+INSERT INTO public.donations (amount, donation_type, payment_provider, payment_id, status)
+VALUES (1234,'unica','mercadopago','ZZ-PAY-1','pending');
+SELECT count(*) AS aportes_con_pending FROM public.aportes WHERE referencia_externa='ZZ-PAY-1';
+UPDATE public.donations SET status='approved' WHERE payment_id='ZZ-PAY-1';
+SELECT count(*) AS aportes_tras_aprobar FROM public.aportes WHERE referencia_externa='ZZ-PAY-1';
+
+\echo '=== T22: IDEMPOTENCIA — el webhook reintenta y no duplica ==='
+\echo '   (esperado: 1, no 3. referencia_externa es UNIQUE y el ON CONFLICT'
+\echo '    convierte el reintento en un no-op)'
+UPDATE public.donations SET status='approved' WHERE payment_id='ZZ-PAY-1';
+UPDATE public.donations SET status='approved' WHERE payment_id='ZZ-PAY-1';
+SELECT count(*) AS aportes_tras_3_reintentos FROM public.aportes WHERE referencia_externa='ZZ-PAY-1';
+ROLLBACK TO SAVEPOINT t21;
+
+\echo '=== T23: LA REGLA DE ORO — si el trigger no puede, la donacion igual se registra ==='
+\echo '   (esperado: la donacion existe (1) y el aporte no (0), con un WARNING.'
+\echo '    Se prueba dejando sin destino institucional activo, que es el modo de'
+\echo '    fallo mas probable en una entidad recien configurada)'
+SAVEPOINT t23;
+UPDATE public.destinos SET estado='pausado' WHERE tipo='institucional';
+INSERT INTO public.donations (amount, donation_type, payment_provider, payment_id, status)
+VALUES (4321,'unica','mercadopago','ZZ-PAY-2','approved');
+SELECT count(*) AS la_donacion_se_registro FROM public.donations WHERE payment_id='ZZ-PAY-2';
+SELECT count(*) AS el_aporte_no FROM public.aportes WHERE referencia_externa='ZZ-PAY-2';
+ROLLBACK TO SAVEPOINT t23;
+
+ROLLBACK;
+
+\echo '=== control: los checks T21-T23 no dejaron nada ==='
+\echo '   (esperado: 0 y 0)'
+SELECT count(*) AS donaciones_residuo FROM public.donations WHERE payment_id LIKE 'ZZ-PAY-%';
+SELECT count(*) AS aportes_residuo FROM public.aportes WHERE referencia_externa LIKE 'ZZ-PAY-%';

@@ -39,10 +39,13 @@ verificada** (§C). Junto con ella se aplicaron las **fases 1 y 2 del modelo de 
 | **Fase 1** | `destinos` + `aportes`: el libro único con destino, y la carga manual | §10.11 |
 | **Fase 2** | `gastos` + comprobante + `/rendicion` pública: `saldo = recaudado − rendido` | §10.12 |
 
-Queda **un solo eslabón técnico abierto**: el microservicio de Render no escribe en
-`aportes`, así que los ingresos digitales no entran solos al libro (§10.11). Y queda lo
-que no es técnico: **cargar los datos reales**, sin los cuales la rendición es una página
-correcta y vacía.
+Las **donaciones únicas ya entran solas al libro** (§10.13): el trigger las registra al
+aprobarse, con backfill hecho — $7.141 cuadrando con `donations` y con el Dashboard.
+
+Queda abierto el **servicio de pagos** (§10.13): las suscripciones se crean y nunca se
+actualizan, y el destino elegido en el checkout todavía no llega. Decidido moverlo a
+Vercel, en este mismo repo. Y queda lo que no es técnico: **cargar los datos reales**,
+sin los cuales la rendición es una página correcta y vacía.
 
 ---
 
@@ -1135,3 +1138,83 @@ aportes y sus gastos.
 
 Y sigue abierto el eslabón de §10.11: **Render no escribe en `aportes`**, así que el lado
 de los ingresos solo se llena con la carga manual.
+
+### 10.13 — El servicio de pagos: diagnóstico y plan (2026-08-16)
+
+Relevado contra producción, no supuesto. Corrige la afirmación de §10.11, que decía
+"el webhook no escribe en `aportes`" — cierto pero impreciso, y la precisión cambia el
+plan.
+
+#### Qué hace hoy, medido
+
+| Hecho | Evidencia |
+|---|---|
+| El servicio **está vivo, pero duerme** | Responde `404` (no "conexión rechazada") tras **21,7 s** de cold start. Free tier de Render |
+| Las **donaciones únicas funcionan** de punta a punta | 4 aprobadas con `payment_id` real de MercadoPago, $7.141 |
+| Las **suscripciones son la mitad rota** | 16 filas con `preapproval_id` y `external_reference`, pero **0** con `last_payment_id` y **0** con `payer_email` |
+| El servicio **arma su propio `external_reference`** | En los datos: `anon:suscripcion`, `user:<uuid>:suscripcion` |
+
+**El diagnóstico correcto no es "el webhook no anda":** crea bien las preferencias y las
+suscripciones, y escribe de vuelta para donaciones únicas. Lo que falta es el write-back
+del lado de las suscripciones, y escribir en `aportes` en cualquiera de los dos casos.
+
+⚠️ **Un dato que no tiene explicación todavía:** las 4 donaciones tienen `updated_at`
+exactamente **10 días** después de `created_at`. Las cuatro. Eso no parece un webhook
+—que actualiza en segundos— sino un proceso por lotes. Nadie documentó qué es. Antes de
+migrar nada conviene saberlo, porque puede haber un cron que no está en ningún lado.
+
+#### Un error propio, corregido el mismo día
+
+Al implementar el checkout (§10.11) el front mandaba `external_reference: "destino:<uuid>"`.
+Como el microservicio **ya arma el suyo** y el webhook lo parsea para saber de quién es el
+pago, si el microservicio hubiera priorizado el del front **se habría perdido la
+identificación del usuario en cada suscripción**: entra la plata y no se sabe de quién es.
+
+No hubo daño porque no hay ninguna suscripción real, pero quedaba armado para la primera.
+Ahora se manda solo `destino_id` —el dato crudo— y que el microservicio lo codifique con
+su propio esquema (`user:<uuid>:suscripcion:destino:<uuid>`). Hay un test que lo fija.
+
+**La lección, que es general:** antes de agregar un campo a un contrato que no controlás,
+mirá qué valores tiene hoy en producción. El esquema estaba a una consulta de distancia.
+
+#### El plan, en tres pasos
+
+**1. ✅ Hecho — las donaciones entran solas al libro** (migración `20260816160000`).
+
+Trigger sobre `donations`: cuando una donación queda `approved`, se crea su `aporte` con
+`referencia_externa = payment_id`, que es `UNIQUE` — **idempotente por construcción**, que
+es justo lo que hace falta con webhooks que reintentan. Incluye backfill de las 4
+donaciones reales. El libro pasó de $0 a **$7.141**, cuadrando exacto con `donations` y
+con `fundacion_metrics`.
+
+**La regla de oro de esa función:** nunca puede hacer fallar el registro de una donación.
+Si se propagara el error se perdería el cobro entero y MercadoPago reintentaría para
+siempre. Un libro incompleto se repara —el propio backfill sirve de pase de reparación—;
+una donación que nunca se registró, no. Verificado en T23.
+
+Lo que **no** resuelve: el destino elegido sigue sin llegar (todo cae al institucional), y
+las suscripciones siguen afuera porque sin `last_payment_id` no existe el hecho "se cobró
+un mes". Un trigger sobre la creación de la suscripción registraría una intención, no un
+cobro, y eso ensucia el libro con plata que nunca entró.
+
+**2. Decidido — mover el servicio de pagos a Vercel, en este mismo repo.**
+
+| | A favor | En contra |
+|---|---|---|
+| **Vercel, mismo repo** ← elegido | La infra **ya existe y está probada**: el repo deploya `api/share/*`. Un repo, un deploy, sin los 22 s de cold start, y el código de pagos al lado del esquema, las migraciones y los checks | Migrar credenciales de MP; reescribir ~4 endpoints |
+| Arreglar Render | Cambio mínimo | 22 s de cold start; código fuera del repo, sin tests ni CI; para multi-cliente es un servicio misterioso **por cliente** |
+| Supabase Edge Functions | `service_role` nativo, al lado de la base | Suma un runtime nuevo (Deno) a un stack que ya tiene funciones en Vercel |
+
+⚠️ **La trampa de la migración:** `vercel.json` tiene
+`{ "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" }`.
+Las funciones `api/share/*` sobreviven **solo porque sus rewrites están antes**. Al agregar
+funciones de pago hay que ponerles su rewrite antes del catch-all, o sacar el catch-all —
+si no, Vercel manda todo a Render y las funciones nuevas nunca se ejecutan, sin ningún
+error visible.
+
+**3. Pendiente — reconciliación contra la API de MercadoPago.**
+
+Independiente de dónde viva el servicio. Los webhooks se pierden, y §10.10 ya documentó una
+desincronización real (16 membresías vs 7 suscripciones). Un pase periódico que pregunte
+"¿qué pagos hubo desde X?" y escriba con la misma `referencia_externa` es lo que vuelve
+confiable al libro — y por el `UNIQUE` es seguro correrlo cuantas veces se quiera.
