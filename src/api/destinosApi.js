@@ -88,6 +88,26 @@ export const validarDestino = (f) => {
   return errores;
 };
 
+/**
+ * Destino efectivamente elegido, dado lo que el usuario tocó y la lista actual.
+ *
+ * Existe para no sincronizar el estado con un `useEffect`: la lista llega
+ * asincrónica y puede cambiar (se cierra una campaña, la comisión reordena),
+ * así que el id guardado puede quedar apuntando a algo que ya no está. En vez
+ * de corregirlo con un efecto —que siempre llega un render tarde y deja la
+ * pantalla mostrando A mientras se envía B— se deriva en cada render.
+ *
+ * El default es `destinos[0]`, y no el institucional, a propósito: la lista
+ * viene ordenada por `orden`, así que el primero es el que la entidad decidió
+ * poner adelante. Respetar esa decisión es más útil que imponer una nuestra.
+ *
+ * @param {string|null} idElegido - lo último que tocó el usuario, o null.
+ * @param {Array<{id: string}>} destinos - lista vigente, ya filtrada.
+ * @returns {string|null} id vigente, o null si no hay ninguno.
+ */
+export const destinoEfectivo = (idElegido, destinos = []) =>
+  destinos.some((d) => d.id === idElegido) ? idElegido : destinos[0]?.id ?? null;
+
 /** Todos los destinos, para el panel. Las RLS filtran según quién consulta. */
 export const getDestinos = async () =>
   listResult(

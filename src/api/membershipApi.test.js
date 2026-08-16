@@ -7,7 +7,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // funciones que probamos acá, así que lo stubbeamos para que el test sea hermético.
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
-import { createOneTimeDonation, WebhookError, COLD_START_MESSAGE } from '@/api/membershipApi';
+import {
+  createOneTimeDonation, createSubscription, WebhookError, COLD_START_MESSAGE,
+} from '@/api/membershipApi';
+import { entidad } from '@/config/entidad';
 
 const jsonResponse = (status, body) => ({
   ok: status >= 200 && status < 300,
@@ -126,5 +129,78 @@ describe('callWebhook (vía createOneTimeDonation)', () => {
 
     // Si escapara una excepción, este await rompería el test en vez de resolver.
     await expect(promise).resolves.toMatchObject({ data: null });
+  });
+});
+
+// El destino elegido tiene que llegar al microservicio, y —más importante— NO
+// tiene que cambiar el payload cuando no hay destino: el cobro ya funciona y
+// una función nueva no puede alterarlo (ROADMAP §10.7).
+describe('el destino del aporte viaja en el body', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, {})));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** Body realmente enviado en la última llamada a fetch. */
+  const ultimoBody = () => JSON.parse(fetch.mock.calls.at(-1)[1].body);
+
+  it('manda destino_id y external_reference en la donacion unica', async () => {
+    const promise = createOneTimeDonation({
+      userId: 'u1', emailUsuario: 'a@b.com', amount: 1000,
+      destinoId: 'd-123', destinoNombre: 'Pelotas y conos',
+    });
+    await flushRetries();
+    await promise;
+
+    const body = ultimoBody();
+    expect(body.destino_id).toBe('d-123');
+    // Es el ÚNICO campo que MercadoPago devuelve intacto en el webhook: por ahí
+    // es por donde el destino sobrevive el viaje de ida y vuelta.
+    expect(body.external_reference).toBe('destino:d-123');
+    expect(body.description).toContain('Pelotas y conos');
+  });
+
+  it('manda destino_id y external_reference en la suscripcion', async () => {
+    const promise = createSubscription({
+      userId: 'u1', emailUsuario: 'a@b.com', amount: 5000,
+      destinoId: 'd-9', destinoNombre: 'Apadriná una beca',
+    });
+    await flushRetries();
+    await promise;
+
+    const body = ultimoBody();
+    expect(body.destino_id).toBe('d-9');
+    expect(body.external_reference).toBe('destino:d-9');
+    expect(body.reason).toContain('Apadriná una beca');
+    // El auto_recurring que ya funcionaba no se toca.
+    expect(body.auto_recurring).toMatchObject({
+      frequency: 1, frequency_type: 'months', transaction_amount: 5000,
+    });
+  });
+
+  // La regla que protege el cobro existente: sin destino, ni una clave de más.
+  it('SIN destino no agrega ninguna clave al payload', async () => {
+    const promise = donate();
+    await flushRetries();
+    await promise;
+
+    const body = ultimoBody();
+    expect(body).not.toHaveProperty('destino_id');
+    expect(body).not.toHaveProperty('external_reference');
+  });
+
+  // La marca sale de entidad.js: si vuelve a quedar escrita a mano, cada cliente
+  // nuevo es un fork que diverge (ver src/config/entidad.js).
+  it('el titulo del checkout usa el nombre de la entidad configurada', async () => {
+    const promise = donate();
+    await flushRetries();
+    await promise;
+
+    expect(ultimoBody().description).toBe(`Donación — ${entidad.nombre}`);
   });
 });

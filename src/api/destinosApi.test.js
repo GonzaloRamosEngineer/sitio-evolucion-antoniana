@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  slugify, validarDestino, TIPOS_DESTINO, ESTADOS_DESTINO, VISIBILIDADES,
+  slugify, validarDestino, destinoEfectivo, TIPOS_DESTINO, ESTADOS_DESTINO, VISIBILIDADES,
 } from './destinosApi';
 
 describe('slugify', () => {
@@ -100,5 +100,38 @@ describe('validarDestino', () => {
 
   it('acepta fechas coherentes y opcionales vacios', () => {
     expect(validarDestino({ ...base, fecha_inicio: '2026-01-01', fecha_fin: '2026-06-01' })).toEqual({});
+  });
+});
+
+// `destinoEfectivo` se deriva en cada render en vez de sincronizarse con un
+// efecto: la lista llega asincrónica y puede cambiar debajo del usuario.
+describe('destinoEfectivo', () => {
+  const lista = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+
+  it('respeta lo que el usuario eligio si sigue en la lista', () => {
+    expect(destinoEfectivo('b', lista)).toBe('b');
+  });
+
+  // El caso que evita el bug: mostrar A y enviar B. Si la campaña elegida se
+  // cierra, la eleccion cae al primero y la pantalla lo muestra en el mismo
+  // render, no uno despues.
+  it('cae al primero si lo elegido ya no esta', () => {
+    expect(destinoEfectivo('z', lista)).toBe('a');
+  });
+
+  it('cae al primero cuando todavia no eligio nada', () => {
+    expect(destinoEfectivo(null, lista)).toBe('a');
+  });
+
+  // El primero es el de menor `orden`: la lista viene ordenada por la decision
+  // de la entidad, y respetarla es mejor que imponer un default nuestro.
+  it('el default es el primero de la lista, no el institucional', () => {
+    const conInstitucional = [{ id: 'campana' }, { id: 'inst', tipo: 'institucional' }];
+    expect(destinoEfectivo(null, conInstitucional)).toBe('campana');
+  });
+
+  it('devuelve null sin destinos, para que la UI no se rompa', () => {
+    expect(destinoEfectivo('a', [])).toBeNull();
+    expect(destinoEfectivo(null)).toBeNull();
   });
 });

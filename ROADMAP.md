@@ -18,7 +18,7 @@
 ## Estado
 
 Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
-producción, con lint en 0 errores, 78 tests y `vite@7`.
+producción, con lint en 0 errores, 127 tests y `vite@7`.
 
 Lo que queda son **dos cosas de naturaleza distinta**:
 
@@ -30,11 +30,11 @@ Lo que queda son **dos cosas de naturaleza distinta**:
 La única **vulnerabilidad viva** es `react-router-dom` (open redirect → XSS, moderate).
 Ver 6.7.
 
-⚠️ **Pendiente de aplicar a producción (2026-08-16):** la migración
-`20260816120000_fix_view_rls_bypass_and_anon_grants.sql` cierra una **fuga de datos
-financieros verificada en producción** — dos vistas puenteaban las RLS y exponían a
-`anon` el historial de pagos de cada persona y la facturación de la entidad. Está
-**validada en Docker pero NO aplicada**. Es lo más urgente del repo. Ver §C.
+✅ **Cerrado el 2026-08-16:** la fuga de datos financieros (dos vistas puenteaban las RLS
+y exponían a `anon` el historial de pagos de cada persona) **está tapada en producción y
+verificada**. Ver §C. Junto con ella se aplicó la **fase 1 del modelo de aportes**:
+`destinos` y `aportes`, el libro único con destino. Ver §10.11 para qué quedó funcionando
+y cuál es el único eslabón que falta.
 
 ---
 
@@ -154,10 +154,20 @@ las tres migraciones. Convergen sin cambios y cada una corre en su transacción,
 
 ---
 
-## C. Pendiente crítico: aplicar el fix de seguridad a producción
+## C. El fix de seguridad — APLICADO a producción el 2026-08-16
 
-La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql` **está validada en
-Docker y NO aplicada a producción.** Hasta que se aplique, la fuga sigue abierta.
+> **Estado: cerrado.** La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql`
+> se aplicó a producción el 2026-08-16 y la fuga está cerrada, verificado vía PostgREST:
+> `user_support_history` devuelve **404** y `fundacion_metrics` **401**. El Dashboard
+> siguió funcionando (`total_donado = 7141`), que era lo que esta migración podía romper.
+> El check T8 de `supabase/checks/rls-check.sql` devuelve 0 vistas sin `security_invoker`,
+> así que la regresión ahora la detecta la verificación y no depende de que alguien mire.
+>
+> **Lo que sigue abajo se conserva como procedimiento**, porque es el que hay que repetir
+> ante cualquier fix de seguridad futuro, y porque la lección del final es la que importa.
+
+La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql` estaba validada en
+Docker y sin aplicar. Mientras tanto, la fuga estuvo abierta.
 
 **Qué arregla.** Dos vistas (`user_support_history`, `fundacion_metrics`) eran
 `OWNER TO postgres` sin `security_invoker`, así que corrían con permisos del dueño y
@@ -961,3 +971,65 @@ Antes de promocionarlo hay que arreglar (a) y (c), o el primer padrino de verdad
 un circuito que no sabe informar si su suscripción sigue viva.
 
 ---
+
+### 10.11 — Fase 1 aplicada: qué quedó funcionando y qué no (2026-08-16)
+
+Las dos migraciones de fase 1 están **en producción**. Esta sección existe para que
+nadie tenga que deducir del esquema qué parte del circuito ya cierra y cuál no.
+
+#### Lo que está vivo
+
+| Migración | Qué dejó | Verificado en producción |
+|---|---|---|
+| `20260816130000` | `expired` en el CHECK, reaper de `pending` fósiles, índice duplicado borrado | Marcó **exactamente 5** filas, igual que el conteo previo |
+| `20260816140000` | `destinos`, `aportes`, `memberships.destino_id`, índice único, trigger de contadores, RLS | `destinos` → HTTP 200 como `anon`; `aportes` → **401** |
+
+Estado de `memberships` después del reaper: `cancelled 6 · expired 5 · paused 2 · pending 3`.
+Los 3 `pending` que quedan son de menos de 30 días, así que el reaper no los tocó; según
+MercadoPago tampoco son reales. **No se amplió la ventana a propósito:** son síntoma del
+webhook, no de los datos, y bajar el umbral para taparlos sería tratar el síntoma.
+
+El panel `/admin → Destinos` permite crear, editar y cerrar destinos. Un destino con
+aportes no ofrece el botón de borrar, porque la FK es `ON DELETE RESTRICT` y un libro
+contable no se borra.
+
+#### El eslabón que falta, y es uno solo
+
+`Colaborar` ya deja elegir destino, y la elección viaja a MercadoPago en
+`external_reference` (`destino:<uuid>`) — el único campo que MercadoPago devuelve intacto
+en el webhook. Pero **el microservicio de Render no lee ese campo y tampoco escribe en
+`aportes`**: hoy escribe `donations` y `memberships` y nada más.
+
+O sea, hasta que se toque Render:
+
+- ✅ El aportante elige destino y lo ve en el checkout de MercadoPago (va en `reason` /
+  `description`).
+- ✅ La elección llega al microservicio.
+- ❌ No aterriza en `aportes`, así que **no suma al progreso del destino**.
+
+Se manda igual porque el día que se toque Render el dato ya va a estar llegando, y
+porque el costo de mandarlo es cero: sin destino el payload queda idéntico al de antes
+(hay un test que lo fija, `SIN destino no agrega ninguna clave al payload`).
+
+**Lo que Render tiene que hacer**, en una línea: al confirmarse un pago, insertar en
+`aportes` con `origen` (`donacion` | `membresia`), `destino_id` parseado de
+`external_reference` —con caída al destino `institucional` si no viene—, y
+`referencia_externa` = el `payment_id` de MercadoPago. Ese último campo es `UNIQUE`
+justamente porque **los webhooks de pago reintentan**: sin él, un mismo cobro entra dos
+veces al libro y la rendición queda mal para siempre.
+
+#### El camino que SÍ cierra hoy: la carga manual
+
+`aportes` acepta `origen = 'manual'` desde el día uno, con RLS que lo limita a
+`is_board_member()`. Eso no es un parche mientras se arregla Render: **una entidad recibe
+efectivo, transferencias y cheques**, y esa plata tiene que entrar al mismo libro que la
+digital o la rendición no cuadra. El circuito manual es independiente de cualquier
+pasarela y funciona de punta a punta.
+
+#### Inconsistencia de copy pendiente (decisión de la entidad, no técnica)
+
+La tarjeta de donación única tiene el subtítulo *"Campaña: Experiencias educativas"* y
+tres viñetas escritas a mano, de cuando había una sola campaña implícita. Ahora que el
+destino se elige abajo, ese texto puede contradecir lo elegido. **No se tocó a propósito:
+es contenido de la entidad, no del sistema.** Se resuelve moviendo esa copy a la
+`descripcion` de cada destino, que es donde ahora corresponde vivir.
