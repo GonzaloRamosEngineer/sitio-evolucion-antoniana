@@ -887,7 +887,7 @@ roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/acti
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
-### 🟡 Sesión I — Seguridad de dependencias (I.a e I.b hechas, queda I.c)
+### ✅ Sesión I — Seguridad de dependencias (2026-08-16)
 
 No estaba en el plan original y hoy es **lo más urgente que queda**. `npm audit`
 reporta **9 vulnerabilidades (5 high, 4 moderate)** más una crítica en `vitest`.
@@ -914,13 +914,36 @@ Tres de ellas se resuelven casi gratis:
   **-5**, y el lockfile solo perdió la entrada de `uuid` (sin cambios de versión
   colaterales, verificado con `git diff`).
 
-**I.c — `vite@4` es EOL y arrastra la mayoría de las vulns** (vite, esbuild, y de
-rebote vitest). Es el ítem 6.7 y el más caro. **Es lo que queda de la Sesión I.**
-→ Ver 6.7 abajo.
+- [x] **I.c — `vite@4` (EOL) → `vite@7`. HECHO (2026-08-16).**
+  Con `@vitejs/plugin-react@5` (declara soporte hasta vite 8) y `vitest@0.34 → 4`.
+  **Se eligió v7 y no v8 a propósito:** resuelve el EOL y las vulns igual, y es una
+  versión madura en vez de una de semanas.
+  `.nvmrc` fija 22.12.0 y `engines` pide `>=22`, que satisface el requisito de vite 7
+  (`^20.19.0 || >=22.12.0`) — verificado **antes** de instalar nada, porque el Node del
+  build de Vercel es lo que decide si esto rompe el deploy.
+  El salto de 4 majors de Vitest **no requirió tocar un solo test**: 72/72 en verde.
 
-**Estado tras I.a + I.b:** 8 vulns en producción (3 moderate, 5 high), 5 directas:
-`dompurify`, `postcss`, `react-router-dom`, `vite`, `vitest`. **Las tres últimas se
-resuelven subiendo Vite**, así que el próximo paso concentra casi todo lo que queda.
+- [x] **I.d — Vulnerabilidades no-breaking aplicadas. HECHO (2026-08-16).**
+  `npm audit fix` (sin `--force`): `dompurify@3.4.9 → 3.4.13`, `postcss → 8.5.26`,
+  `react-router-dom → 6.30.4`. La de `dompurify` importaba más que las otras: son
+  **bypasses de XSS en el sanitizador**, o sea en el camino de defensa, no en el
+  tooling. Como no hay tests que cubran la sanitización, se verificó en navegador que
+  una novedad real siga renderizando su HTML enriquecido.
+
+**Resultado de la Sesión I: 13 vulnerabilidades → 2.**
+
+| | Antes | Después |
+|---|---|---|
+| Vulnerabilidades totales | 13 (1 low, 4 mod, 7 high, 1 crit) | **2 (moderate)** |
+| En producción | 9 | **2** |
+| Directas | 6 | **1** |
+| Dependencias directas declaradas | — | **-5** (4 babel + uuid) |
+
+**Lo que queda y por qué se deja:** `react-router-dom@6.30.4` tiene un open redirect →
+XSS (moderate). **No existe 6.30.5**: 6.30.4 es la última v6 y el arreglo es react-router
+v7, un major. Se dejó fuera a propósito — meter un major del router en el mismo cambio
+que un major de Vite, un día después de un incidente en producción por un cambio de
+build, es acumular riesgo sin necesidad. **Es la próxima decisión** (ver 6.7).
 
 ### 6.7 — Upgrades de dependencias
 
@@ -939,12 +962,20 @@ versiones menores atrasadas.
 - **(e) `eslint@8 → v9`.** La config ya es flat, así que el salto es menos duro de lo
   que suena. Beneficio: salir de EOL. Sin vulns asociadas.
 
-→ **Recomendado: (b) solo, en su propia rama y su propio deploy.** Es el único con
-urgencia (EOL + vulns) y el único cuyo fallo se detecta enseguida (no compila).
-Después, (e) cuando haya ganas. Diferir (d) indefinidamente: 59 archivos de riesgo a
-cambio de nada concreto.
-→ **No hacer `npm audit fix --force` a ciegas:** sube vite y vitest a mayores de golpe,
-que es exactamente la opción (a) sin control.
+→ **(b) HECHO el 2026-08-16** (ver Sesión I arriba): vite@7 + vitest@4, sin tocar tests.
+→ **Lo que queda de 6.7, en orden de valor:**
+  1. **`react-router-dom@6 → v7`** — es la **única vulnerabilidad viva** (open redirect →
+     XSS, moderate) y no tiene parche en la v6. v7 es en buena medida compatible con v6,
+     pero es un major sobre el router de toda la app: rama propia, deploy propio, y
+     verificación en navegador de **todas** las rutas, no de una muestra.
+  2. **`eslint@8 → v9`** — la config ya es flat, así que el salto es menor de lo que
+     suena. Sale de EOL. Sin vulns asociadas.
+  3. **`tailwindcss@3 → v4`** — cambio grande de motor. Sin urgencia.
+  4. **`framer-motion@10 → motion`** — 59 archivos. **Diferir indefinidamente:** mucho
+     riesgo a cambio de nada concreto.
+→ **No hacer `npm audit fix --force` a ciegas:** sube majors de golpe, que es la opción
+(a) sin control. El `npm audit fix` **sin** `--force` sí se usó, y es seguro: solo aplica
+arreglos no-breaking.
 
 ### ✅ 3.1 — Orden de las rutas admin (HECHO 2026-08-16)
 
