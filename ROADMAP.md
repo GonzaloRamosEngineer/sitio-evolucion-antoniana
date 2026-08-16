@@ -1218,3 +1218,92 @@ Independiente de dónde viva el servicio. Los webhooks se pierden, y §10.10 ya 
 desincronización real (16 membresías vs 7 suscripciones). Un pase periódico que pregunte
 "¿qué pagos hubo desde X?" y escriba con la misma `referencia_externa` es lo que vuelve
 confiable al libro — y por el `UNIQUE` es seguro correrlo cuantas veces se quiera.
+
+### 10.14 — Catálogo de destinos de la Fundación (2026-08-16)
+
+Cargado en `supabase/data/seed_destinos_fundacion.sql`. **No es una migración**: las
+migraciones son el esquema, que se comparte entre clientes; los destinos son datos de
+esta entidad. Meterlos en una migración le cargaría las campañas de la Fundación a un
+refugio de animales el día que se levante el segundo cliente.
+
+**Los 10 entran en `borrador`.** Un borrador no se muestra en el sitio: las RLS solo le
+dan a `anon` los `activo`. Verificado en producción — el público sigue viendo un solo
+destino. La comisión revisa, ajusta y publica lo que quiera desde el panel.
+
+#### El catálogo
+
+| # | Tipo | Destino | Origen |
+|---|---|---|---|
+| 10 | campaña | Equipamiento deportivo | Relevado (§10.8) |
+| 20 | campaña | Kit del jugador | Nuevo |
+| 30 | campaña | Traslados a entrenamientos y partidos | Nuevo |
+| 40 | campaña | Merienda después del entrenamiento | Nuevo |
+| 50 | campaña | Acompañamiento profesional | Relevado (§10.8) |
+| 60 | campaña | Vuelta a clases | Nuevo |
+| 70 | campaña | Seguros y aptos médicos | Nuevo |
+| 80 | campaña | Formación de entrenadores | Nuevo |
+| 90 | padrinable | Beca formativa | Relevado (§10.8) |
+| 100 | padrinable | **Apadriná una categoría** | Nuevo — ver abajo |
+
+#### "Apadriná una categoría": la idea que resuelve la tensión de fondo
+
+El apadrinamiento tiene un conflicto de raíz. Funciona emocionalmente **porque es
+concreto** —"apadriná a alguien"— y es exactamente por eso que empuja a exponer a un
+menor. §10.8 resolvió el lado legal (se apadrina un cupo, nunca un chico identificado),
+pero un cupo es abstracto y pierde justo lo que hacía funcionar la mecánica.
+
+Apadrinar una **categoría** recupera lo concreto sin exponer a nadie:
+
+- El padrino tiene un vínculo real y seguible: *"la 2014 es mía"*.
+- No hay ningún individuo expuesto, ni siquiera anonimizado.
+- Se puede contar todo lo que pasa —cuántos entrenaron, qué torneos jugaron, cómo les
+  fue— **sin un solo dato personal**.
+- Escala: una categoría admite varios padrinos sin sentirse repartida, cosa que un cupo
+  individual no permite.
+
+#### Dos decisiones de redacción que no son cosméticas
+
+**"Acompañamiento profesional" no enumera las especialidades.** El relevamiento
+mencionaba nutricionista, psicólogo, preparador físico y acompañamiento docente. La
+descripción pública habla de *horas de acompañamiento* y no de "chicos que necesitan
+tratamiento". En una entidad chica, decir públicamente "financiamos al psicólogo" con un
+grupo identificable **estigmatiza aunque ningún nombre aparezca**. Lo que se financia es
+la disponibilidad del profesional.
+
+**Y el corolario técnico, que ya estaba en §10.8 y conviene repetir acá:** los resultados
+clínicos —mediciones, diagnósticos, informes— **no entran a este sistema bajo ninguna
+forma**. Son datos sensibles de salud de menores (Ley 25.326) y acá no hay dónde
+guardarlos con las garantías que exigen. El sistema financia el servicio; el profesional
+guarda su historia clínica donde corresponde.
+
+#### Lo que falta, y solo puede hacerlo la entidad
+
+`meta_monto` y `cupos_totales` quedaron en **NULL** a propósito. Dependen de precios
+reales —cuánto sale un kit, cuánto una cuota, cuántos chicos hay por categoría— y poner
+números plausibles sería fabricar objetivos financieros de una organización real. Además
+el primer donante que compare vería que no cierran.
+
+La forma de completarlos es por unidad, no por intuición:
+
+```
+meta = (costo de una unidad) × (cuántas unidades) 
+```
+
+Un kit, una hora de profesional, un mes de pasajes, una cuota. Esa cuenta además da la
+copy: *"cada $X = un kit"* convierte un monto en una decisión.
+
+#### Recomendación de arranque
+
+**Publicar 3, no 10.** Diez campañas activas dispersan al donante y ninguna llega a la
+meta. Sugerido:
+
+1. **Equipamiento deportivo** — la más fácil de cerrar el circuito completo: se compra,
+   se sube la factura, se publica. Estrena la rendición en una semana.
+2. **Beca formativa** o **Apadriná una categoría** — una de las dos, para estrenar el
+   canal recurrente. Cuál depende de si hay categorías bien definidas.
+3. **Sostenimiento institucional** — ya activa, y es donde caen hoy las donaciones que
+   entran por MercadoPago (§10.13).
+
+El resto queda en borrador, listo para publicar cuando toque —"Vuelta a clases" en
+febrero, "Seguros y aptos" antes del inicio del torneo—. **Una campaña con temporada
+propia rinde más que un pedido genérico todo el año.**
