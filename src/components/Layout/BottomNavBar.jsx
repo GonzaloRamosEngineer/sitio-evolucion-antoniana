@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CalendarDays, User, Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { entidad } from '@/config/entidad';
 
 const BottomNavBar = () => {
   const { isAuthenticated } = useAuth();
@@ -20,7 +21,7 @@ const BottomNavBar = () => {
     },
     {
       name: 'Donar',
-      href: 'https://link.mercadopago.com.ar/evolucionantoniana',
+      href: entidad.pagos.mercadoPagoDonacion,
       icon: Heart,
       isExternal: true,
       color: 'text-brand-action'

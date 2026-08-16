@@ -24,6 +24,16 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // `src/lib/supabase.js` tira si faltan estas variables (a propósito: sin
+    // fallback silencioso a producción, ver el comentario de ese archivo). Los
+    // tests no hablan con ninguna Supabase real —mockean la capa de datos—,
+    // pero el módulo se evalúa al importarse, así que necesitan valores.
+    // Deliberadamente apuntan a un host inexistente: si algún test empieza a
+    // pegarle a la red de verdad, queremos que se note.
+    env: {
+      VITE_SUPABASE_URL: 'http://supabase.invalid',
+      VITE_SUPABASE_ANON_KEY: 'anon-key-de-test',
+    },
     include: ['src/**/*.{test,spec}.{js,jsx}'],
     // Los `*.integration.test.js` necesitan la Supabase local de Docker; corren
     // aparte con `npm run test:integration` (ver vitest.integration.config.js).

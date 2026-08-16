@@ -48,7 +48,17 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 
 ## Variables de entorno
 
-`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (van en `.env.local`, ver `.env.example`). **No son estrictamente obligatorias en local**: `src/lib/supabase.js` lee del env con *fallback* a los valores de producción, así que el sitio corre igual sin `.env.local`. En Vercel están configuradas como env vars.
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (van en `.env.local`, ver `.env.example`). **Son obligatorias: sin ellas la app tira al arrancar y queda en blanco.** En Vercel están configuradas como env vars.
+
+Hasta el 2026-08-16 `src/lib/supabase.js` caía a los valores de producción si faltaban, y el sitio corría igual sin `.env.local`. Se sacó ese fallback a propósito: era el bloqueante #1 del objetivo multi-cliente (ROADMAP §10.6) porque **un deploy mal configurado no fallaba, escribía en la base de la Fundación en silencio**. Ahora falla ruidoso. Los tests reciben valores dummy desde `vitest.config.js` (`test.env`), no desde `.env.local`.
+
+## La entidad es configuración, no código
+
+`src/config/entidad.js` es el **archivo único que se reemplaza para levantar una entidad nueva**: nombre, tipo jurídico, contacto, ubicación, redes, logo y link de cobro. Los derivados (`mailtoContacto`, `telContacto`, `whatsappUrl`, `redesActivas()`, `tituloPagina()`) salen de ahí para que ningún componente arme esas URLs a mano.
+
+**La regla: lo que varía por entidad va en datos; lo que es igual para todas va en código.** Antes de escribir el nombre de la Fundación, un mail, un teléfono o un dominio en un componente, va en `entidad.js`. Al 2026-08-16 había 42 archivos que nombraban a la Fundación: eso es lo que convierte cada cliente nuevo en un fork que diverge.
+
+Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Falta el resto de las páginas y, declarado aparte, `api/share/*`** (previews de OG): no se tocó porque los preview deployments de Vercel dan 401 y el OG solo se valida en producción.
 
 ## Arquitectura (big picture)
 

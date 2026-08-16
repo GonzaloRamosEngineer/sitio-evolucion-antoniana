@@ -27,8 +27,14 @@ Lo que queda son **dos cosas de naturaleza distinta**:
 | **Deuda** | 2 ítems técnicos + deuda menor. Nada bloquea nada | §A abajo |
 | **Producto** | El modelo aporte→acceso, que nunca se construyó | §10 abajo |
 
-La única **vulnerabilidad viva** es `react-router-dom@6.30.4` (open redirect → XSS,
-moderate). No tiene parche en la v6: el arreglo es react-router v7, un major. Ver 6.7.
+La única **vulnerabilidad viva** es `react-router-dom` (open redirect → XSS, moderate).
+Ver 6.7.
+
+⚠️ **Pendiente de aplicar a producción (2026-08-16):** la migración
+`20260816120000_fix_view_rls_bypass_and_anon_grants.sql` cierra una **fuga de datos
+financieros verificada en producción** — dos vistas puenteaban las RLS y exponían a
+`anon` el historial de pagos de cada persona y la facturación de la entidad. Está
+**validada en Docker pero NO aplicada**. Es lo más urgente del repo. Ver §C.
 
 ---
 
@@ -42,11 +48,14 @@ moderate). No tiene parche en la v6: el arreglo es react-router v7, un major. Ve
 
 **Lo que queda, en orden de valor:**
 
-1. **`react-router-dom@6 → v7`** — la **única vulnerabilidad viva** (open redirect → XSS,
-   moderate). No tiene parche en la v6: `6.30.4` es la última y sigue en el rango
-   vulnerable. La v7 es en buena medida compatible, pero es un major sobre el router de
-   toda la app: **rama propia, deploy propio, y verificación en navegador de todas las
-   rutas**, no de una muestra.
+1. **`react-router-dom` → por encima de `7.17.0`** — la **única vulnerabilidad viva**.
+   ⚠️ **Corregido el 2026-08-16:** el rango del aviso es `6.0.0 – 7.17.0`, o sea que
+   **subir a v7 a secas ya no alcanza** — hay que ir por encima de 7.17.0. Son dos CVE;
+   el de hidratación SSR (`deserializeErrors`) **no aplica acá** porque la app es una SPA
+   pura, el de open redirect sí. `npm audit fix` promete arreglarlo pero el *dry run*
+   confirma que no cambia nada: sigue requiriendo el major a mano. Es un major sobre el
+   router de toda la app: **rama propia, deploy propio, y verificación en navegador de
+   todas las rutas**, no de una muestra.
 2. **`eslint@8 → v9`** — la config ya es flat, así que el salto es menor de lo que suena.
    Sale de EOL. Sin vulns asociadas.
 3. **`tailwindcss@3 → v4`** — cambio grande de motor. Sin urgencia.
@@ -142,6 +151,60 @@ se saben:
 (el esquema se aplicó pegando SQL en el editor web), así que el CLI intentaría aplicar
 las tres migraciones. Convergen sin cambios y cada una corre en su transacción, pero son
 ~1.100 líneas de DDL contra la base viva: backup reciente y fuera de horario.
+
+---
+
+## C. Pendiente crítico: aplicar el fix de seguridad a producción
+
+La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql` **está validada en
+Docker y NO aplicada a producción.** Hasta que se aplique, la fuga sigue abierta.
+
+**Qué arregla.** Dos vistas (`user_support_history`, `fundacion_metrics`) eran
+`OWNER TO postgres` sin `security_invoker`, así que corrían con permisos del dueño y
+**puenteaban las RLS**. Verificado contra producción pidiendo solo conteos:
+
+| Como `anon` | Tipo | Filas |
+|---|---|---|
+| `donations`, `memberships`, `users`, `registrations` | tabla | 0 — RLS funciona |
+| `user_support_history` | vista | **20 — fuga** |
+| `fundacion_metrics` | vista | **1 — fuga** |
+
+Los *mismos* datos, negados por la tabla y entregados por la vista. Se exponía
+`amount`, `status`, `payment_id`, `preapproval_id` y `plan` por persona.
+
+**Cómo aplicarla:**
+
+```bash
+# 1. Backup reciente de la base (no es opcional).
+# 2. Revalidar en Docker — el procedimiento completo en supabase/checks/README.md.
+#    Los checks T8/T9/T10 de rls-check.sql cubren esta regresión.
+# 3. Aplicar. Como el historial remoto está vacío (ver §B), conviene pegar el SQL
+#    en el editor web en vez de `supabase db push`, que intentaría correr las
+#    cuatro migraciones.
+```
+
+**Después de aplicar, confirmar que la fuga cerró** (debe dar `permission denied` y `404`):
+
+```bash
+URL=https://<proyecto>.supabase.co; KEY=<anon key>
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/user_support_history?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 404
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/fundacion_metrics?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 401/403
+```
+
+**Y confirmar que el Dashboard sigue funcionando**, que es lo que esta migración podía
+romper: entrar con una sesión iniciada y verificar que "total donado" y "suscripciones
+activas" no quedaron en cero. En Docker se verificó que `authenticated` sigue viendo los
+valores, pero conviene mirarlo en la app real.
+
+**Lección que deja, y es la que importa.** El razonamiento de §10.1.g —"no es un agujero
+hoy porque RLS está habilitado en las 15 tablas"— es correcto **para tablas**. Las vistas
+no son tablas, y eran justo los dos objetos donde el argumento no aplicaba. No fue un
+descuido sino un punto ciego lógico: **la afirmación de seguridad se escribió sobre una
+categoría de objeto y el esquema tenía otra.** Por eso T8 ahora falla si alguien crea
+cualquier vista sin `security_invoker`: la verificación tiene que ser automática, no
+depender de que alguien mire en el momento justo.
 
 ---
 
@@ -481,16 +544,351 @@ mutual, una cámara o una cooperativa de servicios.
 
 Los tres bloqueantes reales para un segundo cliente, en orden:
 
-1. **`src/lib/supabase.js:8-13` cae a la URL y anon key de producción** si faltan las
-   variables de entorno. Un fork mal configurado escribe en la base de la Fundación **sin
-   fallar**. Es el más barato de arreglar y el más grave: debe romper el build, no
-   silenciarse.
+1. ~~**`src/lib/supabase.js` cae a la URL y anon key de producción**~~ — **resuelto el
+   2026-08-16.** Ahora tira si faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+   Verificado: un build sin variables **ya no contiene la URL de producción en ningún
+   chunk** (antes quedaba horneada) y el DOM da 3,3 KB sin `<nav>` ni `<footer>` — la
+   firma de sitio roto documentada en §B. Falla a la vista en vez de escribir en la base
+   de la Fundación.
 2. ~~**Las migraciones no reconstruyen desde cero**~~ — **resuelto el 2026-08-16**
    (`HISTORIAL.md`). Sin eso, "levantar un cliente
    nuevo" es trabajo manual, no un comando. Es la fase 0 de 10.3.
-3. **Marca y textos hardcodeados** en ~40 archivos (ítem 3.4 y afines).
+3. **Marca y textos hardcodeados** en ~40 archivos (ítem 3.4 y afines). **Parcialmente
+   resuelto el 2026-08-16:** existe `src/config/entidad.js` como archivo único de la
+   entidad y están migrados `Header`, `Footer`, `BottomNavBar` y `resource-state`.
+   Falta el resto de las páginas y `api/share/*` (ver CLAUDE.md).
 
 Ninguno de los tres es este modelo de dominio — pero **conviene resolver el 2 antes de
 empezar la fase 1**, porque cada migración nueva agranda ese problema.
+
+---
+
+### 10.7 — Qué es realmente un aporte (2026-08-16)
+
+> Esta sección **corrige y profundiza la premisa de 10.0**. No la reemplaza: el modelo de
+> tablas de 10.2 sigue en pie. Lo que cambia es *qué consecuencia* tiene un aporte, y de
+> ahí se desprende una pieza que faltaba.
+
+#### El problema con "una sola consecuencia"
+
+La regla relevada en 10.0 dice que hay dos maneras de aportar y **una sola consecuencia:
+acceder a beneficios**, y que lo único que varía es cuánto dura ese acceso.
+
+La primera mitad es correcta y es la buena idea del modelo: cuota y donación son la misma
+cosa —un aporte— y conviene un libro único. **La segunda mitad es la que deja el modelo
+hueco.** Si la única consecuencia de aportar es acceder a descuentos, la entidad se
+convierte en un club de beneficios, y ahí pierde siempre: el socio hace la cuenta de
+"¿qué me dan por mi plata?" y cualquier alternativa comercial le da más.
+
+Peor todavía para el objetivo de 10.6: **acceso-por-pago es exactamente lo que ya hacen
+CuotaQ, SIGCLU, DigitalClub y PortalSocios**, que llevan años en eso y compiten por
+precio. Construir solo eso es llegar último a una pelea ya perdida.
+
+#### Por qué la gente aporta a una entidad civil
+
+En orden aproximado de peso real, el acceso es el más débil de los cinco:
+
+| Motivo | Qué busca | ¿Lo cubre el modelo actual? |
+|---|---|---|
+| **Pertenencia** | Ser parte, y que se note. Antigüedad, número de socio | No |
+| **Causa** | Que esto exista. Sostener algo concreto | No |
+| **Confianza** | Saber que la plata hizo algo | No |
+| **Reconocimiento** | Que la entidad sepa quién sos | No |
+| **Reciprocidad** | Descuentos y beneficios | Sí, es lo único |
+
+**El modelo cubre el motivo más débil y ninguno de los cuatro fuertes.** Esa es la razón
+de fondo por la que los módulos se sienten sueltos, y es más profunda que la de 10.1.b.
+
+#### La corrección: un aporte tiene tres consecuencias, no una
+
+1. **Destino** — a qué se aplicó. Es lo que convierte "pagué una cuota" en "sostuve el
+   taller de robótica". Hoy no existe: `donation_type` es texto libre sin escritor
+   (10.1.e) y no hay campañas.
+2. **Pertenencia** — la historia acumulada. "Aportaste 14 veces desde 2023, sostuviste
+   3 proyectos, sos socio hace 4 años." Es un *derivado* del libro `aportes`, así que
+   sale casi gratis una vez que el libro existe.
+3. **Acceso** — los beneficios. Real, pero tercero.
+
+Lo que hay que **agregar** al diseño de 10.2 es el **destino y su rendición**: el circuito
+`aporte → destino → impacto → se lo mostramos a quien aportó`. Ese circuito cerrado es la
+pieza que no tiene ningún competidor.
+
+Esto **promueve a `campanas`**: en 10.3 estaba en la fase 3 como "donaciones dirigidas",
+una funcionalidad más. No lo es: es el mecanismo por el cual un aporte adquiere
+significado. **Conviene subirla a la fase 2.**
+
+#### Cuota y donación no son lo mismo con distinta duración
+
+10.0 las aplana en "varía cuánto dura el acceso". Se comportan distinto porque el motivo
+es distinto, y el producto debería reflejarlo:
+
+- **Cuota** — recurrente. Su valor es la **pertenencia sostenida**: identidad, antigüedad,
+  condición institucional. Se renueva sola; se pierde por olvido, no por decisión.
+- **Donación** — puntual. Su valor es la **causa concreta**: esto, ahora. Se decide cada
+  vez y necesita un destino visible para repetirse.
+
+De ahí sale una consecuencia práctica: a la cuota se la sostiene **recordándole al socio
+por qué es socio**; a la donación se la repite **mostrando qué pasó con la anterior**. Son
+dos mecánicas de producto distintas, no un parámetro de duración.
+
+#### Por qué además es la diferencia comercial
+
+Los productos del mercado optimizan la **cobranza**: recordatorios, morosidad, débito
+automático. Es una palanca de extracción y está saturada.
+
+La palanca que nadie toca es la **retención por sentido**. Nadie deja de pagar la cuota
+porque el recordatorio llegó tarde; deja de pagar porque se olvidó de para qué la pagaba.
+Un sistema que le muestra a cada aportante qué sostuvo ataca la causa en vez del síntoma
+— y de paso hace que el próximo aporte sea más probable.
+
+#### Implicación de esquema (se suma a 10.2, no lo reemplaza)
+
+```sql
+-- `aportes` necesita destino explícito, no solo origen de pago:
+--   campana_id ya estaba previsto en 10.2  -> pasa a ser central, no opcional
+-- y hace falta poder rendir:
+alter table public.campanas
+  add column monto_recaudado numeric not null default 0,  -- desnormalizado, para la barra
+  add column rendicion_md    text;                        -- qué se hizo con la plata
+
+-- La vista que le da sentido al aporte, y la pantalla que vende:
+--   "aportaste N veces, sostuviste estas campañas, sos socio desde X"
+-- Se deriva de `aportes`; NO es una tabla nueva.
+-- ⚠️ Crearla con security_invoker = true (ver migración 20260816120000).
+```
+
+#### La pantalla que hay que construir para mostrar esto
+
+**El estado de cuenta del aportante**: historial, total acumulado, antigüedad, campañas
+sostenidas y —solo al final— los beneficios vigentes. Es la demo que se le muestra a una
+comisión directiva y es lo que ningún competidor puede mostrar. Va en el Dashboard, que ya
+existe.
+
+#### Qué queda para decidir con la Fundación
+
+Las cinco preguntas de 10.4 siguen abiertas y son previas al código. Se les suma una:
+**¿la entidad está dispuesta a rendir cuentas por campaña?** Si la respuesta es que no
+—que no quiere publicar en qué se gastó— todo este circuito se cae y conviene saberlo
+antes de construirlo.
+
+---
+
+### 10.8 — El modelo real de la Fundación, relevado (2026-08-16)
+
+> Relevado con el dueño el mismo día. **Esto reemplaza la premisa de 10.0 y ajusta la
+> 10.7**: no hay dos maneras de aportar sino tres, y no se distinguen por duración.
+
+#### Las tres formas de aportar
+
+| | Qué es | Temporalidad | Destino |
+|---|---|---|---|
+| **Campaña puntual** | Materiales (pelotas, conos), profesionales (nutricionista, psicólogo, preparador físico, acompañamiento docente) | Puntual | Una **cosa** concreta y finita |
+| **Apadrinamiento** | Cubrir la cuota de la escuelita formativa o de inferiores de un chico | Recurrente | Una **persona** (o un cupo) |
+| **Cuota social** | Aporte simbólico para sostener la estructura: administración, alquiler, sueldos | Recurrente | La **institución** |
+
+#### Por qué esto rompe el modelo de 10.0
+
+10.0 decía: *"dos maneras de aportar, una sola consecuencia, lo único que varía es cuánto
+dura el acceso"*. Con el modelo real a la vista, **la duración no es el eje**. Hay dos
+ejes independientes:
+
+- **Temporalidad**: puntual ↔ recurrente
+- **Destino**: una cosa ↔ una persona ↔ la institución
+
+**El apadrinamiento es el que rompe la simetría**: es recurrente *y* dirigido. Si se
+asume "recurrente = cuota social", el apadrinamiento no tiene dónde vivir — y es
+justamente el producto más vendible de los tres. La cuota social es recurrente y **no**
+dirigida; son cosas distintas que hoy comparten la misma tabla `memberships`.
+
+#### ⚠️ El sistema ya promete apadrinamiento y no lo tiene
+
+Verificado en el código:
+
+- `MembershipList.jsx:84` — *"Gestión de la red de padrinos y sostenimiento mensual"*
+- `MembershipList.jsx:131` — columna *"Padrino / Madrina"*
+- `DashboardHeader.jsx:113` — el rol que muestra es literalmente `'Padrino'`
+- `Agradecimiento.jsx:52` — *"Te damos una cálida bienvenida como padrino/madrina"*
+- `membershipApi.js:190` — el `reason` que va a MercadoPago es *"Beca mensual"*
+
+**Pero en la base no hay ningún padrinazgo.** `memberships` es una suscripción de
+MercadoPago con `plan` (texto), `amount` y `preapproval_id`: sin beneficiario, sin cupo,
+sin programa, sin destino. La suscripción se crea eligiendo **solo un monto** entre seis
+opciones (`Collaborate.jsx:31-38`). **El vocabulario del producto ya promete lo que el
+modelo de datos no puede sostener** — y es exactamente el hueco de 10.1.b, pero peor,
+porque acá sí se prometió explícitamente.
+
+#### ⚠️ Falta la mitad del libro: no hay egresos
+
+Para "mostrar en qué se gastó cada peso" hacen falta **las dos columnas**. Hoy:
+
+- **Ingresos**: parcial. `donations` y `memberships` registran plata que entra, sin destino.
+- **Egresos**: **no existe absolutamente nada.** Buscado `gasto|egreso|expense|comprobante|
+  factura|rendicion` en `src/` y `supabase/`: cero resultados de modelo. La única
+  aparición es `Collaborate.jsx:348`, que **le promete al donante "Recibís comprobante
+  oficial"**.
+
+Esto corrige lo que decía 10.7. Ahí se propuso `campanas.rendicion_md text`, un campo de
+texto libre. **Es insuficiente para lo que se quiere hacer**: una rendición creíble no es
+un párrafo escrito a mano, es la suma de gastos reales con su comprobante adjunto,
+contrastable contra lo recaudado. Hace falta una tabla `gastos`, no un campo.
+
+**La buena noticia:** la infraestructura de comprobantes **ya existe y está probada**.
+`documents` + `document_versions` + el bucket privado `comision-docs` con policies sobre
+`is_board_member()` es exactamente el mecanismo de "archivo adjunto versionado con acceso
+restringido". Se reusa, no se construye.
+
+#### ⚠️ Menores: la restricción de diseño que condiciona todo el apadrinamiento
+
+Los beneficiarios son **chicos**. Y los servicios que se quieren financiar
+—nutricionista haciendo mediciones, psicólogo, preparador físico— **generan datos de
+salud de menores**, que en Argentina son datos sensibles (Ley 25.326) y suman las
+protecciones de la Ley 26.061 sobre dignidad e imagen de niñas, niños y adolescentes.
+
+**Dos reglas de diseño que salen de esto, y conviene tomarlas antes de escribir el
+esquema:**
+
+1. **El padrino apadrina un _cupo_ o una _beca_, nunca un chico identificado.** Nada de
+   "apadriná a Juan, 12 años, foto". El reporte de impacto va anonimizado y agregado
+   ("tu beca cubrió la cuota de un chico de la categoría 2012; este trimestre hubo 24
+   entrenamientos y 2 controles nutricionales"). Esto **no** debilita el producto: la
+   evidencia de fundraising dice que el vínculo con el *programa* retiene parecido al
+   vínculo con la persona, y sin el riesgo.
+2. **Los datos clínicos no van en este sistema.** Ni en v1 ni probablemente nunca. Que
+   la nutricionista y el psicólogo lleven su registro donde corresponde; el sistema
+   guarda que *se prestó el servicio*, no *qué dio el resultado*. Mezclar historia
+   clínica de menores con una base que tiene páginas públicas y anon con `SELECT` es
+   pedir un incidente.
+
+→ **Esto requiere asesoramiento legal antes de construir**, no después: consentimiento
+de los tutores, qué se puede publicar y qué no. No es una decisión de arquitectura.
+
+#### Qué hay y qué falta
+
+| Pieza | Estado |
+|---|---|
+| Cobro recurrente y puntual (MercadoPago) | ✅ Funciona |
+| Roles, RLS, panel admin, portal de comisión | ✅ Funciona |
+| Storage privado + documentos versionados (→ comprobantes) | ✅ Reusable tal cual |
+| Campañas con meta y estado | ❌ No existe |
+| Libro de aportes con destino | ❌ No existe (10.2 lo diseña) |
+| **Gastos + comprobante + balance por campaña** | ❌ **No existe. Es la mitad faltante** |
+| Cupos/becas y apadrinamiento con beneficiario | ❌ No existe (y el UI ya lo promete) |
+| Rendición pública | ❌ No existe |
+
+**No es "deuda técnica": es funcionalidad que nunca se construyó.** La deuda real que sí
+bloquea es corta: `donation_type` es texto libre sin escritor (10.1.e), `memberships` no
+tiene destino ni unicidad (10.1.f), y la migración de seguridad de §C sigue sin aplicarse.
+
+#### Orden sugerido
+
+| Fase | Qué | Aprox. |
+|---|---|---|
+| **1** | `campanas` (tipo, meta, estado) + `aportes` con `campana_id` + elegir destino en el checkout | ~1 semana |
+| **2** | `gastos` + comprobante reusando Storage + balance por campaña | ~1 semana |
+| **3** | Rendición pública: barra de progreso y "así se gastó" | ~4-5 días |
+| **4** | Cupos/becas + apadrinamiento anonimizado + reporte al padrino | ~1 semana + legal |
+
+⚠️ **Regla de lanzamiento: no publicar campañas antes de que funcione la fase 2.**
+Prometer "te muestro en qué se gastó" y no mostrarlo es peor que no prometerlo — y
+`Collaborate.jsx:348` ya lo promete hoy.
+
+---
+
+### 10.9 — El modelo genérico: de la Fundación al producto (2026-08-16)
+
+> 10.8 relevó **cómo funciona la Fundación**. Esta sección abstrae eso a un modelo que
+> sirve para cualquier entidad que recaude y rinda cuentas, sin que el esquema tenga que
+> saber si sus beneficiarios son chicos, perros o libros.
+
+#### La idea que unifica: todo aporte va a un *destino*
+
+Las tres formas de 10.8 no son tres cosas distintas: son **tres tipos del mismo
+concepto**. Un destino es *aquello a lo que se le puede dar plata*, y hay tres:
+
+| Tipo | Qué es | Finito | Recurrente | Ejemplos por rubro |
+|---|---|---|---|---|
+| `campana` | Un objetivo concreto con meta | Sí, cierra | No | Pelotas y conos · Operar a un perro · Techo del salón |
+| `padrinable` | Un sujeto sostenido en el tiempo | No | Sí | Beca de un chico · Un animal del refugio · Una hectárea |
+| `institucional` | La entidad misma | No | Sí | Cuota social: administración, alquiler, sueldos |
+
+**Por qué conviene una sola tabla y no tres:** los tres reciben aportes, consumen gastos y
+se rinden igual. Si son tablas separadas, cada consulta del libro necesita tres joins y
+tres caminos; unificados, **la rendición es una sola consulta** y el libro tiene una sola
+clave foránea. El costo es un discriminador `tipo` con algunas columnas que no aplican a
+todos (`meta_monto` es null en `institucional`), y ese costo es mucho menor.
+
+```
+entidad
+  └── destinos (tipo: campana | padrinable | institucional)
+        ├── aportes  (ingresos)  → destino_id
+        └── gastos   (egresos)   → destino_id + comprobante
+
+  saldo(destino) = Σ aportes − Σ gastos      ← la rendición, para los tres tipos
+```
+
+#### La variable que descubre el ejemplo del refugio
+
+El caso "refugio de animales" no es un ejemplo más: **expone la única diferencia real
+entre rubros**, y es una que 10.8 dio por sentada.
+
+En la Fundación, el padrinable **no se puede mostrar**: son menores, y de ahí salieron las
+dos reglas de 10.8 (cupo anonimizado, sin datos clínicos). En un refugio pasa **lo
+contrario**: "Apadriná a Rocky", con foto, nombre e historia, **es el motor entero de la
+recaudación**. Un perro no tiene derecho a la intimidad; un chico sí.
+
+Si el esquema se escribe pensando solo en la Fundación, sale anonimizado por dentro y no
+sirve para el refugio. Si se escribe pensando solo en el refugio, sale identificable y
+**expone menores en el primer cliente**. Los dos errores son caros y evitables:
+
+```sql
+-- La visibilidad del beneficiario es un dato del destino, no una regla del código.
+visibilidad_beneficiario text not null default 'anonimizado'
+  check (visibilidad_beneficiario in ('publico','anonimizado'))
+```
+
+**El default es `anonimizado` a propósito.** Es la regla de "seguro por defecto": si
+alguien crea un destino y no piensa en esto, no expone a nadie. Mostrar un beneficiario
+tiene que ser un acto deliberado.
+
+| Rubro | Padrinable | Visibilidad |
+|---|---|---|
+| Fundación con chicos | Beca / cupo en un programa | `anonimizado` |
+| Refugio de animales | El animal, con foto y nombre | `publico` |
+| Club deportivo | Una categoría o división | `publico` (es un colectivo) |
+| Comedor comunitario | Una ración diaria | `anonimizado` |
+| Biblioteca popular | Un fondo o una sección | `publico` |
+
+#### La otra variable: el vocabulario
+
+Un refugio no dice "socio", dice "padrino". Una cámara dice "asociado". Un club dice
+"hincha" o "socio". Que el producto se sienta propio depende de que hable el idioma del
+rubro, y eso **no justifica un fork**: va en `src/config/entidad.js`, junto al resto de lo
+que ya se movió a datos el 2026-08-16.
+
+```js
+// en entidad.js
+vocabulario: {
+  aportante:     'padrino',        // 'socio' | 'asociado' | 'padrino' | 'miembro'
+  padrinable:    'beca',           // 'beca' | 'animal' | 'categoría' | 'ración'
+  apadrinar:     'Sostené una beca', // el CTA
+  cuotaSocial:   'Cuota social',
+}
+```
+
+#### Qué NO hay que hacer todavía
+
+**Hacer el esquema genérico ahora es gratis; hacer el producto multi-cliente ahora no.**
+Conviene no confundir las dos cosas:
+
+- ✅ **Sí ahora:** que `destinos`, `aportes` y `gastos` no nombren a la Fundación ni
+  asuman su rubro, y que la visibilidad y el vocabulario sean datos. Diseñarlo genérico
+  no cuesta más que diseñarlo específico, y rehacerlo después sí cuesta.
+- ❌ **Todavía no:** panel de alta de clientes, multi-tenancy, planes, facturación,
+  onboarding. Eso es otro negocio y sigue dependiendo de las ocho entrevistas.
+
+La regla es la misma de siempre en este repo: **lo que varía por entidad va en datos.**
+Lo nuevo es que ahora sabemos *qué* varía — visibilidad del beneficiario y vocabulario—
+porque apareció un segundo rubro imaginario que lo puso a prueba. **Ese es el valor de
+pensar el refugio antes de construir: no es una distracción, es el test del diseño.**
 
 ---

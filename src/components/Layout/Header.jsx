@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { entidad } from "@/config/entidad";
 import {
   Menu,
   X,
@@ -95,7 +96,7 @@ const Header = () => {
         .toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "U";
 
-  const logoUrl = "/img/transparente.png"; // Asegúrate de que esta ruta sea correcta o usa un placeholder si falla
+  const logoUrl = entidad.logo;
 
   // helpers hover-intent
   const clearTimer = (ref) => {
@@ -219,16 +220,16 @@ const Header = () => {
               {/* Si tienes logo imagen, usa esto, sino la inicial */}
               <img
                 src={logoUrl}
-                alt="Fundación Evolución Antoniana"
+                alt={entidad.nombre}
                 className="w-full h-full object-contain p-1"
               />
             </motion.div>
             <div className="flex flex-col">
               <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
-                Evolución <span className="text-brand-action">Antoniana</span>
+                {entidad.marcaLinea1} <span className="text-brand-action">{entidad.marcaLinea2}</span>
               </span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest leading-none mt-1">
-                Fundación
+                {entidad.tipoDisplay}
               </span>
             </div>
           </Link>
