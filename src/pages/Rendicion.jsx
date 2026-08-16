@@ -144,6 +144,11 @@ const Rendicion = () => {
                       <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm tabular-nums">
                         <span className="text-gray-600">
                           Recaudado <strong className="text-brand-dark">{pesos(balance.recaudado)}</strong>
+                          {/* La meta solo si existe: el destino institucional no
+                              tiene, y "de $0" se leería como un error. */}
+                          {d.meta_monto ? (
+                            <span className="text-gray-500"> de {pesos(d.meta_monto)}</span>
+                          ) : null}
                         </span>
                         <span className="text-gray-600">
                           Rendido <strong className="text-brand-primary">{pesos(balance.rendido)}</strong>
