@@ -892,3 +892,72 @@ porque apareció un segundo rubro imaginario que lo puso a prueba. **Ese es el v
 pensar el refugio antes de construir: no es una distracción, es el test del diseño.**
 
 ---
+
+### 10.10 — Evidencia de producción: el canal recurrente nunca funcionó (2026-08-16)
+
+Contrastando el panel de MercadoPago contra la base. **Confirma tres ítems de 10.1 que
+estaban planteados como hipótesis y agrega uno nuevo.**
+
+Estado en MercadoPago: **7 suscripciones, ninguna activa.** Cinco `Cancelada`, dos
+`Vencida`. La única de $5.000 figura **"Sin cobro"**: nunca cobró un peso.
+
+#### a) El webhook no sincroniza el estado de vuelta ← lo más grave
+
+| | Base | MercadoPago |
+|---|---|---|
+| Suscripción $5.000 | `pending` | **Cancelada** |
+| Suscripción $5.000 | `pending` | no aparece |
+
+La base dice `pending` desde noviembre de 2025 para algo que MercadoPago da por cancelado.
+**El estado de `memberships` no es confiable**: refleja el momento en que se creó la
+suscripción, no lo que pasó después. Todo lo que se construya sobre ese campo —acceso,
+padrinazgo, rendición— hereda el problema.
+
+El webhook vive fuera del repo (`mp-supabase-webhook.onrender.com`), sin tests y con
+arranque en frío. Es el punto único de falla sobre el flujo que genera la plata.
+
+#### b) `Vencida` no existe en el esquema
+
+El CHECK de `memberships` admite `pending|active|paused|cancelled`. MercadoPago tiene
+además **`Vencida`** (falló el cobro repetidamente), y hay dos así. **No hay dónde
+guardarlo**: ni con el webhook arreglado se podría registrar ese estado. Falta un valor en
+el CHECK, y falta decidir si "vencida" corta el acceso o entra en el período de gracia de
+10.4.3.
+
+#### c) 10.1.f ya pasó — no era teórico
+
+**Cuatro suscripciones idénticas**, mismo email, mismo monto, el mismo día (18/oct/2025).
+Es exactamente "un socio puede acumular varias membresías activas, sin restricción de
+unicidad". Salió gratis porque eran de $50 y se cancelaron todas; **si se hubieran
+activado, a esa persona se le cobraba cuatro veces por mes.**
+
+→ **Subir 10.1.f de la fase 5 ("higiene") a la fase 1.** Un índice único parcial sobre
+`(user_id) where status in ('active','pending')` cuesta una línea y evita un cobro
+múltiple a una persona real.
+
+#### d) 10.1.c confirmado: tres emails, una persona
+
+La misma persona aparece como `gonzaramosmp@gmail.com` y `gonramo4200@gmail.com` en
+MercadoPago, y con un registro asociado a la cuenta `info@evolucionantoniana.com` en la
+base. `payer_email` es el mail de MercadoPago y puede no ser el de la cuenta: sin
+reconciliación, el sistema ve tres personas.
+
+#### La buena noticia, y no es menor
+
+Las 7 suscripciones tienen pinta de pruebas: montos de $50, la misma persona repetida,
+cuatro clics el mismo día. **No hay ni un padrino real.** O sea que el canal recurrente
+no está *roto*: **nunca llegó a funcionar.**
+
+Eso cambia el riesgo de todo el §10 y conviene aprovecharlo:
+
+- **No hay que migrar suscriptores vivos.** Ni backfill delicado, ni riesgo de cobrar de
+  más, ni corte de servicio a nadie.
+- **Se puede rediseñar el modelo de cobro sin costo de transición.**
+- **Este es el momento más barato que va a haber para cambiarlo.** Cada padrino real que
+  entre a partir de ahora encarece la migración.
+
+⚠️ **Corolario para el negocio:** el canal recurrente está **sin estrenar, no degradado**.
+Antes de promocionarlo hay que arreglar (a) y (c), o el primer padrino de verdad entra a
+un circuito que no sabe informar si su suscripción sigue viva.
+
+---
