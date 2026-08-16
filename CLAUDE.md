@@ -124,10 +124,22 @@ Cada página define su meta con `<Helmet>` (title + description; `canonical` en 
 
 ## Deuda técnica conocida
 
-- **Ver `ROADMAP.md`** (raíz del repo): auditoría completa + hoja de ruta accionable de
-  bugs, deuda técnica y UI/UX, con `archivo:línea` y esfuerzo estimado. Mantener ese
-  documento al día en vez de re-auditar. Corrige 4 puntos desactualizados de este CLAUDE.md
-  (ver su última sección).
-- 3 vulns npm que requieren bumps breaking (`vite@8`, `uuid@14`) — migración aparte.
-- Tests de humo mínimos (Vitest); falta cobertura del flujo real. ESLint deja ~55 warnings
-  de backlog (imports sin usar, exhaustive-deps). Ambos se amplían/limpian en la Sesión F.
+Dos archivos, con roles distintos (se partieron el 2026-08-16, cuando el ROADMAP llegó a
+1.522 líneas con el 88% de historia y las premisas viejas empezaron a pudrirse sin que
+nadie lo notara):
+
+- **`ROADMAP.md`** — **solo lo que falta hacer.** Es el que hay que leer antes de
+  trabajar y el que hay que mantener al día. Incluye los dos procedimientos de
+  verificación que se aprendieron rompiendo cosas: comprobar el bundle en un navegador
+  de verdad, y validar migraciones en Docker.
+- **`HISTORIAL.md`** — el trabajo cerrado (sesiones A-I, 83 ítems) **con su
+  razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
+  motivo documentado.
+
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan ~35 archivos de código
+en comentarios. Mové ítems entre archivos si hace falta, pero no los renumeres.
+
+Estado al 2026-08-16: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
+(open redirect → XSS) y su arreglo es react-router v7, un major. **78 tests** de humo;
+falta cobertura del flujo real. ESLint deja **53 warnings** de backlog (imports sin usar,
+exhaustive-deps): **la barra es 0 errores**, los warnings se barren de a poco.
