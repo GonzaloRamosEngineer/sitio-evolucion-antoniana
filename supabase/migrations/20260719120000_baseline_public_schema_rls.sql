@@ -9,9 +9,20 @@
 --
 -- Esto documenta y versiona la seguridad real del sitio: toda escritura del
 -- browser sale con la anon key, por lo que estas políticas SON la barrera.
--- Las tablas del portal de Comisión (projects/tasks/documents/document_versions)
--- ya estaban versionadas en migraciones previas; acá aparecen igualmente como
--- snapshot completo (las sentencias son convergentes, no destructivas).
+--
+-- ESTE ARCHIVO ES EL PUNTO DE PARTIDA (§10 fase 0, 2026-08-16)
+-- Hasta agosto de 2026 convivía con cinco migraciones de junio
+-- (`20260612*`) que lo **precedían** por timestamp y referenciaban
+-- `public.users`, tabla que crea este mismo archivo. Resultado: la base **no se
+-- reconstruía desde cero** — `supabase db push` fallaba en las cinco con
+-- `relation "public.users" does not exist`.
+-- Se eliminaron: todo su contenido de esquema `public` (tablas
+-- projects/tasks/documents/document_versions, funciones, triggers, índices,
+-- columnas, constraints, policies y GRANTs) ya está íntegro acá, verificado
+-- objeto por objeto. Lo único que **no** estaba —el bucket `comision-docs` y
+-- sus cuatro policies, que viven en el esquema `storage` y por eso el dump de
+-- `public` nunca los capturó— se movió a `20260719140000_comision_docs_storage.sql`.
+-- El detalle de cómo se llegó hasta acá sigue en el historial de git.
 --
 -- NOTA: la base productiva YA está en este estado; esta migración no necesita
 -- aplicarse ahí (si se aplica, converge sin cambios). Sirve para auditoría y

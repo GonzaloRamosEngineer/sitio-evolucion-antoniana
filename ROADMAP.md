@@ -1073,7 +1073,7 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
 
-### 🟠 Las migraciones no reconstruyen la base desde cero
+### ✅ Las migraciones ya reconstruyen la base desde cero (HECHO 2026-08-16)
 
 Hallazgo de la validación con Docker (ver §8, Sesión F2). Las 5 migraciones de junio
 fallan en una base nueva con `relation "public.users" does not exist`, porque preceden
@@ -1088,11 +1088,52 @@ garantizar.
 - **(c) Documentar el orden correcto** y no tocar los archivos. Cero riesgo, pero el
   comando estándar sigue fallando.
 
-→ **Recomendado: (a), y verificarlo levantando la base desde cero con
-`supabase/checks/`** (el procedimiento ya está documentado). Es la única forma de que
-la afirmación "el esquema está versionado" sea cierta de punta a punta. ~2-3 horas.
-**No urgente** mientras la base de producción exista y esté respaldada; **urgente el
-día que haga falta recrearla**, que es exactamente cuando no se quiere descubrir esto.
+→ **Hecha la (a), pero con una corrección importante sobre lo que decía este ítem.**
+
+**La recomendación original —"squashear las 5 dentro del baseline"— habría roto algo.**
+Al comparar objeto por objeto lo que crean las 5 migraciones contra el baseline, 26 de
+30 estaban cubiertos. Los 4 que faltaban eran las **policies del bucket
+`comision-docs`**, que viven en el esquema `storage` y por eso el
+`supabase db dump --schema public` nunca las capturó. Borrar las migraciones sin más
+habría dejado el módulo de documentos de la Comisión **sin permisos** en cualquier base
+reconstruida — y como RLS deniega por defecto, inaccesible. Lo mismo con el bucket, que
+también se crea ahí.
+
+**Qué se hizo:**
+1. `20260719140000_comision_docs_storage.sql` — nueva, posterior al baseline, con el
+   bucket y las 4 policies. **Va guardada** con `to_regclass('storage.buckets')` porque
+   `storage.buckets`/`storage.objects` las crea el servicio storage-api, no la imagen de
+   Postgres: sin la guarda rompería la validación de RLS en Postgres pelado. El salto
+   avisa con `RAISE NOTICE` — es normal al validar RLS y sería grave en un proyecto real,
+   así que no puede pasar en silencio.
+2. Eliminadas las 5 de junio. Su contenido de esquema `public` está íntegro en el
+   baseline; el detalle histórico, en git.
+3. Cabecera del baseline y `supabase/checks/README.md` actualizados: ya no hace falta
+   el workaround de "aplicar solo el baseline".
+
+**Verificación (Docker, sin tocar producción):**
+- **Reproducido el fallo primero**, para saber que la prueba medía algo: las 5 de junio
+  fallaban con `relation "public.users" does not exist`.
+- Base nueva + las 3 migraciones en orden estándar → **aplican limpio**. 15 tablas, 18
+  funciones, 32 policies, RLS en las 15 tablas, 2 triggers sobre `auth.users`, y
+  presentes todos los objetos que aportaban las de junio.
+- **Probadas las dos ramas de la guarda.** La del salto y la real (provisionando
+  `storage` a mano): crea el bucket con sus atributos y las 4 policies con la misma
+  forma de cláusulas que el original (select `using`, insert `with check`, update ambas,
+  delete `using`). Idempotente: segunda corrida, 0 errores y siguen siendo 4.
+- **`rls-check.sql` da salida idéntica antes y después** del cambio, normalizando
+  timestamps. Los 2 `ERROR` que aparecen ya estaban: uno es el resultado *esperado* de
+  T3 y el otro un artefacto del propio script.
+
+**Un detalle que costó tiempo y conviene saber:** el baseline llegó a fallar con
+`could not open relation with OID 16674` por aplicarlo mientras el contenedor todavía
+inicializaba. `pg_isready` da OK antes de que terminen los scripts de setup de la imagen.
+Señal confiable: el **segundo** `database system is ready to accept connections`.
+
+⚠️ **Al hacer el próximo `supabase db push`:** el historial remoto tiene registradas las
+5 migraciones eliminadas. Si el CLI se queja de discrepancia, se resuelve con
+`supabase migration repair`. No se pudo comprobar de antemano porque requiere
+credenciales del proyecto.
 
 ---
 
@@ -1356,16 +1397,17 @@ pregunta original** (por qué los módulos se sienten desconectados).
 
 | Fase | Qué | Esfuerzo | Deja algo usable? |
 |---|---|---|---|
-| **0** | Arreglar el orden de migraciones (ver §9, 🟠) **antes** de agregar 5 migraciones nuevas sobre una cadena que ya no reconstruye | ~2-3 h | Prerrequisito |
+| **0** | ~~Arreglar el orden de migraciones~~ **✅ HECHO 2026-08-16** — ver §9 | ~2-3 h | Prerrequisito, ya cubierto |
 | **1** | `aportes` + `acceso_vigente()` + `tiene_acceso()` + backfill | ~2-3 días | Historial de aportes en el panel del socio |
 | **2** | `precio_general`/`precio_socio` en actividades + `requiere_acceso` en beneficios | ~2-3 días | **Acá la cuota empieza a valer algo** |
 | **3** | `campanas` + FK desde donaciones + barra de progreso pública | ~2 días | Donaciones dirigidas |
 | **4** | `socios` + `categorias_socio` + número y antigüedad | ~2 días | Carnet, antigüedad, categorías |
 | **5** | Unicidad de membresía activa (10.1.f) + achicar GRANTs (10.1.g) | ~medio día | Higiene |
 
-**La fase 0 no es opcional.** §9 documenta que las migraciones ya **no reconstruyen la
-base desde cero**; agregar cinco migraciones más encima agranda el problema justo cuando
-el objetivo es poder levantar clientes nuevos (10.6).
+**La fase 0 ya está hecha** (2026-08-16). Era el prerrequisito de todo lo demás: las
+migraciones no reconstruían la base desde cero, y las 5 nuevas de la fase 1 se habrían
+apilado sobre una cadena rota. Ahora `supabase db push` levanta el esquema completo
+desde cero, que es lo que hace viable el objetivo multi-cliente (10.6).
 
 #### Backfill (parte de la fase 1, no la subestimes)
 

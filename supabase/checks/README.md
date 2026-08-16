@@ -23,11 +23,10 @@ GoTrue) y quedan listos para cuando arranque; se corren con `npm run test:integr
 docker run -d --name pgtest -e POSTGRES_PASSWORD=postgres -p 55432:5432 \
   public.ecr.aws/supabase/postgres:17.6.1.158 postgres
 
-# 2. Aplicar el baseline (ver la nota de orden más abajo)
-docker exec -i pgtest psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
-  < supabase/migrations/20260719120000_baseline_public_schema_rls.sql
-docker exec -i pgtest psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
-  < supabase/migrations/20260719130000_activities_slug.sql
+# 2. Aplicar TODAS las migraciones, en orden por nombre (= por timestamp)
+for f in supabase/migrations/*.sql; do
+  docker exec -i pgtest psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q < "$f"
+done
 
 # 3. Verificar las políticas
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/rls-check.sql
@@ -36,10 +35,22 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/rls-chec
 docker rm -f pgtest
 ```
 
-⚠️ **Orden de las migraciones:** aplicar **solo el baseline**, no las 5 de junio
-primero. Esas preceden al baseline que crea `public.users`, así que en una base desde
-cero fallan con `relation "public.users" does not exist`. Ver la nota de la Sesión F2
-en `ROADMAP.md` §8.
+✅ **Orden de las migraciones (resuelto el 2026-08-16, §10 fase 0).** Antes había que
+aplicar **solo el baseline**, porque las 5 migraciones de junio lo precedían por
+timestamp y fallaban con `relation "public.users" does not exist`. Ya no: se eliminaron
+—su contenido estaba íntegro en el baseline— y el set completo se aplica en orden.
+
+Dos cosas a tener en cuenta al correr esto:
+
+1. **Esperar a que el contenedor termine de inicializar**, no solo a `pg_isready`. La
+   imagen corre scripts de setup después de aceptar conexiones, y aplicar el baseline
+   en el medio falla con un `could not open relation with OID …` que no tiene nada que
+   ver con las migraciones. Señal confiable: el **segundo**
+   `database system is ready to accept connections` en `docker logs`.
+2. **`20260719140000_comision_docs_storage.sql` se saltea acá y está bien.** Emite un
+   `NOTICE` y no hace nada porque `storage.buckets` no existe: esas tablas las crea el
+   servicio storage-api, no la imagen de Postgres. En un proyecto Supabase real sí
+   aplica.
 
 ## Qué confirmó (2026-08-14)
 
