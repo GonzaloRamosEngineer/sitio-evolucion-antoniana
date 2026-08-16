@@ -9,12 +9,13 @@
 //     queda el rastro. Ofrecer un botón que la base va a rechazar sería invitar
 //     a una acción imposible.
 //
-//  2. **Solo se editan los aportes manuales.** Los que vengan de una pasarela
-//     son el registro de esa pasarela; corregirlos a mano haría que el libro
-//     diverja de lo que MercadoPago dice que pasó, que es justo el problema que
-//     §10.10 documenta. (Cuando Render empiece a escribir `aportes` va a hacer
-//     falta poder *reasignar el destino* de una fila de pasarela sin tocarle el
-//     monto — eso todavía no existe porque todavía no hay ni una fila así.)
+//  2. **Un aporte manual se corrige entero; uno de pasarela, solo en su
+//     destino.** Monto y fecha de una pasarela son el registro de esa pasarela,
+//     y tocarlos a mano haría que el libro diverja de lo que MercadoPago dice
+//     que pasó (§10.10). **El destino, en cambio, MercadoPago ni lo conoce**:
+//     es una decisión de la entidad, así que re-imputarlo no contradice a nadie.
+//     Y hace falta de verdad — hasta que el servicio de pagos reenvíe el destino
+//     elegido, toda donación digital cae al institucional (§10.13).
 //
 //  3. **La carga manual no es un parche.** Una entidad recibe efectivo,
 //     transferencias y cheques, y esa plata tiene que entrar al mismo libro que
@@ -22,7 +23,7 @@
 //     cierra de punta a punta, sin depender de ninguna pasarela.
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, BookOpen, Edit, Loader2, AlertTriangle, Wallet } from 'lucide-react';
+import { Plus, BookOpen, Edit, Loader2, AlertTriangle, Wallet, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -37,7 +38,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { useAportes, useDestinos } from '@/hooks/useContentQueries';
 import {
-  createAporteManual, updateAporte, validarAporte, aPayloadAporte, describirOrigen, hoyISO,
+  createAporteManual, updateAporte, reimputarAporte,
+  validarAporte, aPayloadAporte, describirOrigen, hoyISO,
 } from '@/api/aportesApi';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
@@ -88,6 +90,10 @@ const AportesAdmin = () => {
   const [form, setForm] = useState(formVacio);
   const [errores, setErrores] = useState({});
   const [guardando, setGuardando] = useState(false);
+  // Re-imputación: cambiar SOLO el destino de un aporte de pasarela. Estado
+  // aparte del formulario general porque es otra decisión y otro alcance.
+  const [reimputando, setReimputando] = useState(null);
+  const [nuevoDestino, setNuevoDestino] = useState('');
 
   // El total sigue a lo filtrado, no a la lista completa: buscar "efectivo" y
   // ver el total de esa búsqueda es exactamente lo que hace falta para cuadrar.
@@ -148,6 +154,29 @@ const AportesAdmin = () => {
       description: editando ? undefined : 'Ya suma al total de su destino.',
     });
     setAbierto(false);
+    invalidar();
+  };
+
+  const guardarReimputacion = async () => {
+    if (!nuevoDestino || nuevoDestino === reimputando.destino_id) {
+      setReimputando(null);
+      return;
+    }
+
+    setGuardando(true);
+    const { error: fallo } = await reimputarAporte(reimputando.id, nuevoDestino);
+    setGuardando(false);
+
+    if (fallo) {
+      toast({ title: 'No se pudo cambiar el destino', description: fallo.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({
+      title: 'Destino cambiado',
+      description: 'Los totales de los dos destinos se recalcularon.',
+    });
+    setReimputando(null);
     invalidar();
   };
 
@@ -246,10 +275,19 @@ const AportesAdmin = () => {
                   {pesos(a.monto)}
                 </span>
 
-                {/* Solo los manuales. Ver la nota 2 del encabezado del archivo. */}
-                {a.origen === 'manual' && (
+                {/* Un aporte manual se corrige entero; uno de pasarela, solo en
+                    su destino. Ver la nota 2 del encabezado del archivo. */}
+                {a.origen === 'manual' ? (
                   <Button size="sm" variant="outline" onClick={() => abrirEdicion(a)}>
                     <Edit className="w-3.5 h-3.5 mr-1.5" /> Corregir
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setReimputando(a); setNuevoDestino(a.destino_id ?? ''); }}
+                  >
+                    <Target className="w-3.5 h-3.5 mr-1.5" /> Cambiar destino
                   </Button>
                 )}
               </motion.div>
@@ -376,6 +414,51 @@ const AportesAdmin = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={Boolean(reimputando)} onOpenChange={(v) => !v && setReimputando(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cambiar destino</DialogTitle>
+            <DialogDescription>
+              Se cambia únicamente a qué destino se imputa. El monto y la fecha los informó la
+              pasarela y no se tocan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {reimputando && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-brand-dark">{pesos(reimputando.monto)}</span>
+                {' '}del {soloFecha(reimputando.fecha)}, hoy en{' '}
+                <span className="font-semibold">{reimputando.destino?.nombre ?? '—'}</span>.
+              </p>
+
+              <div>
+                <Label htmlFor="reimputar-destino">Nuevo destino</Label>
+                <Select value={nuevoDestino} onValueChange={setNuevoDestino}>
+                  <SelectTrigger id="reimputar-destino" className="mt-1">
+                    <SelectValue placeholder="Elegí el destino" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {destinosOrdenados.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setReimputando(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="action" onClick={guardarReimputacion} disabled={guardando}>
+              {guardando && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Cambiar destino
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

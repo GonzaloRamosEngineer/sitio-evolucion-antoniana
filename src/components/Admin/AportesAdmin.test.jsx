@@ -20,6 +20,7 @@ vi.mock('@/api/aportesApi', async () => {
     getAportes: vi.fn(),
     createAporteManual: vi.fn(),
     updateAporte: vi.fn(),
+    reimputarAporte: vi.fn(),
   };
 });
 
@@ -30,7 +31,7 @@ vi.mock('@/api/destinosApi', async () => {
 
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
-const { getAportes, updateAporte } = await import('@/api/aportesApi');
+const { getAportes, updateAporte, reimputarAporte } = await import('@/api/aportesApi');
 const { getDestinos } = await import('@/api/destinosApi');
 const AportesAdmin = (await import('@/components/Admin/AportesAdmin')).default;
 
@@ -88,13 +89,42 @@ describe('AportesAdmin', () => {
     expect(screen.getByRole('button', { name: /corregir/i })).toBeInTheDocument();
   });
 
-  // Lo que vino de la pasarela es el registro de la pasarela: tocarlo a mano
-  // haría que el libro diverja de lo que MercadoPago dice que pasó (§10.10).
-  it('un aporte de pasarela NO se puede corregir a mano', async () => {
+  // Monto y fecha de una pasarela son SU registro: tocarlos haría que el libro
+  // diverja de lo que MercadoPago dice que pasó (§10.10).
+  it('un aporte de pasarela NO se puede corregir entero', async () => {
     getAportes.mockResolvedValue({ data: [aporte({ origen: 'donacion' })], error: null });
     render(<AportesAdmin />);
     await screen.findByText('Pelotas y conos');
     expect(screen.queryByRole('button', { name: /corregir/i })).not.toBeInTheDocument();
+  });
+
+  // Pero el destino SÍ: MercadoPago ni lo conoce, así que re-imputarlo no
+  // contradice a nadie. Y hace falta, porque hasta que el servicio de pagos
+  // reenvíe el destino elegido toda donación cae al institucional (§10.13).
+  it('un aporte de pasarela SI puede cambiar de destino', async () => {
+    getAportes.mockResolvedValue({ data: [aporte({ origen: 'donacion' })], error: null });
+    render(<AportesAdmin />);
+    await screen.findByText('Pelotas y conos');
+    expect(screen.getByRole('button', { name: /cambiar destino/i })).toBeInTheDocument();
+  });
+
+  // El alcance del cambio es lo que lo hace seguro: solo el destino. Si esto
+  // empezara a mandar monto o fecha, el libro divergiria de la pasarela.
+  it('re-imputar manda SOLO el destino, nada mas', async () => {
+    getAportes.mockResolvedValue({
+      data: [aporte({ origen: 'donacion', destino_id: 'd1' })],
+      error: null,
+    });
+    reimputarAporte.mockResolvedValue({ data: aporte(), error: null });
+
+    render(<AportesAdmin />);
+    fireEvent.click(await screen.findByRole('button', { name: /cambiar destino/i }));
+    // El Select de Radix no responde a fireEvent en jsdom, asi que se verifica
+    // que sin cambiar nada NO se llame a la capa de datos: cerrar el dialogo sin
+    // elegir otro destino no puede disparar una escritura.
+    fireEvent.click(await screen.findByRole('button', { name: /^cambiar destino$/i, hidden: false }));
+    await waitFor(() => expect(screen.queryByText(/nuevo destino/i)).not.toBeInTheDocument());
+    expect(reimputarAporte).not.toHaveBeenCalled();
   });
 
   it('suma el total de lo que muestra', async () => {

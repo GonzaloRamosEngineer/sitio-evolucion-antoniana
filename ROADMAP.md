@@ -1342,3 +1342,63 @@ se juntó; el día que se carguen las metas, la barra aparece sola y no hay que 
 Y el corolario de copy, que es donde está el verdadero valor del número: si una pelota
 sale $25.000, la campaña puede decir *"cada $25.000 = una pelota"*. **Eso convierte un
 monto en una decisión**, y donar "una pelota" es mucho más fácil que donar "un monto".
+
+
+### 10.15 — El casillero que faltaba antes de tocar el servicio de pagos (2026-08-16)
+
+Primer paso del traslado a Vercel (§10.13), y resultó no ser código de Vercel.
+
+#### El hallazgo
+
+Antes de escribir la primera función se revisó dónde iba a aterrizar el destino. Y no
+había dónde: **`donations` no tenía columna `destino_id`.** `memberships` sí la tiene
+desde la fase 1, y el front ya manda `destino_id` al crear la preferencia desde §10.11 —
+pero del lado de las donaciones el dato no tenía casillero.
+
+O sea que **mover el servicio a Vercel sin esto habría sido construir la cañería y dejarla
+desembocando en el mismo lugar de siempre**: el trigger seguiría imputando todo al
+institucional, y no habría forma de notar que el trabajo no sirvió para nada.
+
+Migración `20260816170000`, aplicada. Nullable a diferencia de `aportes.destino_id`, que
+es NOT NULL, y no es inconsistencia: `donations` registra lo que informó la pasarela, y
+puede llegar sin destino —el link directo de MercadoPago que publica la entidad no pasa
+por el checkout del sitio—. `aportes` es el libro, y ahí todo aporte tiene destino sí o
+sí. NULL en `donations` significa "el canal no lo informó", y el trigger cae al
+institucional.
+
+#### La decisión sutil: `DO NOTHING`, no `DO UPDATE`
+
+La tentación obvia al agregar la columna era que el trigger sincronizara el destino:
+`ON CONFLICT (referencia_externa) DO UPDATE SET destino_id = EXCLUDED.destino_id`.
+
+**Sería un error.** La comisión puede re-imputar un aporte mal dirigido desde el panel, y
+con `DO UPDATE` el próximo reintento del webhook le desharía la corrección **en silencio**.
+Entre "el trigger crea y nunca modifica" y "el trigger sincroniza", la primera es la única
+que deja sobrevivir una corrección humana. Verificado (E4 en Docker): dos reintentos
+seguidos y la corrección sigue en pie.
+
+#### Y la contracara en el panel: re-imputar
+
+§10.11 había dicho que un aporte de pasarela no se edita. Eso sigue valiendo **para el
+monto y la fecha**, que son el registro de MercadoPago. Pero **el destino MercadoPago ni
+lo conoce**: es una decisión de la entidad, así que re-imputarlo no contradice a nadie.
+
+Ahora `/admin → Libro de aportes` ofrece **"Cambiar destino"** en los aportes de pasarela,
+con un diálogo que solo toca esa columna. Hace falta de verdad: hasta que el servicio de
+pagos reenvíe el destino elegido, toda donación digital cae al institucional y esta es la
+única forma de mandarla a su campaña.
+
+#### Lo que sigue, y lo que hace falta de afuera
+
+Con el casillero puesto, el trabajo en Vercel ya tiene dónde depositar el resultado.
+Tres cosas que **no dependen del código** y sin las cuales no se puede completar:
+
+| Qué | Quién |
+|---|---|
+| `MP_ACCESS_TOKEN` de MercadoPago en las variables de entorno de Vercel | La entidad |
+| Cambiar la URL de notificaciones en el panel de MercadoPago | La entidad |
+| Saber qué es el proceso que actualiza donaciones **exactamente 10 días** después (§10.13) | Investigar |
+
+⚠️ Y la trampa que ya está documentada en §10.13, que conviene releer antes de empezar:
+`vercel.json` manda todo `/api/(.*)` a Render. Las funciones nuevas necesitan su rewrite
+**antes** del catch-all, o Vercel las ignora sin ningún error visible.

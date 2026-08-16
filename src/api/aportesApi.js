@@ -112,3 +112,31 @@ export const updateAporte = async (id, payload) =>
       .maybeSingle(),
     'updateAporte'
   );
+
+/**
+ * Cambia SOLO el destino de un aporte, sin tocar nada más.
+ *
+ * Es la única corrección que tiene sentido sobre un aporte que informó una
+ * pasarela: el monto y la fecha son de MercadoPago y tocarlos haría que el libro
+ * diverja de lo que la pasarela dice que pasó (§10.10). **El destino, en cambio,
+ * MercadoPago ni lo conoce** — es una decisión de la entidad, así que
+ * re-imputarlo no contradice a nadie.
+ *
+ * Y hace falta de verdad: hasta que el servicio de pagos reenvíe el destino
+ * elegido, toda donación digital cae al institucional (§10.13). Sin esta función
+ * no habría forma de mandarla a la campaña que le correspondía.
+ *
+ * La corrección sobrevive a los reintentos del webhook: el trigger
+ * `aporte_desde_donacion` inserta con ON CONFLICT DO NOTHING, así que nunca pisa
+ * un aporte existente.
+ */
+export const reimputarAporte = async (id, destinoId) =>
+  rowResult(
+    await supabase
+      .from('aportes')
+      .update({ destino_id: destinoId })
+      .eq('id', id)
+      .select('*, destino:destinos(id, nombre, tipo)')
+      .maybeSingle(),
+    'reimputarAporte'
+  );
