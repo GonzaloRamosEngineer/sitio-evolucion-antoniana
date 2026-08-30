@@ -499,13 +499,21 @@ Al conectarse por primera vez a la base de producción apareció que **ya existe
 de aportes completo que el repo no documenta**, y que es *mejor* que el diseñado en 10.2
 en varios puntos. El esquema versionado quedó viejo otra vez.
 
-| | Repo (`baseline`) | Producción |
-|---|---|---|
-| Tablas | 16 | 18 |
-| Funciones | 18 | 24 |
-| Policies | — | 40 |
+El diff exacto (esquema del repo levantado en Docker contra el dump de producción):
 
-Lo que hay en producción y no en el repo:
+**Producción tiene de más:**
+- Tablas: `aportes`, `destinos`, `gastos`
+- Columnas: `donations.destino_id`, `memberships.destino_id`
+- Funciones: `aporte_desde_donacion`, `destino_por_defecto`,
+  `recalcular_totales_destino`, `recalcular_rendicion_destino`,
+  `trg_aportes_totales`, `trg_gastos_totales`
+
+**El repo tiene de más:** la vista `user_support_history`, que **no existe en
+producción** y que no usa ninguna parte del código. Era la unión de membresías y
+donaciones — o sea, lo que `aportes` hace mejor. Es peso muerto en el baseline; se saca
+cuando se toque.
+
+Detalle de lo que hay en producción y no en el repo:
 
 - **`aportes`** (5 filas) con `origen` (`donacion`/`membresia`/`manual`), `destino_id`
   NOT NULL, `referencia_externa` UNIQUE, `notas`, y `acceso_desde`/`acceso_hasta`
@@ -513,10 +521,9 @@ Lo que hay en producción y no en el repo:
 - **`destinos`** (11 filas) — campañas con meta, recaudado, cupos y rendición. Es el
   ítem 2 de 10.2 (`campanas`), ya construido y con más alcance.
 - **`gastos`** — rendición de cuentas con comprobantes. No estaba ni propuesto.
-- **`email_log`** (31 filas).
 - `aporte_desde_donacion()`, `destino_por_defecto()`, `recalcular_totales_destino()`,
-  `recalcular_rendicion_destino()`, `trg_aportes_totales()`, `trg_gastos_totales()`,
-  `handle_email_confirmed()` y sus triggers.
+  `recalcular_rendicion_destino()`, `trg_aportes_totales()`, `trg_gastos_totales()` y sus
+  triggers, más las columnas `destino_id` en `donations` y `memberships`.
 
 **Es buen código.** `aporte_desde_donacion()` ya resuelve la idempotencia por
 `referencia_externa` y usa `ON CONFLICT DO NOTHING` en vez de `DO UPDATE`, explicando en
@@ -549,9 +556,20 @@ la base desde cero (§ fase 0, resuelto en agosto) y **hoy eso volvió a ser fal
 
 #### Orden de trabajo
 
-1. **Re-baselinar**: `supabase db dump --schema public` contra producción y regenerar el
-   baseline versionado, igual que se hizo en julio. Sin esto, cualquier migración nueva
-   se escribe a ciegas.
+1. ~~**Re-baselinar**~~ **✅ HECHO 2026-08-30** — `20260830100000_modulo_aportes_destinos.sql`.
+   Generada extrayendo el DDL real de producción (`pg_dump --schema-only` +
+   `pg_get_functiondef`) y transformándolo a forma idempotente; no se transcribió a mano.
+   Trae `destinos`/`aportes`/`gastos`, las columnas `destino_id` de `donations` y
+   `memberships`, las 6 funciones, 3 triggers, 8 policies y 13 constraints. Además saca
+   dos restos del baseline de julio que producción ya no tiene: la vista muerta
+   `user_support_history` (la reemplazó `aportes`; no la usa ningún archivo del front) y
+   el índice redundante `idx_memberships_user_id`.
+
+   **Verificado:** una base levantada desde cero con las 4 migraciones del repo da
+   **0 diferencias** contra producción en columnas, funciones, índices, policies,
+   triggers y constraints. Y aplicada contra producción es un no-op: el dump del esquema
+   quedó idéntico byte a byte (solo cambia el token aleatorio `\restrict` de `pg_dump`).
+   **Ya está aplicada en producción.**
 2. Reescribir la capa de acceso contra el `aportes` real (mapear `tipo`→`origen`,
    `payment_id`→`referencia_externa`, `observaciones`→`notas`, y contemplar
    `destino_id NOT NULL`).
