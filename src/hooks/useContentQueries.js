@@ -11,6 +11,7 @@ import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@
 import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
+import { getMiAcceso, getMiAntiguedad } from '@/api/accesoApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
@@ -68,6 +69,35 @@ export const useAllPartners = ({ select, ...options } = {}) =>
     queryKey: queryKeys.partners,
     queryFn: () => unwrap(getPartners()),
     select,
+    ...options,
+  });
+
+/**
+ * Estado de acceso del socio de la sesión (ROADMAP §10 fase 1).
+ *
+ * `enabled` depende de `userId` porque `mi_acceso()` solo tiene permiso de
+ * ejecución para `authenticated`: llamarla sin sesión devuelve un error de
+ * permisos, no un `false`.
+ *
+ * OJO al consumir: una query deshabilitada **queda en `isPending`**. Para el
+ * spinner hay que combinar con la condición del `enabled`
+ * (`Boolean(userId) && isPending`), o la pantalla se cuelga para el visitante
+ * sin sesión, que es el caso más común de esta página.
+ */
+export const useMiAcceso = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.acceso(userId),
+    queryFn: () => unwrap(getMiAcceso()),
+    enabled: Boolean(userId),
+    ...options,
+  });
+
+/** Los tres números de antigüedad (decisión D4). Solo para el carnet. */
+export const useMiAntiguedad = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.antiguedad(userId),
+    queryFn: () => unwrap(getMiAntiguedad()),
+    enabled: Boolean(userId),
     ...options,
   });
 

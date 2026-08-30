@@ -33,6 +33,10 @@ export const queryKeys = {
   userRegistrations: (userId) => ['registrations', userId],
   userMemberships: (userId) => ['memberships', userId],
   userDonations: (userId) => ['donations', userId],
+  // Por usuario a propósito: si la clave fuera global, al cambiar de sesión el
+  // socio nuevo vería el estado de acceso del anterior hasta que expire la caché.
+  acceso: (userId) => ['acceso', userId],
+  antiguedad: (userId) => ['acceso', userId, 'antiguedad'],
   foundationMetrics: ['fundacion_metrics'],
   preinscriptions: ['preinscriptions'],
 };

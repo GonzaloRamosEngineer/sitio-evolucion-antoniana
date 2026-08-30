@@ -26,6 +26,7 @@ const Activities = lazy(() => import("@/pages/Activities"));
 const ActivityDetailPage = lazy(() => import("@/pages/ActivityDetailPage"));
 const ConfirmAttendancePage = lazy(() => import("@/pages/ConfirmAttendancePage"));
 const Collaborate = lazy(() => import("@/pages/Collaborate"));
+const CarnetPage = lazy(() => import("@/pages/CarnetPage"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
@@ -129,6 +130,15 @@ const PageRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["admin", "comision_directiva"]}>
               <CommissionPortal />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/carnet"
+          element={
+            <ProtectedRoute>
+              <CarnetPage />
             </ProtectedRoute>
           }
         />

@@ -1,12 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Tag, Gift } from 'lucide-react';
+import { ArrowRight, Tag, Gift, Lock } from 'lucide-react';
 
 const slugify = (s = '') =>
   s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
-const BenefitCard = ({ benefit, index = 0 }) => {
+/**
+ * `bloqueado` lo calcula la página con `beneficioBloqueado()` (`src/lib/acceso.js`),
+ * no la card: el estado de acceso se pide una sola vez por pantalla y no una vez
+ * por beneficio.
+ *
+ * La card bloqueada se muestra igual y sigue enlazando al detalle: es la
+ * decisión D6 de la Fundación —el visitante ve lo que se está perdiendo—, no un
+ * descuido. Lo que se oculta es el código, y eso pasa en el detalle.
+ */
+const BenefitCard = ({ benefit, index = 0, bloqueado = false }) => {
   const slug = benefit.slug || slugify(benefit.titulo);
 
   return (
@@ -43,6 +52,15 @@ const BenefitCard = ({ benefit, index = 0 }) => {
             {benefit.categoria}
           </span>
         </div>
+
+        {bloqueado && (
+          <div className="absolute top-4 right-4">
+            <span className="inline-flex items-center gap-1.5 bg-brand-dark/90 backdrop-blur-sm text-brand-gold text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+              <Lock className="h-3 w-3" />
+              Socios
+            </span>
+          </div>
+        )}
       </Link>
 
       {/* --- CONTENIDO --- */}
@@ -68,7 +86,7 @@ const BenefitCard = ({ benefit, index = 0 }) => {
             to={`/beneficios/${slug}`}
             className="inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:text-brand-action transition-colors ml-auto group/link"
           >
-            Ver detalle 
+            {bloqueado ? 'Cómo obtenerlo' : 'Ver detalle'}
             <ArrowRight className="h-4 w-4 transform group-hover/link:translate-x-1 transition-transform" />
           </Link>
         </div>

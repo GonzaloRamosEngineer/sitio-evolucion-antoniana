@@ -28,7 +28,8 @@ const BENEFIT_FIELDS = `
   descuento,
   sitio_web,
   contacto_email,
-  orden
+  orden,
+  requiere_acceso
 `;
 
 const NEWS_FIELDS = 'id, title, content, image_url, created_at, slug, body_md';

@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Search, Filter, Gift, Tag, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Gift, Tag, Loader2, AlertTriangle, Lock, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import BenefitCard from '@/components/BenefitCard';
-import { useActiveBenefits } from '@/hooks/useContentQueries';
+import { Link } from 'react-router-dom';
+import { useActiveBenefits, useMiAcceso } from '@/hooks/useContentQueries';
+import { useAuth } from '@/hooks/useAuth';
+import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/acceso';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -30,6 +33,20 @@ const BenefitsPage = () => {
     isError: error,
     refetch: fetchData,
   } = useActiveBenefits();
+
+  // Estado de acceso: una sola consulta por pantalla, no una por card.
+  // El visitante sin sesión nunca dispara la query (`enabled` interno del hook),
+  // así que acá NO se puede usar su `isPending` para el spinner: quedaría
+  // colgado para el caso más común de esta página.
+  const { user } = useAuth();
+  const { data: acceso = SIN_ACCESO } = useMiAcceso(user?.id);
+  const estado = estadoAcceso(acceso);
+  const diasDeGracia = estado === 'gracia' ? diasHasta(acceso.vence_el) : null;
+
+  const bloqueados = useMemo(
+    () => benefits.filter((b) => beneficioBloqueado(b, acceso)).length,
+    [benefits, acceso]
+  );
 
   // Antes esto era un `useEffect` que escribía en `filteredBenefits`: estado
   // derivado duplicado, con un render extra por cada tecla. Es un valor
@@ -114,6 +131,57 @@ const BenefitsPage = () => {
          </div>
       </section>
 
+      {/* --- BANDA DE ESTADO DE ACCESO ---
+           Tres mensajes distintos, porque son tres situaciones distintas:
+           quien no tiene acceso y se pierde cosas, quien está en gracia y no lo
+           sabe (el cobro falló y no se enteró), y quien tiene todo en orden. */}
+      {bloqueados > 0 && !acceso.tiene_acceso && (
+        <section className="bg-brand-dark text-white/90">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <Lock className="h-4 w-4 text-brand-gold flex-shrink-0" />
+            <p className="flex-1 min-w-[16rem]">
+              Hay <strong className="text-white">{bloqueados}</strong>{' '}
+              {bloqueados === 1 ? 'beneficio reservado' : 'beneficios reservados'} para quienes
+              sostienen la Fundación con su cuota o una donación.
+            </p>
+            <Link
+              to="/collaborate"
+              className="font-bold text-brand-gold hover:text-white underline underline-offset-4 transition-colors"
+            >
+              Quiero acceder
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {estado === 'gracia' && (
+        <section className="bg-brand-gold/15 border-b border-brand-gold/40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-brand-dark">
+            <Clock className="h-4 w-4 flex-shrink-0" />
+            <p className="flex-1 min-w-[16rem]">
+              Tu último aporte venció, pero seguís con acceso por{' '}
+              <strong>{Math.max(diasDeGracia ?? 0, 0) + 30} días</strong> de tolerancia.
+              Regularizá la cuota para no perderlo.
+            </p>
+            <Link to="/collaborate" className="font-bold underline underline-offset-4">
+              Regularizar
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {estado === 'vigente' && bloqueados === 0 && acceso.vence_el && (
+        <section className="bg-brand-sand border-b border-brand-dark/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 text-sm text-brand-dark/80">
+            <ShieldCheck className="h-4 w-4 text-brand-primary flex-shrink-0" />
+            <p className="flex-1">Tu acceso está vigente. Podés usar todos los beneficios.</p>
+            <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
+              Ver mi carnet
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* --- RESULTADOS --- */}
       <div className="flex-1 py-12 px-4">
         <div className="max-w-7xl mx-auto">
@@ -149,7 +217,12 @@ const BenefitsPage = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredBenefits.map((benefit, index) => (
-                <BenefitCard key={benefit.id} benefit={benefit} index={index} />
+                <BenefitCard
+                  key={benefit.id}
+                  benefit={benefit}
+                  index={index}
+                  bloqueado={beneficioBloqueado(benefit, acceso)}
+                />
               ))}
             </div>
           )}

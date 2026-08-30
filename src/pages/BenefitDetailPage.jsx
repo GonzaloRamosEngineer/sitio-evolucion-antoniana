@@ -13,10 +13,13 @@ import {
   Percent,
   ArrowRight,
   Copy,
-  Check
+  Check,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAllBenefits, useAllPartners } from "@/hooks/useContentQueries";
+import { useAllBenefits, useAllPartners, useMiAcceso } from "@/hooks/useContentQueries";
+import { useAuth } from "@/hooks/useAuth";
+import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
 import { toast } from "@/components/ui/use-toast";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 
@@ -52,6 +55,10 @@ const BenefitDetailPage = () => {
     enabled: Boolean(benefit?.partner_id),
     select: (rows) => rows.find((p) => p.id === benefit?.partner_id) ?? null,
   });
+
+  const { user } = useAuth();
+  const { data: acceso = SIN_ACCESO } = useMiAcceso(user?.id);
+  const bloqueado = beneficioBloqueado(benefit, acceso);
 
   const handleCopyCode = async () => {
     const code = benefit?.codigo || benefit?.codigo_descuento || "";
@@ -220,15 +227,45 @@ const BenefitDetailPage = () => {
 
                     {/* Pasos */}
                     <div className="space-y-6 mb-8">
+                        {/* Beneficio reservado: se explica cómo obtenerlo en vez
+                            de mostrar el código y las instrucciones. */}
+                        {bloqueado ? (
+                            <div className="bg-brand-dark text-white rounded-sm p-5">
+                                <div className="flex items-center gap-2 mb-3 text-brand-gold">
+                                    <Lock className="h-4 w-4" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">
+                                        Reservado
+                                    </span>
+                                </div>
+                                <p className="text-sm text-white/80 leading-relaxed mb-5">
+                                    Este beneficio es para quienes sostienen la Fundación. Se accede con
+                                    la cuota social al día o con una donación desde el valor de una cuota.
+                                </p>
+                                <Link to="/collaborate" className="block">
+                                    <Button variant="action" className="w-full">
+                                        Quiero acceder
+                                    </Button>
+                                </Link>
+                                {!user && (
+                                    <p className="text-xs text-white/60 mt-3 text-center">
+                                        ¿Ya aportás?{' '}
+                                        <Link to="/login" className="underline underline-offset-2 text-brand-gold">
+                                            Iniciá sesión
+                                        </Link>
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
                         <div>
                              <h4 className="text-sm font-bold text-gray-900 mb-2">Instrucciones</h4>
                              <p className="text-sm text-gray-600 leading-relaxed bg-brand-sand/60 p-4 rounded-sm border border-brand-dark/10">
                                 {benefit.instrucciones?.trim() || "Ingresá a la web del comercio, elegí tu producto y presentá este beneficio."}
                              </p>
                         </div>
+                        )}
 
                         {/* Código de Descuento */}
-                        {(benefit.codigo || benefit.codigo_descuento) && (
+                        {!bloqueado && (benefit.codigo || benefit.codigo_descuento) && (
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 mb-2">Tu código</h4>
                                 <div className="flex items-center gap-2">

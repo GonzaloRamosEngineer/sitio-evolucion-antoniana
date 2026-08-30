@@ -874,11 +874,21 @@ configurado habría emitido canjes contra la base de la Fundación **sin fallar*
 | Fase | Qué | Deja algo usable? |
 |---|---|---|
 | **0** | ~~§10 fase 1: `aportes` + `tiene_acceso()`~~ + ~~bloqueante #1 de 10.6~~ **✅ HECHO 2026-08-30** (esquema y guarda de credenciales; falta aplicar en prod) | Prerrequisito literal: sin esto no hay a quién validarle nada |
-| **1** | Carnet digital (QR del socio) + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
+| **1** | ~~Carnet digital + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso~~ **✅ HECHO 2026-08-30** — `/carnet`, bloqueo en catálogo y detalle, `src/lib/acceso.js` + `accesoApi.js`. **Sin QR a propósito**: en esta fase el comercio *mira* el carnet, no lo escanea, así que un QR que nadie lee no aporta nada y suma una dependencia. Entra en la fase 2, que es donde se escanea. ⚠️ Ver la limitación de abajo | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
 | **2** | `club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio` | Entra el comercio. Acá aparece la trazabilidad |
 | **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
 | **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 11.6 |
 | **5** | Extracción a un segundo proyecto (11.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
+
+⚠️ **Limitación conocida de la fase 1: el bloqueo es cosmético.** `benefits.codigo` sigue
+siendo una columna de lectura pública (11.1.a), así que ocultar el código en pantalla no
+impide que alguien lo lea consultando la API. **Esto no es un descuido y no se arregla
+con RLS**: proteger la columna con GRANTs a nivel columna rompería el panel admin (que
+usa el mismo rol `authenticated`), y partir el código a una tabla aparte es un refactor
+que la fase 2 tira a la basura igual. La protección real llega cuando el código deja de
+ser un texto fijo y pasa a emitirse por persona y de un solo uso (`club_canjes`). Hasta
+entonces: **no poner en `requiere_acceso` un beneficio cuyo código valga dinero de
+verdad.**
 
 **La fase 1 sin comercio digital es deliberada.** La mayoría de los clubes de beneficios
 mueren porque le exigen un panel al comercio desde el día uno; el comercio no lo usa,
