@@ -43,6 +43,32 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/acceso-c
 docker rm -f pgtest
 ```
 
+## ⚠️ Contra producción, solo la mitad de abajo
+
+El archivo tiene dos mitades con reglas distintas, y confundirlas cuesta caro:
+
+| | Qué hace | ¿Contra producción? |
+|---|---|---|
+| **T1-T7** | **Escriben fuera de transacción**: crean partners `ZZ *` y un usuario en `auth.users`, y recién limpian al final | ❌ **No.** Si la corrida se corta antes de la limpieza, quedan partners fantasma en el sitio público |
+| **T8-T16** | Todo dentro de savepoints que revierten; el último verifica que no quedó residuo | ✅ Sí |
+
+```bash
+# Solo la parte segura, contra la base real:
+sed -n '/^[\]echo.*T8:/,$p' supabase/checks/rls-check.sql | bash tools/db.sh sql
+```
+
+Dos trampas de ese `sed`, las dos aprendidas rompiéndolo el 2026-08-16:
+
+- **Anclar en `^` + `echo`.** Un patrón como `/T8:/` matchea la línea de comentario
+  que documenta el propio comando, y entonces sed devuelve el archivo entero y
+  corren las escrituras. Pasó dos veces seguidas.
+- **La barra se escribe `[\]`, no duplicada.** En BRE, una barra duplicada **no**
+  matchea el literal `\echo` — y sed no avisa: devuelve vacío, que se parece
+  mucho a "no había nada que correr". La clase de caracteres sí funciona.
+
+**Al agregar checks nuevos, van con savepoints.** Es lo que los hace correr en
+cualquier base sin dejar rastro.
+
 ✅ **Orden de las migraciones (resuelto el 2026-08-16, §10 fase 0).** Antes había que
 aplicar **solo el baseline**, porque las 5 migraciones de junio lo precedían por
 timestamp y fallaban con `relation "public.users" does not exist`. Ya no: se eliminaron

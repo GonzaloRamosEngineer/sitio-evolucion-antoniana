@@ -12,6 +12,9 @@ import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
 import { getMiAcceso, getMiAntiguedad } from '@/api/accesoApi';
+import { getDestinos } from '@/api/destinosApi';
+import { getAportes } from '@/api/aportesApi';
+import { getGastos } from '@/api/gastosApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
@@ -200,5 +203,63 @@ export const useFoundationMetrics = (options = {}) =>
   useQuery({
     queryKey: queryKeys.foundationMetrics,
     queryFn: () => unwrap(fetchFoundationMetrics()),
+    ...options,
+  });
+
+/**
+ * Destinos (ROADMAP §10.9).
+ *
+ * `useDestinos` trae todos y es para el panel; `useDestinosActivos` aplica el
+ * filtro de negocio en el hook —no en cada página— para que ningún consumidor
+ * pueda saltearlo con un `select` propio. Es la misma regla que en beneficios.
+ *
+ * Ojo: las RLS ya limitan lo que ve cada rol (anon solo los `activo`), así que
+ * este filtro es de UX, no una frontera de seguridad.
+ */
+export const useDestinos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.destinos,
+    queryFn: () => unwrap(getDestinos()),
+    select,
+    ...options,
+  });
+
+export const useDestinosActivos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.destinos,
+    queryFn: () => unwrap(getDestinos()),
+    select: composeSelect((rows) => rows.filter((d) => d.estado === 'activo'), select),
+    ...options,
+  });
+
+/**
+ * Aportes — el libro único (ROADMAP §10.11).
+ *
+ * Sin filtro de negocio en el hook a propósito: acá el recorte lo hacen las
+ * RLS, que le muestran todo a la comisión y solo lo propio a cualquier otro. Un
+ * filtro extra en el cliente daría la ilusión de que la frontera está acá.
+ */
+export const useAportes = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.aportes,
+    queryFn: () => unwrap(getAportes()),
+    select,
+    ...options,
+  });
+
+/**
+ * Gastos — la rendición (ROADMAP §10.9, fase 2).
+ *
+ * Sin filtro de negocio en el hook, igual que en aportes: acá el recorte lo
+ * hacen las RLS. Y la asimetría con `useAportes` es la que da valor: este mismo
+ * hook sirve al panel de la comisión —que ve todo— y a la rendición pública
+ * —que ve solo los gastos publicados de destinos activos—, sin que la página
+ * tenga que saber cuál de las dos cosas es.
+ */
+export const useGastos = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.gastos,
+    queryFn: () => unwrap(getGastos()),
+    select,
     ...options,
   });

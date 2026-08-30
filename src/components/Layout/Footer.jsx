@@ -12,6 +12,30 @@ import {
   Zap 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  entidad,
+  mailtoContacto,
+  telContacto,
+  whatsappUrl,
+  redesActivas,
+} from '@/config/entidad';
+
+// Mapa red -> ícono. Es lo único de las redes que es decisión de PRESENTACIÓN,
+// así que vive acá y no en la config: qué redes tiene la entidad es dato, con
+// qué ícono se dibujan es código.
+const ICONO_RED = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  x: Twitter,
+};
+
+const NOMBRE_RED = {
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  x: 'X (Twitter)',
+};
 
 const Footer = () => {
   const footerSections = [
@@ -22,6 +46,7 @@ const Footer = () => {
         { name: 'Sobre Nosotros', href: '/about' },
         { name: 'Actividades', href: '/activities' },
         { name: 'Colaborá', href: '/collaborate' },
+        { name: 'Rendición de cuentas', href: '/rendicion' },
         { name: 'Contacto', href: '/contact' },
       ],
     },
@@ -35,18 +60,21 @@ const Footer = () => {
     },
   ];
 
+  // Las redes salen de la config; WhatsApp se agrega aparte porque no es una
+  // red social sino el teléfono de contacto en otro formato.
   const socialLinks = [
-    { icon: Facebook, href: 'https://www.facebook.com/FundacionEvolucionAntoniana/', name: 'Facebook' },
-    { icon: Instagram, href: 'https://www.instagram.com/evolucionantoniana', name: 'Instagram' },
-    { icon: Linkedin, href: 'https://www.linkedin.com/company/fundacionevolucionantoniana', name: 'LinkedIn' },
-    { icon: Twitter, href: 'https://x.com/evoluantoniana', name: 'X (Twitter)' },
-    { icon: MessageSquare, href: 'https://wa.me/543872131916?text=Hola%2C%20quiero%20sumarme%20a%20la%20red%20solidaria', name: 'WhatsApp' },
+    ...redesActivas().map(({ red, href }) => ({
+      icon: ICONO_RED[red],
+      href,
+      name: NOMBRE_RED[red] ?? red,
+    })).filter((s) => s.icon),
+    { icon: MessageSquare, href: whatsappUrl, name: 'WhatsApp' },
   ];
 
   const contactInfo = [
-    { icon: MapPin, text: 'Salta, Argentina' },
-    { icon: Phone, text: '+54 387 213-1916', href: 'tel:+543872131916' },
-    { icon: Mail, text: 'info@evolucionantoniana.com', href: 'mailto:info@evolucionantoniana.com' },
+    { icon: MapPin, text: entidad.ubicacion.display },
+    { icon: Phone, text: entidad.contacto.telefono, href: telContacto },
+    { icon: Mail, text: entidad.contacto.email, href: mailtoContacto },
   ];
 
   return (
@@ -71,23 +99,25 @@ const Footer = () => {
               className="flex items-center space-x-3"
             >
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/5">
-                 <img 
-                    src="/img/transparente.png" 
-                    alt="Logo" 
-                    className="w-full h-full object-contain p-1.5" 
-                    onError={(e) => e.target.style.display = 'none'} 
+                 <img
+                    src={entidad.logo}
+                    alt={`Logo de ${entidad.nombre}`}
+                    className="w-full h-full object-contain p-1.5"
+                    onError={(e) => e.target.style.display = 'none'}
                  />
                  {/* Fallback */}
-                 <span className="text-brand-primary font-bold text-xl absolute hidden">E</span>
+                 <span className="text-brand-primary font-bold text-xl absolute hidden">
+                   {entidad.marcaLinea1.charAt(0)}
+                 </span>
               </div>
               <div>
-                <p className="text-xl font-poppins font-bold leading-none text-white">Evolución</p>
-                <p className="text-xl font-poppins font-bold text-brand-action leading-none">Antoniana</p>
+                <p className="text-xl font-poppins font-bold leading-none text-white">{entidad.marcaLinea1}</p>
+                <p className="text-xl font-poppins font-bold text-brand-action leading-none">{entidad.marcaLinea2}</p>
               </div>
             </motion.div>
-            
+
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-              Organización sin fines de lucro legalmente constituida en Salta, Argentina. Impulsamos oportunidades y transformamos vidas a través de la tecnología y el deporte.
+              {entidad.descripcionCorta}
             </p>
 
             <div className="flex gap-3">
@@ -164,7 +194,7 @@ const Footer = () => {
         {/* --- BARRA INFERIOR (Con Firma Visible) --- */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-6 pb-4 md:pb-0">
           <p className="text-xs text-gray-500 text-center md:text-left order-2 md:order-1">
-            © {new Date().getFullYear()} Fundación Evolución Antoniana. Todos los derechos reservados.
+            © {new Date().getFullYear()} {entidad.nombre}. Todos los derechos reservados.
           </p>
 
           {/* --- FIRMA DIGITAL MATCH GLOBAL --- */}

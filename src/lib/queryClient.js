@@ -39,6 +39,12 @@ export const queryKeys = {
   antiguedad: (userId) => ['acceso', userId, 'antiguedad'],
   foundationMetrics: ['fundacion_metrics'],
   preinscriptions: ['preinscriptions'],
+  destinos: ['destinos'],
+  // Anidada bajo 'destinos' a propósito, igual que newsItem: invalidar
+  // `['destinos']` alcanza también a los detalles.
+  destino: (slug) => ['destinos', 'item', slug],
+  aportes: ['aportes'],
+  gastos: ['gastos'],
 };
 
 export const queryClient = new QueryClient({

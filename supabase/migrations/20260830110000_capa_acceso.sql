@@ -101,7 +101,7 @@ COMMENT ON COLUMN public.destinos.otorga_acceso IS
 -- no cambiar el comportamiento actual al aplicar.
 ALTER TABLE public.benefits ADD COLUMN IF NOT EXISTS requiere_acceso boolean NOT NULL DEFAULT false;
 COMMENT ON COLUMN public.benefits.requiere_acceso IS
-  'true = solo para quien tiene acceso vigente. ⚠️ El bloqueo es UX, no seguridad: `codigo` sigue siendo de lectura pública hasta los canjes de §11 fase 2.';
+  'true = solo para quien tiene acceso vigente. ⚠️ El bloqueo es UX, no seguridad: `codigo` sigue siendo de lectura pública hasta los canjes de §12 fase 2.';
 
 -- ---------------------------------------------------------------------
 -- 3) La regla de conversión, en un solo lugar
@@ -175,7 +175,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
 $$;
 
 -- Con parámetro: solo `service_role`. Es el contrato que van a consumir las
--- Edge Functions del club (§11.7).
+-- Edge Functions del club (§12.7).
 CREATE OR REPLACE FUNCTION public.tiene_acceso(p_user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT COALESCE((SELECT av.tiene_acceso FROM public.acceso_vigente(p_user_id) av), false);

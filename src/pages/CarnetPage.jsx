@@ -61,7 +61,7 @@ const CarnetPage = () => {
   const { data: antiguedad } = useMiAntiguedad(userId);
 
   // Reloj en vivo. No es decoración: en la fase 1 el comercio MIRA el carnet en
-  // vez de escanearlo (ROADMAP §11.8), así que lo único que distingue la
+  // vez de escanearlo (ROADMAP §12.8), así que lo único que distingue la
   // pantalla real de una captura de pantalla vieja es que la hora avance.
   const [ahora, setAhora] = useState(() => new Date());
   useEffect(() => {

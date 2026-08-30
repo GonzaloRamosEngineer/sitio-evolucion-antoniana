@@ -23,16 +23,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    // Credenciales ficticias: desde 2026-08-30 `src/lib/supabase.js` lanza si
-    // faltan (ROADMAP 11.7). Hoy todos los tests que lo tocan lo mockean, así
-    // que el módulo real nunca se ejecuta acá — esto es para que un test futuro
-    // que NO lo mockee falle por lo que está probando y no por el entorno.
-    // No apuntan a ningún proyecto real: la suite no debe hablar con la red.
+    setupFiles: ['./src/test/setup.js'],
+    // `src/lib/supabase.js` tira si faltan estas variables (a propósito: sin
+    // fallback silencioso a producción, ver el comentario de ese archivo). Los
+    // tests no hablan con ninguna Supabase real —mockean la capa de datos—,
+    // pero el módulo se evalúa al importarse, así que necesitan valores.
+    // Deliberadamente apuntan a un host inexistente: si algún test empieza a
+    // pegarle a la red de verdad, queremos que se note.
     env: {
-      VITE_SUPABASE_URL: 'http://localhost:54321',
+      VITE_SUPABASE_URL: 'http://supabase.invalid',
       VITE_SUPABASE_ANON_KEY: 'anon-key-de-test',
     },
-    setupFiles: ['./src/test/setup.js'],
     include: ['src/**/*.{test,spec}.{js,jsx}'],
     // Los `*.integration.test.js` necesitan la Supabase local de Docker; corren
     // aparte con `npm run test:integration` (ver vitest.integration.config.js).

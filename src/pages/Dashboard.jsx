@@ -30,6 +30,7 @@ import { useToast } from '@/components/ui/use-toast';
 import SummaryMetrics from '@/components/Dashboard/SummaryMetrics';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
+import { ESTADOS_MEMBRESIA, describirEstado } from '@/lib/estadosPago';
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -122,13 +123,29 @@ const Dashboard = () => {
     } finally { setActionLoadingId(null); }
   }
 
-  const statusBadge = (status) => {
-    const s = (status || '').toLowerCase();
-    const common = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border-none';
-    if (s === 'active') return <Badge className={`${common} bg-green-500/10 text-green-600 shadow-sm`}>Activa</Badge>;
-    if (s === 'paused') return <Badge className={`${common} bg-amber-500/10 text-amber-600`}>Pausada</Badge>;
-    return <Badge className={`${common} bg-gray-100 text-gray-400`}>Cancelada</Badge>;
+  // Los estados salen de `@/lib/estadosPago`, que es el único lugar donde se
+  // declaran. Acá solo vive cómo se pintan. Ver ese archivo para el porqué:
+  // este badge decía "Cancelada" para todo lo que no fuera active/paused.
+  const CLASE_TONO = {
+    ok: 'bg-green-500/10 text-green-600 shadow-sm',
+    curso: 'bg-brand-primary/10 text-brand-primary',
+    atencion: 'bg-amber-500/15 text-amber-700',
+    cerrado: 'bg-gray-100 text-gray-400',
+    desconocido: 'bg-gray-100 text-gray-500',
   };
+
+  const statusBadge = (status) => {
+    const common = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border-none';
+    const { label, tono } = describirEstado(ESTADOS_MEMBRESIA, status);
+    return <Badge className={`${common} ${CLASE_TONO[tono]}`}>{label}</Badge>;
+  };
+
+  // Cancelar solo tiene sentido mientras la suscripción sigue viva, y solo
+  // funciona si hay preapproval_id: `performAction` corta en silencio cuando
+  // falta, así que un botón sin él es un clic que no hace nada y no avisa.
+  const puedeCancelar = (m) =>
+    ['active', 'paused', 'pending'].includes((m.status || '').toLowerCase()) &&
+    Boolean(m.preapproval_id);
 
   if (authLoading || pageLoading) {
     return (
@@ -251,7 +268,9 @@ const Dashboard = () => {
                           {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Reanudar"}
                           </Button>
                       )}
-                      <Button size="sm" variant="ghost" className="text-red-400 font-bold h-11 hover:bg-red-50 rounded-xl" onClick={() => performAction('cancel', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>Cancelar</Button>
+                      {puedeCancelar(m) && (
+                        <Button size="sm" variant="ghost" className="text-red-400 font-bold h-11 hover:bg-red-50 rounded-xl" onClick={() => performAction('cancel', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>Cancelar</Button>
+                      )}
                     </div>
                 </motion.div>
                 ))

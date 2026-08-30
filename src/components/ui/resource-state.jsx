@@ -19,6 +19,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { tituloPagina } from '@/config/entidad';
 
 /**
  * Esqueleto de carga a pantalla completa.
@@ -55,7 +56,7 @@ const ResourceLoading = ({ title }) => (
 const ResourceNotFound = ({ icon: Icon, title, description, backTo, backLabel }) => (
   <div className="min-h-screen bg-brand-sand flex flex-col items-center justify-center px-4">
     <Helmet>
-      <title>{title} – Fundación Evolución Antoniana</title>
+      <title>{tituloPagina(title)}</title>
       {/* Es un callejón sin salida: que no se indexe. */}
       <meta name="robots" content="noindex" />
     </Helmet>

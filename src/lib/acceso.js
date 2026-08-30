@@ -17,9 +17,9 @@ export const SIN_ACCESO = Object.freeze({
  * ¿Este beneficio se muestra bloqueado para esta persona?
  *
  * ⚠️ Esto es UX, NO una frontera de seguridad. `benefits.codigo` sigue siendo
- * una columna de lectura pública (ROADMAP 11.1.a), así que ocultar el código en
+ * una columna de lectura pública (ROADMAP §12.1), así que ocultar el código en
  * pantalla no impide que alguien lo lea consultando la API directamente. La
- * protección real llega con los canjes de §11 fase 2, donde el código deja de
+ * protección real llega con los canjes de §12 fase 2, donde el código deja de
  * ser un texto fijo y pasa a emitirse por persona y de un solo uso.
  */
 export const beneficioBloqueado = (benefit, acceso) =>

@@ -27,6 +27,7 @@ const ActivityDetailPage = lazy(() => import("@/pages/ActivityDetailPage"));
 const ConfirmAttendancePage = lazy(() => import("@/pages/ConfirmAttendancePage"));
 const Collaborate = lazy(() => import("@/pages/Collaborate"));
 const CarnetPage = lazy(() => import("@/pages/CarnetPage"));
+const Rendicion = lazy(() => import("@/pages/Rendicion"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
@@ -76,6 +77,7 @@ const PageRoutes = () => {
         <Route path="/activities/:id" element={<ActivityDetailPage />} />
         <Route path="/confirm-attendance" element={<ConfirmAttendancePage />} />
         <Route path="/collaborate" element={<Collaborate />} />
+        <Route path="/rendicion" element={<Rendicion />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/agradecimiento" element={<Agradecimiento />} />
 

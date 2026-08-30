@@ -2,6 +2,7 @@
 // Contrato único: devuelve `{ data, error }` y no lanza (ver `src/lib/dataResult.js`).
 import { supabase } from '@/lib/supabase';
 import { listResult, attempt } from '@/lib/dataResult';
+import { entidad } from '@/config/entidad';
 
 /* ============================
    Lectura directa desde Supabase
@@ -180,18 +181,57 @@ export const cancelMembership = (preapprovalId) =>
     'cancelMembership'
   );
 
+/* ============================
+   El destino del aporte
+   ============================ */
+/**
+ * Campo que lleva el destino elegido hasta el microservicio (ROADMAP §10.7).
+ *
+ * ⚠️ ACÁ NO SE MANDA `external_reference`, Y ES DELIBERADO — corrige lo que se
+ * hizo el 2026-08-16 por la mañana.
+ *
+ * El microservicio ya arma el suyo con un esquema propio, verificable en los
+ * datos de producción: `anon:suscripcion` y `user:<uuid>:suscripcion`. Ese
+ * string es cómo el webhook vuelve a identificar al usuario cuando MercadoPago
+ * le avisa del cobro. Si el front manda un `external_reference` propio y el
+ * microservicio lo prioriza sobre el suyo, **se pierde la identificación del
+ * usuario en cada suscripción**: la plata entra y no se sabe de quién es.
+ *
+ * Hoy no hay suscripciones reales, así que el daño fue cero — pero el
+ * `external_reference` correcto lo tiene que seguir armando quien conoce ese
+ * esquema, que es el microservicio. Lo que se manda desde acá es el dato crudo,
+ * y él decide cómo codificarlo (lo natural sería extender su propio esquema:
+ * `user:<uuid>:suscripcion:destino:<uuid>`).
+ *
+ * Sin destino se devuelve `{}` y el body queda IDÉNTICO al de siempre: una
+ * función nueva no puede cambiar el payload del cobro que ya funciona.
+ */
+const camposDestino = (destinoId) => (destinoId ? { destino_id: destinoId } : {});
+
+/** Título que ve el aportante en el checkout de MercadoPago. */
+const tituloAporte = (destinoNombre, porDefecto) =>
+  `${destinoNombre || porDefecto} — ${entidad.nombre}`;
+
 /**
  * Crear suscripción recurrente (Render)
  */
-export const createSubscription = ({ userId, emailUsuario, amount = 50, currency = 'ARS' }) =>
+export const createSubscription = ({
+  userId,
+  emailUsuario,
+  amount = 50,
+  currency = 'ARS',
+  destinoId = null,
+  destinoNombre = null
+}) =>
   attempt(
     () =>
       callWebhook(`/api/crear-suscripcion`, {
         method: 'POST',
         body: {
-          reason: 'Beca mensual Fundación Evolución Antoniana',
+          reason: tituloAporte(destinoNombre, 'Aporte mensual'),
           payer_email: emailUsuario,
           user_id: userId,
+          ...camposDestino(destinoId),
           auto_recurring: {
             frequency: 1,
             frequency_type: 'months',
@@ -206,15 +246,22 @@ export const createSubscription = ({ userId, emailUsuario, amount = 50, currency
 /**
  * Crear donación única (Render)
  */
-export const createOneTimeDonation = ({ userId, emailUsuario, amount }) =>
+export const createOneTimeDonation = ({
+  userId,
+  emailUsuario,
+  amount,
+  destinoId = null,
+  destinoNombre = null
+}) =>
   attempt(
     () =>
       callWebhook(`/api/crear-preferencia`, {
         method: 'POST',
         body: {
           amount: Number(amount),
-          description: 'Donación única a la Fundación Evolución Antoniana',
+          description: tituloAporte(destinoNombre, 'Donación'),
           user_id: userId,
+          ...camposDestino(destinoId),
           payer: {
             name: 'Invitado',
             surname: '',

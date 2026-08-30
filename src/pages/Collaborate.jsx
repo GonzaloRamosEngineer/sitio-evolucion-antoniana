@@ -1,5 +1,5 @@
 // src/pages/Collaborate.jsx
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +10,14 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
+import SelectorDestino from '@/components/Collaborate/SelectorDestino';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 // ⬇️ usamos el microservicio en Render vía membershipApi
 import { createSubscription, createOneTimeDonation } from '@/api/membershipApi';
+import { useDestinosActivos } from '@/hooks/useContentQueries';
+import { destinoEfectivo } from '@/api/destinosApi';
 
 const Collaborate = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +30,38 @@ const Collaborate = () => {
 
   const [subscriptionAmount, setSubscriptionAmount] = useState('5000');
   const [isProcessingSubscription, setIsProcessingSubscription] = useState(false);
+
+  /* --- A dónde va el aporte (ROADMAP §10.7) --------------------------------
+   *
+   * Si la consulta falla no se muestra nada y se dona como antes: el destino es
+   * información valiosa, pero no vale perder una donación por ella. El error se
+   * ignora a propósito, no por olvido.
+   *
+   * Un destino puede admitir aporte puntual, recurrente o ambos, así que cada
+   * tarjeta filtra por lo suyo y lleva su propia elección: sirven a decisiones
+   * distintas y no tienen por qué coincidir.
+   */
+  const { data: destinos = [] } = useDestinosActivos();
+  const destinosPuntuales = useMemo(
+    () => destinos.filter((d) => d.admite_puntual),
+    [destinos]
+  );
+  const destinosRecurrentes = useMemo(
+    () => destinos.filter((d) => d.admite_recurrente),
+    [destinos]
+  );
+
+  const [destinoDonacionElegido, setDestinoDonacionElegido] = useState(null);
+  const [destinoSuscripcionElegido, setDestinoSuscripcionElegido] = useState(null);
+
+  // Derivado, no sincronizado: la lista llega asincrónica y puede cambiar, así
+  // que el id se resuelve en cada render contra la lista vigente. Ver
+  // `destinoEfectivo` en destinosApi.
+  const destinoDonacionId = destinoEfectivo(destinoDonacionElegido, destinosPuntuales);
+  const destinoSuscripcionId = destinoEfectivo(destinoSuscripcionElegido, destinosRecurrentes);
+
+  const destinoDonacion = destinosPuntuales.find((d) => d.id === destinoDonacionId) ?? null;
+  const destinoSuscripcion = destinosRecurrentes.find((d) => d.id === destinoSuscripcionId) ?? null;
 
   const subscriptionPlans = [
     { value: '5000', label: '$5.000 ARS / mes' },
@@ -52,7 +87,9 @@ const Collaborate = () => {
     const { data, error } = await createOneTimeDonation({
       userId: user?.id || null,
       emailUsuario: user?.email || 'anon@fundacion.com',
-      amount
+      amount,
+      destinoId: destinoDonacion?.id ?? null,
+      destinoNombre: destinoDonacion?.nombre ?? null
     });
 
     if (data?.init_point) {
@@ -85,7 +122,9 @@ const Collaborate = () => {
     const { data, error } = await createSubscription({
       userId: user?.id || null,
       emailUsuario: user?.email || 'anon@fundacion.com',
-      amount
+      amount,
+      destinoId: destinoSuscripcion?.id ?? null,
+      destinoNombre: destinoSuscripcion?.nombre ?? null
     });
 
     if (data?.init_point) {
@@ -135,6 +174,13 @@ const Collaborate = () => {
 
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
+          <SelectorDestino
+            id="donation-destino"
+            destinos={destinosPuntuales}
+            value={destinoDonacionId}
+            onChange={setDestinoDonacionElegido}
+          />
+
           <div>
             <Label htmlFor="donation-amount" className="text-brand-dark font-semibold">Monto a donar (ARS)</Label>
             <div className="relative mt-1">
@@ -173,6 +219,14 @@ const Collaborate = () => {
   'Las becas permiten acompañar trayectorias deportivas, reducir barreras económicas y generar condiciones para que más chicos puedan sostener su formación en el tiempo.',
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
+          <SelectorDestino
+            id="subscription-destino"
+            destinos={destinosRecurrentes}
+            value={destinoSuscripcionId}
+            onChange={setDestinoSuscripcionElegido}
+            label="Tu aporte mensual sostiene"
+          />
+
           <div>
             <Label htmlFor="subscription-plan" className="text-brand-dark font-semibold">Tu aporte mensual</Label>
             <Select value={subscriptionAmount} onValueChange={setSubscriptionAmount}>
@@ -352,8 +406,10 @@ const Collaborate = () => {
                             Reportes de impacto trimestrales.
                         </li>
                     </ul>
+                    {/* Antes apuntaba a /contact, que no mostraba ninguna gestión
+                        financiera. Ahora hay una rendición de verdad para enlazar. */}
                     <Button variant="link" className="text-brand-action font-bold p-0 h-auto hover:text-brand-dark" asChild>
-                        <Link to="/contact">Conocé más sobre nuestra gestión financiera →</Link>
+                        <Link to="/rendicion">Mirá en qué se usó cada aporte →</Link>
                     </Button>
                 </div>
 

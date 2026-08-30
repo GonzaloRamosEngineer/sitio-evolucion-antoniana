@@ -15,46 +15,47 @@
 
 ---
 
-## Por dónde seguir (actualizado 2026-08-30)
-
-**Un solo bloqueante real: §10.8 — las donaciones no traen quién donó.**
-
-El modelo aporte→acceso está construido, aplicado en producción y verificado, y la fase 1
-del club (carnet + catálogo con estado de acceso) está en el repo. Pero el backfill dio
-**0 personas con acceso vigente**, porque 4 de 5 donaciones son anónimas. El club
-funciona y está vacío. Se arregla en el flujo de cobro, no en SQL, y el webhook vive
-**fuera de este repo** (`mp-supabase-webhook.onrender.com`, ver `vercel.json`).
-
-Después de eso, por orden de valor: `precio_socio` en actividades (§10.3), y la fase 2 del
-club —el comercio y los canjes— con DigitalMatch como piloto (§11.8).
-
-**Antes de escribir una migración, conectarse a la base y mirar.** El 2026-08-30 se
-escribieron tres commits sobre un esquema que el repo describía mal y producción no
-tenía. Ver `HISTORIAL.md`, Sesión J.
-
----
-
 ## Estado
 
-Las nueve sesiones planificadas (A-I) están cerradas y desplegadas, más la Sesión J
-(2026-08-30). El sitio está sano en producción, con lint en 0 errores, 92 tests y
-`vite@7`. El repo **reconstruye la base productiva desde cero con 0 diferencias**
-(verificado el 2026-08-30 en Docker contra un dump de producción).
+Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
+producción, con lint en 0 errores, 174 tests y `vite@7`.
 
-Lo que queda son **tres cosas de naturaleza distinta**:
+Lo que queda son **dos cosas de naturaleza distinta**:
 
 | | Qué | Dónde |
 |---|---|---|
-| **Bloqueante** | Las donaciones anónimas dejan el club sin nadie | §10.8 |
+| **Bloqueante** | Las donaciones llegan sin saber quién donó, así que el acceso no le alcanza a nadie | §10.17 |
 | **Deuda** | 2 ítems técnicos + deuda menor. Nada bloquea nada | §A abajo |
-| **Producto** | Precio de socio en actividades, socios formales, y el club fase 2 | §10.3 y §11 |
+| **Producto** | Precio de socio en actividades, socios formales | §10 abajo |
+| **Producto** | El club de beneficios: el canje y el comercio como actor | §12 abajo |
 
-La única **vulnerabilidad viva** es `react-router-dom@6.30.4` (open redirect → XSS,
-moderate). No tiene parche en la v6: el arreglo es react-router v7, un major. Ver 6.7.
+La única **vulnerabilidad viva** es `react-router-dom` (open redirect → XSS, moderate).
+Ver 6.7.
 
-**Acceso a la base productiva:** se hace por el *session pooler* de Supabase (puerto 5432,
-host `.pooler.supabase.com`). La conexión directa `db.<ref>.supabase.co` **es IPv6-only** y
-no responde desde una conexión hogareña argentina.
+✅ **Cerrado el 2026-08-16:** la fuga de datos financieros (dos vistas puenteaban las RLS
+y exponían a `anon` el historial de pagos de cada persona) **está tapada en producción y
+verificada** (§C). Junto con ella se aplicaron las **fases 1 y 2 del modelo de aportes**:
+
+| | Qué quedó | Detalle |
+|---|---|---|
+| **Fase 1** | `destinos` + `aportes`: el libro único con destino, y la carga manual | §10.11 |
+| **Fase 2** | `gastos` + comprobante + `/rendicion` pública: `saldo = recaudado − rendido` | §10.12 |
+
+Las **donaciones únicas ya entran solas al libro** (§10.13): el trigger las registra al
+aprobarse, con backfill hecho — $7.141 cuadrando con `donations` y con el Dashboard.
+
+Queda abierto el **servicio de pagos** (§10.13): las suscripciones se crean y nunca se
+actualizan, y el destino elegido en el checkout todavía no llega. Decidido moverlo a
+Vercel, en este mismo repo. Y queda lo que no es técnico: **cargar los datos reales**,
+sin los cuales la rendición es una página correcta y vacía.
+
+✅ **Cerrado el 2026-08-30:** la **capa de acceso** sobre el libro (§10.17) y la **fase 1
+del club de beneficios** (§12.8): `/carnet` y el catálogo que distingue un socio de un
+visitante. Aplicado en producción.
+
+🔴 **Y el bloqueante que destapó:** el backfill dio **0 personas con acceso vigente**,
+porque 4 de 5 donaciones llegan sin `user_id`. El modelo funciona y no le llega a nadie.
+Ver §10.17.
 
 ---
 
@@ -68,11 +69,14 @@ no responde desde una conexión hogareña argentina.
 
 **Lo que queda, en orden de valor:**
 
-1. **`react-router-dom@6 → v7`** — la **única vulnerabilidad viva** (open redirect → XSS,
-   moderate). No tiene parche en la v6: `6.30.4` es la última y sigue en el rango
-   vulnerable. La v7 es en buena medida compatible, pero es un major sobre el router de
-   toda la app: **rama propia, deploy propio, y verificación en navegador de todas las
-   rutas**, no de una muestra.
+1. **`react-router-dom` → por encima de `7.17.0`** — la **única vulnerabilidad viva**.
+   ⚠️ **Corregido el 2026-08-16:** el rango del aviso es `6.0.0 – 7.17.0`, o sea que
+   **subir a v7 a secas ya no alcanza** — hay que ir por encima de 7.17.0. Son dos CVE;
+   el de hidratación SSR (`deserializeErrors`) **no aplica acá** porque la app es una SPA
+   pura, el de open redirect sí. `npm audit fix` promete arreglarlo pero el *dry run*
+   confirma que no cambia nada: sigue requiriendo el major a mano. Es un major sobre el
+   router de toda la app: **rama propia, deploy propio, y verificación en navegador de
+   todas las rutas**, no de una muestra.
 2. **`eslint@8 → v9`** — la config ya es flat, así que el salto es menor de lo que suena.
    Sale de EOL. Sin vulns asociadas.
 3. **`tailwindcss@3 → v4`** — cambio grande de motor. Sin urgencia.
@@ -122,6 +126,7 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | `ActivityDetailPage` y los módulos de Comisión sin TanStack Query | `HISTORIAL.md` §4, ítem 4.2 | Igual: al tocarlos. Tienen bastante lógica de mutación propia. |
 | `getPartnerBySlug` sin consumidores | `HISTORIAL.md` §8, Sesión F2 | Borrar en la próxima limpieza. Se conservó por simetría con `getNewsBySlug`. |
 | 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | `HISTORIAL.md` §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
+| `handle_new_user()` explota si el alta no trae `name` en `raw_user_meta_data` | Detectado el 2026-08-16 al arreglar el check T6 | El trigger inserta en `public.users`, donde `name` es NOT NULL, leyendo `raw_user_meta_data->>'name'`. Un alta sin ese campo **falla entera**. El registro propio sí lo manda; el riesgo es un proveedor OAuth que use otra clave (`full_name`). Un `COALESCE(name, full_name, email)` lo cerraría. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | `HISTORIAL.md` §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
 
 ---
@@ -146,7 +151,12 @@ chrome --headless=new --disable-gpu --virtual-time-budget=7000 \n       --dump-d
 
 Un sitio sano da **~58 KB** de DOM en la home con `<nav>` y `<footer>` presentes; el
 roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/actividades`,
-`/colaborar`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
+`/collaborate`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
+
+⚠️ **Las rutas van tal cual están en `App.jsx`.** Esta lista decía `/colaborar` y la ruta
+real es `/collaborate`: el check pegaba en el 404, que **también** tiene `<nav>`, `<footer>`
+y un tamaño verosímil, así que pasaba en verde sin haber mirado la página. Confirmar
+siempre algo del contenido —un título, un botón— y no solo el esqueleto.
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
@@ -171,184 +181,384 @@ las tres migraciones. Convergen sin cambios y cada una corre en su transacción,
 
 ---
 
+## C. El fix de seguridad — APLICADO a producción el 2026-08-16
+
+> **Estado: cerrado.** La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql`
+> se aplicó a producción el 2026-08-16 y la fuga está cerrada, verificado vía PostgREST:
+> `user_support_history` devuelve **404** y `fundacion_metrics` **401**. El Dashboard
+> siguió funcionando (`total_donado = 7141`), que era lo que esta migración podía romper.
+> El check T8 de `supabase/checks/rls-check.sql` devuelve 0 vistas sin `security_invoker`,
+> así que la regresión ahora la detecta la verificación y no depende de que alguien mire.
+>
+> **Lo que sigue abajo se conserva como procedimiento**, porque es el que hay que repetir
+> ante cualquier fix de seguridad futuro, y porque la lección del final es la que importa.
+
+La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql` estaba validada en
+Docker y sin aplicar. Mientras tanto, la fuga estuvo abierta.
+
+**Qué arregla.** Dos vistas (`user_support_history`, `fundacion_metrics`) eran
+`OWNER TO postgres` sin `security_invoker`, así que corrían con permisos del dueño y
+**puenteaban las RLS**. Verificado contra producción pidiendo solo conteos:
+
+| Como `anon` | Tipo | Filas |
+|---|---|---|
+| `donations`, `memberships`, `users`, `registrations` | tabla | 0 — RLS funciona |
+| `user_support_history` | vista | **20 — fuga** |
+| `fundacion_metrics` | vista | **1 — fuga** |
+
+Los *mismos* datos, negados por la tabla y entregados por la vista. Se exponía
+`amount`, `status`, `payment_id`, `preapproval_id` y `plan` por persona.
+
+**Cómo aplicarla:**
+
+```bash
+# 1. Backup reciente de la base (no es opcional).
+# 2. Revalidar en Docker — el procedimiento completo en supabase/checks/README.md.
+#    Los checks T8/T9/T10 de rls-check.sql cubren esta regresión.
+# 3. Aplicar. Como el historial remoto está vacío (ver §B), conviene pegar el SQL
+#    en el editor web en vez de `supabase db push`, que intentaría correr las
+#    cuatro migraciones.
+```
+
+**Después de aplicar, confirmar que la fuga cerró** (debe dar `permission denied` y `404`):
+
+```bash
+URL=https://<proyecto>.supabase.co; KEY=<anon key>
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/user_support_history?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 404
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/fundacion_metrics?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 401/403
+```
+
+**Y confirmar que el Dashboard sigue funcionando**, que es lo que esta migración podía
+romper: entrar con una sesión iniciada y verificar que "total donado" y "suscripciones
+activas" no quedaron en cero. En Docker se verificó que `authenticated` sigue viendo los
+valores, pero conviene mirarlo en la app real.
+
+**Lección que deja, y es la que importa.** El razonamiento de §10.1.g —"no es un agujero
+hoy porque RLS está habilitado en las 15 tablas"— es correcto **para tablas**. Las vistas
+no son tablas, y eran justo los dos objetos donde el argumento no aplicaba. No fue un
+descuido sino un punto ciego lógico: **la afirmación de seguridad se escribió sobre una
+categoría de objeto y el esquema tenía otra.** Por eso T8 ahora falla si alguien crea
+cualquier vista sin `security_invoker`: la verificación tiene que ser automática, no
+depender de que alguien mire en el momento justo.
+
+---
+
 ## 10. Modelo de dominio: aporte → acceso (propuesta, 2026-08-16)
 
 ### 10.0 — Por qué existe esta sección
 
-El proyecto creció de forma iterativa: cada módulo se enganchó cuando hizo falta. Lo que
-faltaba escrito era la **regla que los conecta**, y es del dueño del proyecto:
+El proyecto creció de forma iterativa: cada módulo se enganchó cuando hizo falta. Eso
+funcionó — las secciones 1 a 9 muestran que **cada módulo está bien construido por
+separado**. Lo que nunca se escribió es la **regla que los conecta**: por qué existen
+juntos socios, cuota, donaciones, beneficios, sponsors y actividades.
+
+Esa regla existe y es del dueño del proyecto (relevada el 2026-08-16):
 
 > Hay **dos maneras de aportar** — cuota social recurrente o donación puntual — y **una
-> sola consecuencia**: acceder a beneficios y descuentos. Lo único que varía entre las dos
-> es **cuánto dura ese acceso**.
+> sola consecuencia**: acceder a beneficios y descuentos (sponsors, cursos, actividades
+> pagas). Lo único que varía entre las dos es **cuánto dura ese acceso**.
 
-**Esa regla ya está construida y aplicada en producción** (2026-08-30). El detalle de cómo
-se llegó, el diseño que se propuso en agosto y los dos hallazgos que lo corrigieron están
-en `HISTORIAL.md`. Acá queda **solo lo que falta**.
+Esta sección documenta el estado actual verificado contra el código, propone cómo
+codificar esa regla, y deja anotadas las decisiones de negocio que no son técnicas.
 
----
-
-### 10.1 — Estado al 2026-08-30
-
-**Construido y en producción:**
-
-- `aportes` es el libro único, alimentado por triggers (`aporte_desde_donacion`,
-  `aporte_desde_membresia`) con idempotencia por `referencia_externa`.
-- `reglas_acceso` con los parámetros de la Fundación: cuota $5.000, piso = la cuota,
-  1..12 meses, 30 días de gracia.
-- `acceso_vigente()` / `tiene_acceso()` / `mi_acceso()` / `antiguedad_socio()` /
-  `mi_antiguedad()` / `meses_por_donacion()` / `destino_otorga_acceso()`.
-- `benefits.requiere_acceso`, `destinos.otorga_acceso`, `aportes.equivale_a`.
-- Front: `/carnet`, catálogo y detalle con estado de acceso (§11 fase 1).
-- El repo vuelve a reconstruir la base productiva desde cero: **0 diferencias**.
-
-**Lo que sigue abierto:**
-
-- [ ] **10.1.c — Identidades paralelas.** La misma persona puede donar, preinscribir a un
-  hijo, anotarse de invitada y ser socia, y el sistema la ve como cuatro personas
-  distintas. **Dejó de ser teórico**: es la causa de 10.8, el bloqueante vivo.
-- [ ] **10.1.d — Las actividades no tienen precio.** `activities` no tiene ningún campo de
-  arancel, así que "algunas actividades son gratis y otras pagas" —la mitad del valor de
-  ser socio— no existe en la base. Falta `precio_general` / `precio_socio`.
-- [ ] **10.1.g — Permisos de `anon` amplios** en las tablas viejas (`users`, `memberships`,
-  `donations`, `registrations`, `education_preinscriptions`): `GRANT ALL`. Hoy no es un
-  agujero porque RLS deniega por defecto, pero deja el margen de error en cero. Las
-  tablas nuevas ya nacieron con los GRANT recortados; falta hacer lo mismo con estas.
-- [ ] **Socios como condición institucional.** `socios` y `categorias_socio` (número,
-  antigüedad formal, categoría, voto) no existen. El acceso funciona sin ellas; el carnet
-  con número de socio, no.
+**A diferencia del resto del ROADMAP, esto no es deuda: es funcionalidad que falta.**
+Ninguno de los ítems de abajo es un bug. Son piezas del modelo que nunca se escribieron.
 
 ---
 
-### 10.3 — Qué falta hacer
+### 10.1 — Estado actual (verificado 2026-08-16)
 
-| Orden | Qué | Por qué ahí |
+- [ ] **10.1.a — No existe la entidad socio.**
+  Existen `users` (cuenta de login, `baseline:583`) y `memberships` (suscripción de
+  cobro de MercadoPago, `baseline:446`). No existe número de socio, fecha de alta como
+  socio, categoría ni estado institucional. `memberships` modela **un cobro recurrente**,
+  no una membresía. Buscado `is_socio|socio_activo|estado_socio|member_since|numero_socio`
+  en `src/` y `supabase/`: **cero resultados**.
+
+- [ ] **10.1.b — La cuota no habilita nada. ← el nudo del asunto**
+  Verificado: `BenefitsPage.jsx`, `BenefitDetailPage.jsx`, `BenefitCard.jsx`,
+  `Activities.jsx` y `ActivityDetailPage.jsx` **no consultan `memberships` en ningún
+  punto**. Un visitante sin cuenta ve y usa exactamente lo mismo que un socio que paga
+  hace tres años. El sistema cobra una cuota que, dentro del sistema, no otorga ningún
+  privilegio. **Esta es la causa de que los módulos se sientan sueltos**: no falta
+  pegamento entre ellos, falta el concepto que los enhebra.
+
+- [ ] **10.1.c — Cuatro identidades paralelas de la misma persona.**
+  | Dónde | Campos | Se vincula a `users`? |
+  |---|---|---|
+  | `users` | `email` (unique), `dni`, `phone` | es la cuenta |
+  | `registrations` | `guest_name`, `guest_email` | **no** — el CHECK `check_registration_type` fuerza que sea `user_id` **o** invitado, nunca ambos |
+  | `education_preinscriptions` | `email`, `full_name`, `dni`, `phone` | solo si había sesión abierta al enviar (`educationApi.js:41`); si no, queda huérfano |
+  | `memberships` | `payer_email` | es el mail de MercadoPago, puede diferir del de la cuenta |
+  Nada reconcilia los cuatro. La misma persona puede donar, preinscribir a un hijo,
+  anotarse de invitada y ser socia, y el sistema la ve como cuatro personas distintas.
+
+- [ ] **10.1.d — Las actividades no tienen precio.**
+  `activities` (`baseline:333`) tiene título, descripción, fecha, duración, modalidad,
+  cupo, imágenes y redes. **Ningún campo de precio, arancel o costo.** La distinción
+  "algunas actividades son gratis y otras pagas" —que es la mitad del valor de ser
+  socio— hoy no existe en la base.
+
+- [ ] **10.1.e — No hay campañas; `donation_type` es texto libre sin escritor.**
+  `donations.donation_type` (`baseline:405`) es `text NOT NULL`, pero el único lugar del
+  código que lo menciona es `DonationList.jsx:35`, que **lo lee**. No hay tabla de
+  campañas ni iniciativas. "Doné para esta causa puntual" no está modelado.
+
+- [ ] **10.1.f — Un socio puede acumular varias membresías activas.**
+  Sin restricción de unicidad sobre `memberships`. `getUserMemberships` y el Dashboard ya
+  operan sobre un array, así que la UI lo asume. Un doble pago deja dos suscripciones
+  cobrando en paralelo.
+
+- [ ] **10.1.g — Permisos de `anon` más amplios de lo necesario.**
+  `baseline:1029-1065`: `GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE`
+  a `anon` sobre `users`, `memberships`, `donations`, `registrations` y
+  `education_preinscriptions`.
+  **No es un agujero hoy**: RLS está habilitado en las 15 tablas (`baseline:893-955`) y
+  deniega por defecto toda operación sin policy; además PostgREST no expone `TRUNCATE`.
+  Pero deja el margen de error en cero: **cualquier policy nueva mal escrita pasa de ser
+  demasiado permisiva a ser destructiva.** Se vuelve crítico con `aportes` (10.2), que es
+  la tabla que otorga privilegios.
+
+---
+
+### 10.2 — Diseño propuesto
+
+**Decisión de diseño central: la entidad protagonista es el _acceso_, no el _socio_.**
+
+Si se modela "socio" como concepto central, el donante queda como ciudadano de segunda
+—tiene beneficios pero no es socio— y toda consulta termina en un `OR` incómodo.
+Modelando **acceso**, los dos caminos tienen la misma forma y el sistema entero hace una
+sola pregunta: *¿esta persona tiene acceso vigente, y hasta cuándo?*
+
+Eso **no elimina** la entidad socio: la separa. Son dos cosas distintas y conviene que lo
+sigan siendo:
+
+| Concepto | Qué es | Se deriva de |
 |---|---|---|
-| **1** | **Resolver 10.8** (que las donaciones traigan quién donó) | Sin esto el club no le llega a nadie. Es lo único verdaderamente bloqueante |
-| **2** | `precio_general` / `precio_socio` en `activities` (10.1.d) | La otra mitad del valor de la cuota |
-| **3** | Recortar los GRANT de `anon` en las tablas viejas (10.1.g) | Higiene |
-| **4** | `socios` + `categorias_socio` | Carnet con número, antigüedad formal, categorías |
+| **Acceso** | Derecho a beneficios y descuentos, con vencimiento | Los aportes (calculado) |
+| **Socio** | Condición institucional: número, antigüedad, categoría, voto | Decisión de la entidad (dato propio) |
 
-### 10.4 — Decisiones de negocio (TOMADAS el 2026-08-30)
+Un socio suspendido por la comisión no es lo mismo que un socio atrasado en el pago, y
+con esta separación se pueden expresar los dos.
 
-Las tomó la Fundación; acá queda el qué y el porqué, porque son las que un cliente
-distinto va a querer cambiar (ver 10.5).
+#### Tablas nuevas
+
+```sql
+-- 1) Categorías de socio (necesaria apenas haya más de un monto de cuota)
+create table public.categorias_socio (
+  id                        uuid primary key default gen_random_uuid(),
+  nombre                    text not null,              -- 'Activo', 'Adherente', 'Protector'
+  cuota_mensual             numeric not null check (cuota_mensual >= 0),
+  descuento_actividades_pct integer not null default 0
+                              check (descuento_actividades_pct between 0 and 100),
+  otorga_voto               boolean not null default true,
+  activa                    boolean not null default true,
+  orden                     integer not null default 0,
+  created_at                timestamptz not null default now()
+);
+
+-- 2) Campañas / iniciativas puntuales (le da destino a la donación)
+create table public.campanas (
+  id           uuid primary key default gen_random_uuid(),
+  nombre       text not null,
+  slug         text not null unique,
+  descripcion  text,
+  meta_monto   numeric check (meta_monto > 0),
+  fecha_inicio date,
+  fecha_fin    date,
+  imagen_url   text,
+  estado       text not null default 'borrador'
+                 check (estado in ('borrador','activa','cerrada')),
+  created_at   timestamptz not null default now(),
+  constraint campanas_fechas_chk check (fecha_fin is null or fecha_fin >= fecha_inicio)
+);
+
+-- 3) APORTES — el libro único. Todo lo que entra cae acá.
+create table public.aportes (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid references public.users(id) on delete set null,
+  tipo           text not null check (tipo in ('cuota','donacion')),
+  monto          numeric not null check (monto > 0),
+  fecha          timestamptz not null default now(),
+  membership_id  uuid references public.memberships(id) on delete set null,
+  donation_id    uuid references public.donations(id)   on delete set null,
+  campana_id     uuid references public.campanas(id)    on delete set null,
+  acceso_desde   date not null,
+  acceso_hasta   date not null,
+  -- identidad de respaldo: permite reconciliar a quien aportó sin cuenta (10.1.c)
+  email_aportante  text,
+  nombre_aportante text,
+  created_at     timestamptz not null default now(),
+  constraint aportes_origen_chk check (
+    (tipo = 'cuota'    and membership_id is not null and donation_id   is null) or
+    (tipo = 'donacion' and donation_id   is not null and membership_id is null)
+  ),
+  constraint aportes_rango_chk check (acceso_hasta >= acceso_desde)
+);
+create index idx_aportes_user_vig  on public.aportes(user_id, acceso_hasta desc);
+create index idx_aportes_email     on public.aportes(lower(email_aportante));
+create index idx_aportes_campana   on public.aportes(campana_id);
+```
+
+**Por qué un libro y no calcularlo al vuelo desde `memberships` + `donations`:** es el
+historial que se le muestra al socio ("aportaste 14 veces desde 2023"), es lo que se le
+pasa al contador, es lo que hace computable la antigüedad, y sobre todo **desacopla el
+acceso del medio de pago** — el día que entre otro proveedor además de MercadoPago, o un
+aporte en efectivo cargado a mano, `aportes` no cambia.
+
+```sql
+-- 4) Socios — la condición institucional, que NO se deriva del pago
+create table public.socios (
+  user_id       uuid primary key references public.users(id) on delete cascade,
+  numero_socio  bigint generated always as identity unique,
+  categoria_id  uuid references public.categorias_socio(id) on delete set null,
+  fecha_alta    date not null default current_date,
+  fecha_baja    date,
+  estado        text not null default 'activo'
+                  check (estado in ('activo','suspendido','baja')),
+  observaciones text,
+  constraint socios_baja_chk check (fecha_baja is null or fecha_baja >= fecha_alta)
+);
+
+-- 5) Regla de conversión donación → acceso (configurable POR CLIENTE, ver 10.5)
+create table public.reglas_acceso (
+  id                uuid primary key default gen_random_uuid(),
+  cuota_referencia  numeric not null check (cuota_referencia > 0),
+  piso_monto        numeric not null default 0,   -- debajo: se agradece, no da acceso
+  meses_minimos     integer not null default 1,
+  meses_maximos     integer not null default 12,
+  vigente           boolean not null default true
+);
+```
+
+#### La función que consulta todo el sistema
+
+```sql
+create or replace function public.acceso_vigente(p_user_id uuid)
+returns table (tiene_acceso boolean, vence_el date, origen text)
+language sql stable security definer set search_path = public as $$
+  select
+    coalesce(max(acceso_hasta) >= current_date, false),
+    max(acceso_hasta),
+    (array_agg(tipo order by acceso_hasta desc))[1]
+  from public.aportes
+  where user_id = p_user_id;
+$$;
+
+-- Versión booleana, para usar dentro de policies RLS sin recursión
+create or replace function public.tiene_acceso(p_user_id uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.aportes
+    where user_id = p_user_id and acceso_hasta >= current_date
+  );
+$$;
+```
+
+**Una sola función.** Beneficios, actividades, cursos y el panel del socio la consultan;
+la lógica no se reparte por la UI. Es el mismo patrón que `is_board_member()`
+(`CLAUDE.md`, modelo de seguridad), que ya demostró funcionar.
+
+#### Cambios a tablas existentes
+
+```sql
+alter table public.activities
+  add column precio_general numeric not null default 0 check (precio_general >= 0),
+  add column precio_socio   numeric check (precio_socio >= 0);
+  -- precio_general = 0  → actividad gratuita (resuelve 10.1.d)
+  -- precio_socio NULL   → aplica el descuento de la categoría del socio
+
+alter table public.benefits
+  add column requiere_acceso boolean not null default false;
+  -- false = beneficio abierto (comportamiento actual, no rompe nada)
+  -- true  = solo para quien tiene acceso vigente
+
+alter table public.donations
+  add column campana_id uuid references public.campanas(id) on delete set null;
+```
+
+Los cursos del módulo educación necesitan el mismo par de precios, pero hoy no existe
+tabla `cursos` — solo `education_preinscriptions`. Se resuelve cuando exista.
+
+#### RLS — el punto más delicado
+
+`aportes` **es la tabla que otorga privilegios**. Si alguien puede insertar ahí, se
+autoconcede beneficios. Reglas mínimas:
+
+- `aportes`: **`anon` sin ningún permiso.** `INSERT`/`UPDATE` exclusivamente con
+  `service_role` desde el webhook de pagos. `SELECT` propio para el socio, total para
+  admin y comisión. **No repetir el patrón de GRANTs amplios de 10.1.g.**
+- `socios`: lectura propia + admin/comisión; escritura solo admin.
+- `campanas`: lectura pública de las `activa`; escritura admin.
+- `categorias_socio`: lectura pública (hay que mostrar los planes); escritura admin.
+- `reglas_acceso`: lectura pública no hace falta; escritura admin.
+
+---
+
+### 10.3 — Orden de implementación
+
+El orden importa: cada fase se apoya en la anterior y **la fase 2 es la que responde la
+pregunta original** (por qué los módulos se sienten desconectados).
+
+| Fase | Qué | Esfuerzo | Deja algo usable? |
+|---|---|---|---|
+| **0** | ~~Arreglar el orden de migraciones~~ **✅ HECHO 2026-08-16** — ver `HISTORIAL.md` | ~2-3 h | Prerrequisito, ya cubierto |
+| **1** | `aportes` + `acceso_vigente()` + `tiene_acceso()` + backfill | ~2-3 días | Historial de aportes en el panel del socio |
+| **2** | `precio_general`/`precio_socio` en actividades + `requiere_acceso` en beneficios | ~2-3 días | **Acá la cuota empieza a valer algo** |
+| **3** | `campanas` + FK desde donaciones + barra de progreso pública | ~2 días | Donaciones dirigidas |
+| **4** | `socios` + `categorias_socio` + número y antigüedad | ~2 días | Carnet, antigüedad, categorías |
+| **5** | Unicidad de membresía activa (10.1.f) + achicar GRANTs (10.1.g) | ~medio día | Higiene |
+
+**La fase 0 ya está hecha** (2026-08-16). Era el prerrequisito de todo lo demás: las
+migraciones no reconstruían la base desde cero, y las 5 nuevas de la fase 1 se habrían
+apilado sobre una cadena rota. Ahora `supabase db push` levanta el esquema completo
+desde cero, que es lo que hace viable el objetivo multi-cliente (10.6).
+
+#### Backfill (parte de la fase 1, no la subestimes)
+
+Hay que volcar `memberships` y `donations` existentes a `aportes`. Requisitos:
+- **Idempotente**, como el resto de las migraciones del repo.
+- Decisión previa: *¿desde qué fecha se reconoce antigüedad?* Si se toma
+  `memberships.created_at`, quien pausó y retomó pierde continuidad.
+- Verificar contra Docker con `supabase/checks/` antes de tocar producción — el
+  procedimiento está en `supabase/checks/README.md` y en `HISTORIAL.md` §8, Sesión F2.
+
+---
+
+### 10.4 — Decisiones de negocio pendientes (no son técnicas)
+
+Ninguna de estas la puede tomar quien escribe el código:
 
 1. **¿Cuántos meses de acceso otorga una donación puntual?**
-   → **Proporcional:** `meses = least(12, greatest(1, floor(monto / cuota_referencia)))`.
-   No un plazo fijo: "cualquier donación da 6 meses" canibaliza la cuota. Implementado en
-   `meses_por_donacion()`, que es la **única** fuente de la regla — la usan el trigger y
-   el backfill, para que no puedan decir cosas distintas.
+   → **Recomendado: proporcional, no fijo.**
+   `meses = least(máximos, greatest(mínimos, floor(monto / cuota_referencia)))`, y solo
+   si `monto >= piso_monto`.
+   **Por qué no un plazo fijo:** "cualquier donación da 6 meses" canibaliza la cuota — con
+   una donación chica se obtiene medio año y nadie paga todos los meses. Proporcional es
+   auto-explicable ("donaste el equivalente a 3 cuotas, tenés 3 meses") y donar nunca
+   sale más barato que ser socio.
 
-2. **¿Cuál es el piso para que una donación otorgue acceso?**
-   → **El precio de la cuota.** Sin piso, una donación de $100 otorgaba un mes entero de
-   beneficios, que es exactamente lo que 10.4.1 quería evitar. Se modela como
-   `piso_monto = NULL` (que significa "usar `cuota_referencia`") y **no** como el número
-   copiado: así al subir la cuota el piso sube solo y no pueden desincronizarse.
+2. **¿El donante accede a los mismos beneficios que el socio?**
+   → **Recomendado: al mismo catálogo de descuentos, pero el socio conserva lo que el
+   donante no puede tener**: antigüedad acumulada, número de socio, carnet, prioridad de
+   cupo y voz en asamblea. Si los dos obtienen exactamente lo mismo, la cuota pierde el
+   sentido simbólico que se busca. Además coincide con la realidad legal: en una
+   asociación civil el socio tiene derechos estatutarios que el donante no tiene.
 
 3. **¿Hay período de gracia cuando falla el cobro?**
-   → **30 días, y solo para cuotas.** Un cobro recurrente falla por tarjeta vencida más
-   que por decisión. Una donación puntual no "falla": simplemente se terminó, así que la
-   gracia no aplica. Está en `reglas_acceso.dias_gracia` y verificado en
-   `supabase/checks/aportes-check.sql`.
+   → **Recomendado: 30 días.** Los cobros recurrentes fallan por motivos técnicos
+   (tarjeta vencida, límite) más que por decisión. Cortar el acceso al día siguiente
+   genera bronca y llamados a la comisión por algo que se resuelve solo.
 
-4. **¿Cómo corre la antigüedad si alguien deja de pagar y vuelve?**
-   → **No es un número, son tres**, y los tres salen del mismo libro sin guardar nada
-   extra (`antiguedad_socio()`):
+4. **¿La antigüedad se pierde al darse de baja y volver?** Afecta `socios.fecha_alta`
+   y si se conserva o se reasigna el `numero_socio`.
 
-   | Número | Qué es | Se reinicia? |
-   |---|---|---|
-   | `socio_desde` | Fecha del primer aporte. La identidad, lo que va en el carnet | **Nunca** |
-   | `meses_aportados` | Suma real de tiempo cubierto, sin contar dos veces los solapamientos | No, pero solo crece pagando |
-   | `racha_meses` | Tramo continuo actual, sin cortes | Sí, en cada interrupción |
-
-   **La regla: los derechos los da `meses_aportados`, no `socio_desde`.** Así quien se fue
-   un año y volvió no pierde su historia —sigue siendo socio desde 2026— pero tampoco
-   cobra beneficios por el año que no pagó. Y `racha_meses` queda disponible para premiar
-   la continuidad sin castigar al que tuvo un mal año.
-
-   Las tres se calculan con `range_agg` sobre los períodos de acceso: Postgres une los
-   rangos solapados y deja los huecos a la vista. Sumar días a mano es donde aparece el
-   doble conteo (un doble pago valdría doble); está verificado que no ocurre.
-
-5. **¿El donante accede a los mismos beneficios que el socio?**
-   → **Sí, al mismo catálogo de descuentos**, pero el socio conserva lo que el donante no
-   puede tener: antigüedad, número de socio, carnet, prioridad de cupo y voz en asamblea.
-   Coincide con la realidad legal: en una asociación civil el socio tiene derechos
-   estatutarios que el donante no tiene.
-
-6. **¿Los beneficios exclusivos son la regla o la excepción?**
-   → **Mixto, con los mejores cerrados.** `benefits.requiere_acceso` nace en `false` (no
-   cambia el comportamiento al migrar) y se cierra beneficio por beneficio. El visitante
-   ve el catálogo completo con los exclusivos **visibles pero bloqueados**: ver lo que uno
-   se está perdiendo convierte mejor que no saber que existe.
-
-7. **¿Quién escribe en `aportes`?**
-   → **Triggers en la base** (`trg_registrar_aporte_cuota` / `trg_registrar_aporte_donacion`),
-   no el webhook externo ni un cron. El webhook de cobros vive fuera de este repo
-   (`mp-supabase-webhook.onrender.com`, ver `vercel.json`) y solo toca `memberships` y
-   `donations`; con triggers el libro se llena **sin importar quién escriba el pago** —
-   ese webhook, un admin cargando en efectivo, o el proveedor que venga en dos años. Es
-   el desacople que justifica que el libro exista.
-   Idempotencia por `aportes.payment_id` con índice único: **MercadoPago reintenta los
-   webhooks**, y sin esa clave cada reintento regalaba un mes de acceso.
-
-### 10.7 — El repo no describía la base productiva ✅ RESUELTO 2026-08-30
-
-Se descubrió al conectarse por primera vez a producción: existía un módulo de aportes,
-destinos y rendición de gastos que el esquema versionado no documentaba. Resuelto con
-`20260830100000_modulo_aportes_destinos.sql`; el repo vuelve a reconstruir la base desde
-cero con 0 diferencias. **El relato completo y por qué importa, en `HISTORIAL.md`.**
-
----
-
-### 10.8 — 🔴 Las donaciones no traen quién donó (hallazgo del 2026-08-30)
-
-Corrido el backfill en producción, el resultado fue **0 personas con acceso vigente**. No
-es un error del backfill: es el estado real, y destapa el bloqueante que sigue.
-
-| | |
-|---|---|
-| Donaciones con `user_id` | **1 de 5** |
-| Membresías con `user_id` | 10 de 17 |
-| Membresías con `payer_email` | **0** |
-
-Las 5 donaciones aprobadas: cuatro son anónimas (`user_id` NULL) y la única con cuenta es
-de $1.916, por debajo del piso. La de $5.000 —que sí daría un mes— no tiene a quién
-habilitar.
-
-**Y no se puede reconciliar después:** `donations` no tiene columna de email, y
-`memberships.payer_email` está vacío en las 17 filas. Un aporte anónimo es, por
-construcción, inatribuible.
-
-**Consecuencia:** el modelo aporte→acceso está completo y andando, pero **no le llega a
-nadie** hasta que el flujo de donación capture quién dona. Es el ítem 10.1.c (identidades
-paralelas) convertido en bloqueante concreto.
-
-Se arregla en el flujo de cobro, no en SQL. Tres caminos, de menos a más fricción:
-
-1. **Pasar `user_id` cuando hay sesión.** Si alguien logueado dona, hoy se pierde el
-   vínculo en algún punto entre el sitio y el webhook. Es el más barato y probablemente
-   cubra buena parte.
-2. **Guardar el email del pagador** (`donations.payer_email`, como ya existe en
-   `memberships`) y reconciliar contra `users.email`. Requiere que el proveedor lo
-   informe.
-3. **Pedir cuenta antes de donar.** Máxima atribución, máxima fricción. Para una fundación
-   que necesita que donar sea fácil, es el peor de los tres.
-
-Hasta que esto se resuelva, el club funciona pero está vacío.
-
----
-
-#### Decisiones que abre el esquema real
-
-- **¿Un aporte con `origen='manual'` otorga acceso?** Es la carga a mano (efectivo,
-  transferencia). Lo natural es que sí, pero no se puede saber si equivale a una cuota o
-  a una donación, y de eso depende si le corresponden los 30 días de gracia.
-- **¿Una donación dirigida a un destino específico otorga acceso igual que una al
-  sostenimiento institucional?** Hoy hay 11 destinos. Si "Kit del jugador" da acceso al
-  club de beneficios igual que "Sostenimiento institucional", conviene que sea una
-  decisión explícita y no un efecto lateral.
+5. **¿Los beneficios exclusivos son la regla o la excepción?** Define el default de
+   `benefits.requiere_acceso`. Se propone `false` para no cambiar el comportamiento
+   actual al aplicar la migración.
 
 ---
 
@@ -371,25 +581,1134 @@ mutual, una cámara o una cooperativa de servicios.
 
 Los tres bloqueantes reales para un segundo cliente, en orden:
 
-1. ~~**`src/lib/supabase.js:8-13` cae a la URL y anon key de producción**~~ — **resuelto
-   el 2026-08-30**. Se quitaron las credenciales de fallback: el cliente lanza al
-   importarse y `vite.config.js` **aborta el build** si faltan `VITE_SUPABASE_URL` /
-   `VITE_SUPABASE_ANON_KEY` (verificado: `npm run build` sale con código 1). Era
-   prerrequisito del módulo de canjes de §11: con canjes en producción, un fork mal
-   configurado no mostraba datos de más, **emitía canjes contra la base equivocada**.
+1. ~~**`src/lib/supabase.js` cae a la URL y anon key de producción**~~ — **resuelto el
+   2026-08-16.** Ahora tira si faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+   Verificado: un build sin variables **ya no contiene la URL de producción en ningún
+   chunk** (antes quedaba horneada) y el DOM da 3,3 KB sin `<nav>` ni `<footer>` — la
+   firma de sitio roto documentada en §B. Falla a la vista en vez de escribir en la base
+   de la Fundación.
 2. ~~**Las migraciones no reconstruyen desde cero**~~ — **resuelto el 2026-08-16**
    (`HISTORIAL.md`). Sin eso, "levantar un cliente
    nuevo" es trabajo manual, no un comando. Es la fase 0 de 10.3.
-3. **Marca y textos hardcodeados** en ~40 archivos (ítem 3.4 y afines).
+3. **Marca y textos hardcodeados** en ~40 archivos (ítem 3.4 y afines). **Parcialmente
+   resuelto el 2026-08-16:** existe `src/config/entidad.js` como archivo único de la
+   entidad y están migrados `Header`, `Footer`, `BottomNavBar` y `resource-state`.
+   Falta el resto de las páginas y `api/share/*` (ver CLAUDE.md).
 
 Ninguno de los tres es este modelo de dominio — pero **conviene resolver el 2 antes de
 empezar la fase 1**, porque cada migración nueva agranda ese problema.
 
 ---
 
-## 11. Club de beneficios: el canje (propuesta, 2026-08-30)
+### 10.7 — Qué es realmente un aporte (2026-08-16)
 
-### 11.0 — Qué es esto y cómo se relaciona con §10
+> Esta sección **corrige y profundiza la premisa de 10.0**. No la reemplaza: el modelo de
+> tablas de 10.2 sigue en pie. Lo que cambia es *qué consecuencia* tiene un aporte, y de
+> ahí se desprende una pieza que faltaba.
+
+#### El problema con "una sola consecuencia"
+
+La regla relevada en 10.0 dice que hay dos maneras de aportar y **una sola consecuencia:
+acceder a beneficios**, y que lo único que varía es cuánto dura ese acceso.
+
+La primera mitad es correcta y es la buena idea del modelo: cuota y donación son la misma
+cosa —un aporte— y conviene un libro único. **La segunda mitad es la que deja el modelo
+hueco.** Si la única consecuencia de aportar es acceder a descuentos, la entidad se
+convierte en un club de beneficios, y ahí pierde siempre: el socio hace la cuenta de
+"¿qué me dan por mi plata?" y cualquier alternativa comercial le da más.
+
+Peor todavía para el objetivo de 10.6: **acceso-por-pago es exactamente lo que ya hacen
+CuotaQ, SIGCLU, DigitalClub y PortalSocios**, que llevan años en eso y compiten por
+precio. Construir solo eso es llegar último a una pelea ya perdida.
+
+#### Por qué la gente aporta a una entidad civil
+
+En orden aproximado de peso real, el acceso es el más débil de los cinco:
+
+| Motivo | Qué busca | ¿Lo cubre el modelo actual? |
+|---|---|---|
+| **Pertenencia** | Ser parte, y que se note. Antigüedad, número de socio | No |
+| **Causa** | Que esto exista. Sostener algo concreto | No |
+| **Confianza** | Saber que la plata hizo algo | No |
+| **Reconocimiento** | Que la entidad sepa quién sos | No |
+| **Reciprocidad** | Descuentos y beneficios | Sí, es lo único |
+
+**El modelo cubre el motivo más débil y ninguno de los cuatro fuertes.** Esa es la razón
+de fondo por la que los módulos se sienten sueltos, y es más profunda que la de 10.1.b.
+
+#### La corrección: un aporte tiene tres consecuencias, no una
+
+1. **Destino** — a qué se aplicó. Es lo que convierte "pagué una cuota" en "sostuve el
+   taller de robótica". Hoy no existe: `donation_type` es texto libre sin escritor
+   (10.1.e) y no hay campañas.
+2. **Pertenencia** — la historia acumulada. "Aportaste 14 veces desde 2023, sostuviste
+   3 proyectos, sos socio hace 4 años." Es un *derivado* del libro `aportes`, así que
+   sale casi gratis una vez que el libro existe.
+3. **Acceso** — los beneficios. Real, pero tercero.
+
+Lo que hay que **agregar** al diseño de 10.2 es el **destino y su rendición**: el circuito
+`aporte → destino → impacto → se lo mostramos a quien aportó`. Ese circuito cerrado es la
+pieza que no tiene ningún competidor.
+
+Esto **promueve a `campanas`**: en 10.3 estaba en la fase 3 como "donaciones dirigidas",
+una funcionalidad más. No lo es: es el mecanismo por el cual un aporte adquiere
+significado. **Conviene subirla a la fase 2.**
+
+#### Cuota y donación no son lo mismo con distinta duración
+
+10.0 las aplana en "varía cuánto dura el acceso". Se comportan distinto porque el motivo
+es distinto, y el producto debería reflejarlo:
+
+- **Cuota** — recurrente. Su valor es la **pertenencia sostenida**: identidad, antigüedad,
+  condición institucional. Se renueva sola; se pierde por olvido, no por decisión.
+- **Donación** — puntual. Su valor es la **causa concreta**: esto, ahora. Se decide cada
+  vez y necesita un destino visible para repetirse.
+
+De ahí sale una consecuencia práctica: a la cuota se la sostiene **recordándole al socio
+por qué es socio**; a la donación se la repite **mostrando qué pasó con la anterior**. Son
+dos mecánicas de producto distintas, no un parámetro de duración.
+
+#### Por qué además es la diferencia comercial
+
+Los productos del mercado optimizan la **cobranza**: recordatorios, morosidad, débito
+automático. Es una palanca de extracción y está saturada.
+
+La palanca que nadie toca es la **retención por sentido**. Nadie deja de pagar la cuota
+porque el recordatorio llegó tarde; deja de pagar porque se olvidó de para qué la pagaba.
+Un sistema que le muestra a cada aportante qué sostuvo ataca la causa en vez del síntoma
+— y de paso hace que el próximo aporte sea más probable.
+
+#### Implicación de esquema (se suma a 10.2, no lo reemplaza)
+
+```sql
+-- `aportes` necesita destino explícito, no solo origen de pago:
+--   campana_id ya estaba previsto en 10.2  -> pasa a ser central, no opcional
+-- y hace falta poder rendir:
+alter table public.campanas
+  add column monto_recaudado numeric not null default 0,  -- desnormalizado, para la barra
+  add column rendicion_md    text;                        -- qué se hizo con la plata
+
+-- La vista que le da sentido al aporte, y la pantalla que vende:
+--   "aportaste N veces, sostuviste estas campañas, sos socio desde X"
+-- Se deriva de `aportes`; NO es una tabla nueva.
+-- ⚠️ Crearla con security_invoker = true (ver migración 20260816120000).
+```
+
+#### La pantalla que hay que construir para mostrar esto
+
+**El estado de cuenta del aportante**: historial, total acumulado, antigüedad, campañas
+sostenidas y —solo al final— los beneficios vigentes. Es la demo que se le muestra a una
+comisión directiva y es lo que ningún competidor puede mostrar. Va en el Dashboard, que ya
+existe.
+
+#### Qué queda para decidir con la Fundación
+
+Las cinco preguntas de 10.4 siguen abiertas y son previas al código. Se les suma una:
+**¿la entidad está dispuesta a rendir cuentas por campaña?** Si la respuesta es que no
+—que no quiere publicar en qué se gastó— todo este circuito se cae y conviene saberlo
+antes de construirlo.
+
+---
+
+### 10.8 — El modelo real de la Fundación, relevado (2026-08-16)
+
+> Relevado con el dueño el mismo día. **Esto reemplaza la premisa de 10.0 y ajusta la
+> 10.7**: no hay dos maneras de aportar sino tres, y no se distinguen por duración.
+
+#### Las tres formas de aportar
+
+| | Qué es | Temporalidad | Destino |
+|---|---|---|---|
+| **Campaña puntual** | Materiales (pelotas, conos), profesionales (nutricionista, psicólogo, preparador físico, acompañamiento docente) | Puntual | Una **cosa** concreta y finita |
+| **Apadrinamiento** | Cubrir la cuota de la escuelita formativa o de inferiores de un chico | Recurrente | Una **persona** (o un cupo) |
+| **Cuota social** | Aporte simbólico para sostener la estructura: administración, alquiler, sueldos | Recurrente | La **institución** |
+
+#### Por qué esto rompe el modelo de 10.0
+
+10.0 decía: *"dos maneras de aportar, una sola consecuencia, lo único que varía es cuánto
+dura el acceso"*. Con el modelo real a la vista, **la duración no es el eje**. Hay dos
+ejes independientes:
+
+- **Temporalidad**: puntual ↔ recurrente
+- **Destino**: una cosa ↔ una persona ↔ la institución
+
+**El apadrinamiento es el que rompe la simetría**: es recurrente *y* dirigido. Si se
+asume "recurrente = cuota social", el apadrinamiento no tiene dónde vivir — y es
+justamente el producto más vendible de los tres. La cuota social es recurrente y **no**
+dirigida; son cosas distintas que hoy comparten la misma tabla `memberships`.
+
+#### ⚠️ El sistema ya promete apadrinamiento y no lo tiene
+
+Verificado en el código:
+
+- `MembershipList.jsx:84` — *"Gestión de la red de padrinos y sostenimiento mensual"*
+- `MembershipList.jsx:131` — columna *"Padrino / Madrina"*
+- `DashboardHeader.jsx:113` — el rol que muestra es literalmente `'Padrino'`
+- `Agradecimiento.jsx:52` — *"Te damos una cálida bienvenida como padrino/madrina"*
+- `membershipApi.js:190` — el `reason` que va a MercadoPago es *"Beca mensual"*
+
+**Pero en la base no hay ningún padrinazgo.** `memberships` es una suscripción de
+MercadoPago con `plan` (texto), `amount` y `preapproval_id`: sin beneficiario, sin cupo,
+sin programa, sin destino. La suscripción se crea eligiendo **solo un monto** entre seis
+opciones (`Collaborate.jsx:31-38`). **El vocabulario del producto ya promete lo que el
+modelo de datos no puede sostener** — y es exactamente el hueco de 10.1.b, pero peor,
+porque acá sí se prometió explícitamente.
+
+#### ⚠️ Falta la mitad del libro: no hay egresos
+
+Para "mostrar en qué se gastó cada peso" hacen falta **las dos columnas**. Hoy:
+
+- **Ingresos**: parcial. `donations` y `memberships` registran plata que entra, sin destino.
+- **Egresos**: **no existe absolutamente nada.** Buscado `gasto|egreso|expense|comprobante|
+  factura|rendicion` en `src/` y `supabase/`: cero resultados de modelo. La única
+  aparición es `Collaborate.jsx:348`, que **le promete al donante "Recibís comprobante
+  oficial"**.
+
+Esto corrige lo que decía 10.7. Ahí se propuso `campanas.rendicion_md text`, un campo de
+texto libre. **Es insuficiente para lo que se quiere hacer**: una rendición creíble no es
+un párrafo escrito a mano, es la suma de gastos reales con su comprobante adjunto,
+contrastable contra lo recaudado. Hace falta una tabla `gastos`, no un campo.
+
+**La buena noticia:** la infraestructura de comprobantes **ya existe y está probada**.
+`documents` + `document_versions` + el bucket privado `comision-docs` con policies sobre
+`is_board_member()` es exactamente el mecanismo de "archivo adjunto versionado con acceso
+restringido". Se reusa, no se construye.
+
+#### ⚠️ Menores: la restricción de diseño que condiciona todo el apadrinamiento
+
+Los beneficiarios son **chicos**. Y los servicios que se quieren financiar
+—nutricionista haciendo mediciones, psicólogo, preparador físico— **generan datos de
+salud de menores**, que en Argentina son datos sensibles (Ley 25.326) y suman las
+protecciones de la Ley 26.061 sobre dignidad e imagen de niñas, niños y adolescentes.
+
+**Dos reglas de diseño que salen de esto, y conviene tomarlas antes de escribir el
+esquema:**
+
+1. **El padrino apadrina un _cupo_ o una _beca_, nunca un chico identificado.** Nada de
+   "apadriná a Juan, 12 años, foto". El reporte de impacto va anonimizado y agregado
+   ("tu beca cubrió la cuota de un chico de la categoría 2012; este trimestre hubo 24
+   entrenamientos y 2 controles nutricionales"). Esto **no** debilita el producto: la
+   evidencia de fundraising dice que el vínculo con el *programa* retiene parecido al
+   vínculo con la persona, y sin el riesgo.
+2. **Los datos clínicos no van en este sistema.** Ni en v1 ni probablemente nunca. Que
+   la nutricionista y el psicólogo lleven su registro donde corresponde; el sistema
+   guarda que *se prestó el servicio*, no *qué dio el resultado*. Mezclar historia
+   clínica de menores con una base que tiene páginas públicas y anon con `SELECT` es
+   pedir un incidente.
+
+→ **Esto requiere asesoramiento legal antes de construir**, no después: consentimiento
+de los tutores, qué se puede publicar y qué no. No es una decisión de arquitectura.
+
+#### Qué hay y qué falta
+
+| Pieza | Estado |
+|---|---|
+| Cobro recurrente y puntual (MercadoPago) | ✅ Funciona |
+| Roles, RLS, panel admin, portal de comisión | ✅ Funciona |
+| Storage privado + documentos versionados (→ comprobantes) | ✅ Reusable tal cual |
+| Campañas con meta y estado | ❌ No existe |
+| Libro de aportes con destino | ❌ No existe (10.2 lo diseña) |
+| **Gastos + comprobante + balance por campaña** | ❌ **No existe. Es la mitad faltante** |
+| Cupos/becas y apadrinamiento con beneficiario | ❌ No existe (y el UI ya lo promete) |
+| Rendición pública | ❌ No existe |
+
+**No es "deuda técnica": es funcionalidad que nunca se construyó.** La deuda real que sí
+bloquea es corta: `donation_type` es texto libre sin escritor (10.1.e), `memberships` no
+tiene destino ni unicidad (10.1.f), y la migración de seguridad de §C sigue sin aplicarse.
+
+#### Orden sugerido
+
+| Fase | Qué | Aprox. |
+|---|---|---|
+| **1** | `campanas` (tipo, meta, estado) + `aportes` con `campana_id` + elegir destino en el checkout | ~1 semana |
+| **2** | `gastos` + comprobante reusando Storage + balance por campaña | ~1 semana |
+| **3** | Rendición pública: barra de progreso y "así se gastó" | ~4-5 días |
+| **4** | Cupos/becas + apadrinamiento anonimizado + reporte al padrino | ~1 semana + legal |
+
+⚠️ **Regla de lanzamiento: no publicar campañas antes de que funcione la fase 2.**
+Prometer "te muestro en qué se gastó" y no mostrarlo es peor que no prometerlo — y
+`Collaborate.jsx:348` ya lo promete hoy.
+
+---
+
+### 10.9 — El modelo genérico: de la Fundación al producto (2026-08-16)
+
+> 10.8 relevó **cómo funciona la Fundación**. Esta sección abstrae eso a un modelo que
+> sirve para cualquier entidad que recaude y rinda cuentas, sin que el esquema tenga que
+> saber si sus beneficiarios son chicos, perros o libros.
+
+#### La idea que unifica: todo aporte va a un *destino*
+
+Las tres formas de 10.8 no son tres cosas distintas: son **tres tipos del mismo
+concepto**. Un destino es *aquello a lo que se le puede dar plata*, y hay tres:
+
+| Tipo | Qué es | Finito | Recurrente | Ejemplos por rubro |
+|---|---|---|---|---|
+| `campana` | Un objetivo concreto con meta | Sí, cierra | No | Pelotas y conos · Operar a un perro · Techo del salón |
+| `padrinable` | Un sujeto sostenido en el tiempo | No | Sí | Beca de un chico · Un animal del refugio · Una hectárea |
+| `institucional` | La entidad misma | No | Sí | Cuota social: administración, alquiler, sueldos |
+
+**Por qué conviene una sola tabla y no tres:** los tres reciben aportes, consumen gastos y
+se rinden igual. Si son tablas separadas, cada consulta del libro necesita tres joins y
+tres caminos; unificados, **la rendición es una sola consulta** y el libro tiene una sola
+clave foránea. El costo es un discriminador `tipo` con algunas columnas que no aplican a
+todos (`meta_monto` es null en `institucional`), y ese costo es mucho menor.
+
+```
+entidad
+  └── destinos (tipo: campana | padrinable | institucional)
+        ├── aportes  (ingresos)  → destino_id
+        └── gastos   (egresos)   → destino_id + comprobante
+
+  saldo(destino) = Σ aportes − Σ gastos      ← la rendición, para los tres tipos
+```
+
+#### La variable que descubre el ejemplo del refugio
+
+El caso "refugio de animales" no es un ejemplo más: **expone la única diferencia real
+entre rubros**, y es una que 10.8 dio por sentada.
+
+En la Fundación, el padrinable **no se puede mostrar**: son menores, y de ahí salieron las
+dos reglas de 10.8 (cupo anonimizado, sin datos clínicos). En un refugio pasa **lo
+contrario**: "Apadriná a Rocky", con foto, nombre e historia, **es el motor entero de la
+recaudación**. Un perro no tiene derecho a la intimidad; un chico sí.
+
+Si el esquema se escribe pensando solo en la Fundación, sale anonimizado por dentro y no
+sirve para el refugio. Si se escribe pensando solo en el refugio, sale identificable y
+**expone menores en el primer cliente**. Los dos errores son caros y evitables:
+
+```sql
+-- La visibilidad del beneficiario es un dato del destino, no una regla del código.
+visibilidad_beneficiario text not null default 'anonimizado'
+  check (visibilidad_beneficiario in ('publico','anonimizado'))
+```
+
+**El default es `anonimizado` a propósito.** Es la regla de "seguro por defecto": si
+alguien crea un destino y no piensa en esto, no expone a nadie. Mostrar un beneficiario
+tiene que ser un acto deliberado.
+
+| Rubro | Padrinable | Visibilidad |
+|---|---|---|
+| Fundación con chicos | Beca / cupo en un programa | `anonimizado` |
+| Refugio de animales | El animal, con foto y nombre | `publico` |
+| Club deportivo | Una categoría o división | `publico` (es un colectivo) |
+| Comedor comunitario | Una ración diaria | `anonimizado` |
+| Biblioteca popular | Un fondo o una sección | `publico` |
+
+#### La otra variable: el vocabulario
+
+Un refugio no dice "socio", dice "padrino". Una cámara dice "asociado". Un club dice
+"hincha" o "socio". Que el producto se sienta propio depende de que hable el idioma del
+rubro, y eso **no justifica un fork**: va en `src/config/entidad.js`, junto al resto de lo
+que ya se movió a datos el 2026-08-16.
+
+```js
+// en entidad.js
+vocabulario: {
+  aportante:     'padrino',        // 'socio' | 'asociado' | 'padrino' | 'miembro'
+  padrinable:    'beca',           // 'beca' | 'animal' | 'categoría' | 'ración'
+  apadrinar:     'Sostené una beca', // el CTA
+  cuotaSocial:   'Cuota social',
+}
+```
+
+#### Qué NO hay que hacer todavía
+
+**Hacer el esquema genérico ahora es gratis; hacer el producto multi-cliente ahora no.**
+Conviene no confundir las dos cosas:
+
+- ✅ **Sí ahora:** que `destinos`, `aportes` y `gastos` no nombren a la Fundación ni
+  asuman su rubro, y que la visibilidad y el vocabulario sean datos. Diseñarlo genérico
+  no cuesta más que diseñarlo específico, y rehacerlo después sí cuesta.
+- ❌ **Todavía no:** panel de alta de clientes, multi-tenancy, planes, facturación,
+  onboarding. Eso es otro negocio y sigue dependiendo de las ocho entrevistas.
+
+La regla es la misma de siempre en este repo: **lo que varía por entidad va en datos.**
+Lo nuevo es que ahora sabemos *qué* varía — visibilidad del beneficiario y vocabulario—
+porque apareció un segundo rubro imaginario que lo puso a prueba. **Ese es el valor de
+pensar el refugio antes de construir: no es una distracción, es el test del diseño.**
+
+---
+
+### 10.10 — Evidencia de producción: el canal recurrente nunca funcionó (2026-08-16)
+
+Contrastando el panel de MercadoPago contra la base. **Confirma tres ítems de 10.1 que
+estaban planteados como hipótesis y agrega uno nuevo.**
+
+Estado en MercadoPago: **7 suscripciones, ninguna activa.** Cinco `Cancelada`, dos
+`Vencida`. La única de $5.000 figura **"Sin cobro"**: nunca cobró un peso.
+
+#### a) El webhook no sincroniza el estado de vuelta ← lo más grave
+
+| | Base | MercadoPago |
+|---|---|---|
+| Suscripción $5.000 | `pending` | **Cancelada** |
+| Suscripción $5.000 | `pending` | no aparece |
+
+La base dice `pending` desde noviembre de 2025 para algo que MercadoPago da por cancelado.
+**El estado de `memberships` no es confiable**: refleja el momento en que se creó la
+suscripción, no lo que pasó después. Todo lo que se construya sobre ese campo —acceso,
+padrinazgo, rendición— hereda el problema.
+
+El webhook vive fuera del repo (`mp-supabase-webhook.onrender.com`), sin tests y con
+arranque en frío. Es el punto único de falla sobre el flujo que genera la plata.
+
+#### b) `Vencida` no existe en el esquema
+
+El CHECK de `memberships` admite `pending|active|paused|cancelled`. MercadoPago tiene
+además **`Vencida`** (falló el cobro repetidamente), y hay dos así. **No hay dónde
+guardarlo**: ni con el webhook arreglado se podría registrar ese estado. Falta un valor en
+el CHECK, y falta decidir si "vencida" corta el acceso o entra en el período de gracia de
+10.4.3.
+
+#### c) 10.1.f ya pasó — no era teórico
+
+**Cuatro suscripciones idénticas**, mismo email, mismo monto, el mismo día (18/oct/2025).
+Es exactamente "un socio puede acumular varias membresías activas, sin restricción de
+unicidad". Salió gratis porque eran de $50 y se cancelaron todas; **si se hubieran
+activado, a esa persona se le cobraba cuatro veces por mes.**
+
+→ **Subir 10.1.f de la fase 5 ("higiene") a la fase 1.** Un índice único parcial sobre
+`(user_id) where status in ('active','pending')` cuesta una línea y evita un cobro
+múltiple a una persona real.
+
+#### d) 10.1.c confirmado: tres emails, una persona
+
+La misma persona aparece como `gonzaramosmp@gmail.com` y `gonramo4200@gmail.com` en
+MercadoPago, y con un registro asociado a la cuenta `info@evolucionantoniana.com` en la
+base. `payer_email` es el mail de MercadoPago y puede no ser el de la cuenta: sin
+reconciliación, el sistema ve tres personas.
+
+#### La buena noticia, y no es menor
+
+Las 7 suscripciones tienen pinta de pruebas: montos de $50, la misma persona repetida,
+cuatro clics el mismo día. **No hay ni un padrino real.** O sea que el canal recurrente
+no está *roto*: **nunca llegó a funcionar.**
+
+Eso cambia el riesgo de todo el §10 y conviene aprovecharlo:
+
+- **No hay que migrar suscriptores vivos.** Ni backfill delicado, ni riesgo de cobrar de
+  más, ni corte de servicio a nadie.
+- **Se puede rediseñar el modelo de cobro sin costo de transición.**
+- **Este es el momento más barato que va a haber para cambiarlo.** Cada padrino real que
+  entre a partir de ahora encarece la migración.
+
+⚠️ **Corolario para el negocio:** el canal recurrente está **sin estrenar, no degradado**.
+Antes de promocionarlo hay que arreglar (a) y (c), o el primer padrino de verdad entra a
+un circuito que no sabe informar si su suscripción sigue viva.
+
+---
+
+### 10.11 — Fase 1 aplicada: qué quedó funcionando y qué no (2026-08-16)
+
+Las dos migraciones de fase 1 están **en producción**. Esta sección existe para que
+nadie tenga que deducir del esquema qué parte del circuito ya cierra y cuál no.
+
+#### Lo que está vivo
+
+| Migración | Qué dejó | Verificado en producción |
+|---|---|---|
+| `20260816130000` | `expired` en el CHECK, reaper de `pending` fósiles, índice duplicado borrado | Marcó **exactamente 5** filas, igual que el conteo previo |
+| `20260816140000` | `destinos`, `aportes`, `memberships.destino_id`, índice único, trigger de contadores, RLS | `destinos` → HTTP 200 como `anon`; `aportes` → **401** |
+
+Estado de `memberships` después del reaper: `cancelled 6 · expired 5 · paused 2 · pending 3`.
+Los 3 `pending` que quedan son de menos de 30 días, así que el reaper no los tocó; según
+MercadoPago tampoco son reales. **No se amplió la ventana a propósito:** son síntoma del
+webhook, no de los datos, y bajar el umbral para taparlos sería tratar el síntoma.
+
+El panel `/admin → Destinos` permite crear, editar y cerrar destinos. Un destino con
+aportes no ofrece el botón de borrar, porque la FK es `ON DELETE RESTRICT` y un libro
+contable no se borra.
+
+#### El eslabón que falta, y es uno solo
+
+`Colaborar` ya deja elegir destino, y la elección viaja a MercadoPago en
+`external_reference` (`destino:<uuid>`) — el único campo que MercadoPago devuelve intacto
+en el webhook. Pero **el microservicio de Render no lee ese campo y tampoco escribe en
+`aportes`**: hoy escribe `donations` y `memberships` y nada más.
+
+O sea, hasta que se toque Render:
+
+- ✅ El aportante elige destino y lo ve en el checkout de MercadoPago (va en `reason` /
+  `description`).
+- ✅ La elección llega al microservicio.
+- ❌ No aterriza en `aportes`, así que **no suma al progreso del destino**.
+
+Se manda igual porque el día que se toque Render el dato ya va a estar llegando, y
+porque el costo de mandarlo es cero: sin destino el payload queda idéntico al de antes
+(hay un test que lo fija, `SIN destino no agrega ninguna clave al payload`).
+
+**Lo que Render tiene que hacer**, en una línea: al confirmarse un pago, insertar en
+`aportes` con `origen` (`donacion` | `membresia`), `destino_id` parseado de
+`external_reference` —con caída al destino `institucional` si no viene—, y
+`referencia_externa` = el `payment_id` de MercadoPago. Ese último campo es `UNIQUE`
+justamente porque **los webhooks de pago reintentan**: sin él, un mismo cobro entra dos
+veces al libro y la rendición queda mal para siempre.
+
+#### El camino que SÍ cierra hoy: la carga manual ✅ implementado
+
+`/admin → Libro de aportes` permite registrar efectivo, transferencias y cheques contra
+un destino. Eso no es un parche mientras se arregla Render: **una entidad recibe plata
+por fuera de cualquier pasarela**, y esa plata tiene que entrar al mismo libro que la
+digital o la rendición no cuadra. Es el único circuito que hoy funciona de punta a punta.
+
+Dos invariantes de esa pantalla, que son del modelo y no de la UI:
+
+- **Ninguna fila ofrece borrar.** `aportes` no tiene policy de DELETE: un libro contable
+  no se borra, se corrige y queda el rastro.
+- **Solo se editan los aportes manuales.** Corregir a mano lo que informó una pasarela
+  haría que el libro diverja de lo que MercadoPago dice que pasó, que es justo el
+  problema de §10.10.
+
+**Verificado contra producción** con transacciones que revierten (checks T14-T16 de
+`supabase/checks/rls-check.sql`, permanentes desde ahora):
+
+| Check | Qué prueba | Resultado |
+|---|---|---|
+| T14 | Un usuario común **no** puede cargar un aporte | `violates row-level security policy` |
+| T15 | La comisión sí, y el trigger actualiza el destino | `0 → 40.000 / 2`, y al corregir un aporte de 15.000 a 5.000 → **30.000 / 2** |
+| T16 | La comisión **no** puede declarar `origen = 'donacion'` a mano | `violates row-level security policy` |
+
+T15 es el que importa más de lo que parece: el contador **recalcula**, no vuelve a sumar.
+Ese es el bug clásico de un contador por trigger, y habría inflado la recaudación
+publicada cada vez que alguien corrigiera un monto.
+
+⚠️ **Lo que falta para que esto sea rendición de verdad**: los egresos (`gastos`, fase 2).
+Hoy hay un libro de lo que entra y a dónde va. Rendir es mostrar también **en qué se
+gastó**, con comprobante. Sin eso hay recaudación con destino declarado, no rendición.
+
+#### Inconsistencia de copy pendiente (decisión de la entidad, no técnica)
+
+La tarjeta de donación única tiene el subtítulo *"Campaña: Experiencias educativas"* y
+tres viñetas escritas a mano, de cuando había una sola campaña implícita. Ahora que el
+destino se elige abajo, ese texto puede contradecir lo elegido. **No se tocó a propósito:
+es contenido de la entidad, no del sistema.** Se resuelve moviendo esa copy a la
+`descripcion` de cada destino, que es donde ahora corresponde vivir.
+
+### 10.12 — Fase 2 aplicada: la rendición (2026-08-16)
+
+Migración `20260816150000_gastos_y_rendicion.sql`, **en producción**. Cierra lo que §10.11
+dejó declarado: hasta acá había recaudación con destino; ahora hay rendición.
+
+```
+saldo(destino) = monto_recaudado − monto_rendido
+```
+
+#### Qué se construyó
+
+| Pieza | Dónde |
+|---|---|
+| Tabla `gastos` con comprobante | migración `20260816150000` |
+| `destinos.monto_rendido` + `cantidad_gastos_rendidos`, por trigger | ídem |
+| Panel de carga, publicación y comprobantes | `/admin → Gastos y rendición` |
+| **Rendición pública** | `/rendicion`, enlazada desde Colaborar y el footer |
+
+#### Las cuatro decisiones que definen el modelo
+
+1. **"Rendido" no es "gastado".** `monto_rendido` suma **solo los gastos publicados**. Si
+   sumara todos, el público vería un total que no coincide con la lista que puede ver, y
+   un total que no cierra se lee como que algo se esconde — justo lo contrario de lo que
+   esta tabla existe para lograr. La comisión ve los dos números por separado en el panel.
+
+2. **Publicar un gasto lo publica entero**, notas incluidas. No hay publicación por
+   columna: las RLS filtran filas, no columnas, y fingir lo contrario con grants por
+   columna produce un modelo que nadie puede razonar. La regla que se sigue de eso es
+   simple y verificable: **lo que no pueda ser público no se escribe en un gasto**, y la
+   UI lo advierte donde se escriben las notas.
+
+3. **El comprobante no se publica nunca**, ni siquiera con el gasto publicado: una factura
+   trae CUIT, domicilio y a veces la firma de un tercero que no consintió. Vive en el
+   bucket privado `comision-docs` bajo el prefijo `gastos/`, reusando sus cuatro policies
+   —cero policies de storage nuevas—. Lo que sí ve el público es `tiene_comprobante`.
+
+4. **Publicar NO exige comprobante, y los gastos sin comprobante se muestran marcados.**
+   Se evaluó exigirlo y se descartó: hay gastos legítimos sin respaldo (un pago chico en
+   efectivo), y obligar empujaría a no publicarlos. **Mostrar el hueco es más transparente
+   que esconder la fila**, y es lo que hace creíble al resto.
+
+#### Verificado contra producción (checks T17-T20, permanentes)
+
+| Check | Resultado |
+|---|---|
+| T17 | `anon` ve **solo** gastos publicados de destinos activos — ni los internos, ni los de un destino en borrador |
+| T18 | Publicar mueve la rendición y despublicar la devuelve: `10.000/1 → 0/0 → 10.000/1`. **Recalcula**, no suma deltas |
+| T19a/b | Un usuario común no puede cargar (`ERROR` de RLS) **ni** publicar (0 filas alcanzadas) |
+| T20 | **Nadie** borra un gasto, ni la comisión: `permission denied` |
+
+T19 nació roto y se arregló en el acto: estaba en un solo savepoint, y como el `ERROR` de
+la primera mitad aborta la transacción, la segunda devolvía *"current transaction is
+aborted"* en vez de ejecutarse. **Un check que no corre se lee igual que uno que pasa.**
+
+#### Lo que falta para que la rendición sirva de verdad
+
+Nada de esto es técnico: **hay que cargar datos.** Con 0 aportes y 0 gastos, `/rendicion`
+muestra correctamente "todavía no se publicaron gastos" — que es cierto, y también inútil.
+La página se vuelve valiosa recién cuando la entidad carga sus destinos reales, sus
+aportes y sus gastos.
+
+Y sigue abierto el eslabón de §10.11: **Render no escribe en `aportes`**, así que el lado
+de los ingresos solo se llena con la carga manual.
+
+### 10.13 — El servicio de pagos: diagnóstico y plan (2026-08-16)
+
+Relevado contra producción, no supuesto. Corrige la afirmación de §10.11, que decía
+"el webhook no escribe en `aportes`" — cierto pero impreciso, y la precisión cambia el
+plan.
+
+#### Qué hace hoy, medido
+
+| Hecho | Evidencia |
+|---|---|
+| El servicio **está vivo, pero duerme** | Responde `404` (no "conexión rechazada") tras **21,7 s** de cold start. Free tier de Render |
+| Las **donaciones únicas funcionan** de punta a punta | 4 aprobadas con `payment_id` real de MercadoPago, $7.141 |
+| Las **suscripciones son la mitad rota** | 16 filas con `preapproval_id` y `external_reference`, pero **0** con `last_payment_id` y **0** con `payer_email` |
+| El servicio **arma su propio `external_reference`** | En los datos: `anon:suscripcion`, `user:<uuid>:suscripcion` |
+
+**El diagnóstico correcto no es "el webhook no anda":** crea bien las preferencias y las
+suscripciones, y escribe de vuelta para donaciones únicas. Lo que falta es el write-back
+del lado de las suscripciones, y escribir en `aportes` en cualquiera de los dos casos.
+
+⚠️ **Un dato que no tiene explicación todavía:** las 4 donaciones tienen `updated_at`
+exactamente **10 días** después de `created_at`. Las cuatro. Eso no parece un webhook
+—que actualiza en segundos— sino un proceso por lotes. Nadie documentó qué es. Antes de
+migrar nada conviene saberlo, porque puede haber un cron que no está en ningún lado.
+
+#### Un error propio, corregido el mismo día
+
+Al implementar el checkout (§10.11) el front mandaba `external_reference: "destino:<uuid>"`.
+Como el microservicio **ya arma el suyo** y el webhook lo parsea para saber de quién es el
+pago, si el microservicio hubiera priorizado el del front **se habría perdido la
+identificación del usuario en cada suscripción**: entra la plata y no se sabe de quién es.
+
+No hubo daño porque no hay ninguna suscripción real, pero quedaba armado para la primera.
+Ahora se manda solo `destino_id` —el dato crudo— y que el microservicio lo codifique con
+su propio esquema (`user:<uuid>:suscripcion:destino:<uuid>`). Hay un test que lo fija.
+
+**La lección, que es general:** antes de agregar un campo a un contrato que no controlás,
+mirá qué valores tiene hoy en producción. El esquema estaba a una consulta de distancia.
+
+#### El plan, en tres pasos
+
+**1. ✅ Hecho — las donaciones entran solas al libro** (migración `20260816160000`).
+
+Trigger sobre `donations`: cuando una donación queda `approved`, se crea su `aporte` con
+`referencia_externa = payment_id`, que es `UNIQUE` — **idempotente por construcción**, que
+es justo lo que hace falta con webhooks que reintentan. Incluye backfill de las 4
+donaciones reales. El libro pasó de $0 a **$7.141**, cuadrando exacto con `donations` y
+con `fundacion_metrics`.
+
+**La regla de oro de esa función:** nunca puede hacer fallar el registro de una donación.
+Si se propagara el error se perdería el cobro entero y MercadoPago reintentaría para
+siempre. Un libro incompleto se repara —el propio backfill sirve de pase de reparación—;
+una donación que nunca se registró, no. Verificado en T23.
+
+Lo que **no** resuelve: el destino elegido sigue sin llegar (todo cae al institucional), y
+las suscripciones siguen afuera porque sin `last_payment_id` no existe el hecho "se cobró
+un mes". Un trigger sobre la creación de la suscripción registraría una intención, no un
+cobro, y eso ensucia el libro con plata que nunca entró.
+
+**2. Decidido — mover el servicio de pagos a Vercel, en este mismo repo.**
+
+| | A favor | En contra |
+|---|---|---|
+| **Vercel, mismo repo** ← elegido | La infra **ya existe y está probada**: el repo deploya `api/share/*`. Un repo, un deploy, sin los 22 s de cold start, y el código de pagos al lado del esquema, las migraciones y los checks | Migrar credenciales de MP; reescribir ~4 endpoints |
+| Arreglar Render | Cambio mínimo | 22 s de cold start; código fuera del repo, sin tests ni CI; para multi-cliente es un servicio misterioso **por cliente** |
+| Supabase Edge Functions | `service_role` nativo, al lado de la base | Suma un runtime nuevo (Deno) a un stack que ya tiene funciones en Vercel |
+
+⚠️ **La trampa de la migración:** `vercel.json` tiene
+`{ "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" }`.
+Las funciones `api/share/*` sobreviven **solo porque sus rewrites están antes**. Al agregar
+funciones de pago hay que ponerles su rewrite antes del catch-all, o sacar el catch-all —
+si no, Vercel manda todo a Render y las funciones nuevas nunca se ejecutan, sin ningún
+error visible.
+
+**3. Pendiente — reconciliación contra la API de MercadoPago.**
+
+Independiente de dónde viva el servicio. Los webhooks se pierden, y §10.10 ya documentó una
+desincronización real (16 membresías vs 7 suscripciones). Un pase periódico que pregunte
+"¿qué pagos hubo desde X?" y escriba con la misma `referencia_externa` es lo que vuelve
+confiable al libro — y por el `UNIQUE` es seguro correrlo cuantas veces se quiera.
+
+### 10.14 — Catálogo de destinos de la Fundación (2026-08-16)
+
+Cargado en `supabase/data/seed_destinos_fundacion.sql`. **No es una migración**: las
+migraciones son el esquema, que se comparte entre clientes; los destinos son datos de
+esta entidad. Meterlos en una migración le cargaría las campañas de la Fundación a un
+refugio de animales el día que se levante el segundo cliente.
+
+**Los 10 entran en `borrador`.** Un borrador no se muestra en el sitio: las RLS solo le
+dan a `anon` los `activo`. Verificado en producción — el público sigue viendo un solo
+destino. La comisión revisa, ajusta y publica lo que quiera desde el panel.
+
+#### El catálogo
+
+| # | Tipo | Destino | Origen |
+|---|---|---|---|
+| 10 | campaña | Equipamiento deportivo | Relevado (§10.8) |
+| 20 | campaña | Kit del jugador | Nuevo |
+| 30 | campaña | Traslados a entrenamientos y partidos | Nuevo |
+| 40 | campaña | Merienda después del entrenamiento | Nuevo |
+| 50 | campaña | Acompañamiento profesional | Relevado (§10.8) |
+| 60 | campaña | Vuelta a clases | Nuevo |
+| 70 | campaña | Seguros y aptos médicos | Nuevo |
+| 80 | campaña | Formación de entrenadores | Nuevo |
+| 90 | padrinable | Beca formativa | Relevado (§10.8) |
+| 100 | padrinable | **Apadriná una categoría** | Nuevo — ver abajo |
+
+#### "Apadriná una categoría": la idea que resuelve la tensión de fondo
+
+El apadrinamiento tiene un conflicto de raíz. Funciona emocionalmente **porque es
+concreto** —"apadriná a alguien"— y es exactamente por eso que empuja a exponer a un
+menor. §10.8 resolvió el lado legal (se apadrina un cupo, nunca un chico identificado),
+pero un cupo es abstracto y pierde justo lo que hacía funcionar la mecánica.
+
+Apadrinar una **categoría** recupera lo concreto sin exponer a nadie:
+
+- El padrino tiene un vínculo real y seguible: *"la 2014 es mía"*.
+- No hay ningún individuo expuesto, ni siquiera anonimizado.
+- Se puede contar todo lo que pasa —cuántos entrenaron, qué torneos jugaron, cómo les
+  fue— **sin un solo dato personal**.
+- Escala: una categoría admite varios padrinos sin sentirse repartida, cosa que un cupo
+  individual no permite.
+
+#### Dos decisiones de redacción que no son cosméticas
+
+**"Acompañamiento profesional" no enumera las especialidades.** El relevamiento
+mencionaba nutricionista, psicólogo, preparador físico y acompañamiento docente. La
+descripción pública habla de *horas de acompañamiento* y no de "chicos que necesitan
+tratamiento". En una entidad chica, decir públicamente "financiamos al psicólogo" con un
+grupo identificable **estigmatiza aunque ningún nombre aparezca**. Lo que se financia es
+la disponibilidad del profesional.
+
+**Y el corolario técnico, que ya estaba en §10.8 y conviene repetir acá:** los resultados
+clínicos —mediciones, diagnósticos, informes— **no entran a este sistema bajo ninguna
+forma**. Son datos sensibles de salud de menores (Ley 25.326) y acá no hay dónde
+guardarlos con las garantías que exigen. El sistema financia el servicio; el profesional
+guarda su historia clínica donde corresponde.
+
+#### Lo que falta, y solo puede hacerlo la entidad
+
+`meta_monto` y `cupos_totales` quedaron en **NULL** a propósito. Dependen de precios
+reales —cuánto sale un kit, cuánto una cuota, cuántos chicos hay por categoría— y poner
+números plausibles sería fabricar objetivos financieros de una organización real. Además
+el primer donante que compare vería que no cierran.
+
+La forma de completarlos es por unidad, no por intuición:
+
+```
+meta = (costo de una unidad) × (cuántas unidades) 
+```
+
+Un kit, una hora de profesional, un mes de pasajes, una cuota. Esa cuenta además da la
+copy: *"cada $X = un kit"* convierte un monto en una decisión.
+
+#### Recomendación de arranque
+
+**Publicar 3, no 10.** Diez campañas activas dispersan al donante y ninguna llega a la
+meta. Sugerido:
+
+1. **Equipamiento deportivo** — la más fácil de cerrar el circuito completo: se compra,
+   se sube la factura, se publica. Estrena la rendición en una semana.
+2. **Beca formativa** o **Apadriná una categoría** — una de las dos, para estrenar el
+   canal recurrente. Cuál depende de si hay categorías bien definidas.
+3. **Sostenimiento institucional** — ya activa, y es donde caen hoy las donaciones que
+   entran por MercadoPago (§10.13).
+
+El resto queda en borrador, listo para publicar cuando toque —"Vuelta a clases" en
+febrero, "Seguros y aptos" antes del inicio del torneo—. **Una campaña con temporada
+propia rinde más que un pedido genérico todo el año.**
+
+#### ✅ Publicado el 2026-08-16: las tres primeras
+
+Decidido con el dueño. Están **activas en producción**:
+
+| Destino | Puntual | Recurrente |
+|---|---|---|
+| Sostenimiento institucional | ✓ | ✓ |
+| Equipamiento deportivo | ✓ | |
+| **Apadriná una categoría** | ✓ | ✓ |
+
+Entre las dos formas de apadrinamiento se eligió **la categoría por sobre la beca
+individual**, por lo del apartado anterior: mismo tirón emocional, cero exposición de
+menores, y escala mejor. "Beca formativa" queda en borrador por si más adelante conviene
+tener las dos.
+
+Verificado en el sitio construido: `/collaborate` ya muestra el desplegable de destino en
+las dos tarjetas —apareció solo, porque antes había un único destino y ahora hay varios— y
+`/rendicion` lista los tres con los $7.141 ya imputados.
+
+**Salieron sin `meta_monto` a propósito**, y es una decisión, no una omisión: publicar hoy
+sin barra de progreso vale más que esperar semanas a tener los precios. Se muestra cuánto
+se juntó; el día que se carguen las metas, la barra aparece sola y no hay que rehacer nada.
+
+⚠️ **Lo que queda pendiente de la entidad, y es lo único que bloquea el potencial de esto:**
+
+| Destino | Qué falta |
+|---|---|
+| Equipamiento deportivo | `meta_monto` = Σ (precio unitario × cantidad) de pelotas, conos y pecheras |
+| Apadriná una categoría | `meta_monto` = costo mensual de sostener una categoría, y `cupos_totales` = cuántas categorías hay |
+| Sostenimiento institucional | Nada. **Va sin meta y está bien**: no tiene final, no es "juntemos $X" |
+
+Y el corolario de copy, que es donde está el verdadero valor del número: si una pelota
+sale $25.000, la campaña puede decir *"cada $25.000 = una pelota"*. **Eso convierte un
+monto en una decisión**, y donar "una pelota" es mucho más fácil que donar "un monto".
+
+
+### 10.15 — El casillero que faltaba antes de tocar el servicio de pagos (2026-08-16)
+
+Primer paso del traslado a Vercel (§10.13), y resultó no ser código de Vercel.
+
+#### El hallazgo
+
+Antes de escribir la primera función se revisó dónde iba a aterrizar el destino. Y no
+había dónde: **`donations` no tenía columna `destino_id`.** `memberships` sí la tiene
+desde la fase 1, y el front ya manda `destino_id` al crear la preferencia desde §10.11 —
+pero del lado de las donaciones el dato no tenía casillero.
+
+O sea que **mover el servicio a Vercel sin esto habría sido construir la cañería y dejarla
+desembocando en el mismo lugar de siempre**: el trigger seguiría imputando todo al
+institucional, y no habría forma de notar que el trabajo no sirvió para nada.
+
+Migración `20260816170000`, aplicada. Nullable a diferencia de `aportes.destino_id`, que
+es NOT NULL, y no es inconsistencia: `donations` registra lo que informó la pasarela, y
+puede llegar sin destino —el link directo de MercadoPago que publica la entidad no pasa
+por el checkout del sitio—. `aportes` es el libro, y ahí todo aporte tiene destino sí o
+sí. NULL en `donations` significa "el canal no lo informó", y el trigger cae al
+institucional.
+
+#### La decisión sutil: `DO NOTHING`, no `DO UPDATE`
+
+La tentación obvia al agregar la columna era que el trigger sincronizara el destino:
+`ON CONFLICT (referencia_externa) DO UPDATE SET destino_id = EXCLUDED.destino_id`.
+
+**Sería un error.** La comisión puede re-imputar un aporte mal dirigido desde el panel, y
+con `DO UPDATE` el próximo reintento del webhook le desharía la corrección **en silencio**.
+Entre "el trigger crea y nunca modifica" y "el trigger sincroniza", la primera es la única
+que deja sobrevivir una corrección humana. Verificado (E4 en Docker): dos reintentos
+seguidos y la corrección sigue en pie.
+
+#### Y la contracara en el panel: re-imputar
+
+§10.11 había dicho que un aporte de pasarela no se edita. Eso sigue valiendo **para el
+monto y la fecha**, que son el registro de MercadoPago. Pero **el destino MercadoPago ni
+lo conoce**: es una decisión de la entidad, así que re-imputarlo no contradice a nadie.
+
+Ahora `/admin → Libro de aportes` ofrece **"Cambiar destino"** en los aportes de pasarela,
+con un diálogo que solo toca esa columna. Hace falta de verdad: hasta que el servicio de
+pagos reenvíe el destino elegido, toda donación digital cae al institucional y esta es la
+única forma de mandarla a su campaña.
+
+#### Lo que sigue, y lo que hace falta de afuera
+
+Con el casillero puesto, el trabajo en Vercel ya tiene dónde depositar el resultado.
+Tres cosas que **no dependen del código** y sin las cuales no se puede completar:
+
+| Qué | Quién |
+|---|---|
+| `MP_ACCESS_TOKEN` de MercadoPago en las variables de entorno de Vercel | La entidad |
+| Cambiar la URL de notificaciones en el panel de MercadoPago | La entidad |
+| Saber qué es el proceso que actualiza donaciones **exactamente 10 días** después (§10.13) | Investigar |
+
+⚠️ Y la trampa que ya está documentada en §10.13, que conviene releer antes de empezar:
+`vercel.json` manda todo `/api/(.*)` a Render. Las funciones nuevas necesitan su rewrite
+**antes** del catch-all, o Vercel las ignora sin ningún error visible.
+
+### 10.16 — El servicio de pagos, arreglado en origen (2026-08-16)
+
+Se consiguió acceso a Render y **al repo del microservicio**:
+`GonzaloRamosEngineer/mp-supabase-webhook`. Eso cambió el plan de §10.13, y con razón:
+son **483 líneas claras y funcionando**. La decisión de portarlo a Vercel se había tomado
+sin ver el código; con el código a la vista, los arreglos que faltaban eran ~40 líneas ahí
+adentro. **Se arregló primero; el traslado a Vercel queda como tarea aparte y sin apuro.**
+
+#### Lo que el código reveló, y que ninguna consulta a la base podía decir
+
+| Hallazgo | Consecuencia |
+|---|---|
+| Los controladores desestructuran solo los campos que conocen | El `destino_id` que el front manda desde §10.11 **se descartaba en silencio** |
+| `if (ext.kind === 'donacion')` en la rama de pagos | **Causa raíz** de que el canal recurrente nunca llegara al libro: MercadoPago sí avisa de cada cobro mensual, y el aviso se tiraba |
+| Nadie escribe `last_payment_id` | Por eso estaba vacío en las 16 filas. No era un webhook perdido: no existía el código |
+| El webhook está en `/webhook`, no en `/api/...` | Por eso las sondas de §10.13 daban 404. MercadoPago pega directo a Render vía `MP_NOTIFICATION_URL`, **sin pasar por el proxy de Vercel** |
+
+#### El misterio de los 10 días: cerrado
+
+```js
+created_at: new Date(pago.date_created).toISOString(),  // fecha del pago
+updated_at: new Date().toISOString()                    // ahora
+```
+
+La fila se actualiza cuando MercadoPago manda `payment.updated`, y MP lo manda **al
+liberar el dinero** — en Argentina, típicamente 10 días después. **No hay ningún cron
+fantasma.** §10.13 sospechaba un proceso por lotes no documentado; era el ciclo de
+acreditación de MercadoPago.
+
+#### Una afirmación propia que hay que corregir
+
+§10.13 dijo que el `external_reference` que mandaba el front "quedaba armado para perder
+la identificación del usuario en la primera suscripción". **Es falso, y el código lo
+prueba:** ambos controladores arman el suyo e ignoran el del body. Nunca hubo riesgo real.
+Sacarlo siguió siendo lo correcto, pero el peligro estaba sobreestimado.
+
+**La lección, que ya había aparecido en §10.13 y esta vez cortó para el otro lado:** sin
+leer el código solo se puede razonar sobre el contrato observable, y ese razonamiento
+tiende a ser conservador de más. Vale igual — el conservadurismo no rompió nada — pero
+conviene decir "no lo sé" en vez de afirmar un mecanismo.
+
+#### Qué se cambió
+
+**El destino viaja dentro de `external_reference`**, el único campo que MercadoPago
+devuelve intacto tanto en un `payment` como en un `preapproval`. El formato **extiende** el
+que ya existía:
+
+```
+antes:  user:<uuid>:donacion          | anon:suscripcion
+ahora:  user:<uuid>:donacion:destino:<uuid>
+```
+
+Las 20 referencias que ya están en producción no tienen el sufijo y se siguen leyendo
+igual — hay pruebas que lo fijan. Y el destino se busca **por token, no por posición**: la
+posición del sufijo cambia según haya `user:` o `anon:` adelante, y hardcodear dos índices
+distintos es donde se esconden los bugs.
+
+**Las renovaciones ya no se descartan.** Se registran como `donations` con
+`donation_type = 'suscripción'`, y de ahí el trigger de §10.13 crea el aporte. En una
+renovación además se escribe `last_payment_id` en la suscripción — pero **solo si el match
+por `external_reference` es inequívoco**: hoy hay 6 filas compartiendo `anon:suscripcion`,
+y actualizar "alguna" sería peor que no tocar ninguna, porque escribiría el cobro de una
+persona en la suscripción de otra.
+
+**La regla de oro, la misma que en el trigger:** el registro del cobro no se puede perder.
+`destino_id` es una FK; si apunta a un destino borrado, el insert entero falla y el cobro
+queda sin registrar. Por eso ante cualquier fallo se reintenta una vez sin ese campo, y un
+destino mal formado se omite en silencio en vez de rechazar la donación.
+
+#### Verificado
+
+- **15 pruebas** del ida y vuelta del destino (`npm test` en el repo del servicio),
+  incluida la compatibilidad con las referencias viejas y siete formas de destino inválido.
+- Deploy en Render OK: `/webhook` responde 200 y `/api/crear-preferencia` sigue validando.
+- Preferencia real creada **con un `destino_id` de producción**: MercadoPago la aceptó y
+  devolvió `init_point`.
+
+⚠️ **Lo único que no se puede verificar sin mover plata de verdad** es el circuito
+completo: pago real → webhook → `donations.destino_id` → aporte en la campaña correcta.
+Una donación de prueba de $100 lo cierra.
+
+#### Lo que queda
+
+| Qué | Estado |
+|---|---|
+| El `origen` del aporte de una renovación dice `donacion`, no `membresia` | Imprecisión conocida. `aportes.origen = 'membresia'` exige `membership_id`, y ligarlo requiere resolver la ambigüedad de las 6 filas con el mismo `external_reference` |
+| Las 6 suscripciones con `anon:suscripcion` idéntico | Bloquean el match inequívoco. Son todas de prueba (§10.10): lo más limpio es cancelarlas en MercadoPago y darlas de baja |
+| `MP_WEBHOOK_SECRET` sin definir | Sin él **no se valida la firma** de los webhooks: hoy cualquiera que sepa la URL puede postear un evento falso. Es la mejora de seguridad más barata que queda |
+| Portar a Vercel | Sigue valiendo por el cold start de 22 s y por tener un solo repo. Ya sin urgencia |
+
+---
+
+### 10.17 — La capa de acceso, y el bloqueante que destapó (2026-08-30)
+
+El libro (§10.11) registra **cuánto entró y a qué destino**. Lo que faltaba era la otra
+mitad: **que un aporte habilite algo**. Hasta el 2026-08-30 todos los aportes tenían
+`acceso_desde` y `acceso_hasta` en NULL, así que la cuota no otorgaba ningún privilegio
+(el ítem 10.1.b).
+
+#### Qué se construyó
+
+| Migración | Qué |
+|---|---|
+| `20260830110000_capa_acceso.sql` | `reglas_acceso`, `acceso_vigente()` / `tiene_acceso()` / `mi_acceso()` / `antiguedad_socio()` / `mi_antiguedad()` / `meses_por_donacion()` / `destino_otorga_acceso()`, más `benefits.requiere_acceso`, `destinos.otorga_acceso` y `aportes.equivale_a` |
+| `20260830140000_triggers_otorgan_acceso.sql` | El cálculo del período dentro de `aporte_desde_donacion()` —**conservando su cuerpo**, incluido el `ON CONFLICT DO NOTHING`— y `aporte_desde_membresia()`, que no existía: hasta ahora solo las donaciones entraban al libro |
+
+Verificación: `supabase/checks/acceso-check.sql`, 14 comprobaciones. Aplicadas en
+producción, con backfill (`supabase/data/backfill_acceso.sql`).
+
+#### Las reglas, y por qué
+
+- **Conversión donación → meses:** proporcional, `least(12, greatest(1, floor(monto /
+  cuota)))`. Un plazo fijo canibaliza la cuota: con una donación chica se obtendría medio
+  año y nadie pagaría todos los meses.
+- **Piso = el precio de la cuota.** Se modela `piso_monto = NULL` ("usar la cuota") y no
+  el número copiado, para que al subir la cuota el piso suba solo. Sin piso, una donación
+  de $100 otorgaba un mes entero de beneficios.
+- **Gracia de 30 días, solo para cuotas.** Un cobro recurrente falla por tarjeta vencida
+  más que por decisión; una donación puntual no falla, se terminó.
+- **Antigüedad: no es un número, son tres.** `socio_desde` no se reinicia nunca (la
+  identidad, el carnet), `meses_aportados` es lo que **otorga derechos**, `racha_meses`
+  premia la continuidad. Se calculan con `range_agg`, así que un doble pago no cuenta
+  doble. Quien se fue un año y volvió conserva su historia pero no cobra por el año que no
+  pagó.
+- **Aporte manual:** la comisión elige al cargarlo si equivale a cuota o a donación
+  (`aportes.equivale_a`); de eso depende la gracia.
+- **Destinos:** todos otorgan acceso por defecto; las excepciones se marcan con
+  `destinos.otorga_acceso = false`. Que un destino habilite el club tiene que ser una
+  decisión visible, no un efecto lateral.
+- **`tiene_acceso` quedó en dos versiones.** Con una sola con parámetro y `SECURITY
+  DEFINER`, cualquier usuario logueado podía averiguar si otra persona paga la cuota. La
+  sin parámetro (resuelve por `auth.uid()`) es para usuarios y policies; la que recibe un
+  uuid es solo para `service_role`.
+
+#### 🔴 El bloqueante: las donaciones no traen quién donó
+
+Corrido el backfill en producción, el resultado fue **0 personas con acceso vigente**. No
+falló nada: es el estado real.
+
+| | |
+|---|---|
+| Donaciones con `user_id` | **1 de 5** |
+| Membresías con `user_id` | 10 de 17 |
+| Membresías con `payer_email` | **0** |
+
+Cuatro de las cinco donaciones aprobadas son anónimas. La única con cuenta es de $1.916,
+debajo del piso. La de $5.000 —que sí daría un mes— no tiene a quién habilitar.
+
+**Y no se puede reconciliar después:** `donations` no tiene columna de email y
+`memberships.payer_email` está vacío en las 17 filas. Un aporte anónimo es, por
+construcción, inatribuible. Es el ítem 10.1.c convertido en bloqueante concreto.
+
+Se arregla en el servicio de pagos, no en SQL — el mismo frente del §10.13/§10.16. Tres
+caminos, de menos a más fricción:
+
+1. **Pasar `user_id` cuando hay sesión.** Si alguien logueado dona, el vínculo se pierde
+   en algún punto entre el sitio y el webhook. Es el más barato y probablemente cubra
+   buena parte.
+2. **Guardar el email del pagador** (`donations.payer_email`, como ya existe en
+   `memberships`) y reconciliar contra `users.email`. Requiere que el proveedor lo informe.
+3. **Pedir cuenta antes de donar.** Máxima atribución y máxima fricción. Para una
+   fundación que necesita que donar sea fácil, es el peor de los tres.
+
+Hasta que esto se resuelva, el club funciona y está vacío.
+
+---
+
+## 11. Cierre de la jornada del 2026-08-16
+
+Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
+producción. Esta sección es el resumen ejecutable: **qué quedó funcionando, qué falta y en
+qué orden conviene atacarlo.** El detalle de cada decisión está en §10.11 a §10.16.
+
+### 11.1 — El circuito, demostrado de punta a punta
+
+A las 23:33 UTC entró una donación real de $100 eligiendo "Equipamiento deportivo", y
+recorrió los nueve pasos sin intervención:
+
+```
+sitio → destino_id → servicio de pagos → external_reference → MercadoPago
+  → webhook → donations.destino_id → trigger → aportes → destinos.monto_recaudado
+  → /rendicion pública
+```
+
+**Esa mañana el sistema recibía plata y no sabía para qué.**
+
+Dato lateral que cerró un misterio: esa donación tiene `updated_at` **3 segundos** después
+de `created_at`. Las viejas tenían 10 días. Confirma que aquel patrón era el aviso de
+liberación de fondos de MercadoPago, no un proceso por lotes sin documentar.
+
+### 11.2 — Estado de producción
+
+| | |
+|---|---|
+| Migraciones | 9, todas aplicadas y reconstruyen la base desde cero |
+| Checks de RLS | 24 (T1–T23), verificados contra producción sin dejar residuo |
+| Tests | 177, 0 errores de lint (53 warnings de backlog) |
+| Destinos | 3 activos, 8 en borrador |
+| Libro de aportes | 5 aportes, **$7.241** |
+| Gastos | 0 — la rendición todavía no se estrenó |
+| Servicio de pagos | `2026-08-16.destino`, desplegado y verificado por `/health` |
+
+### 11.3 — Lo siguiente a resolver, en orden
+
+**1. `MP_WEBHOOK_SECRET` — seguridad, y es lo más urgente.**
+`/health` dice `valida_firma_mp: false`. El webhook ahora **escribe en el libro contable**,
+así que sin validar la firma cualquiera que conozca la URL puede inventar aportes en la
+rendición pública. El código ya soporta la validación (`verifyMPSignature`): solo falta
+generar el secreto en el panel de MercadoPago y cargarlo como variable en Render.
+
+**2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
+que falta para demostrar el circuito de egresos como se demostró el de ingresos. Sin
+gastos, `/rendicion` es una página correcta y a medias.
+
+**3. Rotar la contraseña de la base.** Quedó en `.env.db` — fuera de git, pero en disco.
+
+**4. Los cupos de la Novena.** Falta el número de chicos de la categoría, y **falta el
+contador**: `cupos_totales` existe como columna pero nada cuenta los ocupados. Hace falta un
+contador de suscripciones activas por destino, hermano de los que ya existen para aportes y
+gastos.
+
+**5. Las 6 suscripciones con `anon:suscripcion` idéntico.** Bloquean el match inequívoco
+cuando llegue un cobro recurrente real: el webhook no actualiza ninguna antes que actualizar
+la equivocada. Son todas de prueba (§10.10) — lo más limpio es cancelarlas en MercadoPago.
+
+**6. `react-router-dom` por encima de `7.17.0`.** La única vulnerabilidad viva (open
+redirect). Es un major sobre el router de toda la app: rama propia y verificación de todas
+las rutas, no de una muestra.
+
+**7. Sin CI, sin Sentry, sin ErrorBoundary.** Hoy cada verificación la corre una persona a
+mano. Es lo que más se va a notar cuando entre alguien más al proyecto.
+
+**8. Portar el servicio de pagos a Vercel.** Sigue valiendo por los 22 s de cold start y por
+tener un solo repo con tests, pero ya sin urgencia: el servicio hace lo que tiene que hacer.
+
+### 11.4 — Tres lecciones que se ganaron rompiendo cosas
+
+**Una verificación que no puede fallar no verifica nada.** Pasó tres veces el mismo día, de
+tres formas distintas: un check de RLS abortado por un `ERROR` previo devolvía "current
+transaction is aborted" y se leía igual que si hubiera pasado; un check de navegador
+apuntaba a `/colaborar`, una ruta que no existe, y el 404 tiene `<nav>`, `<footer>` y un
+tamaño verosímil; y un deploy fallido dejó viva la versión anterior, que siguió
+respondiendo 200. **Ninguna de las tres fallaba de forma visible.** De ahí salió
+`GET /health`: sin un dato que distinga una versión de otra, un deploy roto se ve igual que
+uno bueno.
+
+**Antes de razonar sobre un sistema que no controlás, leelo.** Se dieron dos diagnósticos
+seguros y los dos estaban mal. Que el `external_reference` del front "iba a romper la
+primera suscripción" — falso: los controladores arman el suyo e ignoran el del body. Y que
+el `package-lock.json` había roto el build — falso: Render corre Node 22 con `npm install`,
+y el problema real era que **había perdido el acceso al repo**. Los dos errores fueron
+conservadores y no rompieron nada, pero los dos se resolvieron leyendo: el código en un
+caso, el log en el otro.
+
+**Lo que varía por entidad va en datos; lo que es igual para todas, en código.** Sostuvo
+tres decisiones que se tomaron distinto por eso: los destinos de la Fundación fueron a
+`supabase/data/` y no a una migración; `categoria` en `gastos` quedó sin CHECK porque un
+refugio dice "veterinaria" donde un club dice "arbitraje"; y `visibilidad_beneficiario` es
+una columna y no una regla del código, porque en una fundación con menores el beneficiario
+no se puede mostrar y en un refugio mostrarlo es el motor de la recaudación.
+
+---
+
+### 11.5 — Continuación del 2026-08-30
+
+La jornada del 16 cerró con el libro y la rendición andando. La del 30 agregó **la capa de
+acceso** (§10.17) y la **fase 1 del club de beneficios** (§12), las dos aplicadas en
+producción.
+
+Lo que cambia respecto del orden de §11.3:
+
+- **Entra un punto nuevo y va primero:** las donaciones anónimas (§10.17). Es del mismo
+  frente que el punto 1 —el servicio de pagos— así que conviene resolverlos juntos.
+- **El punto 3 (rotar la contraseña) sigue abierto y ahora con más razón**: además de
+  `.env.db`, el 2026-08-30 se usó un connection string en `~/.config/antoniana/db.url`.
+  Rotarla invalida los dos.
+
+#### Una lección más, cara
+
+**Antes de escribir la primera migración, `git fetch` y conectarse a la base.** El
+2026-08-30 se trabajó tres commits sobre una copia local **20 commits atrasada**: se
+"descubrió" como no documentado un módulo que estaba commiteado, versionado y pusheado
+desde el 16, se lo re-baselinó al pedo, y se llegó a describir como *peso muerto* una
+vista que en realidad se había borrado **como fix de seguridad** (§C). Nada de eso llegó a
+producción, pero se perdió media jornada y el relato quedó mal escrito hasta que el
+`git push` lo delató.
+
+Corolario para el repo: **`tools/db.sh` es el camino** para tocar la base, no un
+connection string armado a mano. Acota el permiso, se audita, y la contraseña no queda en
+el historial del shell.
+
+---
+
+## 12. Club de beneficios: el canje (propuesta, 2026-08-30)
+
+### 12.0 — Qué es esto y cómo se relaciona con §10
 
 La §10 responde **quién tiene derecho** a un beneficio (aporte → acceso). Esta sección
 responde las otras dos preguntas, que quedaron fuera: **qué pasa en el mostrador** y
@@ -405,7 +1724,7 @@ el club no puede distinguir un socio de un visitante y no hay nada que validar.
 
 ---
 
-### 11.1 — Estado actual (verificado 2026-08-30)
+### 12.1 — Estado actual (verificado 2026-08-30)
 
 - [ ] **11.1.a — Hoy no hay un club: hay un listado de cupones.**
   `benefits.codigo` y `benefits.codigo_descuento` (`baseline:378-379`) son texto
@@ -427,7 +1746,7 @@ el club no puede distinguir un socio de un visitante y no hay nada que validar.
 
 ---
 
-### 11.2 — Decisión de arquitectura
+### 12.2 — Decisión de arquitectura
 
 #### La entidad protagonista es el canje, no el beneficio
 
@@ -492,7 +1811,7 @@ cumplimiento, gratis.
 
 ---
 
-### 11.3 — El flujo
+### 12.3 — El flujo
 
 #### Alta del comercio (una sola vez)
 
@@ -540,7 +1859,7 @@ confirmación cruzada es lo que hace que el sistema se sienta real y no un trám
 
 ---
 
-### 11.4 — Modelo de datos
+### 12.4 — Modelo de datos
 
 Módulo aislado con prefijo `club_`. **No modifica ninguna tabla existente**; solo se
 cuelga de `users(id)` y de la función de elegibilidad.
@@ -596,7 +1915,7 @@ conviene romper las páginas públicas de entrada.
 
 ---
 
-### 11.5 — Dónde vive la lógica: cambio de patrón respecto del resto del repo
+### 12.5 — Dónde vive la lógica: cambio de patrón respecto del resto del repo
 
 Hoy **toda la lógica de datos corre en el browser con la anon key** y la seguridad son
 las RLS (ver `CLAUDE.md`, modelo de seguridad). **Para el club eso no alcanza.**
@@ -629,7 +1948,7 @@ día"). El doble clic en un celular lento es más frecuente que el atacante.
 
 ---
 
-### 11.6 — Niveles de comercio: el incentivo
+### 12.6 — Niveles de comercio: el incentivo
 
 La contraprestación al comercio es **publicidad de la entidad**: costo marginal cero
 para la Fundación, valor real para el comercio. Es lo que responde la pregunta de por qué
@@ -696,7 +2015,7 @@ publicado en la página del club. Evita el conflicto antes de que exista.
 
 ---
 
-### 11.7 — Reglas de portabilidad (qué lo hace reutilizable)
+### 12.7 — Reglas de portabilidad (qué lo hace reutilizable)
 
 El objetivo es **copiar migraciones + Edge Functions a otro proyecto Supabase y que
 funcione**. No es un servicio multi-tenant compartido: con un solo dev y varios
@@ -728,7 +2047,7 @@ configurado habría emitido canjes contra la base de la Fundación **sin fallar*
 
 ---
 
-### 11.8 — Orden de implementación
+### 12.8 — Orden de implementación
 
 | Fase | Qué | Deja algo usable? |
 |---|---|---|
@@ -736,7 +2055,7 @@ configurado habría emitido canjes contra la base de la Fundación **sin fallar*
 | **1** | ~~Carnet digital + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso~~ **✅ HECHO 2026-08-30** — `/carnet`, bloqueo en catálogo y detalle, `src/lib/acceso.js` + `accesoApi.js`. **Sin QR a propósito**: en esta fase el comercio *mira* el carnet, no lo escanea, así que un QR que nadie lee no aporta nada y suma una dependencia. Entra en la fase 2, que es donde se escanea. ⚠️ Ver la limitación de abajo | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
 | **2** | `club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio` | Entra el comercio. Acá aparece la trazabilidad |
 | **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
-| **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 11.6 |
+| **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 12.6 |
 | **5** | Extracción a un segundo proyecto (11.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
 
 ⚠️ **Limitación conocida de la fase 1: el bloqueo es cosmético.** `benefits.codigo` sigue
@@ -756,7 +2075,7 @@ credencial y digitalizar comercio por comercio.
 
 ---
 
-### 11.9 — Decisiones de negocio (TOMADAS el 2026-08-30)
+### 12.9 — Decisiones de negocio (TOMADAS el 2026-08-30)
 
 1. **¿El comercio entra digitalizado desde el arranque?**
    → **Se arranca con un comercio piloto: DigitalMatch** (descuento en landing pages y
