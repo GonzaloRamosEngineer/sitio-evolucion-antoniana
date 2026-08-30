@@ -1890,6 +1890,28 @@ Lo que cambia respecto del orden de §11.3:
   `.env.db`, el 2026-08-30 se usó un connection string en `~/.config/antoniana/db.url`.
   Rotarla invalida los dos.
 
+#### El orden al cierre del 2026-08-30 (§10.18 y §10.19)
+
+El circuito de ingresos quedó completo de punta a punta, **pero apoyado en datos que
+todavía no existen**. Los dos primeros puntos no son de programación: hay que entrar a
+Render.
+
+| | Qué | Por qué primero |
+|---|---|---|
+| **1** | **Backfill de los emails** — `tools/backfill-payer-email.mjs`, en la shell de Render | Sin él `/carnet` no le ofrece reclamar nada **a nadie**: `payer_email` está vacío en las 5 donaciones que existen. Es lo único que separa a la pantalla nueva de ser decorativa |
+| **2** | **`MP_WEBHOOK_SECRET`** en Render, en dos pasos | El webhook escribe en el libro contable y hoy `firma_modo: off`. El código ya valida bien; lo que faltaba era el secreto — y que la validación no estuviera rota, que es lo que se arregló |
+| **3** | Rotar la contraseña de la base | Sigue en `.env.db` y en `~/.config/antoniana/db.url` |
+| **4** | **Bajar la fricción de la sesión en `/collaborate`** | Es lo único que ataca la causa: reclamar repara hacia atrás, donar con sesión evita el problema. Hoy la página no invita a iniciar sesión ni explica que aportar con cuenta habilita el carnet |
+| **5** | El primer gasto real, `react-router-dom`, CI/Sentry | Sin cambios respecto de §11.3 |
+
+**Sobre el 2 conviene ser explícito**, porque el ROADMAP lo tuvo mal descrito un día
+entero: §11.3 decía que "solo falta generar el secreto y cargarlo en Render". No era solo
+eso. La implementación firmaba `${ts}.${rawBody}`, que **no es lo que firma MercadoPago**:
+cargar el secreto habría rechazado el 100% de los webhooks, o sea que "activar la
+seguridad" habría significado **dejar de registrar la plata que entra**, sin ningún
+síntoma visible. De ahí que la activación sea en dos pasos, con un modo `observa` que
+calcula y loguea sin rechazar.
+
 #### Una lección más, cara
 
 **Antes de escribir la primera migración, `git fetch` y conectarse a la base.** El
