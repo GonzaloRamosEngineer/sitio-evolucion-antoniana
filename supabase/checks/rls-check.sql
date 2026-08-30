@@ -44,8 +44,12 @@ DELETE FROM public.partners WHERE nombre = 'ZZ Aprobado';
 ROLLBACK;
 
 \echo '=== T6: el trigger revierte role en silencio si el caller no es admin ==='
-INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
-VALUES ('11111111-1111-1111-1111-111111111111','00000000-0000-0000-0000-000000000000','authenticated','authenticated','zz-plain@test.com','x',now(),now())
+-- `raw_user_meta_data` con `name`: el trigger `handle_new_user` lo copia a
+-- `public.users.name`, que es NOT NULL. Sin esto la semilla tira un ERROR
+-- ruidoso (el test seguía andando por el INSERT explícito de abajo, pero el
+-- error confundía la lectura de la salida).
+INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, raw_user_meta_data)
+VALUES ('11111111-1111-1111-1111-111111111111','00000000-0000-0000-0000-000000000000','authenticated','authenticated','zz-plain@test.com','x',now(),now(),'{"name":"ZZ Plain"}')
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.users (id, name, email, role)
 VALUES ('11111111-1111-1111-1111-111111111111','ZZ Plain','zz-plain@test.com','user')

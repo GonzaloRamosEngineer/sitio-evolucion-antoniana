@@ -48,7 +48,7 @@ supabase functions deploy resend-verification # despliega la Edge Function de ve
 
 ## Variables de entorno
 
-`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (van en `.env.local`, ver `.env.example`). **No son estrictamente obligatorias en local**: `src/lib/supabase.js` lee del env con *fallback* a los valores de producción, así que el sitio corre igual sin `.env.local`. En Vercel están configuradas como env vars.
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (van en `.env.local`, ver `.env.example`). **Son obligatorias** desde el 2026-08-30: `npm run build` aborta si faltan (guarda en `vite.config.js`) y `src/lib/supabase.js` lanza al importarse. Antes había *fallback* a los valores de producción y el sitio corría igual sin `.env.local`; se quitó porque un proyecto mal configurado escribía en la base de la Fundación **sin fallar** (ROADMAP 10.6 bloqueante #1, prerrequisito del módulo de canjes de §11). En Vercel están configuradas como env vars.
 
 ## Arquitectura (big picture)
 

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
-import { createLogger, defineConfig } from 'vite';
+import { createLogger, defineConfig, loadEnv } from 'vite';
 
 // Nota: acá vivían los plugins del editor visual de Hostinger Horizons
 // (`plugins/visual-editor/`, 810 líneas, solo dev) y un `rollupOptions.external`
@@ -53,7 +53,37 @@ const manualChunks = {
 	'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
 };
 
-export default defineConfig({
+/**
+ * Guarda de configuración (ROADMAP 10.6 bloqueante #1 / 11.7).
+ *
+ * `src/lib/supabase.js` ya no tiene fallback a las credenciales de producción.
+ * Esto lo detecta una etapa antes: si faltan las variables, **el build falla**
+ * en vez de generar un bundle que apunta a ningún lado (o, peor, a la base de
+ * otro cliente). Solo se chequea en `build`: en `dev` el error equivalente lo
+ * tira el cliente al importarse, con el mismo mensaje.
+ */
+const requeridas = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
+
+const verificarEnv = (mode) => {
+	const env = loadEnv(mode, process.cwd(), 'VITE_');
+	const faltantes = requeridas.filter((clave) => !env[clave]);
+
+	if (faltantes.length > 0) {
+		throw new Error(
+			`\n\nBuild abortado: faltan variables de entorno (${faltantes.join(', ')}).\n` +
+				'Definilas en .env.local (local) o en el panel del hosting (deploy).\n' +
+				'Ver .env.example. No hay valores por defecto a propósito: un default\n' +
+				'apuntaría a la base de otro cliente (ROADMAP 11.7).\n'
+		);
+	}
+};
+
+export default defineConfig(({ command, mode }) => {
+	if (command === 'build') {
+		verificarEnv(mode);
+	}
+
+	return {
 	customLogger: logger,
 	plugins: [react()],
 	server: {
@@ -74,4 +104,5 @@ export default defineConfig({
 			output: { manualChunks },
 		},
 	},
+	};
 });

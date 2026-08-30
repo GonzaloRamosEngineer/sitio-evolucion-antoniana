@@ -26,6 +26,7 @@ Lo que queda son **dos cosas de naturaleza distinta**:
 |---|---|---|
 | **Deuda** | 2 ítems técnicos + deuda menor. Nada bloquea nada | §A abajo |
 | **Producto** | El modelo aporte→acceso, que nunca se construyó | §10 abajo |
+| **Producto** | El club de beneficios: el canje y el comercio como actor | §11 abajo |
 
 La única **vulnerabilidad viva** es `react-router-dom@6.30.4` (open redirect → XSS,
 moderate). No tiene parche en la v6: el arreglo es react-router v7, un major. Ver 6.7.
@@ -406,7 +407,7 @@ pregunta original** (por qué los módulos se sienten desconectados).
 | Fase | Qué | Esfuerzo | Deja algo usable? |
 |---|---|---|---|
 | **0** | ~~Arreglar el orden de migraciones~~ **✅ HECHO 2026-08-16** — ver `HISTORIAL.md` | ~2-3 h | Prerrequisito, ya cubierto |
-| **1** | `aportes` + `acceso_vigente()` + `tiene_acceso()` + backfill | ~2-3 días | Historial de aportes en el panel del socio |
+| **1** | ~~`aportes` + `acceso_vigente()` + `tiene_acceso()`~~ **✅ ESQUEMA HECHO 2026-08-30** — `20260830120000_aportes_acceso.sql` (libro + funciones de acceso) y `20260830130000_aportes_triggers_antiguedad.sql` (triggers que lo alimentan + antigüedad). Validado en Docker: 22 comprobaciones entre `aportes-check.sql` y `triggers-aportes-check.sql`. Parámetros reales ya cargados (cuota $5.000, piso = la cuota). **Falta**: aplicarlo en producción y correr el backfill | ~2-3 días | Historial de aportes en el panel del socio |
 | **2** | `precio_general`/`precio_socio` en actividades + `requiere_acceso` en beneficios | ~2-3 días | **Acá la cuota empieza a valer algo** |
 | **3** | `campanas` + FK desde donaciones + barra de progreso pública | ~2 días | Donaciones dirigidas |
 | **4** | `socios` + `categorias_socio` + número y antigüedad | ~2 días | Carnet, antigüedad, categorías |
@@ -428,39 +429,69 @@ Hay que volcar `memberships` y `donations` existentes a `aportes`. Requisitos:
 
 ---
 
-### 10.4 — Decisiones de negocio pendientes (no son técnicas)
+### 10.4 — Decisiones de negocio (TOMADAS el 2026-08-30)
 
-Ninguna de estas la puede tomar quien escribe el código:
+Las tomó la Fundación; acá queda el qué y el porqué, porque son las que un cliente
+distinto va a querer cambiar (ver 10.5).
 
 1. **¿Cuántos meses de acceso otorga una donación puntual?**
-   → **Recomendado: proporcional, no fijo.**
-   `meses = least(máximos, greatest(mínimos, floor(monto / cuota_referencia)))`, y solo
-   si `monto >= piso_monto`.
-   **Por qué no un plazo fijo:** "cualquier donación da 6 meses" canibaliza la cuota — con
-   una donación chica se obtiene medio año y nadie paga todos los meses. Proporcional es
-   auto-explicable ("donaste el equivalente a 3 cuotas, tenés 3 meses") y donar nunca
-   sale más barato que ser socio.
+   → **Proporcional:** `meses = least(12, greatest(1, floor(monto / cuota_referencia)))`.
+   No un plazo fijo: "cualquier donación da 6 meses" canibaliza la cuota. Implementado en
+   `meses_por_donacion()`, que es la **única** fuente de la regla — la usan el trigger y
+   el backfill, para que no puedan decir cosas distintas.
 
-2. **¿El donante accede a los mismos beneficios que el socio?**
-   → **Recomendado: al mismo catálogo de descuentos, pero el socio conserva lo que el
-   donante no puede tener**: antigüedad acumulada, número de socio, carnet, prioridad de
-   cupo y voz en asamblea. Si los dos obtienen exactamente lo mismo, la cuota pierde el
-   sentido simbólico que se busca. Además coincide con la realidad legal: en una
-   asociación civil el socio tiene derechos estatutarios que el donante no tiene.
+2. **¿Cuál es el piso para que una donación otorgue acceso?**
+   → **El precio de la cuota.** Sin piso, una donación de $100 otorgaba un mes entero de
+   beneficios, que es exactamente lo que 10.4.1 quería evitar. Se modela como
+   `piso_monto = NULL` (que significa "usar `cuota_referencia`") y **no** como el número
+   copiado: así al subir la cuota el piso sube solo y no pueden desincronizarse.
 
 3. **¿Hay período de gracia cuando falla el cobro?**
-   → **Recomendado: 30 días.** Los cobros recurrentes fallan por motivos técnicos
-   (tarjeta vencida, límite) más que por decisión. Cortar el acceso al día siguiente
-   genera bronca y llamados a la comisión por algo que se resuelve solo.
+   → **30 días, y solo para cuotas.** Un cobro recurrente falla por tarjeta vencida más
+   que por decisión. Una donación puntual no "falla": simplemente se terminó, así que la
+   gracia no aplica. Está en `reglas_acceso.dias_gracia` y verificado en
+   `supabase/checks/aportes-check.sql`.
 
-4. **¿La antigüedad se pierde al darse de baja y volver?** Afecta `socios.fecha_alta`
-   y si se conserva o se reasigna el `numero_socio`.
+4. **¿Cómo corre la antigüedad si alguien deja de pagar y vuelve?**
+   → **No es un número, son tres**, y los tres salen del mismo libro sin guardar nada
+   extra (`antiguedad_socio()`):
 
-5. **¿Los beneficios exclusivos son la regla o la excepción?** Define el default de
-   `benefits.requiere_acceso`. Se propone `false` para no cambiar el comportamiento
-   actual al aplicar la migración.
+   | Número | Qué es | Se reinicia? |
+   |---|---|---|
+   | `socio_desde` | Fecha del primer aporte. La identidad, lo que va en el carnet | **Nunca** |
+   | `meses_aportados` | Suma real de tiempo cubierto, sin contar dos veces los solapamientos | No, pero solo crece pagando |
+   | `racha_meses` | Tramo continuo actual, sin cortes | Sí, en cada interrupción |
 
----
+   **La regla: los derechos los da `meses_aportados`, no `socio_desde`.** Así quien se fue
+   un año y volvió no pierde su historia —sigue siendo socio desde 2026— pero tampoco
+   cobra beneficios por el año que no pagó. Y `racha_meses` queda disponible para premiar
+   la continuidad sin castigar al que tuvo un mal año.
+
+   Las tres se calculan con `range_agg` sobre los períodos de acceso: Postgres une los
+   rangos solapados y deja los huecos a la vista. Sumar días a mano es donde aparece el
+   doble conteo (un doble pago valdría doble); está verificado que no ocurre.
+
+5. **¿El donante accede a los mismos beneficios que el socio?**
+   → **Sí, al mismo catálogo de descuentos**, pero el socio conserva lo que el donante no
+   puede tener: antigüedad, número de socio, carnet, prioridad de cupo y voz en asamblea.
+   Coincide con la realidad legal: en una asociación civil el socio tiene derechos
+   estatutarios que el donante no tiene.
+
+6. **¿Los beneficios exclusivos son la regla o la excepción?**
+   → **Mixto, con los mejores cerrados.** `benefits.requiere_acceso` nace en `false` (no
+   cambia el comportamiento al migrar) y se cierra beneficio por beneficio. El visitante
+   ve el catálogo completo con los exclusivos **visibles pero bloqueados**: ver lo que uno
+   se está perdiendo convierte mejor que no saber que existe.
+
+7. **¿Quién escribe en `aportes`?**
+   → **Triggers en la base** (`trg_registrar_aporte_cuota` / `trg_registrar_aporte_donacion`),
+   no el webhook externo ni un cron. El webhook de cobros vive fuera de este repo
+   (`mp-supabase-webhook.onrender.com`, ver `vercel.json`) y solo toca `memberships` y
+   `donations`; con triggers el libro se llena **sin importar quién escriba el pago** —
+   ese webhook, un admin cargando en efectivo, o el proveedor que venga en dos años. Es
+   el desacople que justifica que el libro exista.
+   Idempotencia por `aportes.payment_id` con índice único: **MercadoPago reintenta los
+   webhooks**, y sin esa clave cada reintento regalaba un mes de acceso.
 
 ### 10.5 — Por qué esto se configura y no se hardcodea
 
@@ -481,10 +512,12 @@ mutual, una cámara o una cooperativa de servicios.
 
 Los tres bloqueantes reales para un segundo cliente, en orden:
 
-1. **`src/lib/supabase.js:8-13` cae a la URL y anon key de producción** si faltan las
-   variables de entorno. Un fork mal configurado escribe en la base de la Fundación **sin
-   fallar**. Es el más barato de arreglar y el más grave: debe romper el build, no
-   silenciarse.
+1. ~~**`src/lib/supabase.js:8-13` cae a la URL y anon key de producción**~~ — **resuelto
+   el 2026-08-30**. Se quitaron las credenciales de fallback: el cliente lanza al
+   importarse y `vite.config.js` **aborta el build** si faltan `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_ANON_KEY` (verificado: `npm run build` sale con código 1). Era
+   prerrequisito del módulo de canjes de §11: con canjes en producción, un fork mal
+   configurado no mostraba datos de más, **emitía canjes contra la base equivocada**.
 2. ~~**Las migraciones no reconstruyen desde cero**~~ — **resuelto el 2026-08-16**
    (`HISTORIAL.md`). Sin eso, "levantar un cliente
    nuevo" es trabajo manual, no un comando. Es la fase 0 de 10.3.
@@ -492,5 +525,389 @@ Los tres bloqueantes reales para un segundo cliente, en orden:
 
 Ninguno de los tres es este modelo de dominio — pero **conviene resolver el 2 antes de
 empezar la fase 1**, porque cada migración nueva agranda ese problema.
+
+---
+
+## 11. Club de beneficios: el canje (propuesta, 2026-08-30)
+
+### 11.0 — Qué es esto y cómo se relaciona con §10
+
+La §10 responde **quién tiene derecho** a un beneficio (aporte → acceso). Esta sección
+responde las otras dos preguntas, que quedaron fuera: **qué pasa en el mostrador** y
+**qué gana el comercio por estar**.
+
+Son módulos distintos y conviene que lo sigan siendo. §10 es del dominio de la entidad
+(socios, cuotas, donaciones). §11 es un módulo genérico que solo le pregunta a §10 una
+cosa: `tiene_acceso(user_id)`. Esa frontera es lo que lo hace portable a otro proyecto
+(ver 11.7), y es una decisión de diseño, no una casualidad.
+
+**La fase 1 de §10 es prerrequisito literal de todo lo de acá.** Sin `tiene_acceso()`,
+el club no puede distinguir un socio de un visitante y no hay nada que validar.
+
+---
+
+### 11.1 — Estado actual (verificado 2026-08-30)
+
+- [ ] **11.1.a — Hoy no hay un club: hay un listado de cupones.**
+  `benefits.codigo` y `benefits.codigo_descuento` (`baseline:378-379`) son texto
+  estático, uno solo por beneficio, igual para todo el mundo.
+  `BenefitDetailPage.jsx:231` lo renderiza en pantalla, y `/beneficios/:slug`
+  (`App.jsx:101`) es **ruta pública sin `ProtectedRoute`**: el código se lo lleva
+  cualquiera que entre al sitio. Un código estático y público no se puede limitar,
+  ni vencer, ni contar, ni atribuir a una persona.
+
+- [ ] **11.1.b — El comercio no existe como actor del sistema.**
+  `partners` (`baseline:507`) tiene nombre, logo, descripción, contacto y estado. **No
+  tiene login, ni sucursales, ni ubicación, ni usuarios, ni forma de reportar nada.**
+  Un partner es hoy un logo en la Home, no una contraparte operativa.
+
+- [ ] **11.1.c — No hay registro de que un beneficio se haya usado.**
+  No existe tabla de canjes ni equivalente. Consecuencia práctica: la entidad no puede
+  decirle al comercio cuánta gente le mandó, que es exactamente el argumento que hace
+  falta para renovar el acuerdo al año siguiente.
+
+---
+
+### 11.2 — Decisión de arquitectura
+
+#### La entidad protagonista es el canje, no el beneficio
+
+El beneficio es catálogo, casi contenido editorial. El **canje** es el hecho económico:
+quién, dónde, cuándo, cuánto. De ahí salen las tres cosas que sostienen un club en el
+tiempo: el socio ve que le sirve, el comercio ve que le trae gente, y la entidad tiene
+números para negociar la renovación.
+
+#### El token de canje ES el canje en estado pendiente
+
+No hace falta tabla de tokens, ni JWT firmados, ni store externo:
+
+```
+socio pulsa "usar beneficio"
+  → INSERT club_canjes (estado='pendiente', codigo='7K4M2P', expira_en=now()+5min)
+  → pantalla del socio: QR + código de 6 caracteres + contador
+
+comercio escanea o tipea el código
+  → UPDATE ... estado='confirmado', cajero_id, monto_operacion
+  → pantalla verde en los dos teléfonos
+```
+
+Una tabla, una máquina de estados, idempotencia natural (el código es único y de un solo
+uso) y, de regalo, quedan registrados los canjes **abandonados** — que son una métrica
+valiosa: muchos generados y pocos confirmados significa que ese comercio no está usando
+el sistema, y te enterás sin que nadie lo reporte.
+
+#### Por qué el modelo C y no otro
+
+Hay cuatro formas conocidas de aplicar un descuento. Solo una es viable acá:
+
+| Modelo | Quién aplica el descuento | Ejemplo | Viabilidad |
+|---|---|---|---|
+| **A. Integración con el POS del comercio** | El sistema del comercio | McDonald's, YPF | Solo con cadenas. Con comercios chicos y heterogéneos no existe |
+| **B. En el medio de pago** | El banco o la billetera | MODO, beneficios bancarios | Requiere ser emisor o acordar con uno. Fuera de alcance |
+| **C. Canje verificado por el club** | El comercio, confirmando en una web app | **Este** | Viable, y es lo que da trazabilidad |
+| **D. Credencial visual** | El comercio, a ojo | Club La Nación clásico | Fase 1. Cero fricción, cero datos |
+
+McDonald's y YPF resolvieron un problema **más fácil**: son closed-loop, el comercio son
+ellos mismos, controlan la caja y al empleado. Lo que sí conviene copiarles es el patrón
+del cupón: **personal, de un solo uso, con vencimiento, emitido a alguien identificado**
+— nunca un código genérico, que es justo lo que hay hoy (11.1.a).
+
+Los clubes que sí se parecen a este caso (Club La Nación, Clarín 365, Club Personal)
+nunca tuvieron trazabilidad con el comercio chico: credencial a ojo, y descuentos
+fuertes canalizados por medio de pago. Por eso no pueden demostrarle al comercio chico
+cuánta gente le mandaron, y por eso lo pierden. **El modelo C es lo que ellos no
+hicieron, y es la ventaja competitiva de esto.**
+
+#### La regla que hace que el sistema funcione
+
+> **El código es la llave del descuento, no un registro paralelo del descuento.**
+
+No debe existir la vía "mostrale el carnet al cajero y listo" en un comercio que ya está
+digitalizado. Si existe, el 100% del tráfico se va por ahí y no queda ningún dato.
+
+El motivo es de incentivos, no técnico: en YPF el playero pregunta por Serviclub porque
+**trabaja para YPF**. El cajero de la pizzería no trabaja para la fundación y no tiene
+ninguna razón para registrar nada. Si el descuento solo se otorga procesando el código,
+el que reclama en el momento es el cliente — y ese reclamo es el mecanismo de
+cumplimiento, gratis.
+
+---
+
+### 11.3 — El flujo
+
+#### Alta del comercio (una sola vez)
+
+1. Se postula desde el formulario público (base: `ApplyPartnerPage.jsx`) o lo carga admin.
+2. Admin aprueba, carga sucursales y **redacta el beneficio junto al comercio**. Al
+   principio la redacción la controla la entidad: ahí se generan casi todos los
+   conflictos de mostrador ("¿incluye promos?", "¿aplica feriados?"). Después se le
+   abre la edición al comercio.
+3. Al dueño le llega un magic link a `/comercio`.
+4. **Se da de alta el dispositivo del local, no a cada empleado.** El cajero rota cada
+   pocos meses; crear una cuenta por empleado no va a ocurrir. El teléfono o tablet del
+   mostrador queda logueado con un device token largo. Si el comercio quiere saber qué
+   empleado validó cada canje, se agrega un PIN de 4 dígitos — opcional, casi ninguno
+   lo va a querer.
+
+#### El mostrador
+
+**Socio** (en el local):
+1. Abre el club; ve los beneficios ordenados por cercanía.
+2. Toca el beneficio → condiciones + botón **"Usar ahora"**.
+3. Advertencia antes de generar: *"Generalo recién cuando estés en la caja — vence en 5
+   minutos."* Sin esto, la mitad lo genera en el colectivo y llega con el código vencido.
+4. Pantalla de canje: QR grande, código de 6 caracteres, contador regresivo, su nombre
+   y el del comercio.
+
+**Cajero** (teléfono del local, `/comercio` siempre abierto en "Validar"):
+5. **Escanear** o **Ingresar código**.
+6. Ve nombre del socio + el beneficio en letra grande + botón **Confirmar**.
+7. Campo opcional "Monto de la operación" (de esto depende el reporte de 11.6).
+8. Confirma.
+
+**El cierre:** la pantalla del socio **cambia sola** a verde en ese instante (Supabase
+Realtime). El socio ve que quedó registrado y el cajero ve que el socio lo vio. Esa
+confirmación cruzada es lo que hace que el sistema se sienta real y no un trámite.
+
+#### Casos borde (resolver antes, no después)
+
+| Situación | Comportamiento |
+|---|---|
+| **Socio sin acceso vigente** | El botón "Usar ahora" **no existe**; en su lugar, link a renovar. Nunca dejarlo generar un código que va a fallar en la caja: pasar vergüenza en el mostrador es la forma más rápida de perder un socio |
+| **Local sin señal** (subsuelo, shopping) | El socio genera con su conexión; el comercio necesita señal para confirmar. **Confirmación diferida**: el cajero puede rescatar códigos de las últimas 2 h al recuperar conexión |
+| **Se anula la venta** | El cajero anula dentro de 30 min → estado `anulado`. **No se borra**: el rastro importa |
+| **El cajero se olvidó de confirmar** | El canje expira. Es una métrica de adopción del comercio, no un error |
+| **Comercio que no quiere panel** | Existe y va a existir. Se queda en modo credencial (modelo D) y sus canjes los carga admin a mano. No dejarlo fuera del catálogo por eso |
+
+---
+
+### 11.4 — Modelo de datos
+
+Módulo aislado con prefijo `club_`. **No modifica ninguna tabla existente**; solo se
+cuelga de `users(id)` y de la función de elegibilidad.
+
+```sql
+club_comercios (
+  id uuid pk, partner_id uuid null references partners(id),
+  nombre, rubro, cuit, slug unique, logo_url, descripcion,
+  estado text check (estado in ('pendiente','activo','pausado','baja')),
+  created_at
+)
+
+club_sucursales (id, comercio_id, nombre, direccion, lat, lng, horarios jsonb, telefono)
+
+club_comercio_usuarios (comercio_id, user_id, rol check (rol in ('dueno','cajero')),
+                        primary key (comercio_id, user_id))
+
+club_beneficios (
+  id, comercio_id,
+  titulo, descripcion, terminos,
+  tipo check (tipo in ('porcentaje','monto_fijo','2x1','regalo')),
+  valor numeric,
+  requiere_acceso boolean not null default true,
+  limite_por_persona int, ventana check (ventana in ('dia','semana','mes','total')),
+  limite_total int, stock int,
+  vigencia_desde date, vigencia_hasta date,
+  dias_semana int[], hora_desde time, hora_hasta time,
+  estado, orden
+)
+
+club_canjes (                       -- el libro. También es el store de tokens.
+  id, beneficio_id, sucursal_id, user_id,
+  codigo text unique,               -- 6 chars, alfabeto sin ambiguos (sin 0/O, 1/I/L)
+  estado check (estado in ('pendiente','confirmado','expirado','anulado')),
+  expira_en timestamptz,
+  cajero_id uuid, confirmado_en timestamptz,
+  monto_operacion numeric, ahorro numeric,
+  anulado_en, anulado_por, motivo_anulacion,
+  created_at
+)
+
+club_config (clave text pk, valor jsonb)   -- todo parámetro variable vive acá (11.7)
+```
+
+**Por qué `club_comercios` y no extender `partners`:** hoy `partners` son sponsors
+institucionales y sus logos van a la Home (`tools/normalize-partner-logos.mjs`). Si se
+mezclan, la primera pizzería que entre al club aparece en la grilla de aliados de la
+Fundación. Son dos relaciones distintas con la entidad, aunque una empresa pueda ser las
+dos cosas — de ahí el `partner_id` opcional.
+
+`benefits` queda como está y se deprecia migrando su contenido a `club_beneficios`. No
+conviene romper las páginas públicas de entrada.
+
+---
+
+### 11.5 — Dónde vive la lógica: cambio de patrón respecto del resto del repo
+
+Hoy **toda la lógica de datos corre en el browser con la anon key** y la seguridad son
+las RLS (ver `CLAUDE.md`, modelo de seguridad). **Para el club eso no alcanza.**
+`club_canjes` es la tabla que otorga valor económico: si el browser puede insertar ahí,
+cualquiera con las devtools abiertas se autogenera canjes confirmados, y del otro lado
+hay un comercio esperando que le paguen. Es la misma advertencia de 10.2 sobre
+`aportes`, pero con un tercero involucrado.
+
+**Regla: `club_canjes` es de solo lectura para todo el mundo. Se escribe únicamente
+desde Edge Functions con `service_role`.**
+
+| Edge Function | La invoca | Valida |
+|---|---|---|
+| `club-generar-canje` | socio (JWT) | elegibilidad vigente, beneficio activo, límites por persona/ventana, stock, día y horario |
+| `club-confirmar-canje` | cajero (JWT) | que el cajero pertenezca al comercio del beneficio, que el código no esté vencido ni usado |
+| `club-anular-canje` | cajero / admin | ventana de anulación, deja rastro |
+
+RLS de lectura: el socio ve los suyos, el comercio los de su comercio, admin y comisión
+todos. `anon` sin ningún permiso — **no repetir el patrón de GRANTs amplios de 10.1.g**.
+
+Para el lado comercio, replicar el patrón que ya funcionó con `is_board_member()`: una
+función `is_comercio_member(comercio_id)` `SECURITY DEFINER`. **No agregar un rol
+`'comercio'` al CHECK de `users.role`**: la pertenencia a `club_comercio_usuarios` *es*
+el rol, y así una persona puede ser dueña de dos comercios sin romper el modelo. El
+redirect post-login se deriva de tener fila en esa tabla.
+
+Los límites se validan en la Edge Function **y** tienen red de contención en la base
+(índice único parcial sobre `(user_id, beneficio_id, fecha)` para el caso "uno por
+día"). El doble clic en un celular lento es más frecuente que el atacante.
+
+---
+
+### 11.6 — Niveles de comercio: el incentivo
+
+La contraprestación al comercio es **publicidad de la entidad**: costo marginal cero
+para la Fundación, valor real para el comercio. Es lo que responde la pregunta de por qué
+un comercio seguiría dando descuento el año que viene.
+
+#### La métrica no puede ser la cantidad de canjes
+
+Premiar el `count(*)` de canjes tiene tres defectos, y los tres son evitables:
+
+1. **Es inflable por el propio premiado.** Se le pone recompensa a un número que el
+   comercio puede fabricar (conocidos que se asocian y "canjean" sin descuento real).
+2. **Premia al grande por ser grande.** Una cadena de tres sucursales llega a 50 canjes
+   en diez días; la óptica del barrio no llega nunca. Termina recibiendo publicidad
+   gratis quien menos la necesita, mientras el chico —el que más fácil se va— nunca sube.
+3. **Mide atractivo, no generosidad.** Una hamburguesería al 10% tendrá más canjes que
+   una mueblería al 30%. El ranking premia vender barato y seguido.
+
+#### Cómo se corrige
+
+- **Métrica = ahorro generado a los socios** (`sum(ahorro)`), no cantidad de canjes.
+- **Tope por socio en el cálculo**: máximo 3 canjes del mismo socio por mes cuentan para
+  el nivel. Dos líneas en la vista; mata el inflado sin afectar a ningún comercio real.
+- **Ventana móvil de 12 meses**, no acumulado histórico: si es acumulado, el que fue
+  bueno en 2025 y se durmió es dorado para siempre y el nivel deja de significar algo.
+  Evaluación **trimestral**, para que nadie baje por un mes flojo.
+- **El nivel mezcla volumen con compromiso**: ahorro generado + meses activos sin cortar
+  + antigüedad en el club + calidad del descuento. Así la óptica que hace 18 meses da
+  25% sin fallar puede ser dorada aunque tenga una décima parte de los canjes que la
+  cadena.
+- **Los nombres importan**: nadie quiere un sticker que diga "somos el escalón de abajo".
+  Los niveles bajos **no se muestran en público**; solo se muestra el logro alcanzado.
+
+| Nivel | Qué recibe |
+|---|---|
+| **Comercio del club** (todos) | Ficha en el catálogo, mapa y buscador |
+| **Solidario** | Posteo dedicado en redes + mención en newsletter |
+| **Premium** | Destacado arriba del catálogo con badge + banner en Home + nota en Novedades |
+| **Dorado** | Todo lo anterior + presencia en eventos + logo en materiales + entrevista |
+
+**El premio que más vale no está en esa tabla: el reporte trimestral con sus propios
+números.** "El club te mandó 47 personas este trimestre, $1,2M de consumo, el 60% volvió
+una segunda vez." Es lo que el dueño le muestra a su contador para justificar seguir un
+año más, es subproducto directo de `club_canjes`, y no lo tiene ningún club chico.
+
+#### Los umbrales se fijan con datos, no antes
+
+Números como 5/10/50 canjes son inventados y van a estar mal: o todos son dorados el
+primer mes (y el nivel no vale nada) o nadie llega (y desmotiva). **Arrancar con un solo
+nivel** ("Comercio del club") y fijar los cortes después de 3 meses de operación, sobre
+percentiles reales.
+
+```sql
+club_niveles (id, nombre, orden, min_ahorro_12m, min_meses_activo, min_canjes_12m, ...)
+-- vista: nivel vigente por comercio, con el tope por socio ya aplicado
+club_comercio_nivel (comercio_id, nivel_id, ahorro_12m, canjes_12m, meses_activo, desde)
+```
+
+**El nivel se calcula, no se asigna a mano.** Asignado a mano, el primer comercio que se
+queje discute el criterio y no hay con qué responderle.
+
+Nota institucional: poner "Partner Dorado" en la Home de una fundación **es publicidad**.
+Viniendo de una entidad de bien público, el criterio tiene que ser objetivo y estar
+publicado en la página del club. Evita el conflicto antes de que exista.
+
+---
+
+### 11.7 — Reglas de portabilidad (qué lo hace reutilizable)
+
+El objetivo es **copiar migraciones + Edge Functions a otro proyecto Supabase y que
+funcione**. No es un servicio multi-tenant compartido: con un solo dev y varios
+proyectos, un servicio central es punto único de falla y problema de versionado.
+Duplicar código es feo pero es libre. El costo aceptado es que un fix se aplica N veces.
+
+Para que esa copia sea posible, el módulo tiene que respetar:
+
+1. **Contrato único de elegibilidad.** El club **nunca sabe por qué** alguien es
+   elegible: solo llama a `public.tiene_acceso(uuid) → boolean`. Cada proyecto la
+   implementa a su manera (en un gimnasio: cuota del mes paga; en una cámara: socio
+   activo; en un proyecto sin socios: `select true`).
+2. **Prefijo `club_` en todo**, y ninguna tabla del club referencia tablas del proyecto
+   salvo `users(id)` y el `partner_id` opcional (que puede quedar NULL siempre).
+3. **Cero marca dentro del módulo**: ni nombres de la entidad, ni copy institucional, ni
+   colores en tablas, funciones o Edge Functions. Mismo criterio del ítem 3.4.
+4. **Todo parámetro variable en `club_config`**: duración del token, ventana de
+   anulación, si el monto de operación es obligatorio, umbrales de nivel. Ninguna
+   constante mágica en código (mismo criterio de 10.5).
+5. **Las Edge Functions no leen nada fuera del prefijo `club_`**, salvo `users` y la
+   función de elegibilidad.
+6. **UI contenida en `src/components/Club/` y `src/pages/club/`**, sin importar nada del
+   proyecto salvo `components/ui/` y `lib/`.
+
+✅ **Bloqueante previo (10.6 #1): resuelto el 2026-08-30.** `src/lib/supabase.js` ya no
+tiene fallback a las credenciales de producción — lanza al importarse — y
+`vite.config.js` aborta el build si faltan las env vars. Sin eso, un fork mal
+configurado habría emitido canjes contra la base de la Fundación **sin fallar**.
+
+---
+
+### 11.8 — Orden de implementación
+
+| Fase | Qué | Deja algo usable? |
+|---|---|---|
+| **0** | ~~§10 fase 1: `aportes` + `tiene_acceso()`~~ + ~~bloqueante #1 de 10.6~~ **✅ HECHO 2026-08-30** (esquema y guarda de credenciales; falta aplicar en prod) | Prerrequisito literal: sin esto no hay a quién validarle nada |
+| **1** | Carnet digital (QR del socio) + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
+| **2** | `club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio` | Entra el comercio. Acá aparece la trazabilidad |
+| **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
+| **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 11.6 |
+| **5** | Extracción a un segundo proyecto (11.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
+
+**La fase 1 sin comercio digital es deliberada.** La mayoría de los clubes de beneficios
+mueren porque le exigen un panel al comercio desde el día uno; el comercio no lo usa,
+los canjes no se registran, y no hay números para renovar. Conviene entrar con la
+credencial y digitalizar comercio por comercio.
+
+---
+
+### 11.9 — Decisiones de negocio (TOMADAS el 2026-08-30)
+
+1. **¿El comercio entra digitalizado desde el arranque?**
+   → **Se arranca con un comercio piloto: DigitalMatch** (descuento en landing pages y
+   sitios web). Es un comercio propio, así que la fase 2 se puede probar de punta a punta
+   sin depender de que un tercero adopte nada. Los demás entran por credencial (modelo D)
+   y se digitalizan de a uno.
+
+2. **¿Se captura el monto de la operación?**
+   → **Opcional.** Y la forma de conseguirlo no es exigirlo: es que el reporte trimestral
+   —"el club te mandó N personas, $X de consumo"— solo se pueda armar con ese dato. El
+   comercio termina pidiéndolo él para tener sus métricas y para calificar a los niveles
+   altos. Si se exige de entrada, el cajero lo completa con cualquier número.
+
+3. **¿Qué pasa con los beneficios de un comercio dado de baja?**
+   → **Los canjes no se borran nunca**: son el libro contable del club. La ficha del
+   comercio se archiva y sus beneficios pasan a inactivos.
+
+4. **¿El donante puntual entra al club?** → Sí, resuelto en 10.4.5.
+
+Queda una sola decisión abierta, y **a propósito**: los umbrales de los niveles de
+comercio (11.6). Se fijan con 3 meses de datos reales, no antes.
 
 ---
