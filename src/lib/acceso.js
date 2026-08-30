@@ -45,6 +45,24 @@ export const estadoAcceso = (acceso) => {
   return acceso.tiene_acceso ? 'vigente' : 'vencido';
 };
 
+/**
+ * Cómo se llama en pantalla el origen del acceso.
+ *
+ * Los valores vienen de `aportes.origen` en la base y son
+ * `membresia` | `donacion` | `manual` — NO `cuota`. El mapeo vive acá y no en
+ * la página para que agregar un origen nuevo sea una entrada más y no una rama
+ * suelta perdida en un JSX.
+ */
+const ORIGENES = {
+  membresia: 'Cuota social',
+  donacion: 'Donación',
+  // Efectivo o transferencia cargada por la comisión. Se muestra neutro porque
+  // el socio no tiene por qué saber por qué canal se registró.
+  manual: 'Aporte registrado por la Fundación',
+};
+
+export const nombreOrigen = (origen) => ORIGENES[origen] ?? null;
+
 /** Meses en "1 año y 7 meses", que es como lo lee una persona. */
 export const formatearMeses = (meses) => {
   const total = Number(meses) || 0;

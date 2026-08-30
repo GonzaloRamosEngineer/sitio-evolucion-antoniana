@@ -5,6 +5,7 @@ import {
   diasHasta,
   estadoAcceso,
   formatearMeses,
+  nombreOrigen,
 } from '@/lib/acceso';
 
 describe('beneficioBloqueado', () => {
@@ -83,5 +84,22 @@ describe('formatearMeses', () => {
 
   it('tolera undefined', () => {
     expect(formatearMeses(undefined)).toBe('menos de un mes');
+  });
+});
+
+describe('nombreOrigen', () => {
+  // Los valores salen de `aportes.origen` en la base. Que acá diga 'cuota'
+  // —como decía antes de conocer el esquema real— hacía que el carnet
+  // etiquetara toda cuota social como "Donación".
+  it('traduce los tres orígenes reales del esquema', () => {
+    expect(nombreOrigen('membresia')).toBe('Cuota social');
+    expect(nombreOrigen('donacion')).toBe('Donación');
+    expect(nombreOrigen('manual')).toBe('Aporte registrado por la Fundación');
+  });
+
+  it('devuelve null para lo desconocido, para no inventar una etiqueta', () => {
+    expect(nombreOrigen('cuota')).toBeNull();
+    expect(nombreOrigen(null)).toBeNull();
+    expect(nombreOrigen(undefined)).toBeNull();
   });
 });

@@ -1,16 +1,15 @@
 # Verificación de las RLS contra un Postgres real
 
-`rls-check.sql` y `aportes-check.sql` prueban que las políticas versionadas en
+`rls-check.sql` y `acceso-check.sql` prueban que las políticas versionadas en
 `../migrations/` se comporten como el código asume. Los tests con mocks no pueden
 hacerlo: prueban nuestro código, no la base.
 
 - **`rls-check.sql`** — partners, benefits, news, users (escalada de privilegios).
-- **`aportes-check.sql`** — `aportes`, `reglas_acceso` y las funciones de acceso
-  (ROADMAP §10 fase 1). Es el check más importante del repo: `aportes` es la tabla
-  que **otorga** privilegios.
-- **`triggers-aportes-check.sql`** — los triggers que alimentan el libro y las
-  funciones de antigüedad (decisiones D1 y D4). Cubre lo que más caro sale si falla:
-  que un reintento del webhook de MercadoPago no regale un mes de acceso.
+- **`acceso-check.sql`** — la capa de acceso: `reglas_acceso`, las funciones de acceso
+  y antigüedad, los triggers que otorgan acceso, y los permisos sobre `aportes`.
+  Es el check más importante del repo: `aportes` es la tabla que **otorga**
+  privilegios, y lo más caro que puede fallar es que un reintento del webhook de
+  MercadoPago regale un mes de acceso.
 
 ## Por qué no usa `supabase start`
 
@@ -38,8 +37,7 @@ done
 
 # 3. Verificar las políticas
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/rls-check.sql
-docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/aportes-check.sql
-docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/triggers-aportes-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/acceso-check.sql
 
 # 4. Limpiar
 docker rm -f pgtest
@@ -85,75 +83,35 @@ pedir `.select()`. Con `.select()`, el formulario público de postulación habr�
 en producción, y ningún test con mocks lo habría detectado.
 
 
-## Qué confirmó `aportes-check.sql` (2026-08-30)
+## Qué confirmó `acceso-check.sql` (2026-08-30)
 
 | Comprobación | Resultado |
 |---|---|
-| A1 — cuota vigente → con acceso | ✅ |
-| A1 — cuota vencida hace 10 días → **con acceso** y `en_gracia=true` (gracia 30 d) | ✅ |
-| A1 — cuota vencida hace 40 días → sin acceso | ✅ |
-| A1 — **donación** vencida hace 10 días → sin acceso (la gracia NO aplica a donaciones) | ✅ |
-| A1 — usuario sin aportes → sin acceso, `vence_el` NULL | ✅ |
-| A2 — `anon` SELECT sobre `aportes` | ✅ rechazado, 42501 |
-| A3 — `anon` INSERT sobre `aportes` | ✅ rechazado, 42501 |
-| A4 — `authenticated` INSERT (autoconcederse acceso) | ✅ rechazado, 42501 |
-| A5 — el socio ve solo sus propios aportes | ✅ 1 de 4 |
-| A6 — `tiene_acceso()` sin parámetro resuelve por `auth.uid()` | ✅ |
-| A7 — `tiene_acceso(uuid)` de otra persona | ✅ rechazado, 42501 |
-| A8 — `reglas_acceso`: lectura pública sí, UPDATE anónimo no | ✅ 42501 |
-| A9a — aporte manual en efectivo (sin membership ni donation) | ✅ permitido |
-| A9b — mezclar orígenes (cuota con `donation_id`) | ✅ rechazado, 23514 |
+| A1 — la gracia de 30 días aplica a cuota/manual-cuota, **no** a donación | ✅ |
+| A2 — conversión monto→meses con piso = la cuota (4999→0, 5000→1, 17000→3, tope 12) | ✅ |
+| A3 — `anon` leyendo el libro | ✅ rechazado, 42501 |
+| A4 — un socio común insertando un aporte (autoconcederse acceso) | ✅ rechazado por RLS |
+| A5 — el socio ve solo sus aportes | ✅ 1 de 4 |
+| A6 — preguntar por el acceso de **otra** persona | ✅ rechazado, 42501 |
+| T1 — donación ≥ piso → aporte con 3 meses de acceso | ✅ |
+| T2 — reintento del webhook con el mismo `payment_id` | ✅ no duplica |
+| T3 — donación por debajo del piso → entra al libro **sin** acceso | ✅ |
+| T4 — destino con `otorga_acceso=false` → entra **sin** acceso | ✅ |
+| T5 — donación anónima (sin `user_id`) → entra **sin** acceso | ✅ |
+| T6 — cobro de membresía → período **encadenado** al anterior | ✅ 01/12 arranca justo tras el 30/11 |
+| T7 — update de la membresía sin pago nuevo | ✅ no genera otro |
+| T8 — antigüedad con un corte de un año y un doble pago solapado | ✅ 577 días, no 668 |
 
-Dos diferencias con el cuadro de `rls-check.sql` que vale la pena notar, porque son
-mejoras deliberadas y no accidentes:
+Tres cosas que vale la pena mirar de esa tabla:
 
-1. **`aportes` responde `permission denied`, no "0 filas en silencio".** En `partners`
-   un DELETE sin policy devuelve 0 filas sin error (ver arriba), lo que obliga a que el
-   caller no confíe en `error === null`. Acá no hay GRANT para `anon`, así que el rechazo
-   es explícito. Es el recorte de permisos que pedía 10.1.g, aplicado desde el principio
-   en la tabla que más importa.
-2. **Preguntar por el acceso de otra persona falla con 42501.** El diseño original
-   (§10.2) tenía una sola `tiene_acceso(uuid)` con `SECURITY DEFINER`, y eso habría
-   dejado que cualquier usuario logueado averiguara si otro paga la cuota. Se partió en
-   `tiene_acceso()` (usuarios y policies) y `tiene_acceso(uuid)` (solo `service_role`,
-   para las Edge Functions del club).
+1. **T3, T4 y T5 no son errores: son la regla.** Un aporte puede entrar al libro sin
+   otorgar acceso, y el CHECK `aportes_acceso_chk` ya lo contemplaba con "ambas fechas o
+   ninguna". La contabilidad y el acceso son cosas distintas.
+2. **T6 es lo que evita el bug clásico** de los sistemas de suscripción: pagar por
+   adelantado tiene que *sumar* al período vigente, no pisarlo.
+3. **T8**: `range_agg` une los rangos solapados. Sumando días a mano, un socio que pagó
+   dos veces el mismo mes figuraría con el doble de antigüedad.
 
 **Detalle al sembrar:** el trigger `handle_new_user` copia `NEW.created_at` y
 `raw_user_meta_data->>'name'` a columnas NOT NULL de `public.users`. Un INSERT en
-`auth.users` sin esos dos campos falla. En Supabase real siempre los pone GoTrue; a mano
-hay que pasarlos (ver la cabecera de `aportes-check.sql`).
-
-
-## Qué confirmó `triggers-aportes-check.sql` (2026-08-30)
-
-| Comprobación | Resultado |
-|---|---|
-| T1 — alta de membresía con cobro → genera el aporte sola | ✅ 1 |
-| T2 — update de la membresía **sin** pago nuevo (cambio de mail) → no genera nada | ✅ 1 |
-| T3 — **reintento del webhook con el mismo `payment_id`** → no duplica | ✅ 1 |
-| T4 — cobro nuevo → período encadenado, sin hueco ni solape | ✅ 30/09 arranca justo tras el 29/09 |
-| T5 — donación de $15.000 con cuota $5.000 → 3 meses | ✅ |
-| T6 — donación de $3.000 (bajo el piso) → **no** otorga acceso | ✅ 0 |
-| T7 — donación ya aprobada que se vuelve a editar → no duplica | ✅ 1 |
-| T8 — antigüedad con un corte de un año y un doble pago solapado | ✅ ver abajo |
-
-**T8 en detalle**, porque es el caso que motivó la decisión D4. Un socio con 12 meses en
-2024, un año sin pagar, y 7 meses hasta hoy — más un pago duplicado que solapa con el
-período vigente:
-
-```
-socio_desde | dias_aportados | meses_aportados | racha_dias | racha_meses | cortes
-2024-01-01  |            577 |              19 |        211 |           7 |      1
-```
-
-El doble pago **no cuenta dos veces** (577 días, no 668): `range_agg` une los rangos
-solapados. Si esto se sumara a mano, un socio que pagó dos veces el mismo mes figuraría
-con el doble de antigüedad.
-
-## El traspaso backfill → triggers
-
-El punto más frágil de la puesta en producción, y está verificado: el backfill copia
-`memberships.last_payment_id` a `aportes.payment_id`. Cuando el webhook vuelve a informar
-ese mismo cobro —cosa que va a pasar—, el trigger lo reconoce como ya registrado y no
-otorga un período extra. Sin esa copia, todo socio activo recibía un mes de regalo el día
-del despliegue.
+`auth.users` sin esos dos campos falla. En Supabase real siempre los pone GoTrue.

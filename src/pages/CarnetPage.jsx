@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
-import { SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses } from '@/lib/acceso';
+import { SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen } from '@/lib/acceso';
 
 const fmtFecha = (d) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString('es-AR', { dateStyle: 'long' }) : null;
@@ -199,11 +199,8 @@ const CarnetPage = () => {
                     valor={formatearMeses(antiguedad.racha_meses)}
                   />
                 )}
-                {acceso.origen && (
-                  <Dato
-                    etiqueta="Origen del acceso"
-                    valor={acceso.origen === 'cuota' ? 'Cuota social' : 'Donación'}
-                  />
+                {nombreOrigen(acceso.origen) && (
+                  <Dato etiqueta="Origen del acceso" valor={nombreOrigen(acceso.origen)} />
                 )}
               </div>
 

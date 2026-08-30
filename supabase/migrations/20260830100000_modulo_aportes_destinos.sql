@@ -499,3 +499,29 @@ DROP VIEW IF EXISTS public.user_support_history;
 -- primera columna. Si alguna consulta por membresías canceladas llega a
 -- necesitarlo, se agrega — pero en las dos bases, no en una sola.
 DROP INDEX IF EXISTS public.idx_memberships_user_id;
+
+-- ---------------------------------------------------------------------
+-- 9) GRANTs — el paso que un `pg_dump --no-privileges` no trae
+--
+-- ⚠️ Sin esto, una base recreada desde cero queda MUCHO más permisiva que
+-- producción: las tablas nuevas heredan el `GRANT ALL` a `anon` y
+-- `authenticated` del default de Supabase, y `anon` termina con INSERT/UPDATE/
+-- DELETE sobre el libro de aportes, sostenido solo por las policies. Producción
+-- los tiene recortados a mano; el repo tiene que decir lo mismo.
+--
+-- Es el mismo problema que el ítem 10.1.g, pero en la tabla que otorga
+-- privilegios: acá el margen de error tiene que ser cero.
+-- ---------------------------------------------------------------------
+REVOKE ALL ON public.aportes  FROM anon, authenticated;
+REVOKE ALL ON public.destinos FROM anon, authenticated;
+REVOKE ALL ON public.gastos   FROM anon, authenticated;
+
+-- `anon` no ve el libro: quién aportó y cuánto no es público.
+GRANT SELECT, INSERT, UPDATE ON public.aportes  TO authenticated;
+
+-- Los destinos y los gastos publicados sí son públicos: son la rendición de
+-- cuentas de la Fundación. Qué fila se ve lo deciden las policies.
+GRANT SELECT ON public.destinos TO anon;
+GRANT SELECT ON public.gastos   TO anon;
+GRANT SELECT, INSERT, UPDATE ON public.destinos TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.gastos   TO authenticated;

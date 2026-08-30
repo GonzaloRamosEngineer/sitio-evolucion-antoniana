@@ -570,10 +570,53 @@ la base desde cero (§ fase 0, resuelto en agosto) y **hoy eso volvió a ser fal
    triggers y constraints. Y aplicada contra producción es un no-op: el dump del esquema
    quedó idéntico byte a byte (solo cambia el token aleatorio `\restrict` de `pg_dump`).
    **Ya está aplicada en producción.**
-2. Reescribir la capa de acceso contra el `aportes` real (mapear `tipo`→`origen`,
-   `payment_id`→`referencia_externa`, `observaciones`→`notas`, y contemplar
-   `destino_id NOT NULL`).
-3. Recién ahí, aplicar.
+2. ~~Reescribir la capa de acceso contra el `aportes` real~~ **✅ HECHO Y APLICADO 2026-08-30**
+   — `20260830110000_capa_acceso.sql` (reglas, funciones de acceso y antigüedad,
+   `benefits.requiere_acceso`, `destinos.otorga_acceso`, `aportes.equivale_a`) y
+   `20260830140000_triggers_otorgan_acceso.sql` (se le agrega el cálculo del período a
+   `aporte_desde_donacion()` **conservando su lógica**, y se crea el trigger de
+   `memberships`, que no existía). 14 comprobaciones en `supabase/checks/acceso-check.sql`.
+3. ~~Aplicar~~ **✅ HECHO** — más el backfill (`supabase/data/backfill_acceso.sql`).
+
+---
+
+### 10.8 — 🔴 Las donaciones no traen quién donó (hallazgo del 2026-08-30)
+
+Corrido el backfill en producción, el resultado fue **0 personas con acceso vigente**. No
+es un error del backfill: es el estado real, y destapa el bloqueante que sigue.
+
+| | |
+|---|---|
+| Donaciones con `user_id` | **1 de 5** |
+| Membresías con `user_id` | 10 de 17 |
+| Membresías con `payer_email` | **0** |
+
+Las 5 donaciones aprobadas: cuatro son anónimas (`user_id` NULL) y la única con cuenta es
+de $1.916, por debajo del piso. La de $5.000 —que sí daría un mes— no tiene a quién
+habilitar.
+
+**Y no se puede reconciliar después:** `donations` no tiene columna de email, y
+`memberships.payer_email` está vacío en las 17 filas. Un aporte anónimo es, por
+construcción, inatribuible.
+
+**Consecuencia:** el modelo aporte→acceso está completo y andando, pero **no le llega a
+nadie** hasta que el flujo de donación capture quién dona. Es el ítem 10.1.c (identidades
+paralelas) convertido en bloqueante concreto.
+
+Se arregla en el flujo de cobro, no en SQL. Tres caminos, de menos a más fricción:
+
+1. **Pasar `user_id` cuando hay sesión.** Si alguien logueado dona, hoy se pierde el
+   vínculo en algún punto entre el sitio y el webhook. Es el más barato y probablemente
+   cubra buena parte.
+2. **Guardar el email del pagador** (`donations.payer_email`, como ya existe en
+   `memberships`) y reconciliar contra `users.email`. Requiere que el proveedor lo
+   informe.
+3. **Pedir cuenta antes de donar.** Máxima atribución, máxima fricción. Para una fundación
+   que necesita que donar sea fácil, es el peor de los tres.
+
+Hasta que esto se resuelva, el club funciona pero está vacío.
+
+---
 
 #### Decisiones que abre el esquema real
 
