@@ -54,6 +54,15 @@ CREATE TABLE IF NOT EXISTS public.reglas_acceso (
   CONSTRAINT reglas_acceso_meses_chk CHECK (meses_maximos >= meses_minimos)
 );
 
+-- Convergencia desde una versión anterior de ESTA MISMA migración.
+-- `CREATE TABLE IF NOT EXISTS` no toca una tabla que ya existe: si la base
+-- corrió una versión previa, las columnas nuevas nunca aparecen y la migración
+-- falla más abajo (pasó en producción el 2026-08-30 con `payment_id`). Todo
+-- cambio posterior al primer despliegue tiene que ir además como ALTER.
+ALTER TABLE public.reglas_acceso ADD COLUMN IF NOT EXISTS dias_gracia integer NOT NULL DEFAULT 30;
+ALTER TABLE public.reglas_acceso ALTER COLUMN piso_monto DROP NOT NULL;
+ALTER TABLE public.reglas_acceso ALTER COLUMN piso_monto DROP DEFAULT;
+
 COMMENT ON TABLE public.reglas_acceso IS
   'Parámetros de conversión aporte→acceso. Son de la entidad, no del software (ROADMAP 10.5). Debe haber exactamente una fila vigente.';
 COMMENT ON COLUMN public.reglas_acceso.piso_monto IS
@@ -73,6 +82,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_reglas_acceso_una_vigente
 INSERT INTO public.reglas_acceso (cuota_referencia, piso_monto, meses_minimos, meses_maximos, dias_gracia)
 SELECT 5000, NULL, 1, 12, 30
 WHERE NOT EXISTS (SELECT 1 FROM public.reglas_acceso);
+
+-- Y si ya está la fila que dejó la versión anterior (cuota 1000 = placeholder,
+-- piso 0), se corrige. Sin esto la base quedaba con una regla que acepta
+-- donaciones de $1 como si fueran una cuota, en silencio. Solo alcanza a esa
+-- firma exacta: un valor puesto a mano por la Fundación no se pisa.
+UPDATE public.reglas_acceso
+   SET cuota_referencia = 5000, piso_monto = NULL
+ WHERE vigente AND cuota_referencia = 1000 AND piso_monto = 0;
 
 -- ---------------------------------------------------------------------
 -- 2) APORTES — el libro único. Todo lo que entra cae acá.
@@ -102,6 +119,10 @@ CREATE TABLE IF NOT EXISTS public.aportes (
   ),
   CONSTRAINT aportes_rango_chk CHECK (acceso_hasta >= acceso_desde)
 );
+
+-- Mismo motivo que arriba: columnas agregadas después del primer despliegue.
+ALTER TABLE public.aportes ADD COLUMN IF NOT EXISTS payment_id    text;
+ALTER TABLE public.aportes ADD COLUMN IF NOT EXISTS observaciones text;
 
 COMMENT ON TABLE public.aportes IS
   'Libro único de aportes (ROADMAP 10.2). Desacopla el acceso del medio de pago: un aporte en efectivo cargado a mano tiene la misma forma que uno de MercadoPago. ESCRITURA SOLO CON service_role.';

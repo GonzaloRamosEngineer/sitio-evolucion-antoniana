@@ -41,7 +41,15 @@ supabase functions deploy create-user         # despliega la Edge Function de al
 supabase functions deploy resend-verification # despliega la Edge Function de verificación de email
 ```
 
-- `supabase/migrations/*.sql`: esquema (orden por timestamp, idempotentes). Se pueden aplicar con `db push` **o** pegándolas en el SQL Editor de Supabase (el dueño suele correrlas a mano ahí).
+- `supabase/migrations/*.sql`: esquema (orden por timestamp, idempotentes).
+  ⚠️ **Idempotente no alcanza: tienen que converger desde su propia versión anterior.**
+  `CREATE TABLE IF NOT EXISTS` no toca una tabla que ya existe, así que agregar una
+  columna a una migración **ya aplicada en producción** no la agrega en ningún lado y
+  revienta más abajo (pasó el 2026-08-30 con `aportes.payment_id`). Todo cambio posterior
+  al primer despliegue va **además** como `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` /
+  `ALTER COLUMN ... DROP NOT NULL`, y los datos semilla que cambien de valor van con un
+  `UPDATE` acotado a la firma del valor viejo. Verificarlo aplicando la versión vieja y
+  la nueva encima, en Docker. Se pueden aplicar con `db push` **o** pegándolas en el SQL Editor de Supabase (el dueño suele correrlas a mano ahí).
 - `supabase/data/*.sql`: cargas de datos puntuales (no son migraciones), p. ej. el proyecto real de la comisión.
 - `supabase/functions/`: Edge Functions (Deno). `create-user` usa `SUPABASE_SERVICE_ROLE_KEY` (inyectada por la plataforma; **nunca** se commitea).
 - **Verificación**: hay tests de humo (`npm test`) que cubren utilidades y componentes puros, no el flujo completo. Para verificar cambios, corré `npm run build` + `npm run lint` + `npm test` y, cuando aplique, revisá el render real con `npm run preview` (las páginas dependen de datos de Supabase, así que un dump estático muestra el spinner de carga).
