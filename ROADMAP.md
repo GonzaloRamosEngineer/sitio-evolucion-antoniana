@@ -493,6 +493,82 @@ distinto va a querer cambiar (ver 10.5).
    Idempotencia por `aportes.payment_id` con índice único: **MercadoPago reintenta los
    webhooks**, y sin esa clave cada reintento regalaba un mes de acceso.
 
+### 10.7 — 🔴 El repo no describe la base productiva (hallazgo del 2026-08-30)
+
+Al conectarse por primera vez a la base de producción apareció que **ya existe un módulo
+de aportes completo que el repo no documenta**, y que es *mejor* que el diseñado en 10.2
+en varios puntos. El esquema versionado quedó viejo otra vez.
+
+| | Repo (`baseline`) | Producción |
+|---|---|---|
+| Tablas | 16 | 18 |
+| Funciones | 18 | 24 |
+| Policies | — | 40 |
+
+Lo que hay en producción y no en el repo:
+
+- **`aportes`** (5 filas) con `origen` (`donacion`/`membresia`/`manual`), `destino_id`
+  NOT NULL, `referencia_externa` UNIQUE, `notas`, y `acceso_desde`/`acceso_hasta`
+  **nullables** con CHECK de "ambos o ninguno". RLS con cuatro policies propias.
+- **`destinos`** (11 filas) — campañas con meta, recaudado, cupos y rendición. Es el
+  ítem 2 de 10.2 (`campanas`), ya construido y con más alcance.
+- **`gastos`** — rendición de cuentas con comprobantes. No estaba ni propuesto.
+- **`email_log`** (31 filas).
+- `aporte_desde_donacion()`, `destino_por_defecto()`, `recalcular_totales_destino()`,
+  `recalcular_rendicion_destino()`, `trg_aportes_totales()`, `trg_gastos_totales()`,
+  `handle_email_confirmed()` y sus triggers.
+
+**Es buen código.** `aporte_desde_donacion()` ya resuelve la idempotencia por
+`referencia_externa` y usa `ON CONFLICT DO NOTHING` en vez de `DO UPDATE`, explicando en
+un comentario que con `DO UPDATE` cada reintento del webhook pisaría una corrección
+hecha a mano por la comisión. Eso es exactamente la decisión D1 (opción C), tomada antes
+y mejor.
+
+#### Qué falta de verdad (el hueco real)
+
+**La mitad "acceso" nunca se construyó.** Los 5 aportes tienen `acceso_desde` y
+`acceso_hasta` en NULL, así que ningún aporte habilita nada todavía. Falta:
+
+1. `reglas_acceso` (no existe).
+2. Que `aporte_desde_donacion()` complete `acceso_desde`/`acceso_hasta`.
+3. Un trigger equivalente para `memberships` (solo existe el de `donations`).
+4. Las funciones `acceso_vigente()` / `tiene_acceso()` / `mi_acceso()` /
+   `antiguedad_socio()` / `mi_antiguedad()`.
+5. `benefits.requiere_acceso`.
+
+El front de §11 fase 1 ya está hecho y espera exactamente `mi_acceso()` y
+`mi_antiguedad()`.
+
+#### Por qué esto es grave más allá de este módulo
+
+`CREATE TABLE IF NOT EXISTS` **no falla** contra una tabla ajena con el mismo nombre: la
+saltea en silencio. Las migraciones del 2026-08-30 (movidas a
+`supabase/migrations/_en_revision/`, fuera del glob de `db push`) habrían dejado el
+esquema mitad de un modelo y mitad de otro. El repo dice que las migraciones reconstruyen
+la base desde cero (§ fase 0, resuelto en agosto) y **hoy eso volvió a ser falso**.
+
+#### Orden de trabajo
+
+1. **Re-baselinar**: `supabase db dump --schema public` contra producción y regenerar el
+   baseline versionado, igual que se hizo en julio. Sin esto, cualquier migración nueva
+   se escribe a ciegas.
+2. Reescribir la capa de acceso contra el `aportes` real (mapear `tipo`→`origen`,
+   `payment_id`→`referencia_externa`, `observaciones`→`notas`, y contemplar
+   `destino_id NOT NULL`).
+3. Recién ahí, aplicar.
+
+#### Decisiones que abre el esquema real
+
+- **¿Un aporte con `origen='manual'` otorga acceso?** Es la carga a mano (efectivo,
+  transferencia). Lo natural es que sí, pero no se puede saber si equivale a una cuota o
+  a una donación, y de eso depende si le corresponden los 30 días de gracia.
+- **¿Una donación dirigida a un destino específico otorga acceso igual que una al
+  sostenimiento institucional?** Hoy hay 11 destinos. Si "Kit del jugador" da acceso al
+  club de beneficios igual que "Sostenimiento institucional", conviene que sea una
+  decisión explícita y no un efecto lateral.
+
+---
+
 ### 10.5 — Por qué esto se configura y no se hardcodea
 
 Todo lo de 10.4 son **parámetros de la entidad, no del software**. Un club va a querer
