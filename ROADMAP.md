@@ -1898,7 +1898,7 @@ Render.
 
 | | Qué | Por qué primero |
 |---|---|---|
-| **1** | **Backfill de los emails** — `tools/backfill-payer-email.mjs`, en la shell de Render | Sin él `/carnet` no le ofrece reclamar nada **a nadie**: `payer_email` está vacío en las 5 donaciones que existen. Es lo único que separa a la pantalla nueva de ser decorativa |
+| ~~**1**~~ | ~~Backfill de los emails~~ **✅ HECHO** — ver abajo | Recuperó 2 de 5. El plan Free no tiene Shell, así que se corrió por una ruta temporal del servicio |
 | **2** | **`MP_WEBHOOK_SECRET`** en Render, en dos pasos | El webhook escribe en el libro contable y hoy `firma_modo: off`. El código ya valida bien; lo que faltaba era el secreto — y que la validación no estuviera rota, que es lo que se arregló |
 | **3** | Rotar la contraseña de la base | Sigue en `.env.db` y en `~/.config/antoniana/db.url` |
 | **4** | **Bajar la fricción de la sesión en `/collaborate`** | Es lo único que ataca la causa: reclamar repara hacia atrás, donar con sesión evita el problema. Hoy la página no invita a iniciar sesión ni explica que aportar con cuenta habilita el carnet |
@@ -1911,6 +1911,37 @@ cargar el secreto habría rechazado el 100% de los webhooks, o sea que "activar 
 seguridad" habría significado **dejar de registrar la plata que entra**, sin ningún
 síntoma visible. De ahí que la activación sea en dos pasos, con un modo `observa` que
 calcula y loguea sin rechazar.
+
+#### El backfill, corrido (2026-08-30)
+
+Recuperó **2 emails de 5 donaciones**, sin fallas. Lo que dejó a la vista importa más
+que el número:
+
+| Donación | Email | Qué habilita |
+|---|---|---|
+| $1.916 | recuperado | **Nada**: ya estaba atribuida, y el reclamo solo ofrece donaciones anónimas |
+| $5.000 | recuperado | **Un mes** — es exactamente una cuota. Pero **no existe ninguna cuenta con ese email** |
+| $75, $150, $100 | sin dato | MercadoPago no informó nada utilizable. Irrecuperables |
+
+Verificado en producción: se escribieron 2 emails y ninguno es el placeholder, la
+atribución no cambió, **nadie ganó acceso**, el libro sigue en $7.241 y `reclamado_en`
+sigue vacío.
+
+**O sea que el club sigue vacío, y ahora se sabe por qué.** De cinco donaciones reales,
+tres no dejaron ningún rastro y una sola quedó atribuida a una persona. El reclamo
+(§10.19) funciona pero solo repara hacia atrás, y hacia atrás había poco que reparar.
+**Lo que queda es el punto 4: que se done con sesión iniciada.** Eso dejó de ser una
+mejora de UX para ser el único camino por el que el club se puede llenar.
+
+Dato accionable, y no es técnico: **hay alguien que donó $5.000 y no tiene cuenta**. Si
+la Fundación puede identificar ese contacto, invitarlo a registrarse con ese mismo email
+le da su mes de beneficios sin que nadie toque nada.
+
+⚠️ **La ruta temporal (`/admin/backfill-payer-email`) queda apagada borrando
+`BACKFILL_TOKEN` en Render.** `GET /health` lo confirma: `backfill_habilitado` tiene que
+decir `false`. El campo informa si la ruta **está montada**, no si la variable existe.
+
+---
 
 #### Una lección más, cara
 
