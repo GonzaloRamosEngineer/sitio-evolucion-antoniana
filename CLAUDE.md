@@ -148,7 +148,12 @@ nadie lo notara):
 **La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan ~35 archivos de código
 en comentarios. Mové ítems entre archivos si hace falta, pero no los renumeres.
 
-Estado al 2026-08-16: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
-(open redirect → XSS) y su arreglo es react-router v7, un major. **78 tests** de humo;
+Estado al 2026-08-30: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
+(open redirect → XSS) y su arreglo es react-router v7, un major. **92 tests** de humo;
 falta cobertura del flujo real. ESLint deja **53 warnings** de backlog (imports sin usar,
 exhaustive-deps): **la barra es 0 errores**, los warnings se barren de a poco.
+
+**Leé el encabezado del `ROADMAP.md` antes de trabajar**: dice por dónde seguir y cuál es
+el único bloqueante vivo. Y **antes de escribir una migración, conectate a la base y
+mirá** — el 2026-08-30 se escribieron tres commits contra un esquema que el repo describía
+mal (`HISTORIAL.md`, Sesión J).
