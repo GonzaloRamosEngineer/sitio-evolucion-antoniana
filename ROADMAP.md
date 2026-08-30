@@ -55,7 +55,10 @@ visitante. Aplicado en producción.
 
 🔴 **Y el bloqueante que destapó:** el backfill dio **0 personas con acceso vigente**,
 porque 4 de 5 donaciones llegan sin `user_id`. El modelo funciona y no le llega a nadie.
-Ver §10.17.
+Ver §10.17, **y §10.18 para el diagnóstico corregido**: la cañería del `user_id` está
+entera y el problema es que se dona sin sesión. Ya se guarda el email del pagador, que es
+lo que hace reconciliable un aporte anónimo; **falta decidir si un email vincula a una
+cuenta**, porque eso otorga acceso al club.
 
 ---
 
@@ -1565,18 +1568,129 @@ debajo del piso. La de $5.000 —que sí daría un mes— no tiene a quién habi
 `memberships.payer_email` está vacío en las 17 filas. Un aporte anónimo es, por
 construcción, inatribuible. Es el ítem 10.1.c convertido en bloqueante concreto.
 
+> ⚠️ **REFUTADO el mismo día — ver §10.18.** Las dos afirmaciones de este bloque están
+> mal. (a) El vínculo **no se pierde**: los cuatro eslabones mandan y leen `user_id`
+> correctamente; lo que pasa es que se dona sin sesión iniciada. (b) La reconciliación
+> **sí es posible**: la columna faltaba, pero el dato existe — MercadoPago informa
+> `payer.email` en cada pago y conserva los históricos. Se dejaron acá tal como se
+> escribieron, porque el error importa: es la segunda vez que un casillero ausente se lee
+> como un dato inexistente.
+
 Se arregla en el servicio de pagos, no en SQL — el mismo frente del §10.13/§10.16. Tres
 caminos, de menos a más fricción:
 
-1. **Pasar `user_id` cuando hay sesión.** Si alguien logueado dona, el vínculo se pierde
-   en algún punto entre el sitio y el webhook. Es el más barato y probablemente cubra
-   buena parte.
+1. ~~**Pasar `user_id` cuando hay sesión.**~~ **Ya estaba hecho** (§10.18). Se escribió
+   como pendiente sin leer el código que ya lo implementaba.
 2. **Guardar el email del pagador** (`donations.payer_email`, como ya existe en
    `memberships`) y reconciliar contra `users.email`. Requiere que el proveedor lo informe.
 3. **Pedir cuenta antes de donar.** Máxima atribución y máxima fricción. Para una
    fundación que necesita que donar sea fácil, es el peor de los tres.
 
 Hasta que esto se resuelva, el club funciona y está vacío.
+
+---
+
+### 10.18 — El bloqueante, releído contra el código (2026-08-30)
+
+§10.17 cerró con un diagnóstico y tres caminos. **El diagnóstico estaba equivocado en su
+parte central**, y el código lo prueba. Esta sección lo corrige y deja hecho lo único que
+no dependía de una decisión.
+
+#### La cañería está entera
+
+§10.17 dijo: *"Si alguien logueado dona, el vínculo se pierde en algún punto entre el
+sitio y el webhook."* Se leyeron los cuatro eslabones y **no se pierde en ninguno**:
+
+| Eslabón | Qué hace | Archivo |
+|---|---|---|
+| El checkout | manda `userId: user?.id` | `src/pages/Collaborate.jsx:88` |
+| El sitio → servicio | lo reenvía como `user_id` | `src/api/membershipApi.js` |
+| El servicio | lo codifica en el `external_reference` | `preferencia.controller.js` |
+| El webhook | lo lee de vuelta y lo escribe | `index.js` + `lib/destino.js` |
+
+**No hay nada roto que arreglar.** El camino 1 de §10.17 —"pasar `user_id` cuando hay
+sesión"— ya está implementado desde antes de que se escribiera como pendiente.
+
+La causa es más simple y no tiene arreglo técnico: **se dona sin sesión iniciada**.
+`user?.id || null` da null porque no hay usuario, no porque se haya perdido el dato.
+
+#### Lo que dicen las cinco donaciones
+
+| Fecha | Monto | ¿Cuenta? | ¿Destino? |
+|---|---|---|---|
+| 2025-10-18 | $75 | anónima | — |
+| 2025-10-18 | $1.916 | ✅ | — |
+| 2025-11-16 | $5.000 | anónima | — |
+| 2026-01-14 | $150 | anónima | — |
+| **2026-08-16** | **$100** | **anónima** | **sí** |
+
+Cuatro de las cinco son **anteriores** a todo este modelo. Y la quinta es la donación de
+prueba que demostró el circuito de punta a punta (§11.1): trae destino —el canal nuevo
+funciona— y aun así entró anónima, porque quien la hizo no tenía sesión. **La muestra que
+sostenía el diagnóstico es una sola donación de la era nueva, y era una prueba.**
+
+#### La otra afirmación que hay que corregir
+
+§10.17 dijo que un aporte anónimo es *"inatribuible por construcción"* porque `donations`
+no tiene columna de email. **La columna faltaba; el dato no.** MercadoPago informa
+`payer.email` en cada `payment` y lo conserva: los cinco `payment_id` están en la tabla,
+así que las donaciones históricas **también** son recuperables consultando la API con
+`MP_ACCESS_TOKEN`.
+
+Era el mismo hallazgo que motivó `donations.destino_id` (§10.15) —un casillero ausente
+leído como un dato inexistente— y por segunda vez se describió como imposible algo que
+solo faltaba guardar.
+
+#### Qué se hizo
+
+| Dónde | Qué |
+|---|---|
+| `20260830170000_donations_payer_email.sql` | La columna, con índice sobre `lower(payer_email)` para la reconciliación |
+| `lib/pagador.js` (servicio) | `emailDelPagador()`: extrae, normaliza y **descarta placeholders** |
+| `index.js` (servicio) | Lo escribe en cada `donations`, y el reintento de la regla de oro ahora también lo suelta |
+| `supabase/checks/payer-email-check.sql` | 8 comprobaciones, con control negativo |
+
+**La trampa que justifica un módulo entero para leer un campo:** el checkout manda
+`payer.email = 'anon@fundacion.com'` cuando no hay sesión (`Collaborate.jsx:89`). Ese
+placeholder vuelve en el payment, y guardarlo sería **peor que guardar `null`**: `null`
+dice "no se sabe", mientras que un email sintético se lee como un dato real y además es
+**el mismo para todas las personas anónimas**. Una reconciliación futura que empareje por
+email juntaría donaciones de gente distinta en una sola identidad.
+
+**Y una advertencia de despliegue, escrita en el código:** la columna es nueva, así que si
+el servicio se despliega **antes** de aplicar la migración, PostgREST rechaza el payload
+entero por columna desconocida y se pierde el registro de cada donación mientras dure el
+desfasaje. El orden es **migración primero, deploy después**; el tercer reintento existe
+para que equivocarse cueste un dato accesorio y no la plata.
+
+#### Lo que NO se hizo, y es deliberado
+
+**Vincular el email a una cuenta.** Emparejar `payer_email` con `auth.users.email` y
+completar `user_id` **otorga acceso al club**, así que no es una tarea de plomería sino
+una decisión con consecuencias de seguridad: quien escriba el email de otra persona en el
+checkout de MercadoPago le estaría regalando —o robando— antigüedad y beneficios.
+
+Guardar el dato es reversible e inocuo. Vincularlo no. Por eso van en migraciones
+separadas: la segunda tiene que poder revisarse sola.
+
+Y hay un problema técnico atado a esa decisión que conviene resolver junto: el trigger
+`aporte_desde_donacion()` usa `ON CONFLICT (referencia_externa) DO NOTHING` (§10.15), a
+propósito, para que un reintento del webhook no pise una corrección de la comisión. Eso
+significa que **completar el `user_id` de una donación vieja no actualiza el aporte que ya
+existe**: haría falta un camino explícito que recalcule el acceso sin romper esa garantía.
+
+#### Lo que sigue, en orden
+
+1. **Decidir la política de vinculación** (abajo, §10.19 cuando se decida).
+2. **Bajar la fricción de la sesión en el checkout.** Es lo único que ataca la causa real
+   sin tocar la seguridad: hoy `/colaborar` no invita a iniciar sesión ni explica que
+   aportar con cuenta habilita el carnet. No es pedir cuenta obligatoria —el camino 3, el
+   peor— sino decir en el momento justo lo que hoy no se dice.
+3. **Backfill de los 5 `payment_id` contra la API de MercadoPago**, para recuperar los
+   emails históricos. Necesita `MP_ACCESS_TOKEN`, que vive en Render.
+4. **Dejar de mandar un email falso al checkout.** `anon@fundacion.com` degrada el dato en
+   origen. Cambia el contrato de `/api/crear-preferencia` (hoy exige `payer.email`), así
+   que es un cambio con riesgo sobre el cobro y merece su propia verificación.
 
 ---
 
