@@ -37,6 +37,10 @@ export const queryKeys = {
   // socio nuevo vería el estado de acceso del anterior hasta que expire la caché.
   acceso: (userId) => ['acceso', userId],
   antiguedad: (userId) => ['acceso', userId, 'antiguedad'],
+  // Anidada bajo 'acceso' a propósito: reclamar una donación cambia el acceso,
+  // la antigüedad y esta misma lista, así que una sola invalidación por prefijo
+  // tiene que alcanzar a las tres.
+  reclamables: (userId) => ['acceso', userId, 'reclamables'],
   foundationMetrics: ['fundacion_metrics'],
   preinscriptions: ['preinscriptions'],
   destinos: ['destinos'],

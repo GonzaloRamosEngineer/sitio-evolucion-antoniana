@@ -56,9 +56,10 @@ visitante. Aplicado en producción.
 🔴 **Y el bloqueante que destapó:** el backfill dio **0 personas con acceso vigente**,
 porque 4 de 5 donaciones llegan sin `user_id`. El modelo funciona y no le llega a nadie.
 Ver §10.17, **y §10.18 para el diagnóstico corregido**: la cañería del `user_id` está
-entera y el problema es que se dona sin sesión. Ya se guarda el email del pagador, que es
-lo que hace reconciliable un aporte anónimo; **falta decidir si un email vincula a una
-cuenta**, porque eso otorga acceso al club.
+entera y el problema es que se dona sin sesión. Ya se guarda el email del pagador y **está
+resuelta la vinculación** (§10.19): la persona reclama sus aportes desde `/carnet`, con
+sesión y email verificado. Lo que falta para que el club se llene ya no es diseño, es
+**datos** — recuperar desde MercadoPago los emails de las 5 donaciones que ya existen.
 
 ---
 
@@ -1691,6 +1692,91 @@ existe**: haría falta un camino explícito que recalcule el acceso sin romper e
 4. **Dejar de mandar un email falso al checkout.** `anon@fundacion.com` degrada el dato en
    origen. Cambia el contrato de `/api/crear-preferencia` (hoy exige `payer.email`), así
    que es un cambio con riesgo sobre el cobro y merece su propia verificación.
+
+---
+
+### 10.19 — La vinculación: el email como pista, la persona como decisión (2026-08-30)
+
+§10.18 dejó guardado el email del pagador y **no** lo vinculó a ninguna cuenta, porque esa
+era una decisión y no una tarea. **Decidido:** vincula la persona, reclamando.
+
+#### Por qué no automático
+
+La tentación era emparejar `payer_email` con `auth.users.email` y completar `user_id` solo.
+Sería un error de seguridad: completar `user_id` **no es anotar un dato, es otorgar acceso
+al club**, con su antigüedad y sus beneficios.
+
+Y el email del checkout **lo escribe quien paga, en el sitio de MercadoPago, sin que nadie
+lo verifique contra nada**. Quien escriba ahí el mail de otra persona —por error o a
+propósito— le estaría transfiriendo el aporte.
+
+**La regla que queda:** el email es una **pista**, no una credencial. Habilita a *ofrecer*;
+nunca a *otorgar*. Quien otorga es la persona que demuestra controlar la cuenta y que
+además decide hacerlo.
+
+#### Las tres condiciones, y ninguna sobra
+
+| | Qué | Por qué |
+|---|---|---|
+| 1 | Sesión iniciada | `auth.uid()`, **nunca un uuid por parámetro** |
+| 2 | Email verificado | sin `email_confirmed_at`, el mail no prueba nada |
+| 3 | Un acto explícito | no lo llama ningún trigger: lo llama un botón |
+
+La 1 no es cosmética: es la misma lección que dejó `tiene_acceso()` en §10.17. Con una
+sola versión que reciba el uuid y sea `SECURITY DEFINER`, cualquier usuario logueado
+podría reclamar los aportes de otro. **Acá no existe la variante con parámetro**, y hay un
+check que lo verifica (T12).
+
+#### Qué se construyó
+
+| Dónde | Qué |
+|---|---|
+| `20260830180000_reclamar_donaciones.sql` | `donations.reclamado_en`, `email_verificado()`, `donaciones_reclamables()` y `reclamar_donaciones()` |
+| `src/api/accesoApi.js` + `useContentQueries` | RPC y hooks; la mutación invalida `['acceso', userId]` **por prefijo** |
+| `src/components/Acceso/ReclamarAportes.jsx` | La tarjeta, en `/carnet` entre el estado y la credencial |
+| `supabase/checks/reclamar-check.sql` | 17 comprobaciones |
+
+**Dos decisiones que conviene dejar escritas:**
+
+- **El acceso corre desde hoy, no desde la fecha de la donación.** Contarlo desde la fecha
+  original sería más "fiel" y en la práctica inútil: una donación de 2025 daría un mes
+  vencido en 2025, o sea nada. Si la entidad decidió que ese aporte otorga un mes, la
+  persona tiene que poder usarlo.
+- **Se actualiza el aporte que ya existe, no se crea uno nuevo.** Insertar otro duplicaría
+  la plata en la rendición. Y no alcanza con tocar `donations`: el trigger tiene
+  `ON CONFLICT DO NOTHING` a propósito (§10.15), así que completar el `user_id` de la
+  donación **no actualiza el aporte por sí solo**. Por eso el UPDATE es explícito.
+
+#### Tres cosas que salieron de verificar, y las tres son la misma
+
+**Una verificación que no puede fallar no verifica nada** — §11.4, por cuarta, quinta y
+sexta vez:
+
+1. **`SET LOCAL request.jwt.claims` no es donde mira `auth.uid()`** en esta base (usa
+   `request.jwt.claim.sub`). Con el uid en NULL, el check de §10.18 que decía "un tercero
+   no ve el email del donante" **pasaba sin probar nada**: no había ningún tercero. Se
+   agregó T3a, un control positivo que falla si la sesión simulada no es real.
+2. **Y cuando la sesión pasó a ser real, el check falló** — correctamente: el usuario
+   elegido era el **admin**, y la policy es `auth.uid() = user_id OR check_is_admin()`. Un
+   admin ve todo por diseño. El tercero tiene que ser un usuario común.
+3. **La migración no se podía validar en Docker.** La imagen trae un `auth.users` viejo,
+   con `confirmed_at` y sin `email_confirmed_at`. En vez de probarla solo contra
+   producción, la columna se resuelve al aplicar (`email_verificado()`). Una migración que
+   solo se puede probar en producción es exactamente lo que este repo decidió no tener.
+
+#### Lo que falta
+
+- **El render del carnet con sesión no está verificado en navegador**: `/carnet` es una
+  ruta protegida y la verificación headless cae en el login. El bundle sí está verificado
+  (las cuatro rutas cargan con tamaño y contenido sanos) y el componente tiene 7 pruebas,
+  pero **la pantalla real con una sesión de verdad la tiene que mirar una persona**.
+- **Bajar la fricción de la sesión en el checkout** (§10.18): sigue siendo lo único que
+  ataca la causa de raíz. Reclamar repara hacia atrás; que la gente done con sesión evita
+  el problema.
+- **El backfill de los 5 `payment_id`** contra la API de MercadoPago, para que haya algo
+  que reclamar. Necesita `MP_ACCESS_TOKEN`, que vive en Render. **Sin esto, la pantalla de
+  reclamo es correcta y no le aparece a nadie**, porque `payer_email` está vacío en las 5
+  donaciones que ya existen.
 
 ---
 

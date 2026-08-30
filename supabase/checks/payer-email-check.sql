@@ -39,9 +39,44 @@ SELECT CASE WHEN count(*) = 1 THEN 'PASA · la fila existe'
             ELSE 'FALLA · la fila no existe: T1 no probó nada' END
   FROM public.donations WHERE payment_id = 'ZZCHECK-payer-email';
 
-\echo '--- T3: un usuario autenticado cualquiera tampoco lo ve'
+-- Una segunda donación, esta CON dueño, y una sesión simulada de esa persona.
+--
+-- ⚠️ ESTAS DOS LÍNEAS SON LA DIFERENCIA ENTRE VERIFICAR Y NO VERIFICAR. La
+-- primera versión de este check usaba `SET LOCAL request.jwt.claims`, que en
+-- esta base **no es donde `auth.uid()` mira** (usa `request.jwt.claim.sub`).
+-- Con el uid en NULL, "un tercero no ve la fila" pasaba sin probar nada: no
+-- había ningún tercero. T3b existe para que T3 pueda fallar.
+-- ⚠️ EL TERCERO TIENE QUE SER UN USUARIO COMÚN, NO UN ADMIN.
+-- La policy de `donations` es `auth.uid() = user_id OR check_is_admin()`, así
+-- que un admin ve todas las filas **por diseño**. La primera versión de esto
+-- tomaba el usuario más antiguo, que resultó ser el admin, y T3b reportaba una
+-- "fuga de dato personal" que no existía.
+CREATE TEMP TABLE zz_tercero ON COMMIT DROP AS
+SELECT u.id FROM public.users u
+ WHERE u.role = 'user'
+ ORDER BY u.created_at
+ LIMIT 1;
+
+INSERT INTO public.donations (user_id, amount, donation_type, payment_provider, payment_id, status, payer_email)
+SELECT t.id, 1, 'única', 'mercadopago', 'ZZCHECK-propia', 'approved', 'propia@ejemplo.com'
+  FROM zz_tercero t;
+
+-- El uid se resuelve ANTES de cambiar de rol: `authenticated` no puede leer
+-- `public.users` de otros, y hacerlo después aborta la transacción entera.
+SELECT set_config('request.jwt.claim.sub',
+                  COALESCE((SELECT t.id::text FROM zz_tercero t), ''),
+                  true);
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+\echo '--- T3a: CONTROL — la sesión simulada es real: esa persona SÍ ve su propia donación'
+SELECT CASE
+         WHEN NOT EXISTS (SELECT 1 FROM public.donations WHERE payment_id = 'ZZCHECK-propia')
+           THEN 'OMITIDO · no hay usuarios con rol user en esta base (Docker): T3b no prueba nada acá, correr contra producción'
+         WHEN count(*) = 1 THEN 'PASA · la sesión funciona (T3b mide algo)'
+         ELSE 'FALLA · auth.uid() no resuelve: T3b pasaría trivialmente' END
+  FROM public.donations WHERE payment_id = 'ZZCHECK-propia';
+
+\echo '--- T3b: y NO ve la donación anónima de otra persona'
 SELECT CASE WHEN count(*) = 0 THEN 'PASA · un tercero no ve el email'
             ELSE 'FALLA · fuga de dato personal' END
   FROM public.donations WHERE payment_id = 'ZZCHECK-payer-email';

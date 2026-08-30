@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
+import ReclamarAportes from '@/components/Acceso/ReclamarAportes';
 import { SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen } from '@/lib/acceso';
 
 const fmtFecha = (d) =>
@@ -159,6 +160,13 @@ const CarnetPage = () => {
                 </div>
               )}
             </div>
+
+            {/* --- APORTES SIN VINCULAR (§10.18) ---
+                Va acá, entre el estado y la credencial, y no al pie: el caso
+                que resuelve es justamente el de quien lee "todavía no tenés
+                acceso" teniendo un aporte hecho sin sesión. Abajo de todo no
+                lo vería. */}
+            <ReclamarAportes userId={userId} />
 
             {/* --- CREDENCIAL --- */}
             <div className="mt-8 rounded-sm border border-brand-dark/10 bg-white overflow-hidden">

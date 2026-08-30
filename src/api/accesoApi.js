@@ -29,3 +29,33 @@ export const getMiAntiguedad = async () => {
   if (error) return { data: null, error };
   return { data: data[0] ?? null, error: null };
 };
+
+/* ============================
+   Aportes hechos sin sesión
+   ============================ */
+/**
+ * Donaciones anónimas que coinciden con el email **verificado** de la sesión
+ * (ROADMAP §10.18).
+ *
+ * Existe porque 4 de cada 5 donaciones llegan sin `user_id`: no se pierde el
+ * vínculo en el camino, simplemente se dona sin haber iniciado sesión.
+ *
+ * Lista vacía es la respuesta normal y no significa error: la mayoría de la
+ * gente no tiene nada que reclamar.
+ */
+export const getDonacionesReclamables = async () =>
+  listResult(await supabase.rpc('donaciones_reclamables'), 'getDonacionesReclamables');
+
+/**
+ * Vincula esas donaciones a la cuenta y otorga el acceso correspondiente.
+ *
+ * ⚠️ El email es una **pista**, no una credencial: quien decide es la persona,
+ * y por eso esto se llama desde un botón y nunca solo. La verificación real
+ * (sesión + email confirmado) vive en SQL, no acá — este archivo no puede ser
+ * la frontera de seguridad porque corre en el browser con la anon key.
+ */
+export const reclamarDonaciones = async () => {
+  const { data, error } = listResult(await supabase.rpc('reclamar_donaciones'), 'reclamarDonaciones');
+  if (error) return { data: null, error };
+  return { data: data[0] ?? { vinculadas: 0, meses_nuevos: 0, vence_el: null }, error: null };
+};

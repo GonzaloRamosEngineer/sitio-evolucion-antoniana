@@ -6,12 +6,17 @@
 //
 // Los filtros van acá y no en cada página: antes cada consumidor repetía el
 // mismo `.filter(estado === 'aprobado')`, con el riesgo de que se desincronizaran.
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@/lib/storage';
 import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
-import { getMiAcceso, getMiAntiguedad } from '@/api/accesoApi';
+import {
+  getMiAcceso,
+  getMiAntiguedad,
+  getDonacionesReclamables,
+  reclamarDonaciones,
+} from '@/api/accesoApi';
 import { getDestinos } from '@/api/destinosApi';
 import { getAportes } from '@/api/aportesApi';
 import { getGastos } from '@/api/gastosApi';
@@ -94,6 +99,40 @@ export const useMiAcceso = (userId, options = {}) =>
     enabled: Boolean(userId),
     ...options,
   });
+
+/**
+ * Donaciones anónimas que esta persona podría reclamar (ROADMAP §10.18).
+ *
+ * Mismo `enabled` que `useMiAcceso` y por el mismo motivo: la función solo
+ * tiene EXECUTE para `authenticated`. Y la misma trampa: deshabilitada queda
+ * en `isPending`, así que el consumidor combina con `Boolean(userId)`.
+ */
+export const useDonacionesReclamables = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.reclamables(userId),
+    queryFn: () => unwrap(getDonacionesReclamables()),
+    enabled: Boolean(userId),
+    ...options,
+  });
+
+/**
+ * Reclamar. Al terminar invalida `['acceso', userId]` **por prefijo**, y eso
+ * alcanza a las tres cosas que cambiaron de golpe: el acceso, la antigüedad y
+ * la propia lista de reclamables. Sin esta invalidación la persona reclama, la
+ * base le otorga el mes, y el carnet le sigue diciendo "todavía no tenés
+ * acceso" hasta que recargue.
+ */
+export const useReclamarDonaciones = (userId, options = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(reclamarDonaciones()),
+    ...options,
+    onSuccess: (data, ...resto) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.acceso(userId) });
+      options.onSuccess?.(data, ...resto);
+    },
+  });
+};
 
 /** Los tres números de antigüedad (decisión D4). Solo para el carnet. */
 export const useMiAntiguedad = (userId, options = {}) =>
