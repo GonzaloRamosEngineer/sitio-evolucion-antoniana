@@ -49,6 +49,11 @@ actualizan, y el destino elegido en el checkout todavía no llega. Decidido move
 Vercel, en este mismo repo. Y queda lo que no es técnico: **cargar los datos reales**,
 sin los cuales la rendición es una página correcta y vacía.
 
+✅ **Cerrado el 2026-08-31:** el **circuito de pagos**, entero. El webhook valida la firma
+de MercadoPago y rechaza lo que no la trae (§11.5), y dejó de tomar una respuesta de error
+de la API como si fuera un pago (§10.21) — esto último era un cobro perdido en silencio
+cada vez que MercadoPago contestara mal, y estaba así desde el primer día.
+
 ✅ **Cerrado el 2026-08-30:** la **capa de acceso** sobre el libro (§10.17) y la **fase 1
 del club de beneficios** (§12.8): `/carnet` y el catálogo que distingue un socio de un
 visitante. Aplicado en producción.
@@ -2031,7 +2036,7 @@ Render.
 | | Qué | Por qué primero |
 |---|---|---|
 | ~~**1**~~ | ~~Backfill de los emails~~ **✅ HECHO** — ver abajo | Recuperó 2 de 5. El plan Free no tiene Shell, así que se corrió por una ruta temporal del servicio |
-| **2** | **`MP_WEBHOOK_SECRET`** en Render, en dos pasos | El webhook escribe en el libro contable y hoy `firma_modo: off`. El código ya valida bien; lo que faltaba era el secreto — y que la validación no estuviera rota, que es lo que se arregló |
+| ~~**2**~~ | ~~`MP_WEBHOOK_SECRET`~~ **✅ HECHO 2026-08-31** | `valida_firma_mp: true`, `firma_modo: rechaza`. Verificado por las dos puntas: un POST sin firma y otro con firma falsa dan **401**, y una notificación real de MercadoPago dice `🔏 Firma OK` y entra. Ninguna de las dos pruebas sola alcanzaba: "rechaza lo malo" y "rechaza todo" se ven igual desde afuera |
 | **3** | Rotar la contraseña de la base | Sigue en `.env.db` y en `~/.config/antoniana/db.url` |
 | ~~**4**~~ | ~~Bajar la fricción de la sesión en `/collaborate`~~ **✅ HECHO** — §10.20 | Era lo único que ataca la causa. Ahora la página lo explica, ofrece iniciar sesión sin perder el aporte, y acepta el email de quien no quiere cuenta |
 | **5** | El primer gasto real, `react-router-dom`, CI/Sentry | Sin cambios respecto de §11.3 |
