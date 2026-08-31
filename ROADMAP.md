@@ -1853,6 +1853,65 @@ tamaño del 404 anotado como olor a buscar.
 
 ---
 
+### 10.21 — Un `.ok` que faltaba, y por qué era un cobro perdido (2026-08-31)
+
+Al cargar `MP_WEBHOOK_SECRET` y simular una notificación desde el panel de MercadoPago,
+los logs de Render mostraron esto:
+
+```
+TypeError: s.toLowerCase is not a function at mapPaymentStatus (index.js:163)
+```
+
+El webhook hacía `await pagoRes.json()` **sin mirar `pagoRes.ok`**. Cuando MercadoPago
+contesta un error, el cuerpo tiene esta forma:
+
+```json
+{ "message": "Payment not found", "error": "not_found", "status": 404, "cause": [...] }
+```
+
+Trae un campo `status` que **no es el estado del pago sino el código HTTP**, y además es
+un número. `mapPaymentStatus(404)` reventaba y se llevaba puesto el procesamiento entero.
+
+#### Por qué esto no era "un log feo de la simulación"
+
+**El webhook responde 200 ANTES de procesar**, para no hacer esperar a MercadoPago. Así
+que cuando el procesamiento falla, **MercadoPago no reintenta nunca**. Si la API contesta
+429 o 500 justo en el momento en que avisa de un pago real, ese pago no entra a
+`donations`, no entra al libro, y **nadie se entera**.
+
+Es la regla de oro del proyecto —el registro del cobro no se puede perder— rota por un
+`.ok` que faltaba. Y la rama de suscripciones tenía el mismo agujero, con el agravante de
+que habría escrito basura en `memberships`, empezando por un `preapproval_id` undefined.
+
+#### Qué se cambió
+
+`lib/mp.js` en el servicio de pagos: `consultarRecurso()` mira `res.ok`, **reintenta lo
+que puede ser pasajero** (408/429/5xx y errores de red, con backoff) y no reintenta lo que
+va a dar igual (401, 404). No lanza nunca: devuelve `{ok, status, datos, motivo}`, porque
+un `throw` suelto vuelve al `catch` general — que es exactamente donde se pierden los
+cobros en silencio.
+
+Los dos mensajes de error distinguen los dos casos, porque son muy distintos de leer a las
+tres de la mañana:
+
+| Caso | Qué dice el log |
+|---|---|
+| 404 | "No existe: probablemente una simulación o un id de otra cuenta" |
+| Cualquier otro | "⚠️ ESE COBRO NO QUEDÓ REGISTRADO y MercadoPago no reintenta: revisar a mano" |
+
+#### La lección, que es la de siempre vista al revés
+
+Las lecciones anteriores (§11.4) fueron todas sobre **verificaciones que no podían fallar**.
+Esta es la contraria: **una verificación que sí falló, y encontró algo que ninguna prueba
+del repo había tocado en diez meses**. El bug estaba desde el primer día; hizo falta
+simular una notificación —o sea, ejercitar el camino de error— para que apareciera.
+
+Corolario práctico: **el camino feliz no es el que hay que probar en una integración con
+un tercero**. Lo que rompe no es que MercadoPago conteste distinto, es que conteste mal, y
+eso solo se ve pidiéndole algo que no puede responder.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
