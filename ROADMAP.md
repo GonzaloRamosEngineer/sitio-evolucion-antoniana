@@ -154,13 +154,21 @@ chrome --headless=new --disable-gpu --virtual-time-budget=7000 \n       --dump-d
 ```
 
 Un sitio sano da **~58 KB** de DOM en la home con `<nav>` y `<footer>` presentes; el
-roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/nosotros`, `/actividades`,
+roto daba **3,3 KB** y ninguno de los dos. Comprobar además `/about`, `/activities`,
 `/collaborate`, `/contact` y `/login`, que son las rutas con distinto árbol de vendors.
 
-⚠️ **Las rutas van tal cual están en `App.jsx`.** Esta lista decía `/colaborar` y la ruta
-real es `/collaborate`: el check pegaba en el 404, que **también** tiene `<nav>`, `<footer>`
-y un tamaño verosímil, así que pasaba en verde sin haber mirado la página. Confirmar
-siempre algo del contenido —un título, un botón— y no solo el esqueleto.
+⚠️ **Las rutas van tal cual están en `App.jsx`**, que están **en inglés**. Esta lista ya
+falló dos veces por lo mismo: decía `/colaborar` (la real es `/collaborate`), y el
+2026-08-30 se descubrió que `/nosotros` y `/actividades` tampoco existen — son `/about`
+y `/activities`. Los dos chequeos pegaban en el 404, que **también** tiene `<nav>`,
+`<footer>` y un tamaño verosímil.
+
+**El 404 de este sitio mide 25.900 bytes exactos.** Si dos rutas distintas dan el mismo
+tamaño al byte, no son dos páginas: son dos 404. Ese es el olor a buscar.
+
+Y la regla que se sigue de ahí: **confirmar siempre algo del contenido** —un título, un
+botón, un texto propio de esa página— y no solo el esqueleto. Un chequeo que solo mira
+`<nav>` y el peso aprueba el 404 sin haber mirado nada.
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
@@ -1780,6 +1788,71 @@ sexta vez:
 
 ---
 
+### 10.20 — Que aportar con sesión sirva para algo, y que se note (2026-08-30)
+
+El backfill (§11.5) dejó medido el problema: de cinco donaciones reales **tres no dejaron
+ningún rastro** y una sola quedó atribuida a una persona. El acceso al club se otorga por
+aporte, así que un aporte anónimo es plata que entra y no le habilita nada a nadie.
+
+La causa nunca fue técnica —la cañería del `user_id` siempre estuvo entera (§10.18)— sino
+que **`/collaborate` no decía en ningún lado que aportar con sesión iniciada sirviera para
+algo**. Reclamar (§10.19) repara hacia atrás; esto evita el problema.
+
+#### Qué se construyó
+
+| Dónde | Qué |
+|---|---|
+| `src/components/Collaborate/AvisoSesion.jsx` | El bloque: explica, ofrece iniciar sesión o crear cuenta, y acepta un email opcional |
+| `src/lib/aportante.js` | `emailParaCheckout()`: qué email viaja al cobro, en un solo lugar y con pruebas |
+| `Collaborate.jsx` | Un solo estado de email para las dos formas de aportar |
+
+**Va arriba de las tres tarjetas y no dentro de cada una**: aplica a la donación y a la
+suscripción por igual, y repetirlo sería pedir el mismo dato dos veces.
+
+#### Las tres decisiones, y las tres son la misma
+
+**No bloquea nada.** Pedir cuenta antes de donar era el camino 3 de §10.17 y sigue siendo
+el peor: para una fundación que necesita que donar sea fácil, la fricción cuesta más de lo
+que rinde la atribución. Se informa y se ofrece; donar sin nada de esto sigue estando a un
+clic.
+
+**El email es el segundo mejor camino, y es opcional de verdad.** Quien no quiere crear
+cuenta puede dejarlo y reclamar el aporte más adelante. Si está vacío —o si no parece un
+email— se dona igual: `emailParaCheckout()` cae al placeholder de siempre. Un email mal
+escrito **avisa pero no deshabilita nada**, y hay una prueba que lo fija. La regla de
+fondo es la misma que rige el trigger y el webhook: **un dato accesorio no puede impedir
+un cobro.**
+
+**El placeholder sigue existiendo, y no es un descuido.** `/api/crear-preferencia` exige
+`payer.email` y responde 400 sin él, así que sacarlo cambia el contrato del endpoint que
+cobra. Queda como estaba, con una diferencia: ahora solo se usa cuando de verdad no hay
+ningún dato. El webhook lo sigue descartando explícitamente (`lib/pagador.js`), y hay una
+prueba que ata la constante de este repo a esa decisión del otro.
+
+#### El detalle que hace que funcione
+
+El link de "Iniciar sesión" lleva `state={{ from: { pathname: '/collaborate' } }}`, que es
+el mecanismo que `LoginPage` ya usaba. **Sin eso, iniciar sesión te deposita en el panel
+que corresponda a tu rol y perdés el aporte que ibas a hacer** — es decir, el aviso
+causaría exactamente el abandono que vino a evitar.
+
+Tiene prueba propia, y existe porque la obvia no alcanza: **el `state` no aparece en el
+`href`**, así que un link sin él pasaría un test que solo mire el destino. La prueba monta
+las dos rutas, hace click y lee el `state` que llegó.
+
+#### Otra vez la misma lección, y esta vez estaba en este archivo
+
+La verificación en navegador de §B mandaba comprobar `/nosotros` y `/actividades`.
+**Ninguna de las dos existe**: las rutas de `App.jsx` están en inglés (`/about`,
+`/activities`). Los dos chequeos pegaban en el 404 y aprobaban.
+
+Se notó por un detalle: las dos daban **exactamente 25.900 bytes**, al byte. Dos páginas
+distintas no pesan igual; dos 404 sí. §B ya advertía esto mismo por `/colaborar` — la
+advertencia estaba escrita y la lista de al lado seguía mal. Ahora está corregida, con el
+tamaño del 404 anotado como olor a buscar.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
@@ -1901,7 +1974,7 @@ Render.
 | ~~**1**~~ | ~~Backfill de los emails~~ **✅ HECHO** — ver abajo | Recuperó 2 de 5. El plan Free no tiene Shell, así que se corrió por una ruta temporal del servicio |
 | **2** | **`MP_WEBHOOK_SECRET`** en Render, en dos pasos | El webhook escribe en el libro contable y hoy `firma_modo: off`. El código ya valida bien; lo que faltaba era el secreto — y que la validación no estuviera rota, que es lo que se arregló |
 | **3** | Rotar la contraseña de la base | Sigue en `.env.db` y en `~/.config/antoniana/db.url` |
-| **4** | **Bajar la fricción de la sesión en `/collaborate`** | Es lo único que ataca la causa: reclamar repara hacia atrás, donar con sesión evita el problema. Hoy la página no invita a iniciar sesión ni explica que aportar con cuenta habilita el carnet |
+| ~~**4**~~ | ~~Bajar la fricción de la sesión en `/collaborate`~~ **✅ HECHO** — §10.20 | Era lo único que ataca la causa. Ahora la página lo explica, ofrece iniciar sesión sin perder el aporte, y acepta el email de quien no quiere cuenta |
 | **5** | El primer gasto real, `react-router-dom`, CI/Sentry | Sin cambios respecto de §11.3 |
 
 **Sobre el 2 conviene ser explícito**, porque el ROADMAP lo tuvo mal descrito un día

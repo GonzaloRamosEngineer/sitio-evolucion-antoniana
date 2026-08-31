@@ -1,0 +1,118 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { UserCheck, IdCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { esEmailPlausible } from '@/lib/aportante';
+
+/**
+ * "Aportá con tu cuenta" — ROADMAP §10.18 punto 2.
+ *
+ * POR QUÉ EXISTE, Y POR QUÉ ES LO QUE MÁS MUEVE LA AGUJA
+ *
+ * El backfill del 2026-08-30 lo dejó medido: de cinco donaciones reales, **tres
+ * no dejaron ningún rastro** de quién las hizo y una sola quedó atribuida a una
+ * persona. El acceso al club se otorga por aporte, así que un aporte anónimo es
+ * plata que entra y no le habilita nada a nadie.
+ *
+ * La causa no era técnica —la cañería del `user_id` siempre estuvo entera— sino
+ * que esta página **nunca dijo que aportar con sesión iniciada sirve para algo**.
+ * Reclamar (§10.19) repara hacia atrás; esto evita el problema.
+ *
+ * LO QUE ESTE COMPONENTE NO HACE, Y ES DELIBERADO: no bloquea. Pedir cuenta
+ * antes de donar era el camino 3 de §10.17 y sigue siendo el peor — para una
+ * fundación que necesita que donar sea fácil, la fricción cuesta más de lo que
+ * rinde la atribución. Acá se informa y se ofrece; donar sin nada de esto sigue
+ * estando a un clic.
+ *
+ * EL EMAIL ES EL SEGUNDO MEJOR CAMINO. Quien no quiere crear una cuenta puede
+ * dejar su email y reclamar el aporte más adelante. Es opcional de verdad: si
+ * está vacío, o si no parece un email, se dona igual (`Collaborate` cae al
+ * placeholder de siempre). Un dato accesorio nunca puede impedir un cobro.
+ */
+const AvisoSesion = ({ user, email, onEmailChange }) => {
+  // Con sesión: una línea y nada más. Quien ya hizo lo correcto no necesita que
+  // le expliquen por qué; necesita saber que va a funcionar.
+  if (user) {
+    return (
+      <div className="mb-8 flex items-start gap-3 rounded-sm border border-brand-primary/25 bg-white px-5 py-4">
+        <UserCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-primary" />
+        <p className="text-sm leading-relaxed text-brand-dark/75">
+          Vas a aportar como <span className="font-semibold text-brand-dark">{user.name || user.email}</span>.
+          Tu aporte queda registrado a tu nombre y suma para{' '}
+          <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
+            tu carnet
+          </Link>
+          .
+        </p>
+      </div>
+    );
+  }
+
+  const emailEscrito = email.trim().length > 0;
+  const emailSirve = esEmailPlausible(email);
+
+  return (
+    <div className="mb-8 rounded-sm border border-brand-gold/50 bg-brand-gold/10 px-5 py-5 sm:px-6 sm:py-6">
+      <div className="flex items-start gap-3">
+        <IdCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-dark" />
+        <div className="flex-1">
+          <h3 className="font-poppins text-base font-bold leading-tight text-brand-dark">
+            ¿Tenés cuenta? Iniciá sesión antes de aportar
+          </h3>
+          <p className="mt-2 max-w-[46rem] text-sm leading-relaxed text-brand-dark/70">
+            Aportar con la sesión iniciada es lo que hace que el aporte quede a tu nombre:
+            suma para tu antigüedad y te habilita los beneficios del club. Si aportás sin
+            sesión, el aporte entra igual —y se agradece igual— pero no hay forma de saber
+            que fue tuyo.
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {/* `state.from` es el mecanismo que LoginPage ya usa para volver a
+                donde estabas. Sin esto, iniciar sesión te deja en el panel que
+                corresponda a tu rol y perdés el aporte que ibas a hacer. */}
+            <Link to="/login" state={{ from: { pathname: '/collaborate' } }}>
+              <Button variant="action" size="sm">Iniciar sesión</Button>
+            </Link>
+            <Link
+              to="/register"
+              className="text-sm font-bold text-brand-primary underline underline-offset-4"
+            >
+              Crear una cuenta
+            </Link>
+          </div>
+
+          <div className="mt-6 border-t border-brand-dark/10 pt-5">
+            <Label htmlFor="email-aportante" className="font-semibold text-brand-dark">
+              ¿Preferís aportar sin cuenta? Dejanos tu email
+            </Label>
+            <p className="mt-1 text-sm leading-relaxed text-brand-dark/60">
+              Es opcional. Sirve para que puedas vincular este aporte más adelante, si
+              alguna vez creás tu cuenta con ese mismo email.
+            </p>
+            <Input
+              id="email-aportante"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              className="mt-2 h-11 max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
+            />
+            {/* Avisa, no bloquea: el botón de donar sigue habilitado y el aporte
+                entra igual, solo que sin este dato. */}
+            {emailEscrito && !emailSirve && (
+              <p className="mt-2 text-sm text-red-600">
+                Eso no parece un email. Revisalo, o dejalo vacío y aportá igual.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AvisoSesion;

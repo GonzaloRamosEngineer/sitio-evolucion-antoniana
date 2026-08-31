@@ -11,6 +11,7 @@ import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2,
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
 import SelectorDestino from '@/components/Collaborate/SelectorDestino';
+import AvisoSesion from '@/components/Collaborate/AvisoSesion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,12 +19,24 @@ import { useToast } from '@/components/ui/use-toast';
 import { createSubscription, createOneTimeDonation } from '@/api/membershipApi';
 import { useDestinosActivos } from '@/hooks/useContentQueries';
 import { destinoEfectivo } from '@/api/destinosApi';
+import { emailParaCheckout } from '@/lib/aportante';
 
 const Collaborate = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contactModalCollaborationType, setContactModalCollaborationType] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
+
+  /* --- Quien aporta (ROADMAP §10.18) -------------------------------------
+   *
+   * Uno solo para las dos formas de aportar: quien lo escribe lo hace una vez,
+   * y despues elige si dona o se suscribe. Dos campos separados serian el mismo
+   * dato pedido dos veces.
+   *
+   * Sin sesion vale lo que la persona escriba; con sesion no se usa (gana el
+   * email verificado de la cuenta, ver `emailParaCheckout`).
+   */
+  const [emailAportante, setEmailAportante] = useState('');
 
   const [donationAmount, setDonationAmount] = useState('');
   const [isProcessingDonation, setIsProcessingDonation] = useState(false);
@@ -86,7 +99,7 @@ const Collaborate = () => {
     setIsProcessingDonation(true);
     const { data, error } = await createOneTimeDonation({
       userId: user?.id || null,
-      emailUsuario: user?.email || 'anon@fundacion.com',
+      emailUsuario: emailParaCheckout(user, emailAportante),
       amount,
       destinoId: destinoDonacion?.id ?? null,
       destinoNombre: destinoDonacion?.nombre ?? null
@@ -121,7 +134,7 @@ const Collaborate = () => {
     setIsProcessingSubscription(true);
     const { data, error } = await createSubscription({
       userId: user?.id || null,
-      emailUsuario: user?.email || 'anon@fundacion.com',
+      emailUsuario: emailParaCheckout(user, emailAportante),
       amount,
       destinoId: destinoSuscripcion?.id ?? null,
       destinoNombre: destinoSuscripcion?.nombre ?? null
@@ -344,6 +357,15 @@ const Collaborate = () => {
                 Elegí cómo sumarte
               </h2>
             </div>
+            {/* Arriba de las tres tarjetas y no dentro de cada una: aplica a
+                las dos formas de aportar, y repetirlo seria pedir el mismo dato
+                dos veces. */}
+            <AvisoSesion
+              user={user}
+              email={emailAportante}
+              onEmailChange={setEmailAportante}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {collaborationOptions.map((option, index) => (
                 <motion.div
