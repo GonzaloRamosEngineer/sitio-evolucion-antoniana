@@ -158,12 +158,24 @@ nadie lo notara):
 **La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan ~35 archivos de código
 en comentarios. Mové ítems entre archivos si hace falta, pero no los renumeres.
 
-Estado al 2026-08-30: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
-(open redirect → XSS) y su arreglo es react-router v7, un major. **92 tests** de humo;
-falta cobertura del flujo real. ESLint deja **53 warnings** de backlog (imports sin usar,
-exhaustive-deps): **la barra es 0 errores**, los warnings se barren de a poco.
+Estado al 2026-08-31: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
+(open redirect → XSS) y su arreglo es react-router v7, un major. **216 tests** en el sitio
+(más 95 en el servicio de pagos, repo aparte); falta cobertura del flujo real. ESLint deja
+**53 warnings** de backlog (imports sin usar, exhaustive-deps): **la barra es 0 errores**,
+los warnings se barren de a poco.
 
-**Leé el encabezado del `ROADMAP.md` antes de trabajar**: dice por dónde seguir y cuál es
-el único bloqueante vivo. Y **antes de escribir una migración, conectate a la base y
-mirá** — el 2026-08-30 se escribieron tres commits contra un esquema que el repo describía
-mal (`HISTORIAL.md`, Sesión J).
+**Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
+se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
+de la última jornada está en **§11.6**, con las cinco afirmaciones de este repo que
+resultaron falsas y las tres verificaciones que no verificaban nada.
+
+**Tres cosas que costaron trabajo real y conviene no volver a aprender:**
+- **Antes de escribir una migración, `git fetch` y conectate a la base y mirá.** El
+  2026-08-30 se escribieron tres commits contra un esquema que el repo describía mal
+  (`HISTORIAL.md`, Sesión J) y sobre una copia local 20 commits atrás.
+- **Una verificación tiene que poder fallar.** Poné un control positivo al lado del
+  negativo, y en seguridad probá las dos puntas: que lo ilegítimo se rechace **y** que lo
+  legítimo pase. "Rechaza lo malo" y "rechaza todo" se ven idénticos desde afuera.
+- **En una integración con un tercero, probá el camino de ERROR.** El webhook tomaba el
+  cuerpo de error de MercadoPago como si fuera un pago y perdía cobros en silencio; estaba
+  así desde el primer día y lo destapó simular una notificación (§10.21).

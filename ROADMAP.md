@@ -15,6 +15,50 @@
 
 ---
 
+## 🚦 Por dónde arrancar (actualizado 2026-08-31)
+
+> **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
+> reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
+> en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
+
+**Estado en una línea:** el circuito de ingresos está **completo y cerrado** —el dinero
+entra, se atribuye, se rinde y el webhook valida firma—, pero **el club está vacío** porque
+casi nadie aporta con sesión iniciada.
+
+**Lo primero, en orden:**
+
+1. **Rotar la contraseña de la base.** Único pendiente de seguridad. Está en `.env.db` y en
+   `~/.config/antoniana/db.url`.
+2. **Cargar el primer gasto real** desde `/admin → Gastos`. Estrena `/rendicion`. No es
+   técnico: es tarea de la entidad.
+3. **`react-router-dom` > `7.17.0`** — la única vulnerabilidad viva.
+4. **Fase 2 del club** (§12.8), con DigitalMatch de piloto.
+
+**Antes de tocar nada, tres comprobaciones que ya evitaron daño real:**
+
+```bash
+git fetch && git status          # la copia local estuvo 20 y 8 commits atrás, dos veces
+bash tools/db.sh check           # mirar la base, no el ROADMAP
+curl.exe https://mp-supabase-webhook.onrender.com/health
+```
+
+`/health` tiene que decir hoy: `version: 2026-08-31.consulta-mp`, `firma_modo: "rechaza"`,
+`valida_firma_mp: true`, `backfill_habilitado: false`. Si `backfill_habilitado` dice `true`,
+**alguien dejó abierta la ruta temporal**: borrar `BACKFILL_TOKEN` en Render.
+
+**Las cuatro reglas que este proyecto pagó caro:**
+
+1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Cinco
+   afirmaciones de este archivo resultaron falsas el 2026-08-30/31 (§11.6.2).
+2. **Una verificación tiene que poder fallar.** Hacela fallar una vez antes de creerle
+   (§11.6.3). Y en seguridad, probá **las dos puntas**: que lo ilegítimo se rechace y que lo
+   legítimo pase.
+3. **Migración a Docker primero**, nunca directo a producción (§B).
+4. **Verificá en un navegador si tocaste una página** — con las rutas reales, que están en
+   inglés, y confirmando **contenido**, no tamaño. El 404 mide 25.900 bytes.
+
+---
+
 ## Estado
 
 Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
@@ -2093,6 +2137,156 @@ producción, pero se perdió media jornada y el relato quedó mal escrito hasta 
 Corolario para el repo: **`tools/db.sh` es el camino** para tocar la base, no un
 connection string armado a mano. Acota el permiso, se audita, y la contraseña no queda en
 el historial del shell.
+
+---
+
+### 11.6 — Cierre de la jornada del 2026-08-30/31
+
+Segunda jornada larga seguida. La del 16 construyó el circuito de ingresos; esta lo
+**cerró**: ahora el dinero que entra se puede atribuir a una persona, esa persona puede
+reclamar lo suyo, y el endpoint que registra la plata dejó de aceptar eventos de cualquiera
+—y de perder cobros en silencio—.
+
+El detalle de cada cosa está en §10.18 a §10.21. Esta sección es el resumen ejecutable.
+
+#### 11.6.1 — Qué se construyó, en orden
+
+| | Qué | Dónde quedó |
+|---|---|---|
+| 1 | **Firma de webhooks** — estaba escrita, sin commitear, y **calculaba mal el HMAC** | `lib/firma.js` + activación en dos pasos |
+| 2 | **`donations.payer_email`** — el casillero que faltaba | Migración `20260830170000` |
+| 3 | **Captura del email** en el webhook, con descarte del placeholder | `lib/pagador.js` |
+| 4 | **Reclamo de aportes anónimos** — la persona reclama, no el sistema vincula | Migración `20260830180000` + `/carnet` |
+| 5 | **Backfill de los emails históricos** + ruta temporal para correrlo | `lib/backfill.js` + `/admin/backfill-payer-email` |
+| 6 | **Aviso de sesión en `/collaborate`** | `AvisoSesion.jsx` + `lib/aportante.js` |
+| 7 | **Consulta defensiva a la API de MercadoPago** | `lib/mp.js` |
+
+#### 11.6.2 — Las cinco afirmaciones propias que resultaron falsas
+
+Esto es lo más valioso de la jornada, y por eso va antes que los logros. **Cinco cosas que
+este repo daba por ciertas y no lo eran.** Ninguna se descubrió razonando: todas
+aparecieron al leer el código o al mirar los datos.
+
+**1. "El vínculo del `user_id` se pierde entre el sitio y el webhook" (§10.17).** Falso.
+Los cuatro eslabones lo mandan y lo leen bien. Se dona **sin sesión iniciada**, que es otro
+problema y no tiene arreglo técnico. El "camino 1" que el ROADMAP listaba como pendiente
+**ya estaba implementado**.
+
+**2. "Un aporte anónimo es inatribuible por construcción" (§10.17).** Falso. Faltaba la
+columna; el dato existía. MercadoPago conserva el `payer.email` de cada pago, incluidos los
+históricos. Es la **segunda vez** (después de §10.15) que un casillero ausente se lee como
+un dato inexistente.
+
+**3. "Para la firma solo falta generar el secreto y cargarlo en Render" (§11.3).** Falso, y
+era el más peligroso. La implementación firmaba `${ts}.${rawBody}`, que no es lo que firma
+MercadoPago: cargar el secreto habría **rechazado el 100% de los webhooks**. "Activar la
+seguridad" habría significado dejar de registrar la plata que entra.
+
+**4. La verificación en navegador mandaba comprobar `/nosotros` y `/actividades` (§B).**
+Ninguna de las dos existe — las rutas de `App.jsx` están en inglés. Los dos chequeos
+pegaban en el 404 y aprobaban. **El mismo archivo ya advertía este error por `/colaborar`,
+y la lista de al lado seguía mal.**
+
+**5. El webhook nunca miró si la consulta a MercadoPago había salido bien (§10.21).** El
+cuerpo de error trae `status` como código HTTP y en número; `mapPaymentStatus(404)`
+reventaba. Como el webhook responde 200 antes de procesar, MercadoPago no reintenta:
+**cada fallo transitorio de su API era un cobro perdido en silencio**, desde el primer día.
+
+#### 11.6.3 — Y tres verificaciones que no verificaban nada
+
+Van aparte porque el patrón es distinto: acá el código estaba bien y **la prueba estaba
+rota**, que es peor, porque da confianza falsa.
+
+| Qué parecía | Qué pasaba |
+|---|---|
+| `SET LOCAL request.jwt.claims` simulaba una sesión | No es donde mira `auth.uid()` en esta base (usa `request.jwt.claim.sub`). Con el uid en NULL, "un tercero no ve el email" pasaba **sin que hubiera ningún tercero** |
+| El "tercero" del check era un usuario cualquiera | Era el **admin**, que ve todo por diseño. Al arreglar lo anterior, el check falló — correctamente |
+| `/health` informaba si el backfill estaba habilitado | Informaba `Boolean(BACKFILL_TOKEN)`: con un token corto decía `true` mientras la ruta estaba apagada. **El mismo error que este archivo ya había corregido en `valida_firma_mp`** |
+
+**La regla que sale de las tres, y ya es la cuarta vez que se escribe:** una verificación
+tiene que poder fallar, y hay que hacerla fallar una vez para creerle. Un control positivo
+al lado del negativo no es redundancia, es lo que distingue "pasó" de "no midió nada".
+
+#### 11.6.4 — Cómo quedó verificada la firma, que es el patrón a copiar
+
+Ninguna de las dos pruebas por separado alcanzaba, porque **"rechaza lo malo" y "rechaza
+todo" se ven idénticos desde afuera** — y la segunda habría cortado los ingresos sin
+síntoma visible:
+
+```
+🔏 Firma INVÁLIDA (falta el header x-signature) · modo=rechaza    ← POST sin firma      → 401
+🔏 Firma INVÁLIDA (el hash no coincide) · esperado=0935f1… recibido=deadbeef…  ← firma falsa → 401
+🔏 Firma OK                                                       ← notificación real  → 200
+```
+
+Y la activación fue en dos pasos a propósito (`observa` → `rechaza`), para que el tráfico
+real confirmara que la firma cerraba **antes** de que un error pudiera costar plata.
+
+#### 11.6.5 — Lo que dijeron los datos
+
+El backfill recuperó **2 emails de 5 donaciones**. El desglose importa más que el número:
+
+| Donación | Resultado | Qué habilita |
+|---|---|---|
+| $1.916 | email recuperado | **Nada**: ya estaba atribuida |
+| $5.000 | email recuperado | **Un mes** — pero **no existe cuenta con ese email** |
+| $75, $150, $100 | sin dato en MercadoPago | Irrecuperables |
+
+**El club sigue vacío, y ahora se sabe exactamente por qué.** De cinco donaciones reales,
+tres no dejaron ningún rastro y una sola quedó atribuida a una persona. Reclamar repara
+hacia atrás, y hacia atrás había muy poco que reparar.
+
+Por eso el aviso de sesión en `/collaborate` dejó de ser una mejora cosmética: **es el
+único camino por el que el club se puede llenar.**
+
+#### 11.6.6 — Estado de producción al 2026-08-31
+
+| | |
+|---|---|
+| Migraciones | 11, todas aplicadas y reconstruyen la base desde cero |
+| Checks SQL | 24 de RLS + 14 de acceso + 8 de `payer_email` + 17 de reclamo |
+| Tests | **216** en el sitio (0 errores de lint, 53 warnings de backlog) + **95** en el servicio de pagos |
+| Servicio de pagos | `2026-08-31.consulta-mp` · `firma_modo: rechaza` · `backfill_habilitado: false` |
+| Libro de aportes | 5 aportes, **$7.241** · 0 personas con acceso vigente |
+| Donaciones con email | 2 de 5 |
+| Ruta temporal de backfill | **Cerrada** (verificada: 404) |
+
+#### 11.6.7 — Lo siguiente, en orden
+
+**1. Rotar la contraseña de la base.** Es el único pendiente de seguridad que queda. Está
+en `.env.db` y en `~/.config/antoniana/db.url`. Rotarla invalida las dos.
+
+**2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
+que falta para estrenar `/rendicion`, que hoy es una página correcta y a medias.
+
+**3. `react-router-dom` por encima de `7.17.0`.** La única vulnerabilidad viva (open
+redirect). Major sobre el router de toda la app: rama propia y verificación de **todas** las
+rutas —las de verdad, ver §B— no de una muestra.
+
+**4. Fase 2 del club de beneficios** (§12.8): `club_comercios`, `club_canjes`, las 3 Edge
+Functions y el panel `/comercio`. Piloto decidido: DigitalMatch.
+
+**5. Los cupos de la Novena.** `cupos_totales` existe y nada cuenta los ocupados.
+
+**6. Sin CI, sin Sentry, sin ErrorBoundary.** Hoy cada verificación la corre una persona a
+mano. Es lo que más se va a notar cuando entre alguien más al proyecto.
+
+**Y una acción que no es técnica:** hay alguien que donó **$5.000 y no tiene cuenta**. Si la
+Fundación puede identificar ese contacto, invitarlo a registrarse con **ese mismo email** le
+otorga su mes de beneficios sin que nadie toque nada.
+
+#### 11.6.8 — Cuatro cosas del entorno que costaron tiempo
+
+- **El plan de Render es Free**: no hay Shell ni One-Off Jobs. Cualquier tarea que necesite
+  correr *dentro* del servicio necesita una ruta temporal (ver §10.18) o bajar credenciales
+  de producción a una máquina, que es lo que conviene evitar.
+- **En PowerShell, `curl` no es curl**: es un alias de `Invoke-WebRequest`, ignora `-X` y
+  `-H`, y frena con una advertencia de seguridad. Usar `curl.exe`.
+- **Los archivos del repo son CRLF**, y `cat -A` no siempre lo muestra. Editarlos con regex
+  sobre `\n` no matchea: normalizar a LF, editar, y volver a CRLF al escribir.
+- **`String.replace(a, b)` interpreta `$&` y `` $` `` dentro de `b`.** Un texto de reemplazo
+  con un `$` seguido de backtick insertó el archivo entero dentro de sí mismo. Usar una
+  **función** de reemplazo cuando el texto pueda contener `$`.
 
 ---
 
