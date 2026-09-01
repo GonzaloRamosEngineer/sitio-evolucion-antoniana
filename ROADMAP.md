@@ -28,11 +28,13 @@ lados: 1 beneficio (del catálogo viejo), 0 socios con acceso vigente.
 
 **Lo primero, en orden:**
 
-1. **Cargar DigitalMatch y hacer el primer canje real** (§11.7). El esquema y las
-   funciones ya están en producción; lo que falta son **datos de la entidad**: el comercio,
-   su sucursal, el beneficio redactado, y el usuario del mostrador en
-   `club_comercio_usuarios`. Recién con eso se puede probar el circuito entero —generar en
-   un teléfono, confirmar en otro— que es **lo único de la fase 2 que sigue sin ejercitarse**.
+1. **Cargar DigitalMatch y hacer el primer canje real** (§11.7). El esquema, las funciones
+   y **el ABM** ya están en producción, así que esto ya **no necesita un desarrollador**:
+   se hace desde `/admin → Club de beneficios`. Cargar el comercio, la sucursal, el
+   beneficio redactado y el operador del mostrador; después generar en un teléfono y
+   confirmar en otro. Eso ejercita las dos cosas que siguen sin probarse: **el camino feliz
+   autenticado** de las Edge Functions y **la pantalla del ABM**, que nunca se vio
+   renderizada (§11.7.9).
 2. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
    archivo**: `.env.db`. ⚠️ Corregido el 2026-08-30: este archivo dijo cuatro veces que
    también estaba en `~/.config/antoniana/db.url` — **ese archivo no existe**, ni ahí ni en
@@ -2518,6 +2520,43 @@ en la consulta del canje y el `UPDATE` condicional de la confirmación. Nada de 
 ejercitar sin una sesión de socio real y un beneficio cargado. **El primer canje real sigue
 siendo la primera prueba de esa mitad** — que ahora es una mitad, no el bloque entero.
 
+#### 11.7.9 — El hueco que encontró una pregunta, no una prueba (2026-09-01)
+
+Al explicar cómo se da de alta un comercio quedó a la vista que **no había
+flujo**: en `src/` todas las referencias a las tablas `club_*` eran lecturas, el
+panel admin tenía 13 secciones y ninguna del club, y el alta eran cuatro filas
+de SQL cargadas por alguien con acceso a la base.
+
+**No fue una decisión de recorte: nadie lo escribió.** §12.3 sí diseñó el flujo
+—postulación, aprobación, magic link, alta del dispositivo del local— pero
+§12.8 nunca lo puso en una fase. La lista de la fase 2 dice «las 3 Edge
+Functions + panel `/comercio`», y ese panel es el mostrador.
+
+**Por qué importa más de lo que parece.** §12.7 define el éxito del módulo como
+«copiar migraciones + Edge Functions a otro proyecto y que funcione». Con el
+alta por SQL, lo que viaja es el código y no la operación: cada comercio nuevo
+—en este proyecto o en el próximo— pasa por un desarrollador. Es exactamente lo
+que §12.9 quería evitar al decidir entrar «de a uno y digitalizando».
+
+Se construyó la sección **«Club de beneficios»** en `/admin`. Vive en
+`src/components/Club/`, no en `src/components/Admin/`, para que la carpeta del
+club viaje completa: el único punto de integración con el anfitrión es una línea
+en `AdminPanel.jsx`.
+
+⚠️ **Lo que NO se pudo verificar:** la pantalla renderizada. `/admin` exige
+sesión de admin y desde acá no hay forma de autenticarse. Verificado: que la
+ruta siga respondiendo (redirige a login, no 404), que el código entró al bundle
+—el chunk pasó de 125 a 155 kB y contiene las cadenas de la sección— y que los
+validadores pasan sus 13 tests. **La primera vez que alguien la abra es su
+primera prueba real.**
+
+**La lección, que no es sobre el club:** este hueco no lo encontró un test ni
+una revisión de código. Lo encontró alguien preguntando *«¿y cómo sería el
+flujo?»*. Un plan puede estar completo en lo que enumera y tener un agujero en
+lo que da por obvio.
+
+---
+
 ---
 
 ## 12. Club de beneficios: el canje (propuesta, 2026-08-30)
@@ -2874,6 +2913,7 @@ configurado habría emitido canjes contra la base de la Fundación **sin fallar*
 | **0** | ~~§10 fase 1: `aportes` + `tiene_acceso()`~~ + ~~bloqueante #1 de 10.6~~ **✅ HECHO 2026-08-30** (esquema y guarda de credenciales; falta aplicar en prod) | Prerrequisito literal: sin esto no hay a quién validarle nada |
 | **1** | ~~Carnet digital + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso~~ **✅ HECHO 2026-08-30** — `/carnet`, bloqueo en catálogo y detalle, `src/lib/acceso.js` + `accesoApi.js`. **Sin QR a propósito**: en esta fase el comercio *mira* el carnet, no lo escanea, así que un QR que nadie lee no aporta nada y suma una dependencia. Entra en la fase 2, que es donde se escanea. ⚠️ Ver la limitación de abajo | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
 | **2** | ~~`club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio`~~ **✅ APLICADA EN PRODUCCIÓN 2026-08-31** — §11.7. Falta cargar el comercio piloto y hacer un canje real. La **anulación no tiene UI** todavía | Entra el comercio. Acá aparece la trazabilidad |
+| **2b** | **El ABM del club** — sección «Club de beneficios» en `/admin`: comercios, sucursales, beneficios y operadores del mostrador. ⚠️ **Este renglón no existía**: la fase 2 listaba «panel `/comercio`» y ese es el mostrador, no la administración. Ver §11.7.9 | Sin esto, cada comercio nuevo necesita un desarrollador — y §12.7 deja de cumplirse |
 | **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
 | **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 12.6 |
 | **5** | Extracción a un segundo proyecto (12.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
