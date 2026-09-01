@@ -70,6 +70,9 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 4. **Verificá en un navegador si tocaste una página** — con las rutas reales, que están en
    inglés, y confirmando **contenido**, no tamaño. El 404 mide 25.900 bytes, y `/club`
    mide 25.646: **254 bytes de diferencia**. Comparar tamaños habría aprobado un 404.
+   ⚠️ **Y confirmar contenido tampoco alcanza: hay que MIRAR la pantalla, en ancho de
+   teléfono.** `/club` pasó el chequeo por contenido —tenía todas las cadenas correctas— y
+   en un celular el título salía a una palabra por renglón (§11.7.10).
 
 ---
 
@@ -2554,6 +2557,32 @@ primera prueba real.**
 una revisión de código. Lo encontró alguien preguntando *«¿y cómo sería el
 flujo?»*. Un plan puede estar completo en lo que enumera y tener un agujero en
 lo que da por obvio.
+
+---
+
+#### 11.7.10 — «Tiene el texto» no es «se ve bien» (2026-09-01)
+
+`/club` se verificó como manda §B: navegador de verdad, ruta real, y **contenido** en vez
+de tamaño. Pasó. En un teléfono, el título salía **a una palabra por renglón**.
+
+La causa era de layout, no de datos: la fila era `flex flex-wrap` con la etiqueta y el
+botón en `shrink-0`. En una pantalla angosta el botón se queda con el ancho que necesita y
+el bloque de texto —que tiene `min-w-0`— se comprime hasta desaparecer. Se arregló
+apilando en mobile (`flex-col` → `sm:flex-row`), con el mismo tratamiento en el aviso de
+«hay N beneficios para socios».
+
+**Dos cosas que salen de acá y valen más que el arreglo:**
+
+1. **La regla de §B estaba incompleta.** Decía «confirmá contenido, no tamaño», y eso ataca
+   el 404 disfrazado. No ataca una página que tiene todas las cadenas correctas y es
+   ilegible. Hay que abrirla y mirarla, y en ancho de teléfono.
+
+2. **Cuidado con las capturas headless.** Al sacar el screenshot a 390 px de ancho, la
+   página aparecía cortada a la derecha… y **la Home, que lleva meses en producción,
+   aparecía cortada igual**. Chrome headless maqueta a un viewport más ancho del que
+   fotografía. Sin ese control —una página que se sabe sana— se habría «arreglado» un
+   desborde que no existe. Es el mismo patrón de siempre: una medición sin control no
+   distingue el defecto del instrumento.
 
 ---
 

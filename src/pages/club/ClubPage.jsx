@@ -74,9 +74,9 @@ const ClubPage = () => {
       {/* El aviso va antes del catálogo: enterarse de que no alcanza recién en
           la caja es la peor forma de descubrirlo (12.3, casos borde). */}
       {bloqueados > 0 && !tieneAcceso && (
-        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-sm border border-brand-gold/40 bg-brand-gold/5 p-4">
+        <div className="mt-6 flex flex-col gap-3 rounded-sm border border-brand-gold/40 bg-brand-gold/5 p-4 sm:flex-row sm:items-center sm:gap-4">
           <Lock aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-gold" />
-          <p className="flex-1 text-sm text-brand-dark">
+          <p className="min-w-0 flex-1 text-sm text-brand-dark">
             {bloqueados === 1
               ? 'Hay 1 beneficio para socios con aporte vigente.'
               : `Hay ${bloqueados} beneficios para socios con aporte vigente.`}
@@ -103,41 +103,48 @@ const ClubPage = () => {
             const etiqueta = etiquetaBeneficio(b);
             const bloqueado = b.requiere_acceso && !tieneAcceso;
             return (
-              <li key={b.id} className="flex flex-wrap items-center gap-4 py-6">
+              // En mobile va apilado y en sm+ en fila. Con todo en una fila y el
+              // botón en `shrink-0`, en un teléfono el botón se queda con el
+              // ancho y el título cae a una palabra por renglón.
+              <li key={b.id} className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs uppercase tracking-[0.18em] text-brand-dark/50">
                     {comercio?.nombre}
                     {comercio?.rubro ? ` · ${comercio.rubro}` : ''}
                   </p>
-                  <h2 className="mt-1 text-lg font-semibold text-brand-dark">{b.titulo}</h2>
+                  <h2 className="mt-1 text-lg font-semibold leading-snug text-brand-dark">
+                    {b.titulo}
+                  </h2>
                   {b.descripcion && (
                     <p className="mt-1 text-sm text-brand-dark/70">{b.descripcion}</p>
                   )}
                 </div>
 
-                {etiqueta && (
-                  <span className="shrink-0 text-lg font-bold text-brand-action">{etiqueta}</span>
-                )}
+                <div className="flex items-center gap-3 sm:shrink-0">
+                  {etiqueta && (
+                    <span className="text-lg font-bold text-brand-action">{etiqueta}</span>
+                  )}
 
-                {/* Sin acceso NO se ofrece generar: un código que va a fallar en
-                    el mostrador es la forma más rápida de perder un socio. */}
-                {bloqueado ? (
-                  <Button variant="outline" asChild className="shrink-0">
-                    <Link to="/collaborate">
-                      <Lock aria-hidden="true" className="mr-2 h-4 w-4" />
-                      Necesitás aporte vigente
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    variant="action"
-                    className="shrink-0"
-                    onClick={() => setElegido(b)}
-                  >
-                    <Ticket aria-hidden="true" className="mr-2 h-4 w-4" />
-                    Usar ahora
-                  </Button>
-                )}
+                  {/* Sin acceso NO se ofrece generar: un código que va a fallar
+                      en el mostrador es la forma más rápida de perder un socio. */}
+                  {bloqueado ? (
+                    <Button variant="outline" asChild className="flex-1 sm:flex-none">
+                      <Link to="/collaborate">
+                        <Lock aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
+                        Necesitás aporte vigente
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="action"
+                      className="flex-1 sm:flex-none"
+                      onClick={() => setElegido(b)}
+                    >
+                      <Ticket aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
+                      Usar ahora
+                    </Button>
+                  )}
+                </div>
               </li>
             );
           })}
