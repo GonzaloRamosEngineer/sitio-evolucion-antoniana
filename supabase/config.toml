@@ -5,3 +5,16 @@ project_id = "lbtyxnbyetsvngsxczkt"
 
 [functions.create-user]
 verify_jwt = true
+
+# --- Club de beneficios, fase 2 (ROADMAP §12.5) ------------------------------
+# Las tres exigen JWT: la identidad del invocador es la base de toda la
+# autorizacion. Que sea socio o cajero se resuelve DENTRO de cada funcion
+# leyendo la base con service_role, nunca del token ni del body.
+[functions.club-generar-canje]
+verify_jwt = true
+
+[functions.club-confirmar-canje]
+verify_jwt = true
+
+[functions.club-anular-canje]
+verify_jwt = true

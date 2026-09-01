@@ -1,8 +1,8 @@
 # Verificación de las RLS contra un Postgres real
 
-`rls-check.sql` y `acceso-check.sql` prueban que las políticas versionadas en
-`../migrations/` se comporten como el código asume. Los tests con mocks no pueden
-hacerlo: prueban nuestro código, no la base.
+Estos archivos prueban que las políticas versionadas en `../migrations/` se comporten
+como el código asume. Los tests con mocks no pueden hacerlo: prueban nuestro código, no
+la base.
 
 - **`rls-check.sql`** — partners, benefits, news, users (escalada de privilegios).
 - **`acceso-check.sql`** — la capa de acceso: `reglas_acceso`, las funciones de acceso
@@ -10,6 +10,15 @@ hacerlo: prueban nuestro código, no la base.
   Es el check más importante del repo: `aportes` es la tabla que **otorga**
   privilegios, y lo más caro que puede fallar es que un reintento del webhook de
   MercadoPago regale un mes de acceso.
+- **`payer-email-check.sql`** — `donations.payer_email`: que exista, que no lo lea
+  cualquiera, y que el backfill no pise datos buenos.
+- **`reclamar-check.sql`** — `reclamar_donaciones()`. Otorga privilegios, así que lo que
+  importa no es que funcione: es que **nadie pueda reclamar el aporte de otro**.
+- **`club-check.sql`** — el club fase 2 (§12). `club_canjes` otorga **valor económico**:
+  del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
+  `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al
+  lado de cada negativo, porque "nadie puede escribir" y "la tabla es inescribible y el
+  módulo no anda" se ven idénticos desde afuera.
 
 ## Por qué no usa `supabase start`
 
@@ -38,6 +47,12 @@ done
 # 3. Verificar las políticas
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/rls-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/acceso-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/payer-email-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/reclamar-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-check.sql
+
+# Leer el resultado: lo único que importa es que no haya ninguna línea FALLA.
+#   ... | grep -E 'FALLA|^ERROR'      -> sin salida = todo bien
 
 # 4. Limpiar
 docker rm -f pgtest

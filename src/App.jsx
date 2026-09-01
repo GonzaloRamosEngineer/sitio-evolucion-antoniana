@@ -27,6 +27,8 @@ const ActivityDetailPage = lazy(() => import("@/pages/ActivityDetailPage"));
 const ConfirmAttendancePage = lazy(() => import("@/pages/ConfirmAttendancePage"));
 const Collaborate = lazy(() => import("@/pages/Collaborate"));
 const CarnetPage = lazy(() => import("@/pages/CarnetPage"));
+const ClubPage = lazy(() => import("@/pages/club/ClubPage"));
+const ComercioPanel = lazy(() => import("@/pages/club/ComercioPanel"));
 const Rendicion = lazy(() => import("@/pages/Rendicion"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -141,6 +143,24 @@ const PageRoutes = () => {
           element={
             <ProtectedRoute>
               <CarnetPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Club fase 2 (ROADMAP §12). El catálogo es público a propósito: quien
+            todavía no aportó tiene que poder ver qué se está perdiendo. Lo que
+            exige sesión es generar el canje, y eso lo valida la Edge Function. */}
+        <Route path="/club" element={<ClubPage />} />
+
+        {/* El mostrador. `ProtectedRoute` solo garantiza que haya sesión; QUIÉN
+            puede validar lo resuelve `mis_comercios()` en la base, y las Edge
+            Functions vuelven a comprobarlo antes de tocar un canje. Esta ruta es
+            UX, no una frontera de seguridad (ver CLAUDE.md). */}
+        <Route
+          path="/comercio"
+          element={
+            <ProtectedRoute>
+              <ComercioPanel />
             </ProtectedRoute>
           }
         />

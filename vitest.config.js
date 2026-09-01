@@ -34,7 +34,15 @@ export default defineConfig({
       VITE_SUPABASE_URL: 'http://supabase.invalid',
       VITE_SUPABASE_ANON_KEY: 'anon-key-de-test',
     },
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    // `supabase/functions/**` entra acá porque las reglas puras del club
+    // (`_shared/club-reglas.ts`) viven dentro del módulo por portabilidad
+    // (ROADMAP 12.7 regla 6) y aun así tienen que poder probarse. El resto de
+    // las Edge Functions importa Deno y no se puede correr desde vitest: por eso
+    // toda la lógica que decide algo se mantiene en ese archivo sin imports.
+    include: [
+      'src/**/*.{test,spec}.{js,jsx}',
+      'supabase/functions/**/*.{test,spec}.{ts,js}',
+    ],
     // Los `*.integration.test.js` necesitan la Supabase local de Docker; corren
     // aparte con `npm run test:integration` (ver vitest.integration.config.js).
     exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.integration.test.{js,jsx}'],

@@ -41,6 +41,7 @@
     "dompurify": "^3.4.9",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.562.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-confetti": "^6.1.0",
     "react-day-picker": "^8.10.0",
