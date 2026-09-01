@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Calendar, Heart, MailWarning, Gift, Handshake, Newspaper,
-  FileText, ShieldCheck, LayoutDashboard, ExternalLink, Target, BookOpen, Receipt,
+  FileText, ShieldCheck, LayoutDashboard, ExternalLink, Target, BookOpen, Receipt, Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,9 @@ import PartnersAdmin from '@/components/Admin/PartnersAdmin';
 import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
 import NewsAdmin from '@/components/Admin/NewsAdmin';
 import DestinosAdmin from '@/components/Admin/DestinosAdmin';
+// El club vive en su propia carpeta (ROADMAP 12.7 regla 6): esta linea es el
+// unico punto de integracion con el proyecto anfitrion.
+import ClubAdmin from '@/components/Club/ClubAdmin';
 import AportesAdmin from '@/components/Admin/AportesAdmin';
 import GastosAdmin from '@/components/Admin/GastosAdmin';
 
@@ -88,6 +91,7 @@ const AdminPanel = () => {
         items: [
           { value: 'partners', label: 'Partners', icon: Handshake, badge: stats.pendingPartners },
           { value: 'benefits', label: 'Beneficios', icon: Gift },
+          { value: 'club', label: 'Club de beneficios', icon: Ticket },
         ],
       },
       {
@@ -124,6 +128,8 @@ const AdminPanel = () => {
         return <LegalDocumentList />;
       case 'partners':
         return <PartnersAdmin />;
+      case 'club':
+        return <ClubAdmin />;
       case 'benefits':
         return <BenefitsAdmin />;
       case 'news':
