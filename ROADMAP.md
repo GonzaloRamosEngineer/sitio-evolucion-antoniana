@@ -15,24 +15,33 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-08-31)
+## 🚦 Por dónde arrancar (actualizado 2026-08-30, jornada del club)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-**Estado en una línea:** el circuito de ingresos está **completo y cerrado** —el dinero
-entra, se atribuye, se rinde y el webhook valida firma—, pero **el club está vacío** porque
-casi nadie aporta con sesión iniciada.
+**Estado en una línea:** el circuito de ingresos está completo y cerrado, y la **fase 2 del
+club está aplicada en producción** —6 tablas, RLS y las tres Edge Functions desplegadas el
+2026-08-31— pero **todavía no se hizo ningún canje real**, y el club sigue vacío de los dos
+lados: 1 beneficio (del catálogo viejo), 0 socios con acceso vigente.
 
 **Lo primero, en orden:**
 
-1. **Rotar la contraseña de la base.** Único pendiente de seguridad. Está en `.env.db` y en
-   `~/.config/antoniana/db.url`.
-2. **Cargar el primer gasto real** desde `/admin → Gastos`. Estrena `/rendicion`. No es
+1. **Cargar DigitalMatch y hacer el primer canje real** (§11.7). El esquema y las
+   funciones ya están en producción; lo que falta son **datos de la entidad**: el comercio,
+   su sucursal, el beneficio redactado, y el usuario del mostrador en
+   `club_comercio_usuarios`. Recién con eso se puede probar el circuito entero —generar en
+   un teléfono, confirmar en otro— que es **lo único de la fase 2 que sigue sin ejercitarse**.
+2. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
+   archivo**: `.env.db`. ⚠️ Corregido el 2026-08-30: este archivo dijo cuatro veces que
+   también estaba en `~/.config/antoniana/db.url` — **ese archivo no existe**, ni ahí ni en
+   ningún lado del perfil, y ningún script del repo lo lee. Y rotar **no toca producción**:
+   el servicio de pagos usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el
+   único consumidor de esa contraseña es `tools/db.sh`.
+3. **Cargar el primer gasto real** desde `/admin → Gastos`. Estrena `/rendicion`. No es
    técnico: es tarea de la entidad.
-3. **`react-router-dom` > `7.17.0`** — la única vulnerabilidad viva.
-4. **Fase 2 del club** (§12.8), con DigitalMatch de piloto.
+4. **`react-router-dom` > `7.17.0`** — la única vulnerabilidad viva.
 
 **Antes de tocar nada, tres comprobaciones que ya evitaron daño real:**
 
@@ -49,13 +58,16 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 **Las cuatro reglas que este proyecto pagó caro:**
 
 1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Cinco
-   afirmaciones de este archivo resultaron falsas el 2026-08-30/31 (§11.6.2).
+   afirmaciones de este archivo resultaron falsas el 2026-08-30/31 (§11.6.2) y **cuatro más
+   el 2026-08-30** (§11.7.2). Van nueve. No es mala suerte: es lo que le pasa a un
+   documento que se escribe una vez y se relee nunca.
 2. **Una verificación tiene que poder fallar.** Hacela fallar una vez antes de creerle
    (§11.6.3). Y en seguridad, probá **las dos puntas**: que lo ilegítimo se rechace y que lo
    legítimo pase.
 3. **Migración a Docker primero**, nunca directo a producción (§B).
 4. **Verificá en un navegador si tocaste una página** — con las rutas reales, que están en
-   inglés, y confirmando **contenido**, no tamaño. El 404 mide 25.900 bytes.
+   inglés, y confirmando **contenido**, no tamaño. El 404 mide 25.900 bytes, y `/club`
+   mide 25.646: **254 bytes de diferencia**. Comparar tamaños habría aprobado un 404.
 
 ---
 
@@ -86,12 +98,26 @@ verificada** (§C). Junto con ella se aplicaron las **fases 1 y 2 del modelo de 
 | **Fase 2** | `gastos` + comprobante + `/rendicion` pública: `saldo = recaudado − rendido` | §10.12 |
 
 Las **donaciones únicas ya entran solas al libro** (§10.13): el trigger las registra al
-aprobarse, con backfill hecho — $7.141 cuadrando con `donations` y con el Dashboard.
+aprobarse, con backfill hecho — hoy son **$7.241** en 5 donaciones, cuadrando con
+`donations` y con el Dashboard. (Este párrafo dijo $7.141 con 4 donaciones hasta el
+2026-08-30: era la medición del 16.)
 
-Queda abierto el **servicio de pagos** (§10.13): las suscripciones se crean y nunca se
-actualizan, y el destino elegido en el checkout todavía no llega. Decidido moverlo a
-Vercel, en este mismo repo. Y queda lo que no es técnico: **cargar los datos reales**,
-sin los cuales la rendición es una página correcta y vacía.
+⚠️ **Corregido el 2026-08-30 — este párrafo estaba vencido.** Decía que quedaba abierto el
+servicio de pagos porque *"las suscripciones se crean y nunca se actualizan, y el destino
+elegido en el checkout todavía no llega"*. **Las dos partes son falsas.** La jornada del
+30/31 las cerró y el texto quedó atrás: el webhook actualiza `memberships` cuando llega un
+`preapproval` (`index.js:305`), escribe `last_payment_id` (`index.js:458`), manda
+`destino_id` en las dos ramas, y existe `trg_aporte_desde_membresia` que convierte el cobro
+en aporte. `/health` lo informa: `registra_renovaciones: true`, `destino_en_external_reference: true`.
+
+**Lo que sí queda del canal recurrente, y es distinto:** de 17 membresías, **0** tienen
+`last_payment_id`, `payer_email` o `destino_id`, y ninguna está activa (6 canceladas, 5
+vencidas, 4 pendientes, 2 pausadas). El código de renovación **existe y nunca corrió contra
+un cobro real**. No está roto: está sin estrenar, que no es lo mismo que andando.
+
+Sigue decidido —y sin ejecutar— **mover el servicio de pagos a Vercel**, en este mismo
+repo. Y queda lo que no es técnico: **cargar los datos reales**, sin los cuales la
+rendición es una página correcta y vacía.
 
 ✅ **Cerrado el 2026-08-31:** el **circuito de pagos**, entero. El webhook valida la firma
 de MercadoPago y rechaza lo que no la trae (§11.5), y dejó de tomar una respuesta de error
@@ -2067,9 +2093,9 @@ Lo que cambia respecto del orden de §11.3:
 
 - **Entra un punto nuevo y va primero:** las donaciones anónimas (§10.17). Es del mismo
   frente que el punto 1 —el servicio de pagos— así que conviene resolverlos juntos.
-- **El punto 3 (rotar la contraseña) sigue abierto y ahora con más razón**: además de
-  `.env.db`, el 2026-08-30 se usó un connection string en `~/.config/antoniana/db.url`.
-  Rotarla invalida los dos.
+- **El punto 3 (rotar la contraseña) sigue abierto.** ⚠️ Este ítem decía que además de
+  `.env.db` había un connection string en `~/.config/antoniana/db.url`. Se buscó el
+  2026-08-30 y **ese archivo no existe**: la contraseña vive solo en `.env.db`.
 
 #### El orden al cierre del 2026-08-30 (§10.18 y §10.19)
 
@@ -2081,7 +2107,7 @@ Render.
 |---|---|---|
 | ~~**1**~~ | ~~Backfill de los emails~~ **✅ HECHO** — ver abajo | Recuperó 2 de 5. El plan Free no tiene Shell, así que se corrió por una ruta temporal del servicio |
 | ~~**2**~~ | ~~`MP_WEBHOOK_SECRET`~~ **✅ HECHO 2026-08-31** | `valida_firma_mp: true`, `firma_modo: rechaza`. Verificado por las dos puntas: un POST sin firma y otro con firma falsa dan **401**, y una notificación real de MercadoPago dice `🔏 Firma OK` y entra. Ninguna de las dos pruebas sola alcanzaba: "rechaza lo malo" y "rechaza todo" se ven igual desde afuera |
-| **3** | Rotar la contraseña de la base | Sigue en `.env.db` y en `~/.config/antoniana/db.url` |
+| **3** | Rotar la contraseña de la base | Solo en `.env.db`. No toca producción: el webhook usa la service_role key, no esta contraseña |
 | ~~**4**~~ | ~~Bajar la fricción de la sesión en `/collaborate`~~ **✅ HECHO** — §10.20 | Era lo único que ataca la causa. Ahora la página lo explica, ofrece iniciar sesión sin perder el aporte, y acepta el email de quien no quiere cuenta |
 | **5** | El primer gasto real, `react-router-dom`, CI/Sentry | Sin cambios respecto de §11.3 |
 
@@ -2243,7 +2269,7 @@ Por eso el aviso de sesión en `/collaborate` dejó de ser una mejora cosmética
 
 | | |
 |---|---|
-| Migraciones | 11, todas aplicadas y reconstruyen la base desde cero |
+| Migraciones | 13 al cierre de esa jornada (este renglón decía 11: se contaron mal), **14** desde §11.7. Todas aplican desde cero y convergen al reaplicarse |
 | Checks SQL | 24 de RLS + 14 de acceso + 8 de `payer_email` + 17 de reclamo |
 | Tests | **216** en el sitio (0 errores de lint, 53 warnings de backlog) + **95** en el servicio de pagos |
 | Servicio de pagos | `2026-08-31.consulta-mp` · `firma_modo: rechaza` · `backfill_habilitado: false` |
@@ -2254,7 +2280,7 @@ Por eso el aviso de sesión en `/collaborate` dejó de ser una mejora cosmética
 #### 11.6.7 — Lo siguiente, en orden
 
 **1. Rotar la contraseña de la base.** Es el único pendiente de seguridad que queda. Está
-en `.env.db` y en `~/.config/antoniana/db.url`. Rotarla invalida las dos.
+en `.env.db`, y en ningún otro lado — ver la corrección en §11.7.2.
 
 **2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
 que falta para estrenar `/rendicion`, que hoy es una página correcta y a medias.
@@ -2290,6 +2316,210 @@ otorga su mes de beneficios sin que nadie toque nada.
 
 ---
 
+### 11.7 — Cierre de la jornada del club (2026-08-30)
+
+Esta jornada no tocó el dinero: construyó **la fase 2 del club entera** (§12), que es el
+módulo donde el beneficio deja de ser un cupón público y pasa a ser un canje trazable.
+
+**Aplicado en producción el 2026-08-31**: la migración corrió con `tools/db.sh apply` y las
+tres Edge Functions están desplegadas. Lo que falta no es código: son los datos del comercio
+piloto y un canje real. Ver §11.7.8.
+
+#### 11.7.1 — Qué se construyó
+
+| | Qué | Dónde |
+|---|---|---|
+| 1 | **Esquema del club**: `club_config`, `club_comercios`, `club_sucursales`, `club_comercio_usuarios`, `club_beneficios`, `club_canjes` + `is_comercio_member()` + `mis_comercios()` + reaper | Migración `20260830190000` |
+| 2 | **Check con controles positivos**, 15 pruebas | `supabase/checks/club-check.sql` |
+| 3 | **Tres Edge Functions**: generar, confirmar, anular | `supabase/functions/club-*` |
+| 4 | **Reglas puras testeables** del club (huso, ventanas, ahorro) | `_shared/club-reglas.ts` + 17 tests |
+| 5 | **UI del socio**: catálogo `/club` + pantalla de canje con QR, código y Realtime | `src/pages/club/`, `src/components/Club/` |
+| 6 | **UI del mostrador**: `/comercio`, escanear o tipear | `src/pages/club/ComercioPanel.jsx` |
+| 7 | **Reglas de presentación** del club | `src/lib/club.js` + 19 tests |
+
+**Una dependencia nueva:** `qrcode.react@4.2.0`, cero deps transitivas. El escáner NO usa
+librería: es `BarcodeDetector`, que ya viene en el navegador. En iOS no existe y el botón
+directamente no aparece — queda el campo de tipear, que §12.3 pide igual. `npm audit` sigue
+en 2 moderate, las dos de `react-router`.
+
+#### 11.7.2 — Las cuatro afirmaciones propias que resultaron falsas
+
+Van antes que los logros por el mismo motivo que en §11.6.2. Con estas son **nueve** en tres
+jornadas. Ninguna se descubrió razonando: todas aparecieron al mirar el código o los datos.
+
+**1. "La contraseña de la base está en `.env.db` y en `~/.config/antoniana/db.url`".**
+Falso. Ese archivo **no existe** — se buscó en todo el perfil. Lo nombraban cuatro lugares
+de este ROADMAP y **ningún script**. Peor: el texto sugería un radio de impacto que no
+existe. El webhook usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que rotar
+**no puede cortar el circuito de ingresos**. El riesgo real era el inverso: que la rotación
+se postergara por miedo a romper los pagos.
+
+**2. "Las suscripciones se crean y nunca se actualizan, y el destino no llega" (§Estado).**
+Falso desde la jornada del 30/31, que cerró las dos cosas sin actualizar este párrafo. El
+webhook actualiza `memberships`, escribe `last_payment_id` y manda `destino_id`. El ROADMAP
+listaba como pendiente algo ya hecho. **Lo que sí queda es otra cosa:** ese código nunca
+corrió contra un cobro real (0 de 17 membresías tienen `last_payment_id`).
+
+**3. "$7.141 cuadrando con `donations`".** Eran 4 donaciones; hoy son 5 y **$7.241**.
+
+**4. "Migraciones: 11".** Eran **13**. Se contaron mal, y el renglón estaba en la tabla de
+"estado de producción", que es justo donde no hay que estimar.
+
+**Y un quinto hallazgo, de otra naturaleza: §12 se autorreferenciaba como §11.** La sección
+se redactó como §11, se renumeró a §12 y **las referencias internas quedaron sin cambiar**:
+seis lugares decían `11.1.a`, `11.6`, `11.7`. Además `§11.7` se citaba dos veces **sin
+existir**, y `CLAUDE.md` apuntaba a un `§11.8` inexistente. Corregido todo. Ninguna de esas
+citas estaba en código, así que no aplicó la regla de "no renumerar".
+
+#### 11.7.3 — Dos bugs que encontraron los tests, no el razonamiento
+
+**El alfabeto del código incluía la `L`.** La clase de caracteres `[2-9A-HJ-NP-Z]` parece
+correcta y **abarca la L**, que el generador de 31 caracteres no produce. Estaba repetida en
+cinco archivos, incluido el `CHECK` de la migración y las dos Edge Functions: un código con
+`L` habría pasado la validación de formato para después no encontrarse nunca. Lo destapó un
+test que afirmaba `normalizarCodigo('O0I1L') === ''`.
+
+**El huso horario iba a romper el límite diario.** Postgres corre en UTC y Argentina es
+UTC-3: calculando "un canje por día" en UTC, el día se reiniciaba a las **21:00 hora
+local**. La misma persona podía canjear a las 20:30 y a las 21:30 y llevarse dos veces el
+mismo beneficio. Se agregó `zona_horaria` a `club_config` y todo lo que depende del
+calendario se calcula ahí. El test se hizo fallar a propósito pasándole `'UTC'` para
+confirmar que mide algo.
+
+#### 11.7.4 — Tres decisiones sobre ambigüedades de §12
+
+Están acá porque el ROADMAP no las resolvía y alguien las va a querer discutir.
+
+**1. El TTL de 5 minutos y la confirmación diferida de 2 h se contradicen.** §12.3 pide las
+dos: que el código venza rápido para que se genere en la caja, y que el cajero rescate
+códigos viejos cuando el local se quedó sin señal. Si el rescate está siempre disponible, el
+contador es decorativo. **Resolución:** el vencimiento es real y el socio lo ve, pero
+confirmar un vencido sigue siendo posible dentro de la ventana. Queda registrado **sin
+agregar ninguna columna**: un canje con `confirmado_en > expira_en` fue un rescate tardío.
+
+**2. La red de contención se generalizó.** §12.5 pedía un índice único parcial para el caso
+"uno por día". Se agregó `club_canjes.clave_limite`, que la Edge Function calcula desde la
+ventana, y el mismo índice cubre las cuatro. **Solo cubre `limite_por_persona = 1`**: con
+límite mayor hay que contar, y ese conteo no tiene red debajo. Está escrito en la migración.
+
+**3. `club_beneficios.estado` nace en `borrador`, no activo.** §12.3 dice que la redacción
+la controla la entidad junto al comercio porque ahí se generan los conflictos de mostrador.
+Un beneficio que se publica solo al crearse contradice eso.
+
+#### 11.7.5 — Qué quedó verificado y qué NO
+
+| Verificado | Cómo |
+|---|---|
+| Las 14 migraciones aplican desde cero **y convergen al reaplicarse** | Postgres 17 en Docker, dos pasadas |
+| `club_canjes` no se puede escribir desde el browser | `club-check.sql` T1/T2, con T12 (service_role **sí** escribe) al lado |
+| Los comercios no se ven los canjes entre sí | T6/T7, con el positivo al lado del negativo |
+| La red del límite ataja el duplicado **y no bloquea de más** | T9/T10 |
+| `/club` renderiza de verdad | Chrome headless: el 404 mide 25.900 bytes y `/club` 25.646 |
+| 252 tests, lint 0 errores, build | `npm test` / `npm run lint` / `npm run build` |
+
+**Sobre el runtime de las Edge Functions.** `npx supabase start` falla en esta máquina
+(documentado en `supabase/checks/README.md`), así que **localmente** no se pueden ejecutar.
+Al desplegarlas se probó contra producción lo que se podía sin datos (§11.7.8): que
+arranquen, que resuelvan los imports de `_shared/`, que tengan las env vars y que rechacen
+lo que no trae sesión.
+
+**Lo que sigue sin probarse es el camino feliz autenticado**: validación de límites, embeds
+de PostgREST en la consulta del canje, y el `UPDATE` condicional de la confirmación. Eso se
+ejercita con el primer canje real, no antes. Por eso toda la lógica que **decide** algo se
+sacó del `index.ts` y vive en `club-reglas.ts`, que sí está testeada.
+
+#### 11.7.6 — El club, medido
+
+El dato que §12.8 no dice y conviene tener a mano antes de seguir construyendo:
+
+| | |
+|---|---|
+| Beneficios cargados | **1** (el de DigitalMatch) |
+| Beneficios con `requiere_acceso` | **0** |
+| Personas con acceso vigente | **0** de 23 |
+| Tablas `club_*` en producción | **0** |
+
+**El club está vacío de los dos lados.** Que no haya socios ya se sabía; que tampoco haya
+catálogo, y que **ninguna fila ejercite la capa de acceso** de la fase 1, no estaba escrito.
+Toda la maquinaria del 2026-08-30 —carnet, filtro, estados— no se ejecuta hoy contra ningún
+dato real: si estuviera rota, nadie se enteraría.
+
+Por eso lo barato y lo que destraba no es programar la fase 3: es **cargar beneficios
+reales y decidir cuáles se bloquean**. Es tarea de la entidad, igual que el primer gasto.
+
+#### 11.7.7 — Lo siguiente, en orden
+
+1. ~~**Desplegar**~~ **✅ HECHO 2026-08-31** (§11.7.8). Falta **cargar DigitalMatch y hacer
+   un canje real**: ahí se ejercita el camino feliz, que es lo único que quedó sin probar.
+2. **La anulación no tiene UI.** La Edge Function está y `clubApi.anularCanje()` también,
+   pero no hay botón en `/comercio`: se dejó afuera para no agregar una acción destructiva
+   sin poder ejercitarla contra un canje confirmado real.
+3. **El catálogo sigue partido en dos.** `/beneficios` lee `benefits` (viejo, 1 fila) y
+   `/club` lee `club_beneficios` (nuevo, vacío). §12.4 decidió deprecar el primero migrando
+   su contenido, no romperlo. Mientras las dos existan: **lo que se canjea vive en `/club`**.
+4. **Rotar la contraseña**, el gasto real, `react-router-dom`. Sin cambios.
+5. **Fase 3 del club** (§12.8): el reporte para el comercio, que es lo que hace que renueve.
+
+#### 11.7.8 — El despliegue a producción (2026-08-31)
+
+**Antes de tocar producción se cubrió el riesgo que este archivo ya advertía y que la
+validación original no cubría: producción corre PostgreSQL 15 y todo se había validado en
+la imagen 17.** Se levantó `public.ecr.aws/supabase/postgres:15.8.1.094` —la misma versión
+mayor y menor que la base real— y ahí corrieron las 14 migraciones y el check completo.
+
+⚠️ **La imagen de PG15 no arranca sola**, a diferencia de la de 17: su entrypoint espera un
+`/docker-entrypoint-initdb.d/init-scripts/99-roles.sql` que la imagen no trae (normalmente
+lo inyecta `supabase start`). Hay que montarlo, y **tiene que tolerar roles ausentes**:
+`supabase_functions_admin` no existe en esa versión y un `ALTER USER` a secas tumba el
+contenedor. Con eso resuelto: **14 migraciones aplicadas, club-check en 17 PASA / 0 FALLA,
+y converge al reaplicarse**, igual que en 17.
+
+La única migración que falla en PG15 pelado es `20260719140000_comision_docs_storage.sql`,
+y **está bien**: en 17 emitía un `NOTICE` y en 15 da error porque `storage.buckets` tiene
+otras columnas. Es la misma excepción que ya documenta §B — en producción esa tabla es real.
+
+#### Qué se hizo
+
+| | Cómo |
+|---|---|
+| Migración | `bash tools/db.sh apply supabase/migrations/20260830190000_club_fase2_canjes.sql` — transacción única, `ON_ERROR_STOP` |
+| Funciones | `npx supabase functions deploy` **una por una y por nombre**, para no redeployar `create-user` ni las otras existentes |
+
+#### Cómo quedó verificado contra la base real
+
+| Qué | Resultado |
+|---|---|
+| Las 6 tablas `club_*` existen | ✅ |
+| RLS activa en las 6 | ✅ `relrowsecurity = t` en todas |
+| **`club_canjes` no tiene policy de escritura** | ✅ el único comando con policy es `SELECT` — la ausencia de INSERT/UPDATE/DELETE **es** la protección |
+| `club_config` sembrada | ✅ 5 claves, incluida `zona_horaria` |
+| Las 4 funciones nuevas | ✅ `is_comercio_member`, `mis_comercios`, `club_nuevo_codigo`, `club_expirar_canjes` |
+
+Y las Edge Functions, con **el control al lado del negativo**, que es la regla de §11.6.3:
+
+```
+POST sin JWT  → 401   en las tres
+POST a una función inventada → 404   ← el control: sin esto, el 401 no probaría
+                                        que las funciones estén desplegadas
+POST con la anon key como JWT → {"error":"Sesión inválida"}
+```
+
+**La tercera línea es la que más dice.** Un 401 del gateway solo prueba que Supabase
+protege la ruta. Esa respuesta, en cambio, sale **del código propio**: significa que la
+función bootea, que los imports de `_shared/cors.ts`, `_shared/club-db.ts` y
+`_shared/club-reglas.ts` resuelven en el bundle, que las tres env vars están inyectadas —si
+faltara una, `contextoDesde()` diría "Configuración del servidor incompleta"— y que el
+manejo de errores devuelve JSON con la forma esperada.
+
+#### Lo que sigue sin probarse, dicho con precisión
+
+El **camino feliz autenticado**: elegibilidad, límites por ventana, los embeds de PostgREST
+en la consulta del canje y el `UPDATE` condicional de la confirmación. Nada de eso se puede
+ejercitar sin una sesión de socio real y un beneficio cargado. **El primer canje real sigue
+siendo la primera prueba de esa mitad** — que ahora es una mitad, no el bloque entero.
+
+---
+
 ## 12. Club de beneficios: el canje (propuesta, 2026-08-30)
 
 ### 12.0 — Qué es esto y cómo se relaciona con §10
@@ -2299,18 +2529,24 @@ responde las otras dos preguntas, que quedaron fuera: **qué pasa en el mostrado
 **qué gana el comercio por estar**.
 
 Son módulos distintos y conviene que lo sigan siendo. §10 es del dominio de la entidad
-(socios, cuotas, donaciones). §11 es un módulo genérico que solo le pregunta a §10 una
+(socios, cuotas, donaciones). §12 es un módulo genérico que solo le pregunta a §10 una
 cosa: `tiene_acceso(user_id)`. Esa frontera es lo que lo hace portable a otro proyecto
-(ver 11.7), y es una decisión de diseño, no una casualidad.
+(ver 12.7), y es una decisión de diseño, no una casualidad.
 
 **La fase 1 de §10 es prerrequisito literal de todo lo de acá.** Sin `tiene_acceso()`,
 el club no puede distinguir un socio de un visitante y no hay nada que validar.
 
 ---
 
-### 12.1 — Estado actual (verificado 2026-08-30)
+### 12.1 — Estado actual (relevado 2026-08-30, resuelto en código el 2026-08-30)
 
-- [ ] **11.1.a — Hoy no hay un club: hay un listado de cupones.**
+> ✅ **Los tres ítems de abajo están resueltos, y desde el 2026-08-31 también en
+> producción** (§11.7.8): las 6 tablas `club_*` existen con RLS activa y las tres Edge
+> Functions están desplegadas. Lo que todavía NO cambió es el mundo real: no hay ningún
+> comercio cargado ni ningún canje hecho, así que **el efecto práctico que describen estos
+> puntos sigue vigente hasta que entre DigitalMatch**.
+
+- [ ] **12.1.a — Hoy no hay un club: hay un listado de cupones.**
   `benefits.codigo` y `benefits.codigo_descuento` (`baseline:378-379`) son texto
   estático, uno solo por beneficio, igual para todo el mundo.
   `BenefitDetailPage.jsx:231` lo renderiza en pantalla, y `/beneficios/:slug`
@@ -2318,12 +2554,12 @@ el club no puede distinguir un socio de un visitante y no hay nada que validar.
   cualquiera que entre al sitio. Un código estático y público no se puede limitar,
   ni vencer, ni contar, ni atribuir a una persona.
 
-- [ ] **11.1.b — El comercio no existe como actor del sistema.**
+- [ ] **12.1.b — El comercio no existe como actor del sistema.**
   `partners` (`baseline:507`) tiene nombre, logo, descripción, contacto y estado. **No
   tiene login, ni sucursales, ni ubicación, ni usuarios, ni forma de reportar nada.**
   Un partner es hoy un logo en la Home, no una contraparte operativa.
 
-- [ ] **11.1.c — No hay registro de que un beneficio se haya usado.**
+- [ ] **12.1.c — No hay registro de que un beneficio se haya usado.**
   No existe tabla de canjes ni equivalente. Consecuencia práctica: la entidad no puede
   decirle al comercio cuánta gente le mandó, que es exactamente el argumento que hace
   falta para renovar el acuerdo al año siguiente.
@@ -2372,7 +2608,7 @@ Hay cuatro formas conocidas de aplicar un descuento. Solo una es viable acá:
 McDonald's y YPF resolvieron un problema **más fácil**: son closed-loop, el comercio son
 ellos mismos, controlan la caja y al empleado. Lo que sí conviene copiarles es el patrón
 del cupón: **personal, de un solo uso, con vencimiento, emitido a alguien identificado**
-— nunca un código genérico, que es justo lo que hay hoy (11.1.a).
+— nunca un código genérico, que es justo lo que hay hoy (12.1.a).
 
 Los clubes que sí se parecen a este caso (Club La Nación, Clarín 365, Club Personal)
 nunca tuvieron trazabilidad con el comercio chico: credencial a ojo, y descuentos
@@ -2424,7 +2660,7 @@ cumplimiento, gratis.
 **Cajero** (teléfono del local, `/comercio` siempre abierto en "Validar"):
 5. **Escanear** o **Ingresar código**.
 6. Ve nombre del socio + el beneficio en letra grande + botón **Confirmar**.
-7. Campo opcional "Monto de la operación" (de esto depende el reporte de 11.6).
+7. Campo opcional "Monto de la operación" (de esto depende el reporte de 12.6).
 8. Confirma.
 
 **El cierre:** la pantalla del socio **cambia sola** a verde en ese instante (Supabase
@@ -2485,7 +2721,7 @@ club_canjes (                       -- el libro. También es el store de tokens.
   created_at
 )
 
-club_config (clave text pk, valor jsonb)   -- todo parámetro variable vive acá (11.7)
+club_config (clave text pk, valor jsonb)   -- todo parámetro variable vive acá (12.7)
 ```
 
 **Por qué `club_comercios` y no extender `partners`:** hoy `partners` son sponsors
@@ -2637,13 +2873,13 @@ configurado habría emitido canjes contra la base de la Fundación **sin fallar*
 |---|---|---|
 | **0** | ~~§10 fase 1: `aportes` + `tiene_acceso()`~~ + ~~bloqueante #1 de 10.6~~ **✅ HECHO 2026-08-30** (esquema y guarda de credenciales; falta aplicar en prod) | Prerrequisito literal: sin esto no hay a quién validarle nada |
 | **1** | ~~Carnet digital + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso~~ **✅ HECHO 2026-08-30** — `/carnet`, bloqueo en catálogo y detalle, `src/lib/acceso.js` + `accesoApi.js`. **Sin QR a propósito**: en esta fase el comercio *mira* el carnet, no lo escanea, así que un QR que nadie lee no aporta nada y suma una dependencia. Entra en la fase 2, que es donde se escanea. ⚠️ Ver la limitación de abajo | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
-| **2** | `club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio` | Entra el comercio. Acá aparece la trazabilidad |
+| **2** | ~~`club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio`~~ **✅ APLICADA EN PRODUCCIÓN 2026-08-31** — §11.7. Falta cargar el comercio piloto y hacer un canje real. La **anulación no tiene UI** todavía | Entra el comercio. Acá aparece la trazabilidad |
 | **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
 | **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 12.6 |
-| **5** | Extracción a un segundo proyecto (11.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
+| **5** | Extracción a un segundo proyecto (12.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
 
 ⚠️ **Limitación conocida de la fase 1: el bloqueo es cosmético.** `benefits.codigo` sigue
-siendo una columna de lectura pública (11.1.a), así que ocultar el código en pantalla no
+siendo una columna de lectura pública (12.1.a), así que ocultar el código en pantalla no
 impide que alguien lo lea consultando la API. **Esto no es un descuido y no se arregla
 con RLS**: proteger la columna con GRANTs a nivel columna rompería el panel admin (que
 usa el mismo rol `authenticated`), y partir el código a una tabla aparte es un refactor
@@ -2680,6 +2916,6 @@ credencial y digitalizar comercio por comercio.
 4. **¿El donante puntual entra al club?** → Sí, resuelto en 10.4.5.
 
 Queda una sola decisión abierta, y **a propósito**: los umbrales de los niveles de
-comercio (11.6). Se fijan con 3 meses de datos reales, no antes.
+comercio (12.6). Se fijan con 3 meses de datos reales, no antes.
 
 ---

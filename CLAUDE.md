@@ -91,7 +91,8 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   - Para un detalle que se llega desde un listado ya migrado, resolvelo con un `select` sobre el listado cacheado en vez de una query nueva (ver `PartnerDetailPage`): la navegación queda instantánea. Query propia solo si el detalle se puede abrir directo desde un link (ver `useNewsItem`), y anidá la clave bajo la del listado para que una invalidación alcance a los dos.
   - Un componente que use estos hooks necesita `QueryClientProvider` en sus tests (ver `PartnersAdmin.test.jsx`): cliente nuevo por caso y `retry: false`.
 - **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
-- **Acceso del socio (aporte → acceso, ROADMAP §10)**: la regla es *dos maneras de aportar (cuota o donación), una sola consecuencia (acceso a beneficios)*. Vive **en SQL**: `aportes` es el libro (escritura solo `service_role`, alimentado por los triggers de `memberships`/`donations`), y `tiene_acceso()` / `mi_acceso()` / `mi_antiguedad()` son la única fuente de la regla. Desde el front se consulta por RPC con `src/api/accesoApi.js` + `useMiAcceso()`; las reglas de presentación (bloqueo, estados, formato) están en `src/lib/acceso.js` y **no se duplican en las páginas**. `/carnet` es la credencial del socio. ⚠️ El bloqueo de un beneficio es **UX, no seguridad**: `benefits.codigo` sigue siendo público (ver la limitación en ROADMAP §11.8).
+- **Acceso del socio (aporte → acceso, ROADMAP §10)**: la regla es *dos maneras de aportar (cuota o donación), una sola consecuencia (acceso a beneficios)*. Vive **en SQL**: `aportes` es el libro (escritura solo `service_role`, alimentado por los triggers de `memberships`/`donations`), y `tiene_acceso()` / `mi_acceso()` / `mi_antiguedad()` son la única fuente de la regla. Desde el front se consulta por RPC con `src/api/accesoApi.js` + `useMiAcceso()`; las reglas de presentación (bloqueo, estados, formato) están en `src/lib/acceso.js` y **no se duplican en las páginas**. `/carnet` es la credencial del socio. ⚠️ El bloqueo de un beneficio es **UX, no seguridad**: `benefits.codigo` sigue siendo público (ver la limitación en ROADMAP §12.8).
+- **Club de beneficios, fase 2 (ROADMAP §12, escrito el 2026-08-30 y SIN DESPLEGAR)**: el módulo del canje. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
 
@@ -158,16 +159,18 @@ nadie lo notara):
 **La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan ~35 archivos de código
 en comentarios. Mové ítems entre archivos si hace falta, pero no los renumeres.
 
-Estado al 2026-08-31: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
-(open redirect → XSS) y su arreglo es react-router v7, un major. **216 tests** en el sitio
-(más 95 en el servicio de pagos, repo aparte); falta cobertura del flujo real. ESLint deja
-**53 warnings** de backlog (imports sin usar, exhaustive-deps): **la barra es 0 errores**,
-los warnings se barren de a poco.
+Estado al 2026-08-30 (jornada del club): **2 vulnerabilidades**, la única viva es
+`react-router-dom@6.30.4` (open redirect → XSS) y su arreglo es react-router v7, un major.
+**252 tests** en el sitio (más 95 en el servicio de pagos, repo aparte); falta cobertura del
+flujo real, y en particular **el runtime de las Edge Functions no se puede probar acá**
+(`supabase start` falla en esta máquina). ESLint deja **53 warnings** de backlog (imports
+sin usar, exhaustive-deps): **la barra es 0 errores**, los warnings se barren de a poco.
 
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
-de la última jornada está en **§11.6**, con las cinco afirmaciones de este repo que
-resultaron falsas y las tres verificaciones que no verificaban nada.
+de la última jornada está en **§11.7** (la anterior, en §11.6). Entre las dos suman **nueve
+afirmaciones de este repo que resultaron falsas** y tres verificaciones que no verificaban
+nada. Leelas: son el mejor resumen de cómo se rompe este proyecto.
 
 **Tres cosas que costaron trabajo real y conviene no volver a aprender:**
 - **Antes de escribir una migración, `git fetch` y conectate a la base y mirá.** El
