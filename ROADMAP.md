@@ -40,15 +40,12 @@ está bloqueado para todo el mundo.
 
 **Lo primero, en orden:**
 
-1. 🔴 **APLICAR LA UNIFICACIÓN DEL CATÁLOGO (12.10.16).** Sube al primer lugar porque
-   **hay una fuga activa**: el código `DMGlobal` del único beneficio real está impreso en
-   una página pública e indexable, así que hoy **nadie necesita ser socio** para tener el
-   30%. El código está escrito y validado; falta aplicar, en el orden de 12.10.16. Esto
-   además **archiva el beneficio de prueba y el catálogo viejo de una sola pasada**, así
-   que absorbe lo que antes era el punto 1 de esta lista.
+1. 🔴 **DESPLEGAR EL FRONT (12.10.17).** `/beneficios` está **vacío en producción** desde
+   el 2026-09-02: la base ya está unificada y el front desplegado todavía lee la tabla
+   vieja. Es una regresión visible, prevista, y es lo único urgente.
 
-2. **Archivar el beneficio de prueba** — *lo hace el paso anterior; queda acá solo si se
-   decide no aplicar la unificación todavía.* «Prueba interna del sistema de canje» quedó
+   ✅ Ya hecho y verificado: la fuga de `DMGlobal` está cerrada, el catálogo viejo no
+   publica nada y el beneficio de prueba está archivado (12.10.16). «Prueba interna del sistema de canje» quedó
    **activo** y lo ve cualquier visitante de `/club`. Se apaga en un minuto desde
    `/admin → Club de beneficios → DigitalMatch Global`, poniéndolo en «De baja». Es lo único
    con urgencia real, y no es técnico.
@@ -1559,7 +1556,9 @@ para no volver a descubrir un hueco preguntando.
   beneficio real está bloqueado para todo el mundo. **No es un problema del club**: es el
   bloqueante de §10.17 y se resuelve con aportes, no con código.
 
-- [ ] **12.10.10 — Queda un beneficio de prueba en el catálogo.** «Prueba interna del sistema
+- [x] ~~**12.10.10 — Queda un beneficio de prueba en el catálogo.**~~ **✅ ARCHIVADO el
+  2026-09-02** por el paso 2 de 12.10.16. Verificado en el sitio vivo: «Prueba interna»
+  ya no aparece en `/club`. *Original:* «Prueba interna del sistema
   de canje» se cargó para validar el circuito. **Archivarlo** (`estado = 'baja'`) desde
   `/admin → Club de beneficios` cuando no se lo necesite: mientras esté activo lo ve
   cualquier visitante.
@@ -1580,15 +1579,43 @@ para no volver a descubrir un hueco preguntando.
 | El CTA por estado | `src/lib/club.js` → `accionVidriera()` | Visitante → asociarse · con sesión sin aporte → aportar · con acceso → canjear. Nunca un callejón |
 | La consulta | `clubApi.js` → `getBeneficiosVidriera()` | Embed **anidado** a `partners`, que es de donde sale el logo |
 
-- [ ] **12.10.16 — 🔴 APLICAR, y el orden no es intercambiable.**
+- [x] ~~**12.10.16 — pasos 1 y 2**~~ **✅ APLICADOS a producción el 2026-09-02.**
 
-  1. `bash tools/db.sh apply supabase/migrations/20260902120000_club_beneficios_vidriera.sql`
-  2. `bash tools/db.sh sql < supabase/data/unificar_catalogo_beneficios.sql`
-  3. Recién entonces desplegar el front.
+  1. ✅ `tools/db.sh apply .../20260902120000_club_beneficios_vidriera.sql` — 3 columnas
+     y 2 índices, verificados en la base.
+  2. ✅ `tools/db.sh sql < supabase/data/unificar_catalogo_beneficios.sql`
 
-  **Si se despliega el front antes del paso 1**, `/beneficios` pide columnas que no
-  existen y el catálogo público queda vacío. **Si se hace el paso 2 sin el 3**, el sitio
-  vivo se queda sin catálogo. Es la única secuencia sin ventana rota.
+  **Verificado en producción, con las dos puntas y desde el rol `anon`:** ve el beneficio
+  con logo, categoría y sitio (control positivo — si diera 0 filas, el negativo mentiría),
+  y `DMGlobal` no aparece en **ningún** campo legible. `benefits` no publica nada.
+
+  **Y verificado en el sitio vivo con Chrome headless** (§B): `DMGlobal` = 0 apariciones
+  en `/beneficios` y en `/club`. **La fuga de §12.10.13 está cerrada en producción.**
+  De paso quedó archivado el beneficio de prueba, que cierra **12.10.10**.
+
+  Antes de aplicar se tomó un **backup verificado por restauración** —no solo generado—:
+  `tools/db.sh dump` a `C:\Projects\_backups-antoniana\`, restaurado en un PG15 limpio,
+  y los **15 conteos de tabla coinciden exactamente** con producción. Más un rollback
+  quirúrgico fila por fila, al lado. Y el paso 2 se corrió **primero en seco**
+  (`COMMIT`→`ROLLBACK`) para leer los controles antes de confirmar; no dejó residuo.
+
+- [ ] **12.10.17 — 🔴 FALTA EL PASO 3: desplegar el front. `/beneficios` está vacío
+  ahora mismo.**
+
+  Es la consecuencia prevista y documentada de hacer el paso 2 antes del 3: el front
+  desplegado todavía lee `benefits`, que ya no publica nada. La página **no está rota**
+  —`<nav>`, `<footer>` y 31 KB de DOM— pero no muestra ningún beneficio.
+
+  **Se eligió a propósito quedar en este estado y no en el anterior:** entre una vidriera
+  vacía y un código que vale dinero publicado para cualquiera, la vacía dura horas y no
+  le cuesta nada a nadie. Pero **es una regresión visible y hay que cerrarla, no
+  convivir con ella.**
+
+  Lo que falta después del deploy, y solo se puede ver ahí: **mirar `/beneficios` y
+  `/beneficios/:slug` en un navegador, en ancho de teléfono** (§11.7.10), y que el CTA
+  cambie con la sesión. ⚠️ Con 0 personas con acceso vigente (§12.10.9), el estado
+  «puede canjear» **sigue sin poder verse de verdad** hasta que exista un socio: lo que
+  se puede verificar hoy son los estados «sin sesión» y «sin acceso».
 
   ⚠️ Y falta lo que no se puede validar sin producción: **mirar `/beneficios` y
   `/beneficios/:slug` en un navegador, en ancho de teléfono** (§11.7.10), y comprobar

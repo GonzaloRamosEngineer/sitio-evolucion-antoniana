@@ -16,6 +16,12 @@
 #   tools/db.sh check                      -> prueba la conexión y no toca nada
 #   tools/db.sh apply <archivo-migracion>  -> aplica UNA migración, en transacción
 #   tools/db.sh sql                        -> corre por stdin el SQL que reciba
+#   tools/db.sh dump <archivo-destino>     -> backup del schema public (datos incluidos)
+#
+# SOBRE `dump`: existe porque "aplicar con un backup a mano" era un paso manual
+# que nadie podía repetir igual dos veces. El archivo que produce contiene DATOS
+# REALES DE PERSONAS (emails, donaciones), así que NUNCA va dentro del repo: el
+# script exige una ruta fuera de $RAIZ y se niega si le pasan una adentro.
 #
 # Requiere Docker. Usa la imagen de Postgres de Supabase solo como cliente psql.
 set -euo pipefail
@@ -45,6 +51,12 @@ done
 
 psql_docker() {
   docker run --rm -i --entrypoint psql \
+    -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD \
+    "$IMAGEN" "$@"
+}
+
+pgdump_docker() {
+  docker run --rm --entrypoint pg_dump \
     -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD \
     "$IMAGEN" "$@"
 }
@@ -81,8 +93,39 @@ case "$comando" in
     psql_docker -q
     ;;
 
+  dump)
+    destino="${2:-}"
+    [[ -n "$destino" ]] || { echo "ERROR: falta la ruta del backup." >&2; exit 1; }
+
+    # El dump lleva datos personales. Si cae dentro del repo, un `git add -A`
+    # distraído lo publica. Se rechaza antes de generarlo, no después.
+    dir_destino="$(cd "$(dirname "$destino")" 2>/dev/null && pwd)" || {
+      echo "ERROR: no existe el directorio de $destino" >&2; exit 1; }
+    if [[ "$dir_destino" == "$RAIZ"* ]]; then
+      echo "ERROR: el backup tiene datos personales y no puede ir dentro del repo." >&2
+      echo "       Elegí una ruta fuera de $RAIZ" >&2
+      exit 1
+    fi
+
+    ruta_final="$dir_destino/$(basename "$destino")"
+    echo "Volcando el schema public a $ruta_final ..."
+    # --schema=public: el resto (auth, storage) lo maneja Supabase y no es
+    #   nuestro para restaurar.
+    # --no-owner --no-privileges: el rol dueño en producción no existe en un
+    #   Postgres pelado, y con ellos el restore falla en la primera línea —
+    #   que es justo cuando hace falta que funcione.
+    pgdump_docker --schema=public --no-owner --no-privileges > "$ruta_final"
+
+    if [[ ! -s "$ruta_final" ]]; then
+      echo "ERROR: el backup salió vacío. NO aplicar nada." >&2
+      exit 1
+    fi
+    echo "Listo: $(wc -c < "$ruta_final") bytes."
+    echo "⚠️  Un backup sin restaurar no es un backup. Probalo antes de confiar en él."
+    ;;
+
   *)
-    echo "Uso: tools/db.sh {check|apply <migracion>|sql}" >&2
+    echo "Uso: tools/db.sh {check|apply <migracion>|sql|dump <destino>}" >&2
     exit 1
     ;;
 esac
