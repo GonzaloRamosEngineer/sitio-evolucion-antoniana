@@ -116,3 +116,159 @@ export const normalizarCodigo = (texto) =>
 
 export const CODIGO_VALIDO = /^[2-9A-HJKMNP-Z]{6}$/;
 export const esCodigoValido = (codigo) => CODIGO_VALIDO.test(String(codigo || ''));
+
+/* ============================================================
+   LA VIDRIERA (ROADMAP §12.10.13 a §12.10.15)
+
+   Por qué existe esto y no un `select` distinto en cada página: al 2026-09-02
+   el mismo beneficio vivía en los DOS catálogos con reglas opuestas —`benefits`
+   abierto y `club_beneficios` gateado— y el abierto anulaba al gateado. Nadie
+   necesitaba ser socio.
+
+   La corrección no es "acordarse de no publicar el código". Es que el catálogo
+   público tenga UNA fuente y que la forma que sale de acá **no tenga dónde
+   poner un código**. `mapearABeneficio()` no copia `codigo` ni
+   `codigo_descuento` porque en el modelo de canje esos campos no existen: el
+   código se emite por persona y de un solo uso (§12.8). Que la fuga sea
+   imposible por estructura es más barato que recordarla en una regla.
+
+   ⚠️ Y por eso `instrucciones` se sanea: en la fila vieja el código también
+   viajaba DENTRO del texto libre ("Usá el código DMGlobal…"), así que blindar
+   la columna no alcanzaba (§12.10.13).
+   ============================================================ */
+
+/**
+ * El logo, con la cadena de fallback que la base obliga a tener.
+ *
+ * `club_comercios.logo_url` está en NULL para el único comercio cargado, así
+ * que la fuente real es `partners.logo_url` por `partner_id`. Si esto se
+ * escribe sin fallback, la vidriera sale sin logo y **no falla**: simplemente
+ * no se ve, que es la clase de bug que solo encuentra mirar la pantalla.
+ */
+const logoDelComercio = (comercio) =>
+  comercio?.logo_url || comercio?.partners?.logo_url || null;
+
+/**
+ * Saca de un texto libre cualquier cosa que parezca un código de descuento.
+ *
+ * Es una red, no la solución: la solución es que la entidad no lo escriba. Pero
+ * el texto lo carga una persona en un ABM y esta función es lo único que se
+ * interpone entre esa persona y una página pública. Ante la duda, corta la
+ * oración entera: perder media instrucción es mucho más barato que publicar un
+ * código que vale dinero.
+ */
+export const sanearInstrucciones = (texto) => {
+  if (!texto) return null;
+  const limpio = String(texto)
+    .split(/(?<=[.!?])\s+|→/)
+    .filter((frase) => !/\b(c[óo]digo|cupon|cup[óo]n|promo|voucher)\b/i.test(frase))
+    .join(' → ')
+    .trim();
+  return limpio || null;
+};
+
+/**
+ * Una fila de `club_beneficios` (con sus embeds) en la forma que ya consumen
+ * `/beneficios` y `/beneficios/:slug`.
+ *
+ * Se adapta la forma NUEVA a la vieja, y no al revés, a propósito: así el
+ * cambio de fuente no toca el JSX de dos páginas que hoy andan. El día que
+ * `benefits` se retire, esta función es lo único que hay que borrar.
+ */
+export const mapearABeneficio = (fila) => {
+  if (!fila) return null;
+  const comercio = fila.club_comercios ?? null;
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    descripcion: fila.descripcion ?? null,
+    // El rubro del comercio ES la categoría. En `benefits` era una columna
+    // repetida en cada beneficio del mismo comercio (§12.10.15).
+    categoria: comercio?.rubro ?? null,
+    imagen_url: fila.imagen_url || logoDelComercio(comercio),
+    partner_id: comercio?.partner_id ?? null,
+    fecha_inicio: fila.vigencia_desde ?? null,
+    fecha_fin: fila.vigencia_hasta ?? null,
+    estado: fila.estado,
+    slug: fila.slug ?? null,
+    instrucciones: sanearInstrucciones(fila.instrucciones),
+    terminos: fila.terminos ?? null,
+    descuento: etiquetaBeneficio(fila),
+    sitio_web: comercio?.partners?.sitio_web ?? null,
+    contacto_email: comercio?.partners?.contacto_email ?? null,
+    requiere_acceso: Boolean(fila.requiere_acceso),
+
+    // NO se mapean `codigo` ni `codigo_descuento`: no existen en este modelo.
+    // Si alguien los agrega acá, vuelve la fuga de §12.10.13.
+
+    // Lo que la vidriera necesita para ofrecer el canje sin ir a buscar nada.
+    tipo: fila.tipo,
+    valor: fila.valor ?? null,
+    comercio: comercio && {
+      id: comercio.id,
+      nombre: comercio.nombre,
+      slug: comercio.slug,
+      rubro: comercio.rubro ?? null,
+      logo_url: logoDelComercio(comercio),
+    },
+  };
+};
+
+/**
+ * Qué se le ofrece a quien está mirando un beneficio.
+ *
+ * Devuelve una sola forma con el estado y el CTA ya resueltos, porque la
+ * decisión la toman tres lugares —el card del listado, el detalle y el club— y
+ * el bug de §12.10.13 fue precisamente que dos pantallas del mismo beneficio
+ * decidieran distinto.
+ *
+ * `puedeCanjear` es lo único que habilita el botón real. Notar que NUNCA
+ * devuelve un código: el código lo emite la Edge Function.
+ */
+export const accionVidriera = ({ beneficio, acceso, haySesion } = {}) => {
+  const requiere = Boolean(beneficio?.requiere_acceso);
+  const tieneAcceso = Boolean(acceso?.tiene_acceso);
+
+  // Abierto a todo el mundo: no hay nada que desbloquear.
+  if (!requiere) {
+    return {
+      estado: 'abierto',
+      puedeCanjear: haySesion === true,
+      mensaje: haySesion
+        ? null
+        : 'Iniciá sesión para canjearlo: el código se emite a tu nombre.',
+      cta: haySesion
+        ? { texto: 'Generar mi código', href: null }
+        : { texto: 'Iniciar sesión', href: '/login' },
+    };
+  }
+
+  if (!haySesion) {
+    return {
+      estado: 'sin_sesion',
+      puedeCanjear: false,
+      mensaje: 'Este beneficio es para socios con aporte vigente.',
+      cta: { texto: 'Ingresar o asociarme', href: '/login' },
+    };
+  }
+
+  if (!tieneAcceso) {
+    return {
+      estado: 'sin_acceso',
+      puedeCanjear: false,
+      // Se dice qué falta y no "no tenés permiso": el que mira esto ya tiene
+      // cuenta, así que está a un aporte de distancia y conviene que lo sepa.
+      mensaje: 'Te falta un aporte vigente para canjear este beneficio.',
+      cta: { texto: 'Quiero aportar', href: '/colaborar' },
+    };
+  }
+
+  return {
+    estado: acceso?.en_gracia ? 'en_gracia' : 'puede_canjear',
+    puedeCanjear: true,
+    mensaje: acceso?.en_gracia
+      ? 'Tu último aporte venció, pero seguís con acceso por el período de gracia.'
+      : null,
+    cta: { texto: 'Generar mi código', href: null },
+  };
+};

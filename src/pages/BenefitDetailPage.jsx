@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Helmet } from "react-helmet-async";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -12,15 +12,13 @@ import {
   Mail,
   Percent,
   ArrowRight,
-  Copy,
-  Check,
   Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAllBenefits, useAllPartners, useMiAcceso } from "@/hooks/useContentQueries";
+import { useBeneficiosVidriera, useAllPartners, useMiAcceso } from "@/hooks/useContentQueries";
 import { useAuth } from "@/hooks/useAuth";
 import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
-import { toast } from "@/components/ui/use-toast";
+import { accionVidriera } from "@/lib/club";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 
 // Util para comparar slugs
@@ -37,10 +35,8 @@ const BenefitDetailPage = () => {
   const params = useParams();
   const lookup = params.slug ?? params.id ?? "";
 
-  const [copied, setCopied] = useState(false);
-
   // Reusa la caché del listado y resuelve el beneficio sobre el dato cacheado.
-  const { data: benefit = null, isPending: loading } = useAllBenefits({
+  const { data: benefit = null, isPending: loading } = useBeneficiosVidriera({
     select: (all) =>
       // 1) por ID exacto, 2) por slug guardado, 3) fallback slugify(titulo)
       all.find((b) => String(b.id) === String(lookup)) ??
@@ -60,32 +56,16 @@ const BenefitDetailPage = () => {
   const { data: acceso = SIN_ACCESO } = useMiAcceso(user?.id);
   const bloqueado = beneficioBloqueado(benefit, acceso);
 
-  const handleCopyCode = async () => {
-    const code = benefit?.codigo || benefit?.codigo_descuento || "";
-    if (!code) {
-      toast({
-        title: "🚧 Sin código disponible",
-        description: "Este beneficio no requiere código o aún no fue cargado.",
-      });
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      toast({
-        title: "¡Código copiado!",
-        description: "Listo para usar en tu compra.",
-        className: "bg-green-600 text-white border-none"
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({
-        title: "No se pudo copiar",
-        description: `Código manual: ${code}`,
-        variant: "destructive"
-      });
-    }
-  };
+  // Qué se le ofrece a quien está mirando esto. La decisión NO se toma acá: vive
+  // en `src/lib/club.js` porque la comparten el listado, el detalle y /club, y
+  // el bug de §12.10.13 fue justamente que dos pantallas del mismo beneficio
+  // decidieran distinto.
+  const accion = accionVidriera({ beneficio: benefit, acceso, haySesion: Boolean(user) });
+
+  // Acá estaba `handleCopyCode`. Se fue con el bloque "Tu código": copiar al
+  // portapapeles un texto fijo que ya era público no tiene a quién servirle
+  // (ROADMAP §12.10.13). El código del canje se copia en /club, donde además
+  // tiene un reloj que le da sentido.
 
   if (loading) {
     return <ResourceLoading title="Cargando beneficio… – Fundación Evolución Antoniana" />;
@@ -264,20 +244,36 @@ const BenefitDetailPage = () => {
                         </div>
                         )}
 
-                        {/* Código de Descuento */}
-                        {!bloqueado && (benefit.codigo || benefit.codigo_descuento) && (
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-900 mb-2">Tu código</h4>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-brand-sand border-2 border-dashed border-brand-gold/50 rounded-sm p-3 text-center font-mono font-bold text-brand-dark text-lg tracking-wider">
-                                        {benefit.codigo || benefit.codigo_descuento}
-                                    </div>
-                                    <Button size="icon" variant="outline" onClick={handleCopyCode} className="h-12 w-12 rounded-sm border-gray-200">
-                                        {copied ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5 text-gray-500" />}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                        {/*
+                          ACÁ VIVÍA "Tu código" — un texto fijo, igual para todo el
+                          mundo y visible sin sesión (ROADMAP §12.10.13). No se
+                          reemplaza por un código mejor guardado: se reemplaza por
+                          el CTA que corresponda, porque en este modelo el código
+                          lo emite la Edge Function a nombre de una persona y por
+                          una sola vez. La vidriera muestra el beneficio; el canje
+                          pasa en el mostrador.
+                        */}
+                        <div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-2">
+                                {accion.puedeCanjear ? "Canjealo" : "¿Cómo lo obtengo?"}
+                            </h4>
+                            {accion.mensaje && (
+                                <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                                    {accion.mensaje}
+                                </p>
+                            )}
+                            {accion.cta && (
+                                <Button
+                                    asChild
+                                    className="w-full rounded-sm"
+                                    variant={accion.puedeCanjear ? "default" : "outline"}
+                                >
+                                    {/* Sin acceso se lo manda a aportar; con acceso, al
+                                        mostrador. Nunca a un callejón sin salida. */}
+                                    <Link to={accion.cta.href ?? "/club"}>{accion.cta.texto}</Link>
+                                </Button>
+                            )}
+                        </div>
 
                         {benefit.descuento && (
                             <div className="flex items-center gap-2 text-brand-action font-bold bg-brand-sand/60 p-3 rounded-sm border border-brand-dark/10 justify-center">

@@ -6,6 +6,9 @@ import {
   estadoCanje,
   etiquetaBeneficio,
   mensajeDeError,
+  sanearInstrucciones,
+  mapearABeneficio,
+  accionVidriera,
   normalizarCodigo,
   esCodigoValido,
 } from '@/lib/club';
@@ -124,5 +127,177 @@ describe('esCodigoValido', () => {
     expect(esCodigoValido('ZK4M2O')).toBe(false); // O no existe
     expect(esCodigoValido('ZK4M2')).toBe(false);
     expect(esCodigoValido('')).toBe(false);
+  });
+});
+
+/* ============================================================
+   LA VIDRIERA — lo que estas pruebas fijan es la garantía dura de §12.10.13:
+   **el catálogo público no puede publicar un código, por ninguna vía.**
+
+   Se prueba con el dato REAL que estaba publicado el 2026-09-02, no con un
+   ejemplo inventado: la fuga viajaba por tres campos y el tercero era texto
+   libre. Un test que solo mire la columna `codigo` habría pasado igual.
+   ============================================================ */
+describe('sanearInstrucciones', () => {
+  it('saca la frase que menciona el código — el caso real de DigitalMatch', () => {
+    const real =
+      'Ingresá al sitio de DigitalMatch Global → Completá el formulario → ' +
+      'Indicá que sos parte de la Fundación Evolución Antoniana → ' +
+      'Usá el código DMGlobal para aplicar el 30% OFF.';
+    const limpio = sanearInstrucciones(real);
+    expect(limpio).not.toMatch(/DMGlobal/);
+    expect(limpio).not.toMatch(/c[óo]digo/i);
+    // Y el resto de la instrucción sobrevive: no sirve de nada una vidriera
+    // que se queda sin explicar cómo usar el beneficio.
+    expect(limpio).toMatch(/Completá el formulario/);
+    expect(limpio).toMatch(/Fundación Evolución Antoniana/);
+  });
+
+  it('también corta cupón, promo y voucher, con y sin tilde', () => {
+    for (const t of ['Usá el cupón X1.', 'Pedí el codigo ABC.', 'El voucher es Z9.', 'Promo PROMO22.']) {
+      expect(sanearInstrucciones(t)).toBeNull();
+    }
+  });
+
+  it('no toca un texto que no menciona ningún código', () => {
+    const t = 'Mostrá tu carnet en el mostrador.';
+    expect(sanearInstrucciones(t)).toBe(t);
+  });
+
+  it('tolera vacío y nulo sin explotar', () => {
+    for (const v of [null, undefined, '', '   ']) expect(sanearInstrucciones(v)).toBeNull();
+  });
+});
+
+describe('mapearABeneficio', () => {
+  const fila = {
+    id: 'b1',
+    titulo: '30% en sitios web',
+    descripcion: 'Para socios con aporte vigente.',
+    terminos: 'No acumulable.',
+    tipo: 'porcentaje',
+    valor: 30,
+    requiere_acceso: true,
+    slug: '30-en-sitios-web',
+    instrucciones: 'Completá el formulario → Usá el código DMGlobal.',
+    imagen_url: null,
+    vigencia_desde: '2026-09-01',
+    vigencia_hasta: '2026-12-31',
+    estado: 'activo',
+    club_comercios: {
+      id: 'c1',
+      nombre: 'DigitalMatch Global',
+      slug: 'digitalmatch-global',
+      rubro: 'Tecnología',
+      logo_url: null,
+      partner_id: 'p1',
+      partners: {
+        logo_url: 'https://cdn/logo.png',
+        sitio_web: 'https://digitalmatchglobal.com/',
+        contacto_email: 'info@digitalmatchglobal.com',
+      },
+    },
+  };
+
+  it('NUNCA devuelve un código, por ninguna de las tres vías', () => {
+    const b = mapearABeneficio(fila);
+    // 1 y 2: las columnas no se mapean, así que la clave no existe.
+    expect(b).not.toHaveProperty('codigo');
+    expect(b).not.toHaveProperty('codigo_descuento');
+    // 3: el texto libre pasa por el saneo.
+    expect(JSON.stringify(b)).not.toMatch(/DMGlobal/);
+  });
+
+  it('aunque la fila traiga un codigo pegado por error, no se propaga', () => {
+    // Blindaje contra el futuro: si alguien agrega la columna a la tabla nueva
+    // o el select la trae, la vidriera igual no la publica.
+    const b = mapearABeneficio({ ...fila, codigo: 'FUGA123', codigo_descuento: 'FUGA456' });
+    expect(JSON.stringify(b)).not.toMatch(/FUGA/);
+  });
+
+  it('la categoría sale del rubro del comercio, no de una columna propia', () => {
+    expect(mapearABeneficio(fila).categoria).toBe('Tecnología');
+  });
+
+  it('el logo cae a partners cuando el comercio lo tiene en NULL', () => {
+    // Es el estado REAL de la base: club_comercios.logo_url está vacío.
+    expect(mapearABeneficio(fila).imagen_url).toBe('https://cdn/logo.png');
+  });
+
+  it('respeta el override de imagen del beneficio cuando existe', () => {
+    const b = mapearABeneficio({ ...fila, imagen_url: 'https://cdn/propia.png' });
+    expect(b.imagen_url).toBe('https://cdn/propia.png');
+  });
+
+  it('traduce la vigencia y el descuento a la forma que la página ya consume', () => {
+    const b = mapearABeneficio(fila);
+    expect(b.fecha_inicio).toBe('2026-09-01');
+    expect(b.fecha_fin).toBe('2026-12-31');
+    expect(b.descuento).toBe('30% OFF');
+    expect(b.sitio_web).toBe('https://digitalmatchglobal.com/');
+    expect(b.contacto_email).toBe('info@digitalmatchglobal.com');
+  });
+
+  it('no explota con una fila sin comercio ni con null', () => {
+    expect(mapearABeneficio(null)).toBeNull();
+    const b = mapearABeneficio({ id: 'x', titulo: 'T', tipo: 'regalo', estado: 'activo' });
+    expect(b.categoria).toBeNull();
+    expect(b.imagen_url).toBeNull();
+    expect(b.comercio).toBeNull();
+    expect(b.descuento).toBe('Regalo');
+  });
+});
+
+describe('accionVidriera', () => {
+  const exclusivo = { requiere_acceso: true };
+  const abierto = { requiere_acceso: false };
+  const conAcceso = { tiene_acceso: true, en_gracia: false };
+  const enGracia = { tiene_acceso: true, en_gracia: true };
+  const sinAcceso = { tiene_acceso: false, en_gracia: false };
+
+  it('visitante sin sesión: no puede canjear y se lo invita a entrar', () => {
+    const a = accionVidriera({ beneficio: exclusivo, acceso: sinAcceso, haySesion: false });
+    expect(a.estado).toBe('sin_sesion');
+    expect(a.puedeCanjear).toBe(false);
+    expect(a.cta.href).toBe('/login');
+  });
+
+  it('con sesión pero sin aporte: se le dice QUÉ falta y adónde ir', () => {
+    const a = accionVidriera({ beneficio: exclusivo, acceso: sinAcceso, haySesion: true });
+    expect(a.estado).toBe('sin_acceso');
+    expect(a.puedeCanjear).toBe(false);
+    expect(a.cta.href).toBe('/colaborar');
+    expect(a.mensaje).toMatch(/aporte vigente/);
+  });
+
+  it('socio con acceso vigente: recién acá se habilita el botón real', () => {
+    const a = accionVidriera({ beneficio: exclusivo, acceso: conAcceso, haySesion: true });
+    expect(a.estado).toBe('puede_canjear');
+    expect(a.puedeCanjear).toBe(true);
+    expect(a.cta.href).toBeNull(); // no navega: dispara el canje
+  });
+
+  it('en gracia puede canjear, y se le avisa', () => {
+    const a = accionVidriera({ beneficio: exclusivo, acceso: enGracia, haySesion: true });
+    expect(a.estado).toBe('en_gracia');
+    expect(a.puedeCanjear).toBe(true);
+    expect(a.mensaje).toMatch(/gracia/);
+  });
+
+  it('un beneficio abierto igual exige sesión: el código se emite a nombre de alguien', () => {
+    // Es la corrección de §11.7.11: sin sesión no hay a quién emitirle el canje.
+    expect(accionVidriera({ beneficio: abierto, acceso: sinAcceso, haySesion: false }).puedeCanjear)
+      .toBe(false);
+    expect(accionVidriera({ beneficio: abierto, acceso: sinAcceso, haySesion: true }).puedeCanjear)
+      .toBe(true);
+  });
+
+  it('nunca devuelve un código, en ningún estado', () => {
+    for (const b of [exclusivo, abierto])
+      for (const ac of [conAcceso, enGracia, sinAcceso])
+        for (const s of [true, false]) {
+          const a = accionVidriera({ beneficio: b, acceso: ac, haySesion: s });
+          expect(a).not.toHaveProperty('codigo');
+        }
   });
 });

@@ -23,6 +23,8 @@ import { getGastos } from '@/api/gastosApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
+import { getBeneficiosVidriera } from '@/api/clubApi';
+import { mapearABeneficio } from '@/lib/club';
 
 /**
  * Compone el `select` propio del hook con el que pase el caller.
@@ -148,6 +150,26 @@ export const useActiveBenefits = ({ select, ...options } = {}) =>
     queryKey: queryKeys.benefits,
     queryFn: () => unwrap(getBenefits()),
     select: composeSelect((rows) => rows.filter((b) => b.estado === 'activo'), select),
+    ...options,
+  });
+
+/**
+ * EL CATÁLOGO PÚBLICO, leyendo la tabla nueva (ROADMAP §12.10.13 a §12.10.15).
+ *
+ * Reemplaza a `useActiveBenefits` en /beneficios. El mapeo a la forma vieja
+ * pasa acá y no en cada página para que exista UN solo lugar donde el catálogo
+ * público se arma — que es lo que faltaba cuando el mismo beneficio se
+ * publicaba con dos reglas distintas.
+ *
+ * ⚠️ No filtra por `estado`: las RLS ya devuelven solo los activos de comercios
+ * activos (§12.5). Volver a filtrarlo acá es la duplicación que hace que la
+ * página y la base se desincronicen el día que la regla cambie.
+ */
+export const useBeneficiosVidriera = ({ select, ...options } = {}) =>
+  useQuery({
+    queryKey: queryKeys.beneficiosVidriera,
+    queryFn: () => unwrap(getBeneficiosVidriera()),
+    select: composeSelect((rows) => (rows ?? []).map(mapearABeneficio).filter(Boolean), select),
     ...options,
   });
 

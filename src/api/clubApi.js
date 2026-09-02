@@ -37,6 +37,40 @@ export const getBeneficiosClub = async () =>
     'getBeneficiosClub',
   );
 
+/**
+ * EL CATÁLOGO PÚBLICO — la vidriera (ROADMAP §12.10.13 a §12.10.15).
+ *
+ * Es la consulta que reemplaza a `getBenefits()` en /beneficios. Dos cosas que
+ * NO son detalles:
+ *
+ *   1) El embed de `partners` es ANIDADO (club_beneficios -> club_comercios ->
+ *      partners) porque `club_comercios.logo_url` está en NULL y el logo real
+ *      vive en el partner. Escrito plano, la vidriera sale sin logo y no falla.
+ *
+ *   2) No se piden `codigo` ni `codigo_descuento`, y no existen en esta tabla. El
+ *      código se emite por persona al canjear. Si esta lista alguna vez trae un
+ *      código, volvió la fuga de §12.10.13.
+ *
+ * Las RLS ya filtran a los activos de comercios activos (§12.5), así que no se
+ * repite esa condición: duplicarla haría que el día que cambie la regla, la
+ * página y la base digan cosas distintas.
+ */
+export const getBeneficiosVidriera = async () =>
+  listResult(
+    await supabase
+      .from('club_beneficios')
+      .select(
+        'id, titulo, descripcion, terminos, tipo, valor, requiere_acceso, ' +
+          'slug, instrucciones, imagen_url, estado, ' +
+          'vigencia_desde, vigencia_hasta, limite_por_persona, ventana, ' +
+          'dias_semana, hora_desde, hora_hasta, ' +
+          'club_comercios!inner(id, nombre, slug, logo_url, rubro, partner_id, ' +
+          'partners(logo_url, sitio_web, contacto_email))',
+      )
+      .order('orden', { ascending: true }),
+    'getBeneficiosVidriera',
+  );
+
 /** Sucursales activas de un comercio, para elegir dónde se está canjeando. */
 export const getSucursales = async (comercioId) =>
   listResult(

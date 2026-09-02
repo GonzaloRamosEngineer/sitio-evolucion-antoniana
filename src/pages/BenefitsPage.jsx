@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import BenefitCard from '@/components/BenefitCard';
 import { Link } from 'react-router-dom';
-import { useActiveBenefits, useMiAcceso } from '@/hooks/useContentQueries';
+import { useBeneficiosVidriera, useMiAcceso } from '@/hooks/useContentQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/acceso';
 
@@ -32,7 +32,7 @@ const BenefitsPage = () => {
     isPending: loading,
     isError: error,
     refetch: fetchData,
-  } = useActiveBenefits();
+  } = useBeneficiosVidriera();
 
   // Estado de acceso: una sola consulta por pantalla, no una por card.
   // El visitante sin sesión nunca dispara la query (`enabled` interno del hook),

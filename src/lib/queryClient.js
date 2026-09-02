@@ -29,6 +29,10 @@ export const queryKeys = {
   newsItem: (slugOrId) => ['news', 'item', slugOrId],
   partners: ['partners'],
   benefits: ['benefits'],
+  // La vidriera es OTRA clave que `benefits`, a propósito: son dos tablas
+  // distintas y compartir la clave haría que invalidar el ABM viejo pise el
+  // catálogo nuevo con datos de la forma vieja (ROADMAP §12.10.8).
+  beneficiosVidriera: ['club', 'beneficios', 'vidriera'],
   activities: ['activities'],
   userRegistrations: (userId) => ['registrations', userId],
   userMemberships: (userId) => ['memberships', userId],

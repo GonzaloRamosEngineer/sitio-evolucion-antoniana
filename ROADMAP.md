@@ -40,7 +40,15 @@ está bloqueado para todo el mundo.
 
 **Lo primero, en orden:**
 
-1. **Archivar el beneficio de prueba.** «Prueba interna del sistema de canje» quedó
+1. 🔴 **APLICAR LA UNIFICACIÓN DEL CATÁLOGO (12.10.16).** Sube al primer lugar porque
+   **hay una fuga activa**: el código `DMGlobal` del único beneficio real está impreso en
+   una página pública e indexable, así que hoy **nadie necesita ser socio** para tener el
+   30%. El código está escrito y validado; falta aplicar, en el orden de 12.10.16. Esto
+   además **archiva el beneficio de prueba y el catálogo viejo de una sola pasada**, así
+   que absorbe lo que antes era el punto 1 de esta lista.
+
+2. **Archivar el beneficio de prueba** — *lo hace el paso anterior; queda acá solo si se
+   decide no aplicar la unificación todavía.* «Prueba interna del sistema de canje» quedó
    **activo** y lo ve cualquier visitante de `/club`. Se apaga en un minuto desde
    `/admin → Club de beneficios → DigitalMatch Global`, poniéndolo en «De baja». Es lo único
    con urgencia real, y no es técnico.
@@ -1431,6 +1439,12 @@ comercio (12.6). Se fijan con 3 meses de datos reales, no antes.
 La fase 2 está cerrada y probada (§11.7.12). Esto es lo que **no** está, en un solo lugar,
 para no volver a descubrir un hueco preguntando.
 
+> ⚠️ **12.10.13 a 12.10.15 se agregaron el 2026-09-02**, y no las encontró una prueba ni una
+> revisión de código: las encontró **abrir el sitio en un navegador y mirar las dos páginas
+> una al lado de la otra**. Los tres huecos son de *integración* — cada pieza funciona sola y
+> el conjunto no —, que es justo lo que ningún test unitario mira. Van con §11.7.10: «tiene el
+> texto» no es «se ve bien», y ahora también **«cada pieza anda» no es «el circuito anda»**.
+
 #### A. Integridad — lo que puede dar un resultado incorrecto
 
 - [ ] **12.10.1 — La misma cuenta puede generar y confirmar su propio canje.**
@@ -1451,6 +1465,31 @@ para no volver a descubrir un hueco preguntando.
   vencido dentro de la ventana (`confirmacion_diferida_horas`) está implementado y no se
   probó: el único canje real se confirmó en 53 segundos. Es la rama que corre cuando el
   local se queda sin señal, o sea justo cuando nadie está mirando.
+
+- [ ] **12.10.13 — 🔴 El código del beneficio real está publicado, y se filtra por TRES
+  campos.** Esto **agrava y corrige a 12.10.2**, que lo describía como «lectura pública por
+  API». Es peor: está **impreso en una página pública e indexable**. El mismo 30% de
+  DigitalMatch vive en los dos catálogos con reglas opuestas —`benefits` con
+  `requiere_acceso = false`, `club_beneficios` con `true`— y **el público anula al gateado:
+  hoy nadie necesita ser socio para tener el descuento.** Eso vuelve casi teórico al
+  bloqueante de §10.17: cuando por fin haya un socio con acceso, va a recibir lo que ya
+  tenía cualquier visitante.
+
+  **Y no es un campo, son tres** — este es el detalle que se escapa:
+
+  ```
+  codigo            = 'DMGlobal'
+  codigo_descuento  = 'Codigo Alternativo'   ← basura de carga, igual de visible
+  instrucciones     = '… Usá el código DMGlobal para aplicar el 30% OFF.'   ← el tercero
+  ```
+
+  **Blindar la columna `codigo` no alcanzaría**: el código también viaja dentro del texto
+  libre de `instrucciones`. Cualquier solución que mire solo la columna deja la fuga abierta.
+
+  ✅ **Lo que NO está roto, y conviene saberlo:** la puerta está bien construida.
+  `BenefitDetailPage.jsx:59-61` ya llama `useMiAcceso` y `beneficioBloqueado()`, y la
+  línea 268 solo renderiza el código con `{!bloqueado && …}`. **Es un problema de datos, no
+  de código**: con `requiere_acceso = false` la lógica pasa de largo.
 
 #### B. Operación — lo que hace falta para que entre un comercio que no sea propio
 
@@ -1479,6 +1518,43 @@ para no volver a descubrir un hueco preguntando.
   regla es: lo que se canjea vive en `/club`.** Migrar la fila de DigitalMatch y retirar la
   vieja cierra este punto y el 12.10.2 de una vez.
 
+- [ ] **12.10.14 — 🔴 `/club` es una página huérfana: no hay un solo enlace en el sitio.**
+  Grep sobre todo `src/`: fuera de su propia carpeta, la única mención de `/club` es la
+  definición de la ruta en `App.jsx`. No está en el `Header`, ni en `/beneficios`, ni en el
+  carnet. **Se llega solo tipeando la URL.** Y el nav sí ofrece «Colaborá → Beneficios», que
+  apunta al catálogo **viejo**:
+
+  > **El camino descubrible lleva al catálogo sin puerta. El que tiene puerta está escondido.**
+
+  Explica por qué la fase 2 se probó bien y nadie notó nada: el canje real se hizo entrando
+  por URL directa (§11.7.12). **Una página que funciona y no está enlazada se verifica igual
+  que una que anda** — es el mismo patrón de §11.7.13, el reaper que existía sin que nada lo
+  llamara, en la capa de navegación.
+
+- [ ] **12.10.15 — Unificar el catálogo necesita TRES columnas antes de poder migrar.**
+  §12.4 decidió «deprecar el viejo migrando su contenido» y 12.10.8 lo hace sonar como mover
+  una fila. No lo es: `club_beneficios` todavía no puede recibir todo ese contenido.
+
+  ⚠️ **Este ítem dijo «CUATRO columnas» por un rato el 2026-09-02.** Son tres, y la
+  diferencia importa porque revela algo bueno: **el modelo nuevo está mejor normalizado que
+  el viejo.** Lo que en `benefits` eran columnas repetidas por beneficio, en el modelo nuevo
+  ya vive donde corresponde —en el comercio— y se llega por join.
+
+  | Campo que `/beneficios` renderiza | En el modelo nuevo | Qué hace falta |
+  |---|---|---|
+  | `slug` — la URL indexable | ❌ | **agregar a `club_beneficios`** |
+  | `instrucciones` — «¿Cómo acceder?» | ❌ | **agregar a `club_beneficios`** |
+  | `imagen_url` — imagen del beneficio | ❌ | **agregar**, nullable, con fallback al logo del comercio |
+  | `categoria` — el chip «TECNOLOGIA» | ✅ `club_comercios.rubro` = «Tecnología» | nada |
+  | logo, `sitio_web`, `contacto_email` | ✅ `partners` vía `club_comercios.partner_id` | nada — join anidado |
+  | título, descripción, términos, vigencia, % | ✅ | nada |
+
+  ⚠️ **Y un detalle de datos que se descubre acá:** `club_comercios.logo_url` está en **NULL**
+  para DigitalMatch. El logo tiene que salir de `partners.logo_url` por `partner_id`, así que
+  la consulta necesita un **embed anidado** y `logo_url` en el comercio queda como override
+  opcional. Si el join se escribe plano, la vidriera sale sin logo y nadie se entera hasta
+  mirarla.
+
 - [ ] **12.10.9 — El club sigue sin socios.** 0 de 23 personas con acceso vigente, así que el
   beneficio real está bloqueado para todo el mundo. **No es un problema del club**: es el
   bloqueante de §10.17 y se resuelve con aportes, no con código.
@@ -1487,6 +1563,50 @@ para no volver a descubrir un hueco preguntando.
   de canje» se cargó para validar el circuito. **Archivarlo** (`estado = 'baja'`) desde
   `/admin → Club de beneficios` cuando no se lo necesite: mientras esté activo lo ve
   cualquier visitante.
+
+#### E. La unificación del catálogo — CONSTRUIDA el 2026-09-02, sin aplicar
+
+> Los tres ítems 12.10.13/14/15 tienen el código escrito y validado, y **no están
+> cerrados**: cierran cuando se aplique en producción, en este orden y no en otro.
+
+**Qué se construyó:**
+
+| Pieza | Dónde | Qué garantiza |
+|---|---|---|
+| Migración aditiva | `20260902120000_club_beneficios_vidriera.sql` | `slug`, `instrucciones`, `imagen_url` en `club_beneficios` |
+| Migración de datos | `supabase/data/unificar_catalogo_beneficios.sql` | El beneficio hereda la URL vieja; la fila vieja y el beneficio de prueba se archivan |
+| El adaptador | `src/lib/club.js` → `mapearABeneficio()` | **La fuga es imposible por estructura**: la forma que sale no tiene dónde poner un código |
+| El saneo | `src/lib/club.js` → `sanearInstrucciones()` | Corta la frase que menciona un código, que era la tercera vía |
+| El CTA por estado | `src/lib/club.js` → `accionVidriera()` | Visitante → asociarse · con sesión sin aporte → aportar · con acceso → canjear. Nunca un callejón |
+| La consulta | `clubApi.js` → `getBeneficiosVidriera()` | Embed **anidado** a `partners`, que es de donde sale el logo |
+
+- [ ] **12.10.16 — 🔴 APLICAR, y el orden no es intercambiable.**
+
+  1. `bash tools/db.sh apply supabase/migrations/20260902120000_club_beneficios_vidriera.sql`
+  2. `bash tools/db.sh sql < supabase/data/unificar_catalogo_beneficios.sql`
+  3. Recién entonces desplegar el front.
+
+  **Si se despliega el front antes del paso 1**, `/beneficios` pide columnas que no
+  existen y el catálogo público queda vacío. **Si se hace el paso 2 sin el 3**, el sitio
+  vivo se queda sin catálogo. Es la única secuencia sin ventana rota.
+
+  ⚠️ Y falta lo que no se puede validar sin producción: **mirar `/beneficios` y
+  `/beneficios/:slug` en un navegador, en ancho de teléfono** (§11.7.10), y comprobar
+  que el CTA cambia con la sesión. Con 0 personas con acceso vigente (§12.10.9), el
+  estado «puede canjear» **solo se puede ver de verdad cuando exista un socio**.
+
+**Lo que la validación en Docker encontró y este archivo no decía:**
+
+- ⚠️ **`benefits.estado` solo admite `'activo'|'inactivo'`**, mientras
+  `club_beneficios.estado` admite `'borrador'|'activo'|'pausado'|'baja'`. **Son dos
+  vocabularios distintos para lo mismo.** El script de datos decía `'baja'` y habría
+  abortado la transacción entera contra producción. No lo encontró leerlo: lo encontró
+  correrlo.
+- ✅ **Y se cerró una excepción que §11.7.8 daba por permanente.** Ese cierre decía que
+  `comision_docs_storage.sql` «siempre falla en PG15 pelado». Con
+  `supabase/checks/pg15-bootstrap/` **las 15 migraciones aplican desde cero en PG15, la
+  versión de producción**, convergen al reaplicarse, y los cinco checks dan salida
+  idéntica con y sin la migración nueva. Ya no queda ninguna excepción declarada.
 
 #### D. Infraestructura del módulo
 
@@ -1497,6 +1617,10 @@ para no volver a descubrir un hueco preguntando.
   Free de Supabase no lo trae, así que **queda como deuda consciente, no como olvido**.
 
 - [ ] **12.10.12 — El runtime de las Edge Functions no se puede probar localmente.**
+  ⚠️ **Matizado el 2026-09-02:** sigue siendo cierto para el *runtime* de las funciones,
+  pero **ya no para el esquema**. `supabase/checks/pg15-bootstrap/` permite validar
+  migraciones, policies y triggers contra la **misma versión mayor y menor que
+  producción**, que era la mitad más peligrosa del problema.
   `supabase start` falla en la máquina de trabajo (`supabase/checks/README.md`). Por eso toda
   la lógica que decide algo vive en `club-reglas.ts`. Mientras siga así, **cada cambio en un
   `index.ts` se prueba recién en producción.**
