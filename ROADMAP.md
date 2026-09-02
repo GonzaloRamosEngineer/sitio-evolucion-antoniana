@@ -40,12 +40,14 @@ está bloqueado para todo el mundo.
 
 **Lo primero, en orden:**
 
-1. 🔴 **DESPLEGAR EL FRONT (12.10.17).** `/beneficios` está **vacío en producción** desde
-   el 2026-09-02: la base ya está unificada y el front desplegado todavía lee la tabla
-   vieja. Es una regresión visible, prevista, y es lo único urgente.
+1. ✅ **La unificación del catálogo está aplicada y desplegada** (12.10.16 y 12.10.17). La
+   fuga de `DMGlobal` está cerrada, hay un solo catálogo, el beneficio de prueba está
+   archivado y la URL vieja sigue viva. **Queda una sola cosa de esto: mirarlo en un
+   teléfono real (12.10.18)** — el chequeo headless no concluye.
 
-   ✅ Ya hecho y verificado: la fuga de `DMGlobal` está cerrada, el catálogo viejo no
-   publica nada y el beneficio de prueba está archivado (12.10.16). «Prueba interna del sistema de canje» quedó
+2. **Que alguien tenga acceso vigente.** Vuelve a ser *el* bloqueante, y ahora con más peso:
+   toda la vidriera está construida y verificada, y el estado «puede canjear» **sigue sin
+   poder ejercitarse** porque no hay una sola persona con aporte vigente (§10.17, §12.10.9). «Prueba interna del sistema de canje» quedó
    **activo** y lo ve cualquier visitante de `/club`. Se apaga en un minuto desde
    `/admin → Club de beneficios → DigitalMatch Global`, poniéndolo en «De baja». Es lo único
    con urgencia real, y no es técnico.
@@ -290,6 +292,24 @@ botón, un texto propio de esa página— y no solo el esqueleto. Un chequeo que
 `<nav>` y el peso aprueba el 404 sin haber mirado nada.
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
+
+### Cómo saber si un deploy llegó (y dos formas de creer que sí sin que haya llegado)
+
+Aprendido el 2026-09-02, las dos en la misma tarde:
+
+1. **`HTTP 200` no prueba que un archivo exista.** El SPA devuelve `index.html` con **200**
+   para cualquier ruta desconocida, así que `curl` a un chunk inexistente da 200 igual. Se
+   comprobó pidiendo `BenefitsPage-NOEXISTE.js`: mismo 200, mismo cuerpo. **La condición
+   útil es que el cuerpo NO sea HTML**, no el código de estado.
+
+2. **Los hashes de Vercel NO coinciden con los del build local.** Vercel corre `npm install`
+   fresco y resuelve otras versiones transitivas, así que el contenido difiere y el hash
+   con él: local `index-BF9WSxx3.js` contra `index-CnVEx8ZX.js` en producción. **Esperar el
+   chunk del build local es esperar un archivo que nunca va a existir.**
+
+**Lo que sí funciona: pedir la página con Chrome headless y buscar en el DOM un marcador
+del cambio** —un texto que antes no estaba, o uno que tenía que desaparecer—. Es la única
+verificación que mide lo que importa en vez de un proxy.
 
 ### Migraciones: validar en Docker, nunca contra producción
 
@@ -1599,8 +1619,55 @@ para no volver a descubrir un hueco preguntando.
   quirúrgico fila por fila, al lado. Y el paso 2 se corrió **primero en seco**
   (`COMMIT`→`ROLLBACK`) para leer los controles antes de confirmar; no dejó residuo.
 
-- [ ] **12.10.17 — 🔴 FALTA EL PASO 3: desplegar el front. `/beneficios` está vacío
-  ahora mismo.**
+- [x] ~~**12.10.17 — el paso 3, desplegar el front**~~ **✅ HECHO el 2026-09-02.**
+
+  Verificado en el DOM de producción con Chrome headless: `/beneficios` muestra el
+  beneficio con su logo y la categoría «Tecnología», `/club` lo muestra sin el de prueba,
+  la **URL vieja sigue viva** (se conservó el slug a propósito) y `DMGlobal` da **0
+  apariciones** en las tres páginas. Los 8 links del nav cruzados contra `App.jsx`: todos
+  existen.
+
+- [ ] **12.10.18 — Falta la pasada en ancho de teléfono, y NO se puede dar por hecha.**
+
+  Se intentó con Chrome headless a 390 px y **el resultado no concluye nada**: el contenido
+  sale recortado a la derecha, pero **sale igual de recortado en `/club` —que se arregló
+  para teléfono en su momento— y en la propia página 404**, que nadie tocó. O sea que el
+  método de captura no distingue «el sitio desborda» de «mi captura está mal dimensionada»,
+  y sin esa distinción no mide nada (§11.4).
+
+  **Lo que falta es mirarlo en un teléfono real**, o con emulación de dispositivo de verdad
+  (CDP, no `--window-size`). Anotado como pendiente y no como aprobado: dar por bueno un
+  chequeo que no puede fallar es exactamente lo que este archivo viene pagando.
+
+  ⚠️ Y sigue sin poder verse el estado «puede canjear» del CTA hasta que exista un socio con
+  aporte vigente (§12.10.9). Hoy se verifican «sin sesión» y «sin acceso».
+
+- [ ] **12.10.19 — Los dos bugs que el deploy hizo visibles, y la defensa que quedó.**
+
+  Ninguno lo encontró un test: los encontró **mirar la pantalla desplegada**. Van dos
+  jornadas seguidas así (§12.10.13 salió de abrir el sitio en un navegador).
+
+  **a) `/colaborar` no existe — la ruta es `/collaborate`, en inglés.** El link no falla:
+  React Router cae en el catch-all y renderiza el 404, que mide **25.865 bytes** y tiene
+  `<nav>` y `<footer>`, contra los 45.702 de la página real. **Es el mismo tropiezo que ya
+  documentaba §11.4, con la misma ruta.** Y lo peor: **el test propio afirmaba
+  `toBe('/colaborar')`, así que estaba de acuerdo con el bug y pasaba en verde.** Un valor
+  escrito a mano no puede detectar que el valor está mal.
+
+  ✅ **La defensa quedó en `src/lib/rutas-cta.test.js`**: lee las rutas de `App.jsx` y las
+  cruza contra cada `href` que `accionVidriera` puede emitir, en sus ocho estados. Con
+  control positivo (que `App.jsx` se pudo leer y declara >10 rutas — sin eso, un archivo
+  movido haría pasar el test por vacuidad) y negativo. **Se hizo fallar antes de creerle.**
+
+  **b) El bloque nuevo duplicaba el panel que ya existía.** La página de detalle **ya**
+  tenía un panel «Reservado» que resolvía el estado bloqueado, y lo dice mejor: explica que
+  se accede con la cuota al día o con una donación desde el valor de una cuota. El bloque
+  nuevo salió al lado, con dos mensajes y dos botones para lo mismo.
+
+  Es irónico de la manera que conviene anotar: **`accionVidriera` existe justamente para
+  que no haya dos lugares decidiendo sobre el mismo beneficio (§12.10.13), y al construirla
+  se agregó un cuarto sin mirar qué había.** De ahí la regla: **una pieza nueva no se agrega
+  a una pantalla sin leer primero qué ya renderiza esa pantalla.**
 
   Es la consecuencia prevista y documentada de hacer el paso 2 antes del 3: el front
   desplegado todavía lee `benefits`, que ya no publica nada. La página **no está rota**
