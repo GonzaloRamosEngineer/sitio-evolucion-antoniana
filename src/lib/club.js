@@ -68,6 +68,35 @@ export const etiquetaBeneficio = ({ tipo, valor } = {}) => {
 };
 
 /**
+ * El descuento en una frase COMPLETA, para un panel con lugar.
+ *
+ * POR QUÉ NO ALCANZA CON `etiquetaBeneficio` + « de descuento», que era lo que
+ * hacía `BenefitDetailPage`: la etiqueta corta es distinta según el tipo, así
+ * que un sufijo fijo funciona para uno y arruina los otros. Se veía en
+ * producción como **«30% OFF de descuento»** —redundante— y habría dicho
+ * **«2x1 de descuento»** y **«Regalo de descuento»** en cuanto se cargara un
+ * beneficio de esos tipos, que hoy no existe ninguno pero el ABM los ofrece.
+ *
+ * La regla: **el sufijo lo decide el tipo**, así que vive acá con el tipo y no
+ * en el JSX. `etiquetaBeneficio` se queda como está —es la correcta para una
+ * tarjeta o una lista, donde solo hay lugar para el número.
+ */
+export const fraseBeneficio = ({ tipo, valor } = {}) => {
+  switch (tipo) {
+    case 'porcentaje':
+      return valor == null ? null : `${Number(valor)}% de descuento`;
+    case 'monto_fijo':
+      return valor == null ? null : `$${Number(valor).toLocaleString('es-AR')} de descuento`;
+    case '2x1':
+      return '2x1';
+    case 'regalo':
+      return 'Regalo';
+    default:
+      return null;
+  }
+};
+
+/**
  * Qué mostrarle a la persona ante un `codigo_error` de las Edge Functions.
  *
  * Las funciones devuelven el texto ya redactado; esto es la red por si aparece
@@ -197,6 +226,9 @@ export const mapearABeneficio = (fila) => {
     instrucciones: sanearInstrucciones(fila.instrucciones),
     terminos: fila.terminos ?? null,
     descuento: etiquetaBeneficio(fila),
+    // La misma cosa en frase completa, para el panel del detalle. Se calcula
+    // acá y no en el JSX porque el sufijo depende del tipo (ver `fraseBeneficio`).
+    descuentoFrase: fraseBeneficio(fila),
     sitio_web: comercio?.partners?.sitio_web ?? null,
     contacto_email: comercio?.partners?.contacto_email ?? null,
     requiere_acceso: Boolean(fila.requiere_acceso),
@@ -263,7 +295,22 @@ export const faltaParaBeneficio = (beneficio, elegibilidad) => {
   if (faltanMeses != null) {
     partes.push(`${faltanMeses} ${faltanMeses === 1 ? 'mes' : 'meses'} de aporte`);
   }
-  if (faltaMonto != null) partes.push(`${faltaMonto.toLocaleString('es-AR')} acumulados`);
+  /*
+    ⚠️ EL `$` NO ES COSMÉTICO, y faltaba: en producción se leía «Te faltan 5
+    meses de aporte o 25.000 acumulados», un número de plata sin su moneda en
+    una pantalla que habla de plata. Lo vio el dueño del proyecto en
+    `/beneficios/...` el 2026-09-02.
+
+    Y el test NO lo atajó: asertaba `/20\.000/`, que pasa igual sin el signo.
+    Es el mismo modo de fallo que §11.4 — una aserción que le da la razón al
+    defecto. Ahora fija `/\$20\.000/`.
+
+    «más acumulados» y no «acumulados» pelado porque `faltaMonto` es lo que
+    RESTA, no el total: «$25.000 acumulados» se puede leer como el umbral.
+  */
+  if (faltaMonto != null) {
+    partes.push(`$${faltaMonto.toLocaleString('es-AR')} más acumulados`);
+  }
   return { faltanMeses, faltaMonto, texto: partes.join(' o ') };
 };
 

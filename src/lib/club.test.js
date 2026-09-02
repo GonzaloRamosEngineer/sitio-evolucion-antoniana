@@ -5,6 +5,7 @@ import {
   agruparCodigo,
   estadoCanje,
   etiquetaBeneficio,
+  fraseBeneficio,
   mensajeDeError,
   sanearInstrucciones,
   mapearABeneficio,
@@ -73,6 +74,50 @@ describe('estadoCanje', () => {
 
   it('sin canje no rompe', () => {
     expect(estadoCanje(null, ahora)).toBe('ninguno');
+  });
+});
+
+describe('fraseBeneficio', () => {
+  /*
+    POR QUÉ ESTA FUNCIÓN EXISTE. `BenefitDetailPage` armaba la frase como
+    `{descuento} de descuento`, o sea etiqueta corta + sufijo fijo. En
+    producción se leía **«30% OFF de descuento»** —redundante, y así lo vio el
+    dueño del proyecto— y el problema real era peor que la redundancia: el
+    sufijo es correcto para UN tipo y falso para los otros.
+  */
+  it('la frase es completa y no repite «descuento»', () => {
+    expect(fraseBeneficio({ tipo: 'porcentaje', valor: 30 })).toBe('30% de descuento');
+    expect(fraseBeneficio({ tipo: 'monto_fijo', valor: 5000 })).toBe('$5.000 de descuento');
+  });
+
+  it('🔑 2x1 y regalo NO llevan «de descuento», que era el bug latente', () => {
+    // Con el sufijo en el JSX, el día que se cargue un 2x1 la página iba a
+    // decir «2x1 de descuento» y «Regalo de descuento». No hay ninguno cargado
+    // hoy, pero el ABM ofrece los cuatro tipos: era una bomba de tiempo
+    // esperando un dato, igual que §12.10.21 con los nombres largos.
+    expect(fraseBeneficio({ tipo: '2x1' })).toBe('2x1');
+    expect(fraseBeneficio({ tipo: 'regalo' })).toBe('Regalo');
+    for (const tipo of ['2x1', 'regalo']) {
+      expect(fraseBeneficio({ tipo })).not.toMatch(/descuento/);
+    }
+  });
+
+  it('sin valor o con un tipo desconocido devuelve null y no una frase rota', () => {
+    expect(fraseBeneficio({ tipo: 'porcentaje', valor: null })).toBeNull();
+    expect(fraseBeneficio({ tipo: 'monto_fijo' })).toBeNull();
+    expect(fraseBeneficio({ tipo: 'inventado' })).toBeNull();
+    expect(fraseBeneficio()).toBeNull();
+  });
+
+  it('el mapper la expone junto a la etiqueta corta, sin pisarla', () => {
+    // Las dos convivien: la corta para tarjetas y listas, la frase para el
+    // panel del detalle. Que el mapper devuelva las dos es lo que evita que
+    // una pantalla vuelva a reconstruir la frase a mano.
+    const b = mapearABeneficio({
+      id: 'b1', titulo: 'X', tipo: 'porcentaje', valor: 30, estado: 'activo',
+    });
+    expect(b.descuento).toBe('30% OFF');
+    expect(b.descuentoFrase).toBe('30% de descuento');
   });
 });
 
@@ -340,7 +385,14 @@ describe('faltaParaBeneficio', () => {
     expect(f.faltanMeses).toBe(4);
     expect(f.faltaMonto).toBe(20000);
     expect(f.texto).toMatch(/4 meses/);
-    expect(f.texto).toMatch(/20\.000/);
+    /*
+      ⚠️ Esta aserción decía `/20\.000/` y **le daba la razón al defecto**: en
+      producción se leía «o 25.000 acumulados», sin el signo, y el test pasaba
+      igual. Un número de plata sin moneda, en una pantalla sobre plata.
+      Ahora fija el `$`, que es lo que se estaba escapando.
+    */
+    expect(f.texto).toMatch(/\$20\.000/);
+    expect(f.texto).toMatch(/más acumulados/);
   });
 
   it('el borde exacto cumple, y uno menos no', () => {

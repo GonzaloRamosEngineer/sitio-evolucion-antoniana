@@ -298,10 +298,14 @@ const BenefitDetailPage = () => {
                         </div>
                         )}
 
-                        {benefit.descuento && (
+                        {/* La frase la arma `fraseBeneficio` según el TIPO. Acá
+                            decía `{benefit.descuento} de descuento`, que daba
+                            «30% OFF de descuento» y habría dado «2x1 de
+                            descuento». El sufijo no es del JSX. */}
+                        {(benefit.descuentoFrase ?? benefit.descuento) && (
                             <div className="flex items-center gap-2 text-brand-action font-bold bg-brand-sand/60 p-3 rounded-sm border border-brand-dark/10 justify-center">
                                 <Percent className="h-4 w-4" />
-                                <span>{benefit.descuento} de descuento</span>
+                                <span>{benefit.descuentoFrase ?? benefit.descuento}</span>
                             </div>
                         )}
                     </div>

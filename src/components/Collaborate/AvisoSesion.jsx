@@ -91,12 +91,21 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
                   aporte igual queda a tu nombre</span> — la atribución no depende de este
                   email.
                 </p>
+                {/*
+                  ⚠️ El placeholder es GENÉRICO y no `user.email`, que fue el
+                  primer intento. Un placeholder con el email real de la persona
+                  **se lee como un campo ya completado**: parece que el dato está
+                  puesto y no hace falta escribir nada, justo en el campo cuyo
+                  único motivo de existir es escribir OTRO email. El email de la
+                  sesión ya se dice arriba («Vas a aportar como…») y se repite en
+                  el aviso de error, que es donde sirve.
+                */}
                 <Input
                   id="email-pago"
                   type="email"
                   inputMode="email"
                   autoComplete="email"
-                  placeholder={user.email}
+                  placeholder="otro@email.com"
                   value={email}
                   onChange={(e) => onEmailChange(e.target.value)}
                   className="mt-2 h-11 max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"

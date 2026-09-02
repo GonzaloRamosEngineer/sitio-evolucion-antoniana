@@ -136,13 +136,21 @@ describe('AvisoSesion — con sesión, pagar con otro email (§10.24)', () => {
     expect(screen.getByRole('button', { name: /Pagar con otro email/i })).toBeInTheDocument();
   });
 
-  it('al abrirla aparece el campo, con el email de la sesión como referencia', () => {
+  it('al abrirla aparece el campo, con un placeholder GENÉRICO', () => {
     enRouter(<AvisoSesion {...conSesion()} />);
     fireEvent.click(screen.getByRole('button', { name: /Pagar con otro email/i }));
 
     const campo = screen.getByLabelText(/Email para el pago/i);
     expect(campo).toBeInTheDocument();
-    expect(campo).toHaveAttribute('placeholder', 'socia@test.com');
+    /*
+      ⚠️ El primer intento usaba `user.email` de placeholder, y el dueño del
+      proyecto lo señaló al verlo desplegado: un placeholder con el email real
+      **se lee como un campo ya completado**, justo en el campo cuyo único
+      motivo de existir es escribir OTRO email. El campo tiene que verse vacío.
+    */
+    expect(campo).toHaveAttribute('placeholder', 'otro@email.com');
+    expect(campo).not.toHaveAttribute('placeholder', 'socia@test.com');
+    expect(campo).toHaveValue('');
   });
 
   it('aclara que el aporte igual queda a nombre de la persona', () => {
