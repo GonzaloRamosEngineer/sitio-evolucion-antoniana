@@ -77,7 +77,7 @@ const ClubPage = () => {
 
       {/* El aviso va antes del catálogo: enterarse de que no alcanza recién en
           la caja es la peor forma de descubrirlo (12.3, casos borde). */}
-      {bloqueados > 0 && !tieneAcceso && (
+      {!sinSesion && bloqueados > 0 && !tieneAcceso && (
         <div className="mt-6 flex flex-col gap-3 rounded-sm border border-brand-gold/40 bg-brand-gold/5 p-4 sm:flex-row sm:items-center sm:gap-4">
           <Lock aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-gold" />
           <p className="min-w-0 flex-1 text-sm text-brand-dark">
@@ -95,9 +95,9 @@ const ClubPage = () => {
         <div className="mt-6 flex flex-col gap-3 rounded-sm border border-brand-dark/15 p-4 sm:flex-row sm:items-center sm:gap-4">
           <LogIn aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-dark/60" />
           <p className="min-w-0 flex-1 text-sm text-brand-dark">
-            Para canjear un beneficio necesitás iniciar sesión: el código se emite a tu nombre.
+            Iniciá sesión para canjear: el código se emite a tu nombre.
           </p>
-          <Button variant="action" asChild>
+          <Button variant="action" asChild className="shrink-0">
             <Link to="/login" state={{ from: { pathname: '/club' } }}>Iniciar sesión</Link>
           </Button>
         </div>
@@ -118,6 +118,9 @@ const ClubPage = () => {
             const comercio = b.club_comercios;
             const etiqueta = etiquetaBeneficio(b);
             const bloqueado = b.requiere_acceso && !tieneAcceso;
+            // Son DOS preguntas, no una: primero si hay sesión —el canje se
+            // emite a nombre de alguien— y después si esa persona tiene acceso.
+            const puedeUsar = !sinSesion && !bloqueado;
             return (
               // En mobile va apilado y en sm+ en fila. Con todo en una fila y el
               // botón en `shrink-0`, en un teléfono el botón se queda con el
@@ -141,23 +144,17 @@ const ClubPage = () => {
                     <span className="text-lg font-bold text-brand-action">{etiqueta}</span>
                   )}
 
-                  {/* Sin acceso NO se ofrece generar: un código que va a fallar
-                      en el mostrador es la forma más rápida de perder un socio. */}
-                  {sinSesion ? (
-                    <Button variant="action" asChild className="flex-1 sm:flex-none">
-                      <Link to="/login" state={{ from: { pathname: '/club' } }}>
-                        <LogIn aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
-                        Iniciá sesión
-                      </Link>
-                    </Button>
-                  ) : bloqueado ? (
-                    <Button variant="outline" asChild className="flex-1 sm:flex-none">
-                      <Link to="/collaborate">
-                        <Lock aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
-                        Necesitás aporte vigente
-                      </Link>
-                    </Button>
-                  ) : (
+                  {/* UN botón por ítem SOLO cuando la acción está disponible.
+                      Si no lo está, va una etiqueta callada que dice por qué, y
+                      la acción vive UNA sola vez en el aviso de arriba: repetir
+                      «Iniciá sesión» en cada fila convierte la página en una
+                      pared de botones rojos y esconde lo único que importa, que
+                      es el beneficio.
+
+                      Lo que NO cambia: sin acceso no se ofrece generar. Un
+                      código que va a fallar en el mostrador es la forma más
+                      rápida de perder un socio (12.3). */}
+                  {puedeUsar ? (
                     <Button
                       variant="action"
                       className="flex-1 sm:flex-none"
@@ -166,7 +163,12 @@ const ClubPage = () => {
                       <Ticket aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
                       Usar ahora
                     </Button>
-                  )}
+                  ) : b.requiere_acceso ? (
+                    <span className="flex items-center gap-1.5 text-xs text-brand-dark/50">
+                      <Lock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                      Para socios
+                    </span>
+                  ) : null}
                 </div>
               </li>
             );

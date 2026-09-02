@@ -2613,6 +2613,14 @@ renderice. El hueco estaba en el estado «visitante anónimo mirando un benefici
 que es una combinación que solo aparece usando la cosa. **Lo encontró el primer uso real,
 como el hueco del ABM lo encontró una pregunta.**
 
+**Y el primer arreglo estuvo mal por exceso.** Se agregó el aviso de sesión arriba **sin
+sacar el botón de cada fila**, así que la pantalla quedó con cuatro CTA y tres decían lo
+mismo: una pared de botones rojos que tapaba los beneficios, que es lo único que la
+página tiene para mostrar. La regla que quedó: **la acción va UNA vez, arriba; por ítem
+solo hay botón cuando la acción está realmente disponible**, y si no, una etiqueta callada
+que dice por qué («Para socios»). Arreglar agregando, sin sacar lo que sobra, es media
+corrección.
+
 ---
 
 ---
