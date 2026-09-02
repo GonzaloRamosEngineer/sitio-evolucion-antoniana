@@ -17,7 +17,8 @@
 //     cuando el QR no se puede escanear, que en un mostrador pasa seguido.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, Clock, Loader2, QrCode, TriangleAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, Clock, Loader2, LogIn, QrCode, TriangleAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -35,6 +36,9 @@ const PantallaCanje = ({ beneficio, comercio, sucursalId = null, onCerrar }) => 
   const [paso, setPaso] = useState('aviso'); // aviso | generando | activo | listo | error
   const [canje, setCanje] = useState(null);
   const [error, setError] = useState(null);
+  // El MOTIVO, no solo el texto: de él depende qué salida se le ofrece a la
+  // persona. Ante una sesión vencida, «probar de nuevo» falla para siempre.
+  const [errorCodigo, setErrorCodigo] = useState(null);
   const [ahora, setAhora] = useState(() => new Date());
   const canalRef = useRef(null);
 
@@ -83,6 +87,7 @@ const PantallaCanje = ({ beneficio, comercio, sucursalId = null, onCerrar }) => 
     const { data, error: err } = await generarCanje(beneficio.id, sucursalId);
     if (err) {
       setError(mensajeDeError(data, 'No se pudo generar el código.'));
+      setErrorCodigo(data?.codigo_error ?? null);
       setPaso('error');
       return;
     }
@@ -125,6 +130,15 @@ const PantallaCanje = ({ beneficio, comercio, sucursalId = null, onCerrar }) => 
         )}
 
         <div className="flex flex-wrap gap-3">
+          {/* Sesión vencida: la salida es iniciar sesión, no reintentar. */}
+          {errorCodigo === 'sesion' ? (
+            <Button variant="action" asChild>
+              <Link to="/login" state={{ from: { pathname: '/club' } }}>
+                <LogIn aria-hidden="true" className="mr-2 h-4 w-4" />
+                Iniciar sesión
+              </Link>
+            </Button>
+          ) : (
           <Button variant="action" onClick={pedirCodigo} disabled={paso === 'generando'}>
             {paso === 'generando' ? (
               <>
@@ -138,6 +152,7 @@ const PantallaCanje = ({ beneficio, comercio, sucursalId = null, onCerrar }) => 
               </>
             )}
           </Button>
+          )}
           {onCerrar && (
             <Button variant="outline" onClick={onCerrar}>
               Volver

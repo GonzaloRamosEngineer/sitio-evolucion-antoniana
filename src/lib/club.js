@@ -75,6 +75,8 @@ export const etiquetaBeneficio = ({ tipo, valor } = {}) => {
  * crudo: 'limite_alcanzado' en pantalla no le dice nada a nadie.
  */
 const MENSAJES = {
+  sesion: 'Iniciá sesión para usar tus beneficios.',
+  config: 'El servicio no está disponible en este momento. Probá más tarde.',
   sin_acceso: 'Este beneficio es para socios con acceso vigente.',
   fuera_de_ventana: 'Este beneficio no está disponible en este momento.',
   agotado: 'Este beneficio se agotó.',

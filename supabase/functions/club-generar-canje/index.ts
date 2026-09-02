@@ -196,7 +196,9 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ error: "No se pudo generar un código libre, probá de nuevo" }, 503);
   } catch (e) {
-    if (e instanceof ErrorHttp) return jsonResponse({ error: e.message }, e.status);
+    if (e instanceof ErrorHttp) {
+      return jsonResponse({ error: e.message, codigo_error: e.codigo }, e.status);
+    }
     console.error("club-generar-canje: error inesperado", e);
     return jsonResponse({ error: "Error inesperado" }, 500);
   }

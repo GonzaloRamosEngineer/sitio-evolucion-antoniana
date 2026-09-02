@@ -19,7 +19,13 @@ export interface Contexto {
 }
 
 export class ErrorHttp extends Error {
-  constructor(public status: number, message: string) {
+  /**
+   * `codigo` viaja al front para que la pantalla pueda ACTUAR, no solo mostrar
+   * texto. Sin él, un 401 por sesión vencida y un 500 por config rota se ven
+   * iguales desde el browser, y la única salida que se le puede ofrecer a la
+   * persona es «probar de nuevo» — que en el primer caso falla para siempre.
+   */
+  constructor(public status: number, message: string, public codigo?: string) {
     super(message);
   }
 }
@@ -34,17 +40,17 @@ export async function contextoDesde(req: Request): Promise<Contexto> {
     // Sin esto el módulo emitiría canjes contra vaya a saber qué base, o
     // fallaría con un error que no dice nada. Mismo criterio que la guarda de
     // `src/lib/supabase.js`: fallar ruidoso.
-    throw new ErrorHttp(500, "Configuración del servidor incompleta");
+    throw new ErrorHttp(500, "Configuración del servidor incompleta", "config");
   }
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) throw new ErrorHttp(401, "Falta token de autorización");
+  if (!authHeader) throw new ErrorHttp(401, "Iniciá sesión para usar tus beneficios.", "sesion");
 
   const comoInvocador = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: { user }, error } = await comoInvocador.auth.getUser();
-  if (error || !user) throw new ErrorHttp(401, "Sesión inválida");
+  if (error || !user) throw new ErrorHttp(401, "Tu sesión no está activa. Iniciá sesión y probá de nuevo.", "sesion");
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },

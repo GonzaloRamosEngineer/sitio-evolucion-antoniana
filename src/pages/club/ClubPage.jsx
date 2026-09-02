@@ -13,7 +13,7 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Lock, Store, Ticket } from 'lucide-react';
+import { Lock, LogIn, Store, Ticket } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -48,6 +48,10 @@ const ClubPage = () => {
   }, []);
 
   const tieneAcceso = Boolean(acceso?.tiene_acceso);
+  // Sin sesión NO se puede canjear NADA, ni siquiera un beneficio abierto: el
+  // canje se emite a nombre de una persona. Ofrecer «Usar ahora» a un visitante
+  // anónimo lo mandaba a un error, que es exactamente lo que 12.3 prohíbe.
+  const sinSesion = !user;
   const bloqueados = useMemo(
     () => (beneficios ?? []).filter((b) => b.requiere_acceso && !tieneAcceso).length,
     [beneficios, tieneAcceso],
@@ -83,6 +87,18 @@ const ClubPage = () => {
           </p>
           <Button variant="action" asChild>
             <Link to="/collaborate">Hacer mi aporte</Link>
+          </Button>
+        </div>
+      )}
+
+      {sinSesion && (
+        <div className="mt-6 flex flex-col gap-3 rounded-sm border border-brand-dark/15 p-4 sm:flex-row sm:items-center sm:gap-4">
+          <LogIn aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-dark/60" />
+          <p className="min-w-0 flex-1 text-sm text-brand-dark">
+            Para canjear un beneficio necesitás iniciar sesión: el código se emite a tu nombre.
+          </p>
+          <Button variant="action" asChild>
+            <Link to="/login" state={{ from: { pathname: '/club' } }}>Iniciar sesión</Link>
           </Button>
         </div>
       )}
@@ -127,7 +143,14 @@ const ClubPage = () => {
 
                   {/* Sin acceso NO se ofrece generar: un código que va a fallar
                       en el mostrador es la forma más rápida de perder un socio. */}
-                  {bloqueado ? (
+                  {sinSesion ? (
+                    <Button variant="action" asChild className="flex-1 sm:flex-none">
+                      <Link to="/login" state={{ from: { pathname: '/club' } }}>
+                        <LogIn aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />
+                        Iniciá sesión
+                      </Link>
+                    </Button>
+                  ) : bloqueado ? (
                     <Button variant="outline" asChild className="flex-1 sm:flex-none">
                       <Link to="/collaborate">
                         <Lock aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" />

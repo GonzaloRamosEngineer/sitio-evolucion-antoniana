@@ -163,7 +163,9 @@ Deno.serve(async (req) => {
       beneficio: { id: beneficio.id, titulo: beneficio.titulo },
     });
   } catch (e) {
-    if (e instanceof ErrorHttp) return jsonResponse({ error: e.message }, e.status);
+    if (e instanceof ErrorHttp) {
+      return jsonResponse({ error: e.message, codigo_error: e.codigo }, e.status);
+    }
     console.error("club-confirmar-canje: error inesperado", e);
     return jsonResponse({ error: "Error inesperado" }, 500);
   }

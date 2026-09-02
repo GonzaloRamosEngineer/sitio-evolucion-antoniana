@@ -2586,6 +2586,35 @@ apilando en mobile (`flex-col` → `sm:flex-row`), con el mismo tratamiento en e
 
 ---
 
+#### 11.7.11 — El primer uso real encontró lo que ninguna prueba buscaba (2026-09-01)
+
+Con el comercio cargado y el beneficio de prueba activo, el primer intento de generar un
+canje desde un teléfono devolvió **«Sesión inválida»**.
+
+No era un bug del canje: era que **`/club` ofrecía «Usar ahora» a un visitante sin sesión**.
+El botón se decidía solo con `requiere_acceso`, y un beneficio abierto —justamente el de
+prueba, que existe para no exigir aporte— le aparecía canjeable a cualquiera. La Edge
+Function hacía lo correcto y rechazaba; el problema era haberlo ofrecido.
+
+Es **exactamente lo que §12.3 prohíbe** en sus casos borde: *«nunca dejarlo generar un
+código que va a fallar»*. Estaba escrito, y aun así se implementó mal, porque la condición
+se pensó como «¿tiene acceso?» cuando en realidad son dos preguntas: **¿hay sesión?** y
+después **¿tiene acceso?**. Sin sesión no se puede canjear NADA, ni siquiera un beneficio
+abierto: el canje se emite a nombre de una persona.
+
+**Y el error era un callejón sin salida.** Ofrecía «Probar de nuevo», que ante una sesión
+que no existe falla para siempre. De ahí que `ErrorHttp` ahora lleve un `codigo` que viaja
+al front: con `codigo_error: 'sesion'` la pantalla ofrece **iniciar sesión** en vez de
+reintentar. Un mensaje de error sirve si la persona puede hacer algo con él.
+
+**La lección: ninguna de las verificaciones podía encontrar esto.** Los tests cubren
+lógica pura; el check SQL cubre las RLS; el chequeo en navegador cubre que la página
+renderice. El hueco estaba en el estado «visitante anónimo mirando un beneficio abierto»,
+que es una combinación que solo aparece usando la cosa. **Lo encontró el primer uso real,
+como el hueco del ABM lo encontró una pregunta.**
+
+---
+
 ---
 
 ## 12. Club de beneficios: el canje (propuesta, 2026-08-30)
