@@ -9,11 +9,17 @@ reconstruir, y varias veces resultó decisivo — que el baseline supersede las 
 de junio, que los logs se centralizaron a propósito en `dataResult.js`, que
 `og-default.png` se dejó sin optimizar por una razón. Eso vive acá.
 
-**La numeración de los ítems se conserva igual** (`4.1`, `6.2`, …): hay 35 archivos de
-código con comentarios que la citan.
+**La numeración de los ítems se conserva igual** (`4.1`, `6.2`, …): hay **85 archivos** de código con
+comentarios que la citan (remedido el 2026-09-02; decía 35).
 
 **Para saber qué falta hacer, ver `ROADMAP.md`.** Este archivo no se actualiza salvo para
 agregarle trabajo terminado.
+
+**Segunda incorporación, 2026-09-02.** El ROADMAP volvió a acumular pasado y se le sacaron
+~1.760 líneas: `§C`, `§10.10`–`§10.21`, `§11` completa y `§12.1`. Están al final, con su
+numeración intacta y el criterio del corte explicado. **La regla que salió de ahí: el cierre
+de jornada se escribe acá, no en el ROADMAP** — escribirlo en el archivo de lo pendiente es
+lo que lo llenó de pasado las dos veces.
 
 ---
 
@@ -1196,3 +1202,1790 @@ INSERT/UPDATE/DELETE.
   columna rompería el panel admin (mismo rol `authenticated`), y partir el código a otra
   tabla es un refactor que la fase 2 del club tira igual. Hasta entonces, no marcar como
   exclusivo un beneficio cuyo código valga dinero.
+
+
+---
+
+## Secciones trasladadas desde `ROADMAP.md` el 2026-09-02
+
+El ROADMAP volvió a acumular pasado: de 3.185 líneas, ~1.760 eran crónica de trabajo
+ya terminado y verificado. Es exactamente lo que motivó la partición del 2026-08-16, y
+la razón por la que se repitió es la misma de siempre: **cada jornada cerró escribiendo
+su cierre en el archivo de lo pendiente.**
+
+**El criterio del traslado —y conviene no perderlo—** es que el ROADMAP tiene *tres*
+clases de contenido, no dos:
+
+| Clase | Ejemplo | Dónde va |
+|---|---|---|
+| **Pendiente** | §12.10, §10.4, §A | ROADMAP |
+| **Especificación vigente** que hace falta para construir lo pendiente, y que el código cita | §10.9, §12.5, §12.6 | ROADMAP |
+| **Crónica** de lo ya construido y verificado | esto | acá |
+
+Lo de abajo se validó contra producción antes de moverlo (base, `/health`, tests y
+`npm audit`), no se movió por lo que decía el propio texto.
+
+**La numeración se conserva**: `§10.17`, `§11.4`, `§12.1` siguen llamándose igual porque
+85 archivos las citan. Si el código dice §11.6.3, está acá.
+
+## C. El fix de seguridad — APLICADO a producción el 2026-08-16
+
+> **Estado: cerrado.** La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql`
+> se aplicó a producción el 2026-08-16 y la fuga está cerrada, verificado vía PostgREST:
+> `user_support_history` devuelve **404** y `fundacion_metrics` **401**. El Dashboard
+> siguió funcionando (`total_donado = 7141`), que era lo que esta migración podía romper.
+> El check T8 de `supabase/checks/rls-check.sql` devuelve 0 vistas sin `security_invoker`,
+> así que la regresión ahora la detecta la verificación y no depende de que alguien mire.
+>
+> **Lo que sigue abajo se conserva como procedimiento**, porque es el que hay que repetir
+> ante cualquier fix de seguridad futuro, y porque la lección del final es la que importa.
+
+La migración `20260816120000_fix_view_rls_bypass_and_anon_grants.sql` estaba validada en
+Docker y sin aplicar. Mientras tanto, la fuga estuvo abierta.
+
+**Qué arregla.** Dos vistas (`user_support_history`, `fundacion_metrics`) eran
+`OWNER TO postgres` sin `security_invoker`, así que corrían con permisos del dueño y
+**puenteaban las RLS**. Verificado contra producción pidiendo solo conteos:
+
+| Como `anon` | Tipo | Filas |
+|---|---|---|
+| `donations`, `memberships`, `users`, `registrations` | tabla | 0 — RLS funciona |
+| `user_support_history` | vista | **20 — fuga** |
+| `fundacion_metrics` | vista | **1 — fuga** |
+
+Los *mismos* datos, negados por la tabla y entregados por la vista. Se exponía
+`amount`, `status`, `payment_id`, `preapproval_id` y `plan` por persona.
+
+**Cómo aplicarla:**
+
+```bash
+# 1. Backup reciente de la base (no es opcional).
+# 2. Revalidar en Docker — el procedimiento completo en supabase/checks/README.md.
+#    Los checks T8/T9/T10 de rls-check.sql cubren esta regresión.
+# 3. Aplicar. Como el historial remoto está vacío (ver §B), conviene pegar el SQL
+#    en el editor web en vez de `supabase db push`, que intentaría correr las
+#    cuatro migraciones.
+```
+
+**Después de aplicar, confirmar que la fuga cerró** (debe dar `permission denied` y `404`):
+
+```bash
+URL=https://<proyecto>.supabase.co; KEY=<anon key>
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/user_support_history?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 404
+curl -s -o /dev/null -w "%{http_code}
+" "$URL/rest/v1/fundacion_metrics?limit=0"   -H "apikey: $KEY" -H "Authorization: Bearer $KEY"   # esperado: 401/403
+```
+
+**Y confirmar que el Dashboard sigue funcionando**, que es lo que esta migración podía
+romper: entrar con una sesión iniciada y verificar que "total donado" y "suscripciones
+activas" no quedaron en cero. En Docker se verificó que `authenticated` sigue viendo los
+valores, pero conviene mirarlo en la app real.
+
+**Lección que deja, y es la que importa.** El razonamiento de §10.1.g —"no es un agujero
+hoy porque RLS está habilitado en las 15 tablas"— es correcto **para tablas**. Las vistas
+no son tablas, y eran justo los dos objetos donde el argumento no aplicaba. No fue un
+descuido sino un punto ciego lógico: **la afirmación de seguridad se escribió sobre una
+categoría de objeto y el esquema tenía otra.** Por eso T8 ahora falla si alguien crea
+cualquier vista sin `security_invoker`: la verificación tiene que ser automática, no
+depender de que alguien mire en el momento justo.
+
+---
+
+
+### 10.10 — Evidencia de producción: el canal recurrente nunca funcionó (2026-08-16)
+
+Contrastando el panel de MercadoPago contra la base. **Confirma tres ítems de 10.1 que
+estaban planteados como hipótesis y agrega uno nuevo.**
+
+Estado en MercadoPago: **7 suscripciones, ninguna activa.** Cinco `Cancelada`, dos
+`Vencida`. La única de $5.000 figura **"Sin cobro"**: nunca cobró un peso.
+
+#### a) El webhook no sincroniza el estado de vuelta ← lo más grave
+
+| | Base | MercadoPago |
+|---|---|---|
+| Suscripción $5.000 | `pending` | **Cancelada** |
+| Suscripción $5.000 | `pending` | no aparece |
+
+La base dice `pending` desde noviembre de 2025 para algo que MercadoPago da por cancelado.
+**El estado de `memberships` no es confiable**: refleja el momento en que se creó la
+suscripción, no lo que pasó después. Todo lo que se construya sobre ese campo —acceso,
+padrinazgo, rendición— hereda el problema.
+
+El webhook vive fuera del repo (`mp-supabase-webhook.onrender.com`), sin tests y con
+arranque en frío. Es el punto único de falla sobre el flujo que genera la plata.
+
+#### b) `Vencida` no existe en el esquema
+
+El CHECK de `memberships` admite `pending|active|paused|cancelled`. MercadoPago tiene
+además **`Vencida`** (falló el cobro repetidamente), y hay dos así. **No hay dónde
+guardarlo**: ni con el webhook arreglado se podría registrar ese estado. Falta un valor en
+el CHECK, y falta decidir si "vencida" corta el acceso o entra en el período de gracia de
+10.4.3.
+
+#### c) 10.1.f ya pasó — no era teórico
+
+**Cuatro suscripciones idénticas**, mismo email, mismo monto, el mismo día (18/oct/2025).
+Es exactamente "un socio puede acumular varias membresías activas, sin restricción de
+unicidad". Salió gratis porque eran de $50 y se cancelaron todas; **si se hubieran
+activado, a esa persona se le cobraba cuatro veces por mes.**
+
+→ **Subir 10.1.f de la fase 5 ("higiene") a la fase 1.** Un índice único parcial sobre
+`(user_id) where status in ('active','pending')` cuesta una línea y evita un cobro
+múltiple a una persona real.
+
+#### d) 10.1.c confirmado: tres emails, una persona
+
+La misma persona aparece como `gonzaramosmp@gmail.com` y `gonramo4200@gmail.com` en
+MercadoPago, y con un registro asociado a la cuenta `info@evolucionantoniana.com` en la
+base. `payer_email` es el mail de MercadoPago y puede no ser el de la cuenta: sin
+reconciliación, el sistema ve tres personas.
+
+#### La buena noticia, y no es menor
+
+Las 7 suscripciones tienen pinta de pruebas: montos de $50, la misma persona repetida,
+cuatro clics el mismo día. **No hay ni un padrino real.** O sea que el canal recurrente
+no está *roto*: **nunca llegó a funcionar.**
+
+Eso cambia el riesgo de todo el §10 y conviene aprovecharlo:
+
+- **No hay que migrar suscriptores vivos.** Ni backfill delicado, ni riesgo de cobrar de
+  más, ni corte de servicio a nadie.
+- **Se puede rediseñar el modelo de cobro sin costo de transición.**
+- **Este es el momento más barato que va a haber para cambiarlo.** Cada padrino real que
+  entre a partir de ahora encarece la migración.
+
+⚠️ **Corolario para el negocio:** el canal recurrente está **sin estrenar, no degradado**.
+Antes de promocionarlo hay que arreglar (a) y (c), o el primer padrino de verdad entra a
+un circuito que no sabe informar si su suscripción sigue viva.
+
+---
+
+### 10.11 — Fase 1 aplicada: qué quedó funcionando y qué no (2026-08-16)
+
+Las dos migraciones de fase 1 están **en producción**. Esta sección existe para que
+nadie tenga que deducir del esquema qué parte del circuito ya cierra y cuál no.
+
+#### Lo que está vivo
+
+| Migración | Qué dejó | Verificado en producción |
+|---|---|---|
+| `20260816130000` | `expired` en el CHECK, reaper de `pending` fósiles, índice duplicado borrado | Marcó **exactamente 5** filas, igual que el conteo previo |
+| `20260816140000` | `destinos`, `aportes`, `memberships.destino_id`, índice único, trigger de contadores, RLS | `destinos` → HTTP 200 como `anon`; `aportes` → **401** |
+
+Estado de `memberships` después del reaper: `cancelled 6 · expired 5 · paused 2 · pending 3`.
+Los 3 `pending` que quedan son de menos de 30 días, así que el reaper no los tocó; según
+MercadoPago tampoco son reales. **No se amplió la ventana a propósito:** son síntoma del
+webhook, no de los datos, y bajar el umbral para taparlos sería tratar el síntoma.
+
+El panel `/admin → Destinos` permite crear, editar y cerrar destinos. Un destino con
+aportes no ofrece el botón de borrar, porque la FK es `ON DELETE RESTRICT` y un libro
+contable no se borra.
+
+#### El eslabón que falta, y es uno solo
+
+`Colaborar` ya deja elegir destino, y la elección viaja a MercadoPago en
+`external_reference` (`destino:<uuid>`) — el único campo que MercadoPago devuelve intacto
+en el webhook. Pero **el microservicio de Render no lee ese campo y tampoco escribe en
+`aportes`**: hoy escribe `donations` y `memberships` y nada más.
+
+O sea, hasta que se toque Render:
+
+- ✅ El aportante elige destino y lo ve en el checkout de MercadoPago (va en `reason` /
+  `description`).
+- ✅ La elección llega al microservicio.
+- ❌ No aterriza en `aportes`, así que **no suma al progreso del destino**.
+
+Se manda igual porque el día que se toque Render el dato ya va a estar llegando, y
+porque el costo de mandarlo es cero: sin destino el payload queda idéntico al de antes
+(hay un test que lo fija, `SIN destino no agrega ninguna clave al payload`).
+
+**Lo que Render tiene que hacer**, en una línea: al confirmarse un pago, insertar en
+`aportes` con `origen` (`donacion` | `membresia`), `destino_id` parseado de
+`external_reference` —con caída al destino `institucional` si no viene—, y
+`referencia_externa` = el `payment_id` de MercadoPago. Ese último campo es `UNIQUE`
+justamente porque **los webhooks de pago reintentan**: sin él, un mismo cobro entra dos
+veces al libro y la rendición queda mal para siempre.
+
+#### El camino que SÍ cierra hoy: la carga manual ✅ implementado
+
+`/admin → Libro de aportes` permite registrar efectivo, transferencias y cheques contra
+un destino. Eso no es un parche mientras se arregla Render: **una entidad recibe plata
+por fuera de cualquier pasarela**, y esa plata tiene que entrar al mismo libro que la
+digital o la rendición no cuadra. Es el único circuito que hoy funciona de punta a punta.
+
+Dos invariantes de esa pantalla, que son del modelo y no de la UI:
+
+- **Ninguna fila ofrece borrar.** `aportes` no tiene policy de DELETE: un libro contable
+  no se borra, se corrige y queda el rastro.
+- **Solo se editan los aportes manuales.** Corregir a mano lo que informó una pasarela
+  haría que el libro diverja de lo que MercadoPago dice que pasó, que es justo el
+  problema de §10.10.
+
+**Verificado contra producción** con transacciones que revierten (checks T14-T16 de
+`supabase/checks/rls-check.sql`, permanentes desde ahora):
+
+| Check | Qué prueba | Resultado |
+|---|---|---|
+| T14 | Un usuario común **no** puede cargar un aporte | `violates row-level security policy` |
+| T15 | La comisión sí, y el trigger actualiza el destino | `0 → 40.000 / 2`, y al corregir un aporte de 15.000 a 5.000 → **30.000 / 2** |
+| T16 | La comisión **no** puede declarar `origen = 'donacion'` a mano | `violates row-level security policy` |
+
+T15 es el que importa más de lo que parece: el contador **recalcula**, no vuelve a sumar.
+Ese es el bug clásico de un contador por trigger, y habría inflado la recaudación
+publicada cada vez que alguien corrigiera un monto.
+
+⚠️ **Lo que falta para que esto sea rendición de verdad**: los egresos (`gastos`, fase 2).
+Hoy hay un libro de lo que entra y a dónde va. Rendir es mostrar también **en qué se
+gastó**, con comprobante. Sin eso hay recaudación con destino declarado, no rendición.
+
+#### Inconsistencia de copy pendiente (decisión de la entidad, no técnica)
+
+La tarjeta de donación única tiene el subtítulo *"Campaña: Experiencias educativas"* y
+tres viñetas escritas a mano, de cuando había una sola campaña implícita. Ahora que el
+destino se elige abajo, ese texto puede contradecir lo elegido. **No se tocó a propósito:
+es contenido de la entidad, no del sistema.** Se resuelve moviendo esa copy a la
+`descripcion` de cada destino, que es donde ahora corresponde vivir.
+
+### 10.12 — Fase 2 aplicada: la rendición (2026-08-16)
+
+Migración `20260816150000_gastos_y_rendicion.sql`, **en producción**. Cierra lo que §10.11
+dejó declarado: hasta acá había recaudación con destino; ahora hay rendición.
+
+```
+saldo(destino) = monto_recaudado − monto_rendido
+```
+
+#### Qué se construyó
+
+| Pieza | Dónde |
+|---|---|
+| Tabla `gastos` con comprobante | migración `20260816150000` |
+| `destinos.monto_rendido` + `cantidad_gastos_rendidos`, por trigger | ídem |
+| Panel de carga, publicación y comprobantes | `/admin → Gastos y rendición` |
+| **Rendición pública** | `/rendicion`, enlazada desde Colaborar y el footer |
+
+#### Las cuatro decisiones que definen el modelo
+
+1. **"Rendido" no es "gastado".** `monto_rendido` suma **solo los gastos publicados**. Si
+   sumara todos, el público vería un total que no coincide con la lista que puede ver, y
+   un total que no cierra se lee como que algo se esconde — justo lo contrario de lo que
+   esta tabla existe para lograr. La comisión ve los dos números por separado en el panel.
+
+2. **Publicar un gasto lo publica entero**, notas incluidas. No hay publicación por
+   columna: las RLS filtran filas, no columnas, y fingir lo contrario con grants por
+   columna produce un modelo que nadie puede razonar. La regla que se sigue de eso es
+   simple y verificable: **lo que no pueda ser público no se escribe en un gasto**, y la
+   UI lo advierte donde se escriben las notas.
+
+3. **El comprobante no se publica nunca**, ni siquiera con el gasto publicado: una factura
+   trae CUIT, domicilio y a veces la firma de un tercero que no consintió. Vive en el
+   bucket privado `comision-docs` bajo el prefijo `gastos/`, reusando sus cuatro policies
+   —cero policies de storage nuevas—. Lo que sí ve el público es `tiene_comprobante`.
+
+4. **Publicar NO exige comprobante, y los gastos sin comprobante se muestran marcados.**
+   Se evaluó exigirlo y se descartó: hay gastos legítimos sin respaldo (un pago chico en
+   efectivo), y obligar empujaría a no publicarlos. **Mostrar el hueco es más transparente
+   que esconder la fila**, y es lo que hace creíble al resto.
+
+#### Verificado contra producción (checks T17-T20, permanentes)
+
+| Check | Resultado |
+|---|---|
+| T17 | `anon` ve **solo** gastos publicados de destinos activos — ni los internos, ni los de un destino en borrador |
+| T18 | Publicar mueve la rendición y despublicar la devuelve: `10.000/1 → 0/0 → 10.000/1`. **Recalcula**, no suma deltas |
+| T19a/b | Un usuario común no puede cargar (`ERROR` de RLS) **ni** publicar (0 filas alcanzadas) |
+| T20 | **Nadie** borra un gasto, ni la comisión: `permission denied` |
+
+T19 nació roto y se arregló en el acto: estaba en un solo savepoint, y como el `ERROR` de
+la primera mitad aborta la transacción, la segunda devolvía *"current transaction is
+aborted"* en vez de ejecutarse. **Un check que no corre se lee igual que uno que pasa.**
+
+#### Lo que falta para que la rendición sirva de verdad
+
+Nada de esto es técnico: **hay que cargar datos.** Con 0 aportes y 0 gastos, `/rendicion`
+muestra correctamente "todavía no se publicaron gastos" — que es cierto, y también inútil.
+La página se vuelve valiosa recién cuando la entidad carga sus destinos reales, sus
+aportes y sus gastos.
+
+Y sigue abierto el eslabón de §10.11: **Render no escribe en `aportes`**, así que el lado
+de los ingresos solo se llena con la carga manual.
+
+### 10.13 — El servicio de pagos: diagnóstico y plan (2026-08-16)
+
+Relevado contra producción, no supuesto. Corrige la afirmación de §10.11, que decía
+"el webhook no escribe en `aportes`" — cierto pero impreciso, y la precisión cambia el
+plan.
+
+#### Qué hace hoy, medido
+
+| Hecho | Evidencia |
+|---|---|
+| El servicio **está vivo, pero duerme** | Responde `404` (no "conexión rechazada") tras **21,7 s** de cold start. Free tier de Render |
+| Las **donaciones únicas funcionan** de punta a punta | 4 aprobadas con `payment_id` real de MercadoPago, $7.141 |
+| Las **suscripciones son la mitad rota** | 16 filas con `preapproval_id` y `external_reference`, pero **0** con `last_payment_id` y **0** con `payer_email` |
+| El servicio **arma su propio `external_reference`** | En los datos: `anon:suscripcion`, `user:<uuid>:suscripcion` |
+
+**El diagnóstico correcto no es "el webhook no anda":** crea bien las preferencias y las
+suscripciones, y escribe de vuelta para donaciones únicas. Lo que falta es el write-back
+del lado de las suscripciones, y escribir en `aportes` en cualquiera de los dos casos.
+
+⚠️ **Un dato que no tiene explicación todavía:** las 4 donaciones tienen `updated_at`
+exactamente **10 días** después de `created_at`. Las cuatro. Eso no parece un webhook
+—que actualiza en segundos— sino un proceso por lotes. Nadie documentó qué es. Antes de
+migrar nada conviene saberlo, porque puede haber un cron que no está en ningún lado.
+
+#### Un error propio, corregido el mismo día
+
+Al implementar el checkout (§10.11) el front mandaba `external_reference: "destino:<uuid>"`.
+Como el microservicio **ya arma el suyo** y el webhook lo parsea para saber de quién es el
+pago, si el microservicio hubiera priorizado el del front **se habría perdido la
+identificación del usuario en cada suscripción**: entra la plata y no se sabe de quién es.
+
+No hubo daño porque no hay ninguna suscripción real, pero quedaba armado para la primera.
+Ahora se manda solo `destino_id` —el dato crudo— y que el microservicio lo codifique con
+su propio esquema (`user:<uuid>:suscripcion:destino:<uuid>`). Hay un test que lo fija.
+
+**La lección, que es general:** antes de agregar un campo a un contrato que no controlás,
+mirá qué valores tiene hoy en producción. El esquema estaba a una consulta de distancia.
+
+#### El plan, en tres pasos
+
+**1. ✅ Hecho — las donaciones entran solas al libro** (migración `20260816160000`).
+
+Trigger sobre `donations`: cuando una donación queda `approved`, se crea su `aporte` con
+`referencia_externa = payment_id`, que es `UNIQUE` — **idempotente por construcción**, que
+es justo lo que hace falta con webhooks que reintentan. Incluye backfill de las 4
+donaciones reales. El libro pasó de $0 a **$7.141**, cuadrando exacto con `donations` y
+con `fundacion_metrics`.
+
+**La regla de oro de esa función:** nunca puede hacer fallar el registro de una donación.
+Si se propagara el error se perdería el cobro entero y MercadoPago reintentaría para
+siempre. Un libro incompleto se repara —el propio backfill sirve de pase de reparación—;
+una donación que nunca se registró, no. Verificado en T23.
+
+Lo que **no** resuelve: el destino elegido sigue sin llegar (todo cae al institucional), y
+las suscripciones siguen afuera porque sin `last_payment_id` no existe el hecho "se cobró
+un mes". Un trigger sobre la creación de la suscripción registraría una intención, no un
+cobro, y eso ensucia el libro con plata que nunca entró.
+
+**2. Decidido — mover el servicio de pagos a Vercel, en este mismo repo.**
+
+| | A favor | En contra |
+|---|---|---|
+| **Vercel, mismo repo** ← elegido | La infra **ya existe y está probada**: el repo deploya `api/share/*`. Un repo, un deploy, sin los 22 s de cold start, y el código de pagos al lado del esquema, las migraciones y los checks | Migrar credenciales de MP; reescribir ~4 endpoints |
+| Arreglar Render | Cambio mínimo | 22 s de cold start; código fuera del repo, sin tests ni CI; para multi-cliente es un servicio misterioso **por cliente** |
+| Supabase Edge Functions | `service_role` nativo, al lado de la base | Suma un runtime nuevo (Deno) a un stack que ya tiene funciones en Vercel |
+
+⚠️ **La trampa de la migración:** `vercel.json` tiene
+`{ "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" }`.
+Las funciones `api/share/*` sobreviven **solo porque sus rewrites están antes**. Al agregar
+funciones de pago hay que ponerles su rewrite antes del catch-all, o sacar el catch-all —
+si no, Vercel manda todo a Render y las funciones nuevas nunca se ejecutan, sin ningún
+error visible.
+
+**3. Pendiente — reconciliación contra la API de MercadoPago.**
+
+Independiente de dónde viva el servicio. Los webhooks se pierden, y §10.10 ya documentó una
+desincronización real (16 membresías vs 7 suscripciones). Un pase periódico que pregunte
+"¿qué pagos hubo desde X?" y escriba con la misma `referencia_externa` es lo que vuelve
+confiable al libro — y por el `UNIQUE` es seguro correrlo cuantas veces se quiera.
+
+### 10.14 — Catálogo de destinos de la Fundación (2026-08-16)
+
+Cargado en `supabase/data/seed_destinos_fundacion.sql`. **No es una migración**: las
+migraciones son el esquema, que se comparte entre clientes; los destinos son datos de
+esta entidad. Meterlos en una migración le cargaría las campañas de la Fundación a un
+refugio de animales el día que se levante el segundo cliente.
+
+**Los 10 entran en `borrador`.** Un borrador no se muestra en el sitio: las RLS solo le
+dan a `anon` los `activo`. Verificado en producción — el público sigue viendo un solo
+destino. La comisión revisa, ajusta y publica lo que quiera desde el panel.
+
+#### El catálogo
+
+| # | Tipo | Destino | Origen |
+|---|---|---|---|
+| 10 | campaña | Equipamiento deportivo | Relevado (§10.8) |
+| 20 | campaña | Kit del jugador | Nuevo |
+| 30 | campaña | Traslados a entrenamientos y partidos | Nuevo |
+| 40 | campaña | Merienda después del entrenamiento | Nuevo |
+| 50 | campaña | Acompañamiento profesional | Relevado (§10.8) |
+| 60 | campaña | Vuelta a clases | Nuevo |
+| 70 | campaña | Seguros y aptos médicos | Nuevo |
+| 80 | campaña | Formación de entrenadores | Nuevo |
+| 90 | padrinable | Beca formativa | Relevado (§10.8) |
+| 100 | padrinable | **Apadriná una categoría** | Nuevo — ver abajo |
+
+#### "Apadriná una categoría": la idea que resuelve la tensión de fondo
+
+El apadrinamiento tiene un conflicto de raíz. Funciona emocionalmente **porque es
+concreto** —"apadriná a alguien"— y es exactamente por eso que empuja a exponer a un
+menor. §10.8 resolvió el lado legal (se apadrina un cupo, nunca un chico identificado),
+pero un cupo es abstracto y pierde justo lo que hacía funcionar la mecánica.
+
+Apadrinar una **categoría** recupera lo concreto sin exponer a nadie:
+
+- El padrino tiene un vínculo real y seguible: *"la 2014 es mía"*.
+- No hay ningún individuo expuesto, ni siquiera anonimizado.
+- Se puede contar todo lo que pasa —cuántos entrenaron, qué torneos jugaron, cómo les
+  fue— **sin un solo dato personal**.
+- Escala: una categoría admite varios padrinos sin sentirse repartida, cosa que un cupo
+  individual no permite.
+
+#### Dos decisiones de redacción que no son cosméticas
+
+**"Acompañamiento profesional" no enumera las especialidades.** El relevamiento
+mencionaba nutricionista, psicólogo, preparador físico y acompañamiento docente. La
+descripción pública habla de *horas de acompañamiento* y no de "chicos que necesitan
+tratamiento". En una entidad chica, decir públicamente "financiamos al psicólogo" con un
+grupo identificable **estigmatiza aunque ningún nombre aparezca**. Lo que se financia es
+la disponibilidad del profesional.
+
+**Y el corolario técnico, que ya estaba en §10.8 y conviene repetir acá:** los resultados
+clínicos —mediciones, diagnósticos, informes— **no entran a este sistema bajo ninguna
+forma**. Son datos sensibles de salud de menores (Ley 25.326) y acá no hay dónde
+guardarlos con las garantías que exigen. El sistema financia el servicio; el profesional
+guarda su historia clínica donde corresponde.
+
+#### Lo que falta, y solo puede hacerlo la entidad
+
+`meta_monto` y `cupos_totales` quedaron en **NULL** a propósito. Dependen de precios
+reales —cuánto sale un kit, cuánto una cuota, cuántos chicos hay por categoría— y poner
+números plausibles sería fabricar objetivos financieros de una organización real. Además
+el primer donante que compare vería que no cierran.
+
+La forma de completarlos es por unidad, no por intuición:
+
+```
+meta = (costo de una unidad) × (cuántas unidades) 
+```
+
+Un kit, una hora de profesional, un mes de pasajes, una cuota. Esa cuenta además da la
+copy: *"cada $X = un kit"* convierte un monto en una decisión.
+
+#### Recomendación de arranque
+
+**Publicar 3, no 10.** Diez campañas activas dispersan al donante y ninguna llega a la
+meta. Sugerido:
+
+1. **Equipamiento deportivo** — la más fácil de cerrar el circuito completo: se compra,
+   se sube la factura, se publica. Estrena la rendición en una semana.
+2. **Beca formativa** o **Apadriná una categoría** — una de las dos, para estrenar el
+   canal recurrente. Cuál depende de si hay categorías bien definidas.
+3. **Sostenimiento institucional** — ya activa, y es donde caen hoy las donaciones que
+   entran por MercadoPago (§10.13).
+
+El resto queda en borrador, listo para publicar cuando toque —"Vuelta a clases" en
+febrero, "Seguros y aptos" antes del inicio del torneo—. **Una campaña con temporada
+propia rinde más que un pedido genérico todo el año.**
+
+#### ✅ Publicado el 2026-08-16: las tres primeras
+
+Decidido con el dueño. Están **activas en producción**:
+
+| Destino | Puntual | Recurrente |
+|---|---|---|
+| Sostenimiento institucional | ✓ | ✓ |
+| Equipamiento deportivo | ✓ | |
+| **Apadriná una categoría** | ✓ | ✓ |
+
+Entre las dos formas de apadrinamiento se eligió **la categoría por sobre la beca
+individual**, por lo del apartado anterior: mismo tirón emocional, cero exposición de
+menores, y escala mejor. "Beca formativa" queda en borrador por si más adelante conviene
+tener las dos.
+
+Verificado en el sitio construido: `/collaborate` ya muestra el desplegable de destino en
+las dos tarjetas —apareció solo, porque antes había un único destino y ahora hay varios— y
+`/rendicion` lista los tres con los $7.141 ya imputados.
+
+**Salieron sin `meta_monto` a propósito**, y es una decisión, no una omisión: publicar hoy
+sin barra de progreso vale más que esperar semanas a tener los precios. Se muestra cuánto
+se juntó; el día que se carguen las metas, la barra aparece sola y no hay que rehacer nada.
+
+⚠️ **Lo que queda pendiente de la entidad, y es lo único que bloquea el potencial de esto:**
+
+| Destino | Qué falta |
+|---|---|
+| Equipamiento deportivo | `meta_monto` = Σ (precio unitario × cantidad) de pelotas, conos y pecheras |
+| Apadriná una categoría | `meta_monto` = costo mensual de sostener una categoría, y `cupos_totales` = cuántas categorías hay |
+| Sostenimiento institucional | Nada. **Va sin meta y está bien**: no tiene final, no es "juntemos $X" |
+
+Y el corolario de copy, que es donde está el verdadero valor del número: si una pelota
+sale $25.000, la campaña puede decir *"cada $25.000 = una pelota"*. **Eso convierte un
+monto en una decisión**, y donar "una pelota" es mucho más fácil que donar "un monto".
+
+
+### 10.15 — El casillero que faltaba antes de tocar el servicio de pagos (2026-08-16)
+
+Primer paso del traslado a Vercel (§10.13), y resultó no ser código de Vercel.
+
+#### El hallazgo
+
+Antes de escribir la primera función se revisó dónde iba a aterrizar el destino. Y no
+había dónde: **`donations` no tenía columna `destino_id`.** `memberships` sí la tiene
+desde la fase 1, y el front ya manda `destino_id` al crear la preferencia desde §10.11 —
+pero del lado de las donaciones el dato no tenía casillero.
+
+O sea que **mover el servicio a Vercel sin esto habría sido construir la cañería y dejarla
+desembocando en el mismo lugar de siempre**: el trigger seguiría imputando todo al
+institucional, y no habría forma de notar que el trabajo no sirvió para nada.
+
+Migración `20260816170000`, aplicada. Nullable a diferencia de `aportes.destino_id`, que
+es NOT NULL, y no es inconsistencia: `donations` registra lo que informó la pasarela, y
+puede llegar sin destino —el link directo de MercadoPago que publica la entidad no pasa
+por el checkout del sitio—. `aportes` es el libro, y ahí todo aporte tiene destino sí o
+sí. NULL en `donations` significa "el canal no lo informó", y el trigger cae al
+institucional.
+
+#### La decisión sutil: `DO NOTHING`, no `DO UPDATE`
+
+La tentación obvia al agregar la columna era que el trigger sincronizara el destino:
+`ON CONFLICT (referencia_externa) DO UPDATE SET destino_id = EXCLUDED.destino_id`.
+
+**Sería un error.** La comisión puede re-imputar un aporte mal dirigido desde el panel, y
+con `DO UPDATE` el próximo reintento del webhook le desharía la corrección **en silencio**.
+Entre "el trigger crea y nunca modifica" y "el trigger sincroniza", la primera es la única
+que deja sobrevivir una corrección humana. Verificado (E4 en Docker): dos reintentos
+seguidos y la corrección sigue en pie.
+
+#### Y la contracara en el panel: re-imputar
+
+§10.11 había dicho que un aporte de pasarela no se edita. Eso sigue valiendo **para el
+monto y la fecha**, que son el registro de MercadoPago. Pero **el destino MercadoPago ni
+lo conoce**: es una decisión de la entidad, así que re-imputarlo no contradice a nadie.
+
+Ahora `/admin → Libro de aportes` ofrece **"Cambiar destino"** en los aportes de pasarela,
+con un diálogo que solo toca esa columna. Hace falta de verdad: hasta que el servicio de
+pagos reenvíe el destino elegido, toda donación digital cae al institucional y esta es la
+única forma de mandarla a su campaña.
+
+#### Lo que sigue, y lo que hace falta de afuera
+
+Con el casillero puesto, el trabajo en Vercel ya tiene dónde depositar el resultado.
+Tres cosas que **no dependen del código** y sin las cuales no se puede completar:
+
+| Qué | Quién |
+|---|---|
+| `MP_ACCESS_TOKEN` de MercadoPago en las variables de entorno de Vercel | La entidad |
+| Cambiar la URL de notificaciones en el panel de MercadoPago | La entidad |
+| Saber qué es el proceso que actualiza donaciones **exactamente 10 días** después (§10.13) | Investigar |
+
+⚠️ Y la trampa que ya está documentada en §10.13, que conviene releer antes de empezar:
+`vercel.json` manda todo `/api/(.*)` a Render. Las funciones nuevas necesitan su rewrite
+**antes** del catch-all, o Vercel las ignora sin ningún error visible.
+
+### 10.16 — El servicio de pagos, arreglado en origen (2026-08-16)
+
+Se consiguió acceso a Render y **al repo del microservicio**:
+`GonzaloRamosEngineer/mp-supabase-webhook`. Eso cambió el plan de §10.13, y con razón:
+son **483 líneas claras y funcionando**. La decisión de portarlo a Vercel se había tomado
+sin ver el código; con el código a la vista, los arreglos que faltaban eran ~40 líneas ahí
+adentro. **Se arregló primero; el traslado a Vercel queda como tarea aparte y sin apuro.**
+
+#### Lo que el código reveló, y que ninguna consulta a la base podía decir
+
+| Hallazgo | Consecuencia |
+|---|---|
+| Los controladores desestructuran solo los campos que conocen | El `destino_id` que el front manda desde §10.11 **se descartaba en silencio** |
+| `if (ext.kind === 'donacion')` en la rama de pagos | **Causa raíz** de que el canal recurrente nunca llegara al libro: MercadoPago sí avisa de cada cobro mensual, y el aviso se tiraba |
+| Nadie escribe `last_payment_id` | Por eso estaba vacío en las 16 filas. No era un webhook perdido: no existía el código |
+| El webhook está en `/webhook`, no en `/api/...` | Por eso las sondas de §10.13 daban 404. MercadoPago pega directo a Render vía `MP_NOTIFICATION_URL`, **sin pasar por el proxy de Vercel** |
+
+#### El misterio de los 10 días: cerrado
+
+```js
+created_at: new Date(pago.date_created).toISOString(),  // fecha del pago
+updated_at: new Date().toISOString()                    // ahora
+```
+
+La fila se actualiza cuando MercadoPago manda `payment.updated`, y MP lo manda **al
+liberar el dinero** — en Argentina, típicamente 10 días después. **No hay ningún cron
+fantasma.** §10.13 sospechaba un proceso por lotes no documentado; era el ciclo de
+acreditación de MercadoPago.
+
+#### Una afirmación propia que hay que corregir
+
+§10.13 dijo que el `external_reference` que mandaba el front "quedaba armado para perder
+la identificación del usuario en la primera suscripción". **Es falso, y el código lo
+prueba:** ambos controladores arman el suyo e ignoran el del body. Nunca hubo riesgo real.
+Sacarlo siguió siendo lo correcto, pero el peligro estaba sobreestimado.
+
+**La lección, que ya había aparecido en §10.13 y esta vez cortó para el otro lado:** sin
+leer el código solo se puede razonar sobre el contrato observable, y ese razonamiento
+tiende a ser conservador de más. Vale igual — el conservadurismo no rompió nada — pero
+conviene decir "no lo sé" en vez de afirmar un mecanismo.
+
+#### Qué se cambió
+
+**El destino viaja dentro de `external_reference`**, el único campo que MercadoPago
+devuelve intacto tanto en un `payment` como en un `preapproval`. El formato **extiende** el
+que ya existía:
+
+```
+antes:  user:<uuid>:donacion          | anon:suscripcion
+ahora:  user:<uuid>:donacion:destino:<uuid>
+```
+
+Las 20 referencias que ya están en producción no tienen el sufijo y se siguen leyendo
+igual — hay pruebas que lo fijan. Y el destino se busca **por token, no por posición**: la
+posición del sufijo cambia según haya `user:` o `anon:` adelante, y hardcodear dos índices
+distintos es donde se esconden los bugs.
+
+**Las renovaciones ya no se descartan.** Se registran como `donations` con
+`donation_type = 'suscripción'`, y de ahí el trigger de §10.13 crea el aporte. En una
+renovación además se escribe `last_payment_id` en la suscripción — pero **solo si el match
+por `external_reference` es inequívoco**: hoy hay 6 filas compartiendo `anon:suscripcion`,
+y actualizar "alguna" sería peor que no tocar ninguna, porque escribiría el cobro de una
+persona en la suscripción de otra.
+
+**La regla de oro, la misma que en el trigger:** el registro del cobro no se puede perder.
+`destino_id` es una FK; si apunta a un destino borrado, el insert entero falla y el cobro
+queda sin registrar. Por eso ante cualquier fallo se reintenta una vez sin ese campo, y un
+destino mal formado se omite en silencio en vez de rechazar la donación.
+
+#### Verificado
+
+- **15 pruebas** del ida y vuelta del destino (`npm test` en el repo del servicio),
+  incluida la compatibilidad con las referencias viejas y siete formas de destino inválido.
+- Deploy en Render OK: `/webhook` responde 200 y `/api/crear-preferencia` sigue validando.
+- Preferencia real creada **con un `destino_id` de producción**: MercadoPago la aceptó y
+  devolvió `init_point`.
+
+⚠️ **Lo único que no se puede verificar sin mover plata de verdad** es el circuito
+completo: pago real → webhook → `donations.destino_id` → aporte en la campaña correcta.
+Una donación de prueba de $100 lo cierra.
+
+#### Lo que queda
+
+| Qué | Estado |
+|---|---|
+| El `origen` del aporte de una renovación dice `donacion`, no `membresia` | Imprecisión conocida. `aportes.origen = 'membresia'` exige `membership_id`, y ligarlo requiere resolver la ambigüedad de las 6 filas con el mismo `external_reference` |
+| Las 6 suscripciones con `anon:suscripcion` idéntico | Bloquean el match inequívoco. Son todas de prueba (§10.10): lo más limpio es cancelarlas en MercadoPago y darlas de baja |
+| `MP_WEBHOOK_SECRET` sin definir | Sin él **no se valida la firma** de los webhooks: hoy cualquiera que sepa la URL puede postear un evento falso. Es la mejora de seguridad más barata que queda |
+| Portar a Vercel | Sigue valiendo por el cold start de 22 s y por tener un solo repo. Ya sin urgencia |
+
+---
+
+### 10.17 — La capa de acceso, y el bloqueante que destapó (2026-08-30)
+
+El libro (§10.11) registra **cuánto entró y a qué destino**. Lo que faltaba era la otra
+mitad: **que un aporte habilite algo**. Hasta el 2026-08-30 todos los aportes tenían
+`acceso_desde` y `acceso_hasta` en NULL, así que la cuota no otorgaba ningún privilegio
+(el ítem 10.1.b).
+
+#### Qué se construyó
+
+| Migración | Qué |
+|---|---|
+| `20260830110000_capa_acceso.sql` | `reglas_acceso`, `acceso_vigente()` / `tiene_acceso()` / `mi_acceso()` / `antiguedad_socio()` / `mi_antiguedad()` / `meses_por_donacion()` / `destino_otorga_acceso()`, más `benefits.requiere_acceso`, `destinos.otorga_acceso` y `aportes.equivale_a` |
+| `20260830140000_triggers_otorgan_acceso.sql` | El cálculo del período dentro de `aporte_desde_donacion()` —**conservando su cuerpo**, incluido el `ON CONFLICT DO NOTHING`— y `aporte_desde_membresia()`, que no existía: hasta ahora solo las donaciones entraban al libro |
+
+Verificación: `supabase/checks/acceso-check.sql`, 14 comprobaciones. Aplicadas en
+producción, con backfill (`supabase/data/backfill_acceso.sql`).
+
+#### Las reglas, y por qué
+
+- **Conversión donación → meses:** proporcional, `least(12, greatest(1, floor(monto /
+  cuota)))`. Un plazo fijo canibaliza la cuota: con una donación chica se obtendría medio
+  año y nadie pagaría todos los meses.
+- **Piso = el precio de la cuota.** Se modela `piso_monto = NULL` ("usar la cuota") y no
+  el número copiado, para que al subir la cuota el piso suba solo. Sin piso, una donación
+  de $100 otorgaba un mes entero de beneficios.
+- **Gracia de 30 días, solo para cuotas.** Un cobro recurrente falla por tarjeta vencida
+  más que por decisión; una donación puntual no falla, se terminó.
+- **Antigüedad: no es un número, son tres.** `socio_desde` no se reinicia nunca (la
+  identidad, el carnet), `meses_aportados` es lo que **otorga derechos**, `racha_meses`
+  premia la continuidad. Se calculan con `range_agg`, así que un doble pago no cuenta
+  doble. Quien se fue un año y volvió conserva su historia pero no cobra por el año que no
+  pagó.
+- **Aporte manual:** la comisión elige al cargarlo si equivale a cuota o a donación
+  (`aportes.equivale_a`); de eso depende la gracia.
+- **Destinos:** todos otorgan acceso por defecto; las excepciones se marcan con
+  `destinos.otorga_acceso = false`. Que un destino habilite el club tiene que ser una
+  decisión visible, no un efecto lateral.
+- **`tiene_acceso` quedó en dos versiones.** Con una sola con parámetro y `SECURITY
+  DEFINER`, cualquier usuario logueado podía averiguar si otra persona paga la cuota. La
+  sin parámetro (resuelve por `auth.uid()`) es para usuarios y policies; la que recibe un
+  uuid es solo para `service_role`.
+
+#### 🔴 El bloqueante: las donaciones no traen quién donó
+
+Corrido el backfill en producción, el resultado fue **0 personas con acceso vigente**. No
+falló nada: es el estado real.
+
+| | |
+|---|---|
+| Donaciones con `user_id` | **1 de 5** |
+| Membresías con `user_id` | 10 de 17 |
+| Membresías con `payer_email` | **0** |
+
+Cuatro de las cinco donaciones aprobadas son anónimas. La única con cuenta es de $1.916,
+debajo del piso. La de $5.000 —que sí daría un mes— no tiene a quién habilitar.
+
+**Y no se puede reconciliar después:** `donations` no tiene columna de email y
+`memberships.payer_email` está vacío en las 17 filas. Un aporte anónimo es, por
+construcción, inatribuible. Es el ítem 10.1.c convertido en bloqueante concreto.
+
+> ⚠️ **REFUTADO el mismo día — ver §10.18.** Las dos afirmaciones de este bloque están
+> mal. (a) El vínculo **no se pierde**: los cuatro eslabones mandan y leen `user_id`
+> correctamente; lo que pasa es que se dona sin sesión iniciada. (b) La reconciliación
+> **sí es posible**: la columna faltaba, pero el dato existe — MercadoPago informa
+> `payer.email` en cada pago y conserva los históricos. Se dejaron acá tal como se
+> escribieron, porque el error importa: es la segunda vez que un casillero ausente se lee
+> como un dato inexistente.
+
+Se arregla en el servicio de pagos, no en SQL — el mismo frente del §10.13/§10.16. Tres
+caminos, de menos a más fricción:
+
+1. ~~**Pasar `user_id` cuando hay sesión.**~~ **Ya estaba hecho** (§10.18). Se escribió
+   como pendiente sin leer el código que ya lo implementaba.
+2. **Guardar el email del pagador** (`donations.payer_email`, como ya existe en
+   `memberships`) y reconciliar contra `users.email`. Requiere que el proveedor lo informe.
+3. **Pedir cuenta antes de donar.** Máxima atribución y máxima fricción. Para una
+   fundación que necesita que donar sea fácil, es el peor de los tres.
+
+Hasta que esto se resuelva, el club funciona y está vacío.
+
+---
+
+### 10.18 — El bloqueante, releído contra el código (2026-08-30)
+
+§10.17 cerró con un diagnóstico y tres caminos. **El diagnóstico estaba equivocado en su
+parte central**, y el código lo prueba. Esta sección lo corrige y deja hecho lo único que
+no dependía de una decisión.
+
+#### La cañería está entera
+
+§10.17 dijo: *"Si alguien logueado dona, el vínculo se pierde en algún punto entre el
+sitio y el webhook."* Se leyeron los cuatro eslabones y **no se pierde en ninguno**:
+
+| Eslabón | Qué hace | Archivo |
+|---|---|---|
+| El checkout | manda `userId: user?.id` | `src/pages/Collaborate.jsx:88` |
+| El sitio → servicio | lo reenvía como `user_id` | `src/api/membershipApi.js` |
+| El servicio | lo codifica en el `external_reference` | `preferencia.controller.js` |
+| El webhook | lo lee de vuelta y lo escribe | `index.js` + `lib/destino.js` |
+
+**No hay nada roto que arreglar.** El camino 1 de §10.17 —"pasar `user_id` cuando hay
+sesión"— ya está implementado desde antes de que se escribiera como pendiente.
+
+La causa es más simple y no tiene arreglo técnico: **se dona sin sesión iniciada**.
+`user?.id || null` da null porque no hay usuario, no porque se haya perdido el dato.
+
+#### Lo que dicen las cinco donaciones
+
+| Fecha | Monto | ¿Cuenta? | ¿Destino? |
+|---|---|---|---|
+| 2025-10-18 | $75 | anónima | — |
+| 2025-10-18 | $1.916 | ✅ | — |
+| 2025-11-16 | $5.000 | anónima | — |
+| 2026-01-14 | $150 | anónima | — |
+| **2026-08-16** | **$100** | **anónima** | **sí** |
+
+Cuatro de las cinco son **anteriores** a todo este modelo. Y la quinta es la donación de
+prueba que demostró el circuito de punta a punta (§11.1): trae destino —el canal nuevo
+funciona— y aun así entró anónima, porque quien la hizo no tenía sesión. **La muestra que
+sostenía el diagnóstico es una sola donación de la era nueva, y era una prueba.**
+
+#### La otra afirmación que hay que corregir
+
+§10.17 dijo que un aporte anónimo es *"inatribuible por construcción"* porque `donations`
+no tiene columna de email. **La columna faltaba; el dato no.** MercadoPago informa
+`payer.email` en cada `payment` y lo conserva: los cinco `payment_id` están en la tabla,
+así que las donaciones históricas **también** son recuperables consultando la API con
+`MP_ACCESS_TOKEN`.
+
+Era el mismo hallazgo que motivó `donations.destino_id` (§10.15) —un casillero ausente
+leído como un dato inexistente— y por segunda vez se describió como imposible algo que
+solo faltaba guardar.
+
+#### Qué se hizo
+
+| Dónde | Qué |
+|---|---|
+| `20260830170000_donations_payer_email.sql` | La columna, con índice sobre `lower(payer_email)` para la reconciliación |
+| `lib/pagador.js` (servicio) | `emailDelPagador()`: extrae, normaliza y **descarta placeholders** |
+| `index.js` (servicio) | Lo escribe en cada `donations`, y el reintento de la regla de oro ahora también lo suelta |
+| `supabase/checks/payer-email-check.sql` | 8 comprobaciones, con control negativo |
+
+**La trampa que justifica un módulo entero para leer un campo:** el checkout manda
+`payer.email = 'anon@fundacion.com'` cuando no hay sesión (`Collaborate.jsx:89`). Ese
+placeholder vuelve en el payment, y guardarlo sería **peor que guardar `null`**: `null`
+dice "no se sabe", mientras que un email sintético se lee como un dato real y además es
+**el mismo para todas las personas anónimas**. Una reconciliación futura que empareje por
+email juntaría donaciones de gente distinta en una sola identidad.
+
+**Y una advertencia de despliegue, escrita en el código:** la columna es nueva, así que si
+el servicio se despliega **antes** de aplicar la migración, PostgREST rechaza el payload
+entero por columna desconocida y se pierde el registro de cada donación mientras dure el
+desfasaje. El orden es **migración primero, deploy después**; el tercer reintento existe
+para que equivocarse cueste un dato accesorio y no la plata.
+
+#### Lo que NO se hizo, y es deliberado
+
+**Vincular el email a una cuenta.** Emparejar `payer_email` con `auth.users.email` y
+completar `user_id` **otorga acceso al club**, así que no es una tarea de plomería sino
+una decisión con consecuencias de seguridad: quien escriba el email de otra persona en el
+checkout de MercadoPago le estaría regalando —o robando— antigüedad y beneficios.
+
+Guardar el dato es reversible e inocuo. Vincularlo no. Por eso van en migraciones
+separadas: la segunda tiene que poder revisarse sola.
+
+Y hay un problema técnico atado a esa decisión que conviene resolver junto: el trigger
+`aporte_desde_donacion()` usa `ON CONFLICT (referencia_externa) DO NOTHING` (§10.15), a
+propósito, para que un reintento del webhook no pise una corrección de la comisión. Eso
+significa que **completar el `user_id` de una donación vieja no actualiza el aporte que ya
+existe**: haría falta un camino explícito que recalcule el acceso sin romper esa garantía.
+
+#### Lo que sigue, en orden
+
+1. **Decidir la política de vinculación** (abajo, §10.19 cuando se decida).
+2. **Bajar la fricción de la sesión en el checkout.** Es lo único que ataca la causa real
+   sin tocar la seguridad: hoy `/colaborar` no invita a iniciar sesión ni explica que
+   aportar con cuenta habilita el carnet. No es pedir cuenta obligatoria —el camino 3, el
+   peor— sino decir en el momento justo lo que hoy no se dice.
+3. **Backfill de los 5 `payment_id` contra la API de MercadoPago**, para recuperar los
+   emails históricos. Necesita `MP_ACCESS_TOKEN`, que vive en Render.
+4. **Dejar de mandar un email falso al checkout.** `anon@fundacion.com` degrada el dato en
+   origen. Cambia el contrato de `/api/crear-preferencia` (hoy exige `payer.email`), así
+   que es un cambio con riesgo sobre el cobro y merece su propia verificación.
+
+---
+
+### 10.19 — La vinculación: el email como pista, la persona como decisión (2026-08-30)
+
+§10.18 dejó guardado el email del pagador y **no** lo vinculó a ninguna cuenta, porque esa
+era una decisión y no una tarea. **Decidido:** vincula la persona, reclamando.
+
+#### Por qué no automático
+
+La tentación era emparejar `payer_email` con `auth.users.email` y completar `user_id` solo.
+Sería un error de seguridad: completar `user_id` **no es anotar un dato, es otorgar acceso
+al club**, con su antigüedad y sus beneficios.
+
+Y el email del checkout **lo escribe quien paga, en el sitio de MercadoPago, sin que nadie
+lo verifique contra nada**. Quien escriba ahí el mail de otra persona —por error o a
+propósito— le estaría transfiriendo el aporte.
+
+**La regla que queda:** el email es una **pista**, no una credencial. Habilita a *ofrecer*;
+nunca a *otorgar*. Quien otorga es la persona que demuestra controlar la cuenta y que
+además decide hacerlo.
+
+#### Las tres condiciones, y ninguna sobra
+
+| | Qué | Por qué |
+|---|---|---|
+| 1 | Sesión iniciada | `auth.uid()`, **nunca un uuid por parámetro** |
+| 2 | Email verificado | sin `email_confirmed_at`, el mail no prueba nada |
+| 3 | Un acto explícito | no lo llama ningún trigger: lo llama un botón |
+
+La 1 no es cosmética: es la misma lección que dejó `tiene_acceso()` en §10.17. Con una
+sola versión que reciba el uuid y sea `SECURITY DEFINER`, cualquier usuario logueado
+podría reclamar los aportes de otro. **Acá no existe la variante con parámetro**, y hay un
+check que lo verifica (T12).
+
+#### Qué se construyó
+
+| Dónde | Qué |
+|---|---|
+| `20260830180000_reclamar_donaciones.sql` | `donations.reclamado_en`, `email_verificado()`, `donaciones_reclamables()` y `reclamar_donaciones()` |
+| `src/api/accesoApi.js` + `useContentQueries` | RPC y hooks; la mutación invalida `['acceso', userId]` **por prefijo** |
+| `src/components/Acceso/ReclamarAportes.jsx` | La tarjeta, en `/carnet` entre el estado y la credencial |
+| `supabase/checks/reclamar-check.sql` | 17 comprobaciones |
+
+**Dos decisiones que conviene dejar escritas:**
+
+- **El acceso corre desde hoy, no desde la fecha de la donación.** Contarlo desde la fecha
+  original sería más "fiel" y en la práctica inútil: una donación de 2025 daría un mes
+  vencido en 2025, o sea nada. Si la entidad decidió que ese aporte otorga un mes, la
+  persona tiene que poder usarlo.
+- **Se actualiza el aporte que ya existe, no se crea uno nuevo.** Insertar otro duplicaría
+  la plata en la rendición. Y no alcanza con tocar `donations`: el trigger tiene
+  `ON CONFLICT DO NOTHING` a propósito (§10.15), así que completar el `user_id` de la
+  donación **no actualiza el aporte por sí solo**. Por eso el UPDATE es explícito.
+
+#### Tres cosas que salieron de verificar, y las tres son la misma
+
+**Una verificación que no puede fallar no verifica nada** — §11.4, por cuarta, quinta y
+sexta vez:
+
+1. **`SET LOCAL request.jwt.claims` no es donde mira `auth.uid()`** en esta base (usa
+   `request.jwt.claim.sub`). Con el uid en NULL, el check de §10.18 que decía "un tercero
+   no ve el email del donante" **pasaba sin probar nada**: no había ningún tercero. Se
+   agregó T3a, un control positivo que falla si la sesión simulada no es real.
+2. **Y cuando la sesión pasó a ser real, el check falló** — correctamente: el usuario
+   elegido era el **admin**, y la policy es `auth.uid() = user_id OR check_is_admin()`. Un
+   admin ve todo por diseño. El tercero tiene que ser un usuario común.
+3. **La migración no se podía validar en Docker.** La imagen trae un `auth.users` viejo,
+   con `confirmed_at` y sin `email_confirmed_at`. En vez de probarla solo contra
+   producción, la columna se resuelve al aplicar (`email_verificado()`). Una migración que
+   solo se puede probar en producción es exactamente lo que este repo decidió no tener.
+
+#### Lo que falta
+
+- **El render del carnet con sesión no está verificado en navegador**: `/carnet` es una
+  ruta protegida y la verificación headless cae en el login. El bundle sí está verificado
+  (las cuatro rutas cargan con tamaño y contenido sanos) y el componente tiene 7 pruebas,
+  pero **la pantalla real con una sesión de verdad la tiene que mirar una persona**.
+- **Bajar la fricción de la sesión en el checkout** (§10.18): sigue siendo lo único que
+  ataca la causa de raíz. Reclamar repara hacia atrás; que la gente done con sesión evita
+  el problema.
+- **El backfill de los 5 `payment_id`** contra la API de MercadoPago, para que haya algo
+  que reclamar. Necesita `MP_ACCESS_TOKEN`, que vive en Render. **Sin esto, la pantalla de
+  reclamo es correcta y no le aparece a nadie**, porque `payer_email` está vacío en las 5
+  donaciones que ya existen.
+
+---
+
+### 10.20 — Que aportar con sesión sirva para algo, y que se note (2026-08-30)
+
+El backfill (§11.5) dejó medido el problema: de cinco donaciones reales **tres no dejaron
+ningún rastro** y una sola quedó atribuida a una persona. El acceso al club se otorga por
+aporte, así que un aporte anónimo es plata que entra y no le habilita nada a nadie.
+
+La causa nunca fue técnica —la cañería del `user_id` siempre estuvo entera (§10.18)— sino
+que **`/collaborate` no decía en ningún lado que aportar con sesión iniciada sirviera para
+algo**. Reclamar (§10.19) repara hacia atrás; esto evita el problema.
+
+#### Qué se construyó
+
+| Dónde | Qué |
+|---|---|
+| `src/components/Collaborate/AvisoSesion.jsx` | El bloque: explica, ofrece iniciar sesión o crear cuenta, y acepta un email opcional |
+| `src/lib/aportante.js` | `emailParaCheckout()`: qué email viaja al cobro, en un solo lugar y con pruebas |
+| `Collaborate.jsx` | Un solo estado de email para las dos formas de aportar |
+
+**Va arriba de las tres tarjetas y no dentro de cada una**: aplica a la donación y a la
+suscripción por igual, y repetirlo sería pedir el mismo dato dos veces.
+
+#### Las tres decisiones, y las tres son la misma
+
+**No bloquea nada.** Pedir cuenta antes de donar era el camino 3 de §10.17 y sigue siendo
+el peor: para una fundación que necesita que donar sea fácil, la fricción cuesta más de lo
+que rinde la atribución. Se informa y se ofrece; donar sin nada de esto sigue estando a un
+clic.
+
+**El email es el segundo mejor camino, y es opcional de verdad.** Quien no quiere crear
+cuenta puede dejarlo y reclamar el aporte más adelante. Si está vacío —o si no parece un
+email— se dona igual: `emailParaCheckout()` cae al placeholder de siempre. Un email mal
+escrito **avisa pero no deshabilita nada**, y hay una prueba que lo fija. La regla de
+fondo es la misma que rige el trigger y el webhook: **un dato accesorio no puede impedir
+un cobro.**
+
+**El placeholder sigue existiendo, y no es un descuido.** `/api/crear-preferencia` exige
+`payer.email` y responde 400 sin él, así que sacarlo cambia el contrato del endpoint que
+cobra. Queda como estaba, con una diferencia: ahora solo se usa cuando de verdad no hay
+ningún dato. El webhook lo sigue descartando explícitamente (`lib/pagador.js`), y hay una
+prueba que ata la constante de este repo a esa decisión del otro.
+
+#### El detalle que hace que funcione
+
+El link de "Iniciar sesión" lleva `state={{ from: { pathname: '/collaborate' } }}`, que es
+el mecanismo que `LoginPage` ya usaba. **Sin eso, iniciar sesión te deposita en el panel
+que corresponda a tu rol y perdés el aporte que ibas a hacer** — es decir, el aviso
+causaría exactamente el abandono que vino a evitar.
+
+Tiene prueba propia, y existe porque la obvia no alcanza: **el `state` no aparece en el
+`href`**, así que un link sin él pasaría un test que solo mire el destino. La prueba monta
+las dos rutas, hace click y lee el `state` que llegó.
+
+#### Otra vez la misma lección, y esta vez estaba en este archivo
+
+La verificación en navegador de §B mandaba comprobar `/nosotros` y `/actividades`.
+**Ninguna de las dos existe**: las rutas de `App.jsx` están en inglés (`/about`,
+`/activities`). Los dos chequeos pegaban en el 404 y aprobaban.
+
+Se notó por un detalle: las dos daban **exactamente 25.900 bytes**, al byte. Dos páginas
+distintas no pesan igual; dos 404 sí. §B ya advertía esto mismo por `/colaborar` — la
+advertencia estaba escrita y la lista de al lado seguía mal. Ahora está corregida, con el
+tamaño del 404 anotado como olor a buscar.
+
+---
+
+### 10.21 — Un `.ok` que faltaba, y por qué era un cobro perdido (2026-08-31)
+
+Al cargar `MP_WEBHOOK_SECRET` y simular una notificación desde el panel de MercadoPago,
+los logs de Render mostraron esto:
+
+```
+TypeError: s.toLowerCase is not a function at mapPaymentStatus (index.js:163)
+```
+
+El webhook hacía `await pagoRes.json()` **sin mirar `pagoRes.ok`**. Cuando MercadoPago
+contesta un error, el cuerpo tiene esta forma:
+
+```json
+{ "message": "Payment not found", "error": "not_found", "status": 404, "cause": [...] }
+```
+
+Trae un campo `status` que **no es el estado del pago sino el código HTTP**, y además es
+un número. `mapPaymentStatus(404)` reventaba y se llevaba puesto el procesamiento entero.
+
+#### Por qué esto no era "un log feo de la simulación"
+
+**El webhook responde 200 ANTES de procesar**, para no hacer esperar a MercadoPago. Así
+que cuando el procesamiento falla, **MercadoPago no reintenta nunca**. Si la API contesta
+429 o 500 justo en el momento en que avisa de un pago real, ese pago no entra a
+`donations`, no entra al libro, y **nadie se entera**.
+
+Es la regla de oro del proyecto —el registro del cobro no se puede perder— rota por un
+`.ok` que faltaba. Y la rama de suscripciones tenía el mismo agujero, con el agravante de
+que habría escrito basura en `memberships`, empezando por un `preapproval_id` undefined.
+
+#### Qué se cambió
+
+`lib/mp.js` en el servicio de pagos: `consultarRecurso()` mira `res.ok`, **reintenta lo
+que puede ser pasajero** (408/429/5xx y errores de red, con backoff) y no reintenta lo que
+va a dar igual (401, 404). No lanza nunca: devuelve `{ok, status, datos, motivo}`, porque
+un `throw` suelto vuelve al `catch` general — que es exactamente donde se pierden los
+cobros en silencio.
+
+Los dos mensajes de error distinguen los dos casos, porque son muy distintos de leer a las
+tres de la mañana:
+
+| Caso | Qué dice el log |
+|---|---|
+| 404 | "No existe: probablemente una simulación o un id de otra cuenta" |
+| Cualquier otro | "⚠️ ESE COBRO NO QUEDÓ REGISTRADO y MercadoPago no reintenta: revisar a mano" |
+
+#### La lección, que es la de siempre vista al revés
+
+Las lecciones anteriores (§11.4) fueron todas sobre **verificaciones que no podían fallar**.
+Esta es la contraria: **una verificación que sí falló, y encontró algo que ninguna prueba
+del repo había tocado en diez meses**. El bug estaba desde el primer día; hizo falta
+simular una notificación —o sea, ejercitar el camino de error— para que apareciera.
+
+Corolario práctico: **el camino feliz no es el que hay que probar en una integración con
+un tercero**. Lo que rompe no es que MercadoPago conteste distinto, es que conteste mal, y
+eso solo se ve pidiéndole algo que no puede responder.
+
+---
+
+## 11. Cierre de la jornada del 2026-08-16
+
+Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
+producción. Esta sección es el resumen ejecutable: **qué quedó funcionando, qué falta y en
+qué orden conviene atacarlo.** El detalle de cada decisión está en §10.11 a §10.16.
+
+### 11.1 — El circuito, demostrado de punta a punta
+
+A las 23:33 UTC entró una donación real de $100 eligiendo "Equipamiento deportivo", y
+recorrió los nueve pasos sin intervención:
+
+```
+sitio → destino_id → servicio de pagos → external_reference → MercadoPago
+  → webhook → donations.destino_id → trigger → aportes → destinos.monto_recaudado
+  → /rendicion pública
+```
+
+**Esa mañana el sistema recibía plata y no sabía para qué.**
+
+Dato lateral que cerró un misterio: esa donación tiene `updated_at` **3 segundos** después
+de `created_at`. Las viejas tenían 10 días. Confirma que aquel patrón era el aviso de
+liberación de fondos de MercadoPago, no un proceso por lotes sin documentar.
+
+### 11.2 — Estado de producción
+
+| | |
+|---|---|
+| Migraciones | 9, todas aplicadas y reconstruyen la base desde cero |
+| Checks de RLS | 24 (T1–T23), verificados contra producción sin dejar residuo |
+| Tests | 177, 0 errores de lint (53 warnings de backlog) |
+| Destinos | 3 activos, 8 en borrador |
+| Libro de aportes | 5 aportes, **$7.241** |
+| Gastos | 0 — la rendición todavía no se estrenó |
+| Servicio de pagos | `2026-08-16.destino`, desplegado y verificado por `/health` |
+
+### 11.3 — Lo siguiente a resolver, en orden
+
+**1. `MP_WEBHOOK_SECRET` — seguridad, y es lo más urgente.**
+`/health` dice `valida_firma_mp: false`. El webhook ahora **escribe en el libro contable**,
+así que sin validar la firma cualquiera que conozca la URL puede inventar aportes en la
+rendición pública. El código ya soporta la validación (`verifyMPSignature`): solo falta
+generar el secreto en el panel de MercadoPago y cargarlo como variable en Render.
+
+**2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
+que falta para demostrar el circuito de egresos como se demostró el de ingresos. Sin
+gastos, `/rendicion` es una página correcta y a medias.
+
+**3. Rotar la contraseña de la base.** Quedó en `.env.db` — fuera de git, pero en disco.
+
+**4. Los cupos de la Novena.** Falta el número de chicos de la categoría, y **falta el
+contador**: `cupos_totales` existe como columna pero nada cuenta los ocupados. Hace falta un
+contador de suscripciones activas por destino, hermano de los que ya existen para aportes y
+gastos.
+
+**5. Las 6 suscripciones con `anon:suscripcion` idéntico.** Bloquean el match inequívoco
+cuando llegue un cobro recurrente real: el webhook no actualiza ninguna antes que actualizar
+la equivocada. Son todas de prueba (§10.10) — lo más limpio es cancelarlas en MercadoPago.
+
+**6. `react-router-dom` por encima de `7.17.0`.** La única vulnerabilidad viva (open
+redirect). Es un major sobre el router de toda la app: rama propia y verificación de todas
+las rutas, no de una muestra.
+
+**7. Sin CI, sin Sentry, sin ErrorBoundary.** Hoy cada verificación la corre una persona a
+mano. Es lo que más se va a notar cuando entre alguien más al proyecto.
+
+**8. Portar el servicio de pagos a Vercel.** Sigue valiendo por los 22 s de cold start y por
+tener un solo repo con tests, pero ya sin urgencia: el servicio hace lo que tiene que hacer.
+
+### 11.4 — Tres lecciones que se ganaron rompiendo cosas
+
+**Una verificación que no puede fallar no verifica nada.** Pasó tres veces el mismo día, de
+tres formas distintas: un check de RLS abortado por un `ERROR` previo devolvía "current
+transaction is aborted" y se leía igual que si hubiera pasado; un check de navegador
+apuntaba a `/colaborar`, una ruta que no existe, y el 404 tiene `<nav>`, `<footer>` y un
+tamaño verosímil; y un deploy fallido dejó viva la versión anterior, que siguió
+respondiendo 200. **Ninguna de las tres fallaba de forma visible.** De ahí salió
+`GET /health`: sin un dato que distinga una versión de otra, un deploy roto se ve igual que
+uno bueno.
+
+**Antes de razonar sobre un sistema que no controlás, leelo.** Se dieron dos diagnósticos
+seguros y los dos estaban mal. Que el `external_reference` del front "iba a romper la
+primera suscripción" — falso: los controladores arman el suyo e ignoran el del body. Y que
+el `package-lock.json` había roto el build — falso: Render corre Node 22 con `npm install`,
+y el problema real era que **había perdido el acceso al repo**. Los dos errores fueron
+conservadores y no rompieron nada, pero los dos se resolvieron leyendo: el código en un
+caso, el log en el otro.
+
+**Lo que varía por entidad va en datos; lo que es igual para todas, en código.** Sostuvo
+tres decisiones que se tomaron distinto por eso: los destinos de la Fundación fueron a
+`supabase/data/` y no a una migración; `categoria` en `gastos` quedó sin CHECK porque un
+refugio dice "veterinaria" donde un club dice "arbitraje"; y `visibilidad_beneficiario` es
+una columna y no una regla del código, porque en una fundación con menores el beneficiario
+no se puede mostrar y en un refugio mostrarlo es el motor de la recaudación.
+
+---
+
+### 11.5 — Continuación del 2026-08-30
+
+La jornada del 16 cerró con el libro y la rendición andando. La del 30 agregó **la capa de
+acceso** (§10.17) y la **fase 1 del club de beneficios** (§12), las dos aplicadas en
+producción.
+
+Lo que cambia respecto del orden de §11.3:
+
+- **Entra un punto nuevo y va primero:** las donaciones anónimas (§10.17). Es del mismo
+  frente que el punto 1 —el servicio de pagos— así que conviene resolverlos juntos.
+- **El punto 3 (rotar la contraseña) sigue abierto.** ⚠️ Este ítem decía que además de
+  `.env.db` había un connection string en `~/.config/antoniana/db.url`. Se buscó el
+  2026-08-30 y **ese archivo no existe**: la contraseña vive solo en `.env.db`.
+
+#### El orden al cierre del 2026-08-30 (§10.18 y §10.19)
+
+El circuito de ingresos quedó completo de punta a punta, **pero apoyado en datos que
+todavía no existen**. Los dos primeros puntos no son de programación: hay que entrar a
+Render.
+
+| | Qué | Por qué primero |
+|---|---|---|
+| ~~**1**~~ | ~~Backfill de los emails~~ **✅ HECHO** — ver abajo | Recuperó 2 de 5. El plan Free no tiene Shell, así que se corrió por una ruta temporal del servicio |
+| ~~**2**~~ | ~~`MP_WEBHOOK_SECRET`~~ **✅ HECHO 2026-08-31** | `valida_firma_mp: true`, `firma_modo: rechaza`. Verificado por las dos puntas: un POST sin firma y otro con firma falsa dan **401**, y una notificación real de MercadoPago dice `🔏 Firma OK` y entra. Ninguna de las dos pruebas sola alcanzaba: "rechaza lo malo" y "rechaza todo" se ven igual desde afuera |
+| **3** | Rotar la contraseña de la base | Solo en `.env.db`. No toca producción: el webhook usa la service_role key, no esta contraseña |
+| ~~**4**~~ | ~~Bajar la fricción de la sesión en `/collaborate`~~ **✅ HECHO** — §10.20 | Era lo único que ataca la causa. Ahora la página lo explica, ofrece iniciar sesión sin perder el aporte, y acepta el email de quien no quiere cuenta |
+| **5** | El primer gasto real, `react-router-dom`, CI/Sentry | Sin cambios respecto de §11.3 |
+
+**Sobre el 2 conviene ser explícito**, porque el ROADMAP lo tuvo mal descrito un día
+entero: §11.3 decía que "solo falta generar el secreto y cargarlo en Render". No era solo
+eso. La implementación firmaba `${ts}.${rawBody}`, que **no es lo que firma MercadoPago**:
+cargar el secreto habría rechazado el 100% de los webhooks, o sea que "activar la
+seguridad" habría significado **dejar de registrar la plata que entra**, sin ningún
+síntoma visible. De ahí que la activación sea en dos pasos, con un modo `observa` que
+calcula y loguea sin rechazar.
+
+#### El backfill, corrido (2026-08-30)
+
+Recuperó **2 emails de 5 donaciones**, sin fallas. Lo que dejó a la vista importa más
+que el número:
+
+| Donación | Email | Qué habilita |
+|---|---|---|
+| $1.916 | recuperado | **Nada**: ya estaba atribuida, y el reclamo solo ofrece donaciones anónimas |
+| $5.000 | recuperado | **Un mes** — es exactamente una cuota. Pero **no existe ninguna cuenta con ese email** |
+| $75, $150, $100 | sin dato | MercadoPago no informó nada utilizable. Irrecuperables |
+
+Verificado en producción: se escribieron 2 emails y ninguno es el placeholder, la
+atribución no cambió, **nadie ganó acceso**, el libro sigue en $7.241 y `reclamado_en`
+sigue vacío.
+
+**O sea que el club sigue vacío, y ahora se sabe por qué.** De cinco donaciones reales,
+tres no dejaron ningún rastro y una sola quedó atribuida a una persona. El reclamo
+(§10.19) funciona pero solo repara hacia atrás, y hacia atrás había poco que reparar.
+**Lo que queda es el punto 4: que se done con sesión iniciada.** Eso dejó de ser una
+mejora de UX para ser el único camino por el que el club se puede llenar.
+
+Dato accionable, y no es técnico: **hay alguien que donó $5.000 y no tiene cuenta**. Si
+la Fundación puede identificar ese contacto, invitarlo a registrarse con ese mismo email
+le da su mes de beneficios sin que nadie toque nada.
+
+⚠️ **La ruta temporal (`/admin/backfill-payer-email`) queda apagada borrando
+`BACKFILL_TOKEN` en Render.** `GET /health` lo confirma: `backfill_habilitado` tiene que
+decir `false`. El campo informa si la ruta **está montada**, no si la variable existe.
+
+---
+
+#### Una lección más, cara
+
+**Antes de escribir la primera migración, `git fetch` y conectarse a la base.** El
+2026-08-30 se trabajó tres commits sobre una copia local **20 commits atrasada**: se
+"descubrió" como no documentado un módulo que estaba commiteado, versionado y pusheado
+desde el 16, se lo re-baselinó al pedo, y se llegó a describir como *peso muerto* una
+vista que en realidad se había borrado **como fix de seguridad** (§C). Nada de eso llegó a
+producción, pero se perdió media jornada y el relato quedó mal escrito hasta que el
+`git push` lo delató.
+
+Corolario para el repo: **`tools/db.sh` es el camino** para tocar la base, no un
+connection string armado a mano. Acota el permiso, se audita, y la contraseña no queda en
+el historial del shell.
+
+---
+
+### 11.6 — Cierre de la jornada del 2026-08-30/31
+
+Segunda jornada larga seguida. La del 16 construyó el circuito de ingresos; esta lo
+**cerró**: ahora el dinero que entra se puede atribuir a una persona, esa persona puede
+reclamar lo suyo, y el endpoint que registra la plata dejó de aceptar eventos de cualquiera
+—y de perder cobros en silencio—.
+
+El detalle de cada cosa está en §10.18 a §10.21. Esta sección es el resumen ejecutable.
+
+#### 11.6.1 — Qué se construyó, en orden
+
+| | Qué | Dónde quedó |
+|---|---|---|
+| 1 | **Firma de webhooks** — estaba escrita, sin commitear, y **calculaba mal el HMAC** | `lib/firma.js` + activación en dos pasos |
+| 2 | **`donations.payer_email`** — el casillero que faltaba | Migración `20260830170000` |
+| 3 | **Captura del email** en el webhook, con descarte del placeholder | `lib/pagador.js` |
+| 4 | **Reclamo de aportes anónimos** — la persona reclama, no el sistema vincula | Migración `20260830180000` + `/carnet` |
+| 5 | **Backfill de los emails históricos** + ruta temporal para correrlo | `lib/backfill.js` + `/admin/backfill-payer-email` |
+| 6 | **Aviso de sesión en `/collaborate`** | `AvisoSesion.jsx` + `lib/aportante.js` |
+| 7 | **Consulta defensiva a la API de MercadoPago** | `lib/mp.js` |
+
+#### 11.6.2 — Las cinco afirmaciones propias que resultaron falsas
+
+Esto es lo más valioso de la jornada, y por eso va antes que los logros. **Cinco cosas que
+este repo daba por ciertas y no lo eran.** Ninguna se descubrió razonando: todas
+aparecieron al leer el código o al mirar los datos.
+
+**1. "El vínculo del `user_id` se pierde entre el sitio y el webhook" (§10.17).** Falso.
+Los cuatro eslabones lo mandan y lo leen bien. Se dona **sin sesión iniciada**, que es otro
+problema y no tiene arreglo técnico. El "camino 1" que el ROADMAP listaba como pendiente
+**ya estaba implementado**.
+
+**2. "Un aporte anónimo es inatribuible por construcción" (§10.17).** Falso. Faltaba la
+columna; el dato existía. MercadoPago conserva el `payer.email` de cada pago, incluidos los
+históricos. Es la **segunda vez** (después de §10.15) que un casillero ausente se lee como
+un dato inexistente.
+
+**3. "Para la firma solo falta generar el secreto y cargarlo en Render" (§11.3).** Falso, y
+era el más peligroso. La implementación firmaba `${ts}.${rawBody}`, que no es lo que firma
+MercadoPago: cargar el secreto habría **rechazado el 100% de los webhooks**. "Activar la
+seguridad" habría significado dejar de registrar la plata que entra.
+
+**4. La verificación en navegador mandaba comprobar `/nosotros` y `/actividades` (§B).**
+Ninguna de las dos existe — las rutas de `App.jsx` están en inglés. Los dos chequeos
+pegaban en el 404 y aprobaban. **El mismo archivo ya advertía este error por `/colaborar`,
+y la lista de al lado seguía mal.**
+
+**5. El webhook nunca miró si la consulta a MercadoPago había salido bien (§10.21).** El
+cuerpo de error trae `status` como código HTTP y en número; `mapPaymentStatus(404)`
+reventaba. Como el webhook responde 200 antes de procesar, MercadoPago no reintenta:
+**cada fallo transitorio de su API era un cobro perdido en silencio**, desde el primer día.
+
+#### 11.6.3 — Y tres verificaciones que no verificaban nada
+
+Van aparte porque el patrón es distinto: acá el código estaba bien y **la prueba estaba
+rota**, que es peor, porque da confianza falsa.
+
+| Qué parecía | Qué pasaba |
+|---|---|
+| `SET LOCAL request.jwt.claims` simulaba una sesión | No es donde mira `auth.uid()` en esta base (usa `request.jwt.claim.sub`). Con el uid en NULL, "un tercero no ve el email" pasaba **sin que hubiera ningún tercero** |
+| El "tercero" del check era un usuario cualquiera | Era el **admin**, que ve todo por diseño. Al arreglar lo anterior, el check falló — correctamente |
+| `/health` informaba si el backfill estaba habilitado | Informaba `Boolean(BACKFILL_TOKEN)`: con un token corto decía `true` mientras la ruta estaba apagada. **El mismo error que este archivo ya había corregido en `valida_firma_mp`** |
+
+**La regla que sale de las tres, y ya es la cuarta vez que se escribe:** una verificación
+tiene que poder fallar, y hay que hacerla fallar una vez para creerle. Un control positivo
+al lado del negativo no es redundancia, es lo que distingue "pasó" de "no midió nada".
+
+#### 11.6.4 — Cómo quedó verificada la firma, que es el patrón a copiar
+
+Ninguna de las dos pruebas por separado alcanzaba, porque **"rechaza lo malo" y "rechaza
+todo" se ven idénticos desde afuera** — y la segunda habría cortado los ingresos sin
+síntoma visible:
+
+```
+🔏 Firma INVÁLIDA (falta el header x-signature) · modo=rechaza    ← POST sin firma      → 401
+🔏 Firma INVÁLIDA (el hash no coincide) · esperado=0935f1… recibido=deadbeef…  ← firma falsa → 401
+🔏 Firma OK                                                       ← notificación real  → 200
+```
+
+Y la activación fue en dos pasos a propósito (`observa` → `rechaza`), para que el tráfico
+real confirmara que la firma cerraba **antes** de que un error pudiera costar plata.
+
+#### 11.6.5 — Lo que dijeron los datos
+
+El backfill recuperó **2 emails de 5 donaciones**. El desglose importa más que el número:
+
+| Donación | Resultado | Qué habilita |
+|---|---|---|
+| $1.916 | email recuperado | **Nada**: ya estaba atribuida |
+| $5.000 | email recuperado | **Un mes** — pero **no existe cuenta con ese email** |
+| $75, $150, $100 | sin dato en MercadoPago | Irrecuperables |
+
+**El club sigue vacío, y ahora se sabe exactamente por qué.** De cinco donaciones reales,
+tres no dejaron ningún rastro y una sola quedó atribuida a una persona. Reclamar repara
+hacia atrás, y hacia atrás había muy poco que reparar.
+
+Por eso el aviso de sesión en `/collaborate` dejó de ser una mejora cosmética: **es el
+único camino por el que el club se puede llenar.**
+
+#### 11.6.6 — Estado de producción al 2026-08-31
+
+| | |
+|---|---|
+| Migraciones | 13 al cierre de esa jornada (este renglón decía 11: se contaron mal), **14** desde §11.7. Todas aplican desde cero y convergen al reaplicarse |
+| Checks SQL | 24 de RLS + 14 de acceso + 8 de `payer_email` + 17 de reclamo |
+| Tests | **216** en el sitio (0 errores de lint, 53 warnings de backlog) + **95** en el servicio de pagos |
+| Servicio de pagos | `2026-08-31.consulta-mp` · `firma_modo: rechaza` · `backfill_habilitado: false` |
+| Libro de aportes | 5 aportes, **$7.241** · 0 personas con acceso vigente |
+| Donaciones con email | 2 de 5 |
+| Ruta temporal de backfill | **Cerrada** (verificada: 404) |
+
+#### 11.6.7 — Lo siguiente, en orden
+
+**1. Rotar la contraseña de la base.** Es el único pendiente de seguridad que queda. Está
+en `.env.db`, y en ningún otro lado — ver la corrección en §11.7.2.
+
+**2. Cargar el primer gasto real** con su comprobante, desde `/admin → Gastos`. Es lo único
+que falta para estrenar `/rendicion`, que hoy es una página correcta y a medias.
+
+**3. `react-router-dom` por encima de `7.17.0`.** La única vulnerabilidad viva (open
+redirect). Major sobre el router de toda la app: rama propia y verificación de **todas** las
+rutas —las de verdad, ver §B— no de una muestra.
+
+**4. Fase 2 del club de beneficios** (§12.8): `club_comercios`, `club_canjes`, las 3 Edge
+Functions y el panel `/comercio`. Piloto decidido: DigitalMatch.
+
+**5. Los cupos de la Novena.** `cupos_totales` existe y nada cuenta los ocupados.
+
+**6. Sin CI, sin Sentry, sin ErrorBoundary.** Hoy cada verificación la corre una persona a
+mano. Es lo que más se va a notar cuando entre alguien más al proyecto.
+
+**Y una acción que no es técnica:** hay alguien que donó **$5.000 y no tiene cuenta**. Si la
+Fundación puede identificar ese contacto, invitarlo a registrarse con **ese mismo email** le
+otorga su mes de beneficios sin que nadie toque nada.
+
+#### 11.6.8 — Cuatro cosas del entorno que costaron tiempo
+
+- **El plan de Render es Free**: no hay Shell ni One-Off Jobs. Cualquier tarea que necesite
+  correr *dentro* del servicio necesita una ruta temporal (ver §10.18) o bajar credenciales
+  de producción a una máquina, que es lo que conviene evitar.
+- **En PowerShell, `curl` no es curl**: es un alias de `Invoke-WebRequest`, ignora `-X` y
+  `-H`, y frena con una advertencia de seguridad. Usar `curl.exe`.
+- **Los archivos del repo son CRLF**, y `cat -A` no siempre lo muestra. Editarlos con regex
+  sobre `\n` no matchea: normalizar a LF, editar, y volver a CRLF al escribir.
+- **`String.replace(a, b)` interpreta `$&` y `` $` `` dentro de `b`.** Un texto de reemplazo
+  con un `$` seguido de backtick insertó el archivo entero dentro de sí mismo. Usar una
+  **función** de reemplazo cuando el texto pueda contener `$`.
+
+---
+
+### 11.7 — Cierre de la jornada del club (2026-08-30)
+
+Esta jornada no tocó el dinero: construyó **la fase 2 del club entera** (§12), que es el
+módulo donde el beneficio deja de ser un cupón público y pasa a ser un canje trazable.
+
+**Aplicado en producción el 2026-08-31**: la migración corrió con `tools/db.sh apply` y las
+tres Edge Functions están desplegadas. Lo que falta no es código: son los datos del comercio
+piloto y un canje real. Ver §11.7.8.
+
+#### 11.7.1 — Qué se construyó
+
+| | Qué | Dónde |
+|---|---|---|
+| 1 | **Esquema del club**: `club_config`, `club_comercios`, `club_sucursales`, `club_comercio_usuarios`, `club_beneficios`, `club_canjes` + `is_comercio_member()` + `mis_comercios()` + reaper | Migración `20260830190000` |
+| 2 | **Check con controles positivos**, 15 pruebas | `supabase/checks/club-check.sql` |
+| 3 | **Tres Edge Functions**: generar, confirmar, anular | `supabase/functions/club-*` |
+| 4 | **Reglas puras testeables** del club (huso, ventanas, ahorro) | `_shared/club-reglas.ts` + 17 tests |
+| 5 | **UI del socio**: catálogo `/club` + pantalla de canje con QR, código y Realtime | `src/pages/club/`, `src/components/Club/` |
+| 6 | **UI del mostrador**: `/comercio`, escanear o tipear | `src/pages/club/ComercioPanel.jsx` |
+| 7 | **Reglas de presentación** del club | `src/lib/club.js` + 19 tests |
+
+**Una dependencia nueva:** `qrcode.react@4.2.0`, cero deps transitivas. El escáner NO usa
+librería: es `BarcodeDetector`, que ya viene en el navegador. En iOS no existe y el botón
+directamente no aparece — queda el campo de tipear, que §12.3 pide igual. `npm audit` sigue
+en 2 moderate, las dos de `react-router`.
+
+#### 11.7.2 — Las cuatro afirmaciones propias que resultaron falsas
+
+Van antes que los logros por el mismo motivo que en §11.6.2. Con estas son **nueve** en tres
+jornadas. Ninguna se descubrió razonando: todas aparecieron al mirar el código o los datos.
+
+**1. "La contraseña de la base está en `.env.db` y en `~/.config/antoniana/db.url`".**
+Falso. Ese archivo **no existe** — se buscó en todo el perfil. Lo nombraban cuatro lugares
+de este ROADMAP y **ningún script**. Peor: el texto sugería un radio de impacto que no
+existe. El webhook usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que rotar
+**no puede cortar el circuito de ingresos**. El riesgo real era el inverso: que la rotación
+se postergara por miedo a romper los pagos.
+
+**2. "Las suscripciones se crean y nunca se actualizan, y el destino no llega" (§Estado).**
+Falso desde la jornada del 30/31, que cerró las dos cosas sin actualizar este párrafo. El
+webhook actualiza `memberships`, escribe `last_payment_id` y manda `destino_id`. El ROADMAP
+listaba como pendiente algo ya hecho. **Lo que sí queda es otra cosa:** ese código nunca
+corrió contra un cobro real (0 de 17 membresías tienen `last_payment_id`).
+
+**3. "$7.141 cuadrando con `donations`".** Eran 4 donaciones; hoy son 5 y **$7.241**.
+
+**4. "Migraciones: 11".** Eran **13**. Se contaron mal, y el renglón estaba en la tabla de
+"estado de producción", que es justo donde no hay que estimar.
+
+**Y un quinto hallazgo, de otra naturaleza: §12 se autorreferenciaba como §11.** La sección
+se redactó como §11, se renumeró a §12 y **las referencias internas quedaron sin cambiar**:
+seis lugares decían `11.1.a`, `11.6`, `11.7`. Además `§11.7` se citaba dos veces **sin
+existir**, y `CLAUDE.md` apuntaba a un `§11.8` inexistente. Corregido todo. Ninguna de esas
+citas estaba en código, así que no aplicó la regla de "no renumerar".
+
+#### 11.7.3 — Dos bugs que encontraron los tests, no el razonamiento
+
+**El alfabeto del código incluía la `L`.** La clase de caracteres `[2-9A-HJ-NP-Z]` parece
+correcta y **abarca la L**, que el generador de 31 caracteres no produce. Estaba repetida en
+cinco archivos, incluido el `CHECK` de la migración y las dos Edge Functions: un código con
+`L` habría pasado la validación de formato para después no encontrarse nunca. Lo destapó un
+test que afirmaba `normalizarCodigo('O0I1L') === ''`.
+
+**El huso horario iba a romper el límite diario.** Postgres corre en UTC y Argentina es
+UTC-3: calculando "un canje por día" en UTC, el día se reiniciaba a las **21:00 hora
+local**. La misma persona podía canjear a las 20:30 y a las 21:30 y llevarse dos veces el
+mismo beneficio. Se agregó `zona_horaria` a `club_config` y todo lo que depende del
+calendario se calcula ahí. El test se hizo fallar a propósito pasándole `'UTC'` para
+confirmar que mide algo.
+
+#### 11.7.4 — Tres decisiones sobre ambigüedades de §12
+
+Están acá porque el ROADMAP no las resolvía y alguien las va a querer discutir.
+
+**1. El TTL de 5 minutos y la confirmación diferida de 2 h se contradicen.** §12.3 pide las
+dos: que el código venza rápido para que se genere en la caja, y que el cajero rescate
+códigos viejos cuando el local se quedó sin señal. Si el rescate está siempre disponible, el
+contador es decorativo. **Resolución:** el vencimiento es real y el socio lo ve, pero
+confirmar un vencido sigue siendo posible dentro de la ventana. Queda registrado **sin
+agregar ninguna columna**: un canje con `confirmado_en > expira_en` fue un rescate tardío.
+
+**2. La red de contención se generalizó.** §12.5 pedía un índice único parcial para el caso
+"uno por día". Se agregó `club_canjes.clave_limite`, que la Edge Function calcula desde la
+ventana, y el mismo índice cubre las cuatro. **Solo cubre `limite_por_persona = 1`**: con
+límite mayor hay que contar, y ese conteo no tiene red debajo. Está escrito en la migración.
+
+**3. `club_beneficios.estado` nace en `borrador`, no activo.** §12.3 dice que la redacción
+la controla la entidad junto al comercio porque ahí se generan los conflictos de mostrador.
+Un beneficio que se publica solo al crearse contradice eso.
+
+#### 11.7.5 — Qué quedó verificado y qué NO
+
+| Verificado | Cómo |
+|---|---|
+| Las 14 migraciones aplican desde cero **y convergen al reaplicarse** | Postgres 17 en Docker, dos pasadas |
+| `club_canjes` no se puede escribir desde el browser | `club-check.sql` T1/T2, con T12 (service_role **sí** escribe) al lado |
+| Los comercios no se ven los canjes entre sí | T6/T7, con el positivo al lado del negativo |
+| La red del límite ataja el duplicado **y no bloquea de más** | T9/T10 |
+| `/club` renderiza de verdad | Chrome headless: el 404 mide 25.900 bytes y `/club` 25.646 |
+| 252 tests al cierre de esa jornada (hoy 265), lint 0 errores, build | `npm test` / `npm run lint` / `npm run build` |
+
+**Sobre el runtime de las Edge Functions.** `npx supabase start` falla en esta máquina
+(documentado en `supabase/checks/README.md`), así que **localmente** no se pueden ejecutar.
+Al desplegarlas se probó contra producción lo que se podía sin datos (§11.7.8): que
+arranquen, que resuelvan los imports de `_shared/`, que tengan las env vars y que rechacen
+lo que no trae sesión.
+
+✅ **Y el camino feliz autenticado quedó probado el 2026-09-02** con un canje real de punta
+a punta (§11.7.12): elegibilidad, embeds de PostgREST y el `UPDATE` condicional de la
+confirmación. Ya no queda nada del runtime sin ejercitar. Aun así, la lógica que **decide**
+algo sigue viviendo en `club-reglas.ts` y no en el `index.ts`: es lo único testeable sin
+desplegar.
+
+#### 11.7.6 — El club, medido
+
+El dato que §12.8 no dice y conviene tener a mano antes de seguir construyendo:
+
+| | |
+|---|---|
+| Beneficios cargados | **1** (el de DigitalMatch) |
+| Beneficios con `requiere_acceso` | **0** |
+| Personas con acceso vigente | **0** de 23 |
+| Tablas `club_*` en producción | **0** |
+
+**El club está vacío de los dos lados.** Que no haya socios ya se sabía; que tampoco haya
+catálogo, y que **ninguna fila ejercite la capa de acceso** de la fase 1, no estaba escrito.
+Toda la maquinaria del 2026-08-30 —carnet, filtro, estados— no se ejecuta hoy contra ningún
+dato real: si estuviera rota, nadie se enteraría.
+
+Por eso lo barato y lo que destraba no es programar la fase 3: es **cargar beneficios
+reales y decidir cuáles se bloquean**. Es tarea de la entidad, igual que el primer gasto.
+
+#### 11.7.7 — Lo siguiente, en orden
+
+1. ~~**Desplegar**~~ **✅ HECHO 2026-08-31** (§11.7.8). Falta **cargar DigitalMatch y hacer
+   un canje real**: ahí se ejercita el camino feliz, que es lo único que quedó sin probar.
+2. **La anulación no tiene UI.** La Edge Function está y `clubApi.anularCanje()` también,
+   pero no hay botón en `/comercio`: se dejó afuera para no agregar una acción destructiva
+   sin poder ejercitarla contra un canje confirmado real.
+3. **El catálogo sigue partido en dos.** `/beneficios` lee `benefits` (viejo, 1 fila) y
+   `/club` lee `club_beneficios` (nuevo, vacío). §12.4 decidió deprecar el primero migrando
+   su contenido, no romperlo. Mientras las dos existan: **lo que se canjea vive en `/club`**.
+4. **Rotar la contraseña**, el gasto real, `react-router-dom`. Sin cambios.
+5. **Fase 3 del club** (§12.8): el reporte para el comercio, que es lo que hace que renueve.
+
+#### 11.7.8 — El despliegue a producción (2026-08-31)
+
+**Antes de tocar producción se cubrió el riesgo que este archivo ya advertía y que la
+validación original no cubría: producción corre PostgreSQL 15 y todo se había validado en
+la imagen 17.** Se levantó `public.ecr.aws/supabase/postgres:15.8.1.094` —la misma versión
+mayor y menor que la base real— y ahí corrieron las 14 migraciones y el check completo.
+
+⚠️ **La imagen de PG15 no arranca sola**, a diferencia de la de 17: su entrypoint espera un
+`/docker-entrypoint-initdb.d/init-scripts/99-roles.sql` que la imagen no trae (normalmente
+lo inyecta `supabase start`). Hay que montarlo, y **tiene que tolerar roles ausentes**:
+`supabase_functions_admin` no existe en esa versión y un `ALTER USER` a secas tumba el
+contenedor. Con eso resuelto: **14 migraciones aplicadas, club-check en 17 PASA / 0 FALLA,
+y converge al reaplicarse**, igual que en 17.
+
+La única migración que falla en PG15 pelado es `20260719140000_comision_docs_storage.sql`,
+y **está bien**: en 17 emitía un `NOTICE` y en 15 da error porque `storage.buckets` tiene
+otras columnas. Es la misma excepción que ya documenta §B — en producción esa tabla es real.
+
+#### Qué se hizo
+
+| | Cómo |
+|---|---|
+| Migración | `bash tools/db.sh apply supabase/migrations/20260830190000_club_fase2_canjes.sql` — transacción única, `ON_ERROR_STOP` |
+| Funciones | `npx supabase functions deploy` **una por una y por nombre**, para no redeployar `create-user` ni las otras existentes |
+
+#### Cómo quedó verificado contra la base real
+
+| Qué | Resultado |
+|---|---|
+| Las 6 tablas `club_*` existen | ✅ |
+| RLS activa en las 6 | ✅ `relrowsecurity = t` en todas |
+| **`club_canjes` no tiene policy de escritura** | ✅ el único comando con policy es `SELECT` — la ausencia de INSERT/UPDATE/DELETE **es** la protección |
+| `club_config` sembrada | ✅ 5 claves, incluida `zona_horaria` |
+| Las 4 funciones nuevas | ✅ `is_comercio_member`, `mis_comercios`, `club_nuevo_codigo`, `club_expirar_canjes` |
+
+Y las Edge Functions, con **el control al lado del negativo**, que es la regla de §11.6.3:
+
+```
+POST sin JWT  → 401   en las tres
+POST a una función inventada → 404   ← el control: sin esto, el 401 no probaría
+                                        que las funciones estén desplegadas
+POST con la anon key como JWT → {"error":"Sesión inválida"}
+```
+
+**La tercera línea es la que más dice.** Un 401 del gateway solo prueba que Supabase
+protege la ruta. Esa respuesta, en cambio, sale **del código propio**: significa que la
+función bootea, que los imports de `_shared/cors.ts`, `_shared/club-db.ts` y
+`_shared/club-reglas.ts` resuelven en el bundle, que las tres env vars están inyectadas —si
+faltara una, `contextoDesde()` diría "Configuración del servidor incompleta"— y que el
+manejo de errores devuelve JSON con la forma esperada.
+
+#### Lo que quedaba sin probar — cerrado el 2026-09-02
+
+El **camino feliz autenticado** era la mitad que faltaba. Se ejercitó con un canje real
+(§11.7.12) y no queda nada del runtime sin correr contra producción.
+
+#### 11.7.9 — El hueco que encontró una pregunta, no una prueba (2026-09-01)
+
+Al explicar cómo se da de alta un comercio quedó a la vista que **no había
+flujo**: en `src/` todas las referencias a las tablas `club_*` eran lecturas, el
+panel admin tenía 13 secciones y ninguna del club, y el alta eran cuatro filas
+de SQL cargadas por alguien con acceso a la base.
+
+**No fue una decisión de recorte: nadie lo escribió.** §12.3 sí diseñó el flujo
+—postulación, aprobación, magic link, alta del dispositivo del local— pero
+§12.8 nunca lo puso en una fase. La lista de la fase 2 dice «las 3 Edge
+Functions + panel `/comercio`», y ese panel es el mostrador.
+
+**Por qué importa más de lo que parece.** §12.7 define el éxito del módulo como
+«copiar migraciones + Edge Functions a otro proyecto y que funcione». Con el
+alta por SQL, lo que viaja es el código y no la operación: cada comercio nuevo
+—en este proyecto o en el próximo— pasa por un desarrollador. Es exactamente lo
+que §12.9 quería evitar al decidir entrar «de a uno y digitalizando».
+
+Se construyó la sección **«Club de beneficios»** en `/admin`. Vive en
+`src/components/Club/`, no en `src/components/Admin/`, para que la carpeta del
+club viaje completa: el único punto de integración con el anfitrión es una línea
+en `AdminPanel.jsx`.
+
+⚠️ **Lo que NO se pudo verificar al escribirla:** la pantalla renderizada.
+`/admin` exige sesión de admin y desde acá no hay forma de autenticarse. Se
+verificó que la ruta siguiera respondiendo (redirige a login, no 404), que el
+código entrara al bundle —el chunk pasó de 125 a 155 kB— y que los validadores
+pasaran sus 13 tests. ✅ **Se usó por primera vez el 2026-09-02** para activar y
+archivar el beneficio de prueba, y funcionó.
+
+**La lección, que no es sobre el club:** este hueco no lo encontró un test ni
+una revisión de código. Lo encontró alguien preguntando *«¿y cómo sería el
+flujo?»*. Un plan puede estar completo en lo que enumera y tener un agujero en
+lo que da por obvio.
+
+---
+
+#### 11.7.10 — «Tiene el texto» no es «se ve bien» (2026-09-01)
+
+`/club` se verificó como manda §B: navegador de verdad, ruta real, y **contenido** en vez
+de tamaño. Pasó. En un teléfono, el título salía **a una palabra por renglón**.
+
+La causa era de layout, no de datos: la fila era `flex flex-wrap` con la etiqueta y el
+botón en `shrink-0`. En una pantalla angosta el botón se queda con el ancho que necesita y
+el bloque de texto —que tiene `min-w-0`— se comprime hasta desaparecer. Se arregló
+apilando en mobile (`flex-col` → `sm:flex-row`), con el mismo tratamiento en el aviso de
+«hay N beneficios para socios».
+
+**Dos cosas que salen de acá y valen más que el arreglo:**
+
+1. **La regla de §B estaba incompleta.** Decía «confirmá contenido, no tamaño», y eso ataca
+   el 404 disfrazado. No ataca una página que tiene todas las cadenas correctas y es
+   ilegible. Hay que abrirla y mirarla, y en ancho de teléfono.
+
+2. **Cuidado con las capturas headless.** Al sacar el screenshot a 390 px de ancho, la
+   página aparecía cortada a la derecha… y **la Home, que lleva meses en producción,
+   aparecía cortada igual**. Chrome headless maqueta a un viewport más ancho del que
+   fotografía. Sin ese control —una página que se sabe sana— se habría «arreglado» un
+   desborde que no existe. Es el mismo patrón de siempre: una medición sin control no
+   distingue el defecto del instrumento.
+
+---
+
+#### 11.7.11 — El primer uso real encontró lo que ninguna prueba buscaba (2026-09-01)
+
+Con el comercio cargado y el beneficio de prueba activo, el primer intento de generar un
+canje desde un teléfono devolvió **«Sesión inválida»**.
+
+No era un bug del canje: era que **`/club` ofrecía «Usar ahora» a un visitante sin sesión**.
+El botón se decidía solo con `requiere_acceso`, y un beneficio abierto —justamente el de
+prueba, que existe para no exigir aporte— le aparecía canjeable a cualquiera. La Edge
+Function hacía lo correcto y rechazaba; el problema era haberlo ofrecido.
+
+Es **exactamente lo que §12.3 prohíbe** en sus casos borde: *«nunca dejarlo generar un
+código que va a fallar»*. Estaba escrito, y aun así se implementó mal, porque la condición
+se pensó como «¿tiene acceso?» cuando en realidad son dos preguntas: **¿hay sesión?** y
+después **¿tiene acceso?**. Sin sesión no se puede canjear NADA, ni siquiera un beneficio
+abierto: el canje se emite a nombre de una persona.
+
+**Y el error era un callejón sin salida.** Ofrecía «Probar de nuevo», que ante una sesión
+que no existe falla para siempre. De ahí que `ErrorHttp` ahora lleve un `codigo` que viaja
+al front: con `codigo_error: 'sesion'` la pantalla ofrece **iniciar sesión** en vez de
+reintentar. Un mensaje de error sirve si la persona puede hacer algo con él.
+
+**La lección: ninguna de las verificaciones podía encontrar esto.** Los tests cubren
+lógica pura; el check SQL cubre las RLS; el chequeo en navegador cubre que la página
+renderice. El hueco estaba en el estado «visitante anónimo mirando un beneficio abierto»,
+que es una combinación que solo aparece usando la cosa. **Lo encontró el primer uso real,
+como el hueco del ABM lo encontró una pregunta.**
+
+**Y el primer arreglo estuvo mal por exceso.** Se agregó el aviso de sesión arriba **sin
+sacar el botón de cada fila**, así que la pantalla quedó con cuatro CTA y tres decían lo
+mismo: una pared de botones rojos que tapaba los beneficios, que es lo único que la
+página tiene para mostrar. La regla que quedó: **la acción va UNA vez, arriba; por ítem
+solo hay botón cuando la acción está realmente disponible**, y si no, una etiqueta callada
+que dice por qué («Para socios»). Arreglar agregando, sin sacar lo que sobra, es media
+corrección.
+
+---
+
+#### 11.7.12 — El circuito, demostrado con plata de mentira y gente de verdad (2026-09-02)
+
+**La fase 2 quedó probada de punta a punta.** Un socio generó, un comercio confirmó, y la
+pantalla del socio cambió sola. Esto es lo que quedó en la base, que es la única prueba que
+vale:
+
+| | |
+|---|---|
+| Código | `9GUBT2` |
+| Socio | `gonzaloandresramos@gmail.com` |
+| Cajero | `info@evolucionantoniana.com` (operador de DigitalMatch Global) |
+| Generado → confirmado | **53 segundos** |
+| `confirmado_en > expira_en` | `false` — no fue rescate tardío |
+| `monto_operacion` | 100.000 |
+| `ahorro` | **NULL** |
+
+**Ese `ahorro` en NULL no es un bug: es la decisión de `calcularAhorro()` funcionando.** El
+beneficio es de tipo `regalo`, y cuánto se ahorró depende de qué se llevó la persona. Un 0
+ahí habría mentido en el reporte que después se le muestra al comercio para que renueve
+(12.6). **NULL no es cero: es «no calculable».**
+
+Con esto se ejercitó lo único que quedaba sin correr: elegibilidad, embeds de PostgREST en
+la consulta del canje, y el `UPDATE` condicional de la confirmación.
+
+#### 11.7.13 — El bug que la prueba NO encontró, y que habría aparecido con el segundo socio
+
+Revisando el estado al cierre apareció una pregunta simple: **el reaper existe, ¿alguien lo
+llama?** No. `club_expirar_canjes()` solo aparecía en `club-check.sql`. En producción, nada.
+
+**Por qué eso es grave y no cosmético.** El índice único del límite por persona cubre
+`estado IN ('pendiente','confirmado')`. Un canje vencido sigue diciendo `'pendiente'` hasta
+que alguien lo expire. Con un beneficio de `limite_por_persona = 1` —como el **real** de
+DigitalMatch, que es `1 / total`— alcanza con que una persona genere un código y no lo use
+para que quede **sin ese beneficio de por vida**. Y el mensaje de error le diría «ya usaste
+este beneficio», cuando no lo usó.
+
+Reproducido en PostgreSQL 15 antes de afirmarlo, con las dos puntas en la misma corrida:
+
+```
+SIN reaper  → unique_violation: el socio queda bloqueado para siempre
+CON reaper  → expira 1 canje y puede volver a generar
+```
+
+**El arreglo:** `club-generar-canje` llama al reaper antes de mirar los límites. El sistema
+se auto-repara sin depender de un scheduler que el plan de Supabase no tiene. Si esa llamada
+falla, se loguea y se sigue: cortar ahí sería negarle el canje a alguien que sí puede.
+
+**Tres cosas que este bug enseña, y ninguna es sobre reapers:**
+
+1. **Lo escribió el mismo que lo rompió.** El comentario de la migración decía, palabra por
+   palabra, *«sin esto, un canje abandonado queda 'pendiente' para siempre y bloquea el
+   índice: la persona no podría volver a generar ese beneficio nunca más»*. Se escribió la
+   función, se documentó el peligro, y **no se conectó a nada**. Saber cuál es el riesgo no
+   es lo mismo que haberlo cubierto.
+
+2. **La prueba exitosa lo ocultó.** El canje de §11.7.12 se confirmó en 53 segundos, así que
+   nunca venció nada. Un circuito que funciona a la primera **no prueba lo que pasa cuando
+   algo se abandona** — y §12.3 dice que abandonar es el caso normal, no la excepción.
+
+3. **Los checks tampoco podían verlo.** `club-check.sql` T11 prueba que el reaper funciona…
+   llamándolo explícitamente. Probaba la función, no que estuviera conectada. Es el mismo
+   patrón de §11.6.3 en otra forma: la prueba pasaba y no medía lo que importaba.
+
+---
+
+---
+
+
+### 12.1 — Estado actual (relevado 2026-08-30, resuelto en código el 2026-08-30)
+
+> ✅ **Los tres ítems de abajo están resueltos, en producción, y demostrados.** Las 6 tablas
+> `club_*` con RLS y las tres Edge Functions se aplicaron el 2026-08-31 (§11.7.8), y el
+> 2026-09-02 se hizo **el primer canje real de punta a punta** con DigitalMatch Global
+> (§11.7.12). Lo que describen estos tres puntos —cupón estático, comercio inexistente como
+> actor, cero trazabilidad— **ya no es cierto**. Se dejan como registro del punto de
+> partida.
+
+- [ ] **12.1.a — Hoy no hay un club: hay un listado de cupones.**
+  `benefits.codigo` y `benefits.codigo_descuento` (`baseline:378-379`) son texto
+  estático, uno solo por beneficio, igual para todo el mundo.
+  `BenefitDetailPage.jsx:231` lo renderiza en pantalla, y `/beneficios/:slug`
+  (`App.jsx:101`) es **ruta pública sin `ProtectedRoute`**: el código se lo lleva
+  cualquiera que entre al sitio. Un código estático y público no se puede limitar,
+  ni vencer, ni contar, ni atribuir a una persona.
+
+- [ ] **12.1.b — El comercio no existe como actor del sistema.**
+  `partners` (`baseline:507`) tiene nombre, logo, descripción, contacto y estado. **No
+  tiene login, ni sucursales, ni ubicación, ni usuarios, ni forma de reportar nada.**
+  Un partner es hoy un logo en la Home, no una contraparte operativa.
+
+- [ ] **12.1.c — No hay registro de que un beneficio se haya usado.**
+  No existe tabla de canjes ni equivalente. Consecuencia práctica: la entidad no puede
+  decirle al comercio cuánta gente le mandó, que es exactamente el argumento que hace
+  falta para renovar el acuerdo al año siguiente.
+
+---
