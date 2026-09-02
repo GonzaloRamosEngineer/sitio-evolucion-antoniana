@@ -114,7 +114,7 @@ const PartnersPage = () => {
                   </div>
 
                   <div className="p-8 flex-grow flex flex-col">
-                    <h3 className="text-2xl font-bold font-poppins text-brand-dark mb-3 group-hover:text-brand-action transition-colors">
+                    <h3 className="text-2xl font-bold font-poppins text-brand-dark mb-3 break-words group-hover:text-brand-action transition-colors">
                       {partner.nombre}
                     </h3>
                     

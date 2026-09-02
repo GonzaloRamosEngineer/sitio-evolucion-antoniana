@@ -202,7 +202,7 @@ const ComercioDetalle = ({ comercio }) => {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-2xl font-display font-bold text-brand-dark">{comercio.nombre}</h2>
+        <h2 className="text-2xl font-display font-bold text-brand-dark break-words">{comercio.nombre}</h2>
         <Badge>{comercio.estado}</Badge>
       </div>
       <p className="mt-1 text-sm text-brand-dark/60">

@@ -2,11 +2,11 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Globe, Mail, Info, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Globe, Mail, Info, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SanitizedHtml } from '@/components/ui/sanitized-html';
 import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
-import { useAllPartners } from '@/hooks/useContentQueries';
+import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
 
 const slugify = (s = '') =>
   s
@@ -25,6 +25,28 @@ const PartnerDetailPage = () => {
   const { data: partner = null, isPending: loading } = useAllPartners({
     select: (rows) =>
       rows.find((p) => p.slug === slug || slugify(p.nombre) === slug) ?? null,
+  });
+
+  /*
+    Los beneficios que este aliado ofrece en el club, si ofrece alguno.
+
+    POR QUÉ ESTO FALTABA Y NO SE NOTÓ. El enlace era de UNA sola dirección: el
+    detalle del beneficio manda al perfil del aliado ("Ver perfil del aliado"),
+    y el perfil no volvía. Peor: donde no hay `colaboracion_detalle` la página
+    dice "Próximamente compartiremos más información sobre los beneficios de
+    esta alianza" — y **el beneficio ya está publicado desde el 2026-09-02**,
+    así que la página prometía como futuro algo que ya existía.
+
+    Es la misma familia que §12.10.14, el /club huérfano: piezas que funcionan
+    y no están conectadas. Un enlace que falta no rompe nada y no lo encuentra
+    ningún test.
+
+    Se reusa `useBeneficiosVidriera` a propósito: misma consulta, misma caché y
+    la misma garantía de que acá tampoco puede aparecer un código (§12.10.13).
+  */
+  const { data: beneficiosDelAliado = [] } = useBeneficiosVidriera({
+    enabled: Boolean(partner?.id),
+    select: (rows) => (rows ?? []).filter((b) => b.partner_id && b.partner_id === partner?.id),
   });
 
   const pageTitle = partner
@@ -93,7 +115,14 @@ const PartnerDetailPage = () => {
                         </div>
                     )}
 
-                    <h1 className="text-3xl font-bold font-poppins text-brand-dark mb-2 leading-tight">
+                    {/*
+                      `break-words`: el nombre puede ser UNA sola palabra larga
+                      —"DigitalMatchGlobal", 18 caracteres— y en esta columna
+                      angosta se pasaba del borde de la tarjeta. El texto de
+                      alrededor envolvía bien porque tiene espacios, así que el
+                      recorte se veía solo en el título y solo con nombres largos.
+                    */}
+                    <h1 className="text-3xl font-bold font-poppins text-brand-dark mb-2 leading-tight break-words hyphens-auto">
                         {partner.nombre}
                     </h1>
 
@@ -179,9 +208,57 @@ const PartnerDetailPage = () => {
                         ) : (
                         <div className="text-center py-8">
                             <p className="text-gray-500 italic">
-                                Próximamente compartiremos más información detallada sobre los beneficios de esta alianza.
+                                {beneficiosDelAliado.length > 0
+                                    ? 'Esta alianza ya tiene beneficios activos en el club.'
+                                    : 'Próximamente compartiremos más información detallada sobre los beneficios de esta alianza.'}
                             </p>
                         </div>
+                        )}
+
+                        {/*
+                          El camino de vuelta: del aliado a lo que ofrece. Sin
+                          esto, quien llega al perfil desde el footer o desde
+                          /partners no tiene forma de enterarse de que hay un
+                          beneficio, aunque esté publicado.
+                        */}
+                        {beneficiosDelAliado.length > 0 && (
+                            <div className="mt-8 pt-6 border-t border-gray-100">
+                                <h3 className="font-bold font-poppins text-brand-dark mb-1">
+                                    {beneficiosDelAliado.length === 1
+                                        ? 'Su beneficio en el club'
+                                        : `Sus ${beneficiosDelAliado.length} beneficios en el club`}
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Parte del club de beneficios para quienes sostienen la Fundación.
+                                </p>
+                                <ul className="space-y-3">
+                                    {beneficiosDelAliado.map((b) => (
+                                        <li key={b.id}>
+                                            <Link
+                                                to={b.slug ? `/beneficios/${b.slug}` : '/beneficios'}
+                                                className="flex items-center justify-between gap-4 rounded-sm border border-brand-dark/10 bg-brand-sand/40 p-4 transition-colors hover:bg-brand-sand"
+                                            >
+                                                <span className="min-w-0">
+                                                    <span className="block font-semibold text-brand-dark break-words">
+                                                        {b.titulo}
+                                                    </span>
+                                                    {b.requiere_acceso && (
+                                                        <span className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                                                            <Lock aria-hidden="true" className="h-3 w-3" />
+                                                            Para socios con aporte vigente
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                {b.descuento && (
+                                                    <span className="shrink-0 font-bold text-brand-action">
+                                                        {b.descuento}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         )}
                     </div>
                 </div>

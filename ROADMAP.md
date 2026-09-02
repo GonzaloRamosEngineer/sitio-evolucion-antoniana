@@ -1854,6 +1854,38 @@ para no volver a descubrir un hueco preguntando.
   versión de producción**, convergen al reaplicarse, y los cinco checks dan salida
   idéntica con y sin la migración nueva. Ya no queda ninguna excepción declarada.
 
+- [x] ~~**12.10.20 — El enlace aliado ↔ beneficio era de una sola dirección.**~~
+  **✅ ARREGLADO el 2026-09-02.** Lo encontró el dueño del proyecto mirando
+  `/partners/digitalmatchglobal`: el detalle del beneficio manda al perfil del aliado
+  («Ver perfil del aliado», dos veces), y **el perfil no volvía**.
+
+  ⚠️ **Y era peor que un enlace faltante.** Donde el aliado no tiene
+  `colaboracion_detalle`, la página decía *«Próximamente compartiremos más información
+  detallada sobre los beneficios de esta alianza»* — **y el beneficio ya estaba publicado
+  ese mismo día.** La página prometía como futuro algo que ya existía.
+
+  Es la **misma familia que 12.10.14** (el `/club` huérfano): piezas que funcionan y no
+  están conectadas. Un enlace que falta no rompe nada, no tira ningún error y **no lo
+  encuentra ningún test** — solo aparece navegando el sitio como lo navega una persona.
+  Van tres hallazgos así en la jornada, los tres de mirar pantallas.
+
+  Ahora el perfil lista los beneficios del aliado con su descuento y el candado de «para
+  socios», reusando `useBeneficiosVidriera` — misma consulta, misma caché y la misma
+  garantía estructural de que ahí tampoco puede aparecer un código.
+
+- [x] ~~**12.10.21 — Un nombre de una sola palabra larga desbordaba el título.**~~
+  **✅ ARREGLADO el 2026-09-02.** «DigitalMatchGlobal» son 18 caracteres sin espacios, y
+  en la columna angosta del perfil se pasaba del borde de la tarjeta.
+
+  **Por qué no se veía en ningún otro lado:** el texto de alrededor envuelve bien porque
+  tiene espacios. Solo rompe en un título, solo con un nombre largo y solo sin
+  `break-words`. Se agregó en los **tres** lugares donde el nombre entra a un título
+  grande: el perfil del aliado, el listado de `/partners` y el ABM del club.
+
+  Es de la familia de §11.7.10 —«tiene el texto» no es «se ve bien»— y el corolario que
+  deja es más específico: **cualquier dato cargado por una persona puede ser una palabra
+  larga, y un título sin `break-words` es una bomba de tiempo esperando ese dato.**
+
 #### D. Infraestructura del módulo
 
 - [ ] **12.10.11 — El reaper depende de que alguien genere un canje.** Desde §11.7.13,
