@@ -298,20 +298,42 @@ const BenefitDetailPage = () => {
                         </div>
                         )}
 
-                        {/* La frase la arma `fraseBeneficio` según el TIPO. Acá
-                            decía `{benefit.descuento} de descuento`, que daba
-                            «30% OFF de descuento» y habría dado «2x1 de
-                            descuento». El sufijo no es del JSX. */}
-                        {(benefit.descuentoFrase ?? benefit.descuento) && (
-                            <div className="flex items-center gap-2 text-brand-action font-bold bg-brand-sand/60 p-3 rounded-sm border border-brand-dark/10 justify-center">
-                                <Percent className="h-4 w-4" />
-                                <span>{benefit.descuentoFrase ?? benefit.descuento}</span>
-                            </div>
-                        )}
+                        {/*
+                          ⚠️ ACÁ ESTABA EL DESCUENTO Y SE MOVIÓ ABAJO, a «Info
+                          adicional» (§10.25). No fue una decisión de gusto: era
+                          una caja de ancho completo, con borde, fondo y texto
+                          centrado en negrita, **pegada justo debajo de un botón
+                          `outline` de ancho completo**. O sea, idéntica a un
+                          botón. El dueño del proyecto intentó clickearla y
+                          reportó «no me deja clickear nada, como que no hay
+                          ninguna acción permitida».
+
+                          Y tenía razón en las dos mitades: parecía un botón y
+                          no lo era, y en el estado «no cumple los requisitos»
+                          **la única acción real es «Ver mi carnet»** — que
+                          quedaba compitiendo visualmente con un cartel inerte.
+
+                          El descuento es un DATO del beneficio, como la
+                          vigencia y los legales. Va con ellos.
+                        */}
                     </div>
 
                     {/* Info Adicional */}
                     <div className="space-y-4 pt-6 border-t border-gray-100">
+                         {/* El descuento, como fila de dato y no como botón
+                             falso: mismo formato que vigencia y legales. */}
+                         {(benefit.descuentoFrase ?? benefit.descuento) && (
+                            <div className="flex gap-3">
+                                <Percent className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                <div>
+                                    <span className="block text-xs font-bold text-gray-400 uppercase">Descuento</span>
+                                    <p className="text-sm font-semibold text-brand-action">
+                                        {benefit.descuentoFrase ?? benefit.descuento}
+                                    </p>
+                                </div>
+                            </div>
+                         )}
+
                          {/* Validez */}
                          {(benefit.fecha_inicio || benefit.fecha_fin) && (
                             <div className="flex gap-3">

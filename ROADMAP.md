@@ -48,9 +48,18 @@ MercadoPago se mostraba como **JSON crudo** en un cartel rojo, y con sesión ini
 **no había forma de usar otro email** — así que el único email posible era el que
 MercadoPago rechazaba.
 
-**Todo arreglado y aplicado.** Las tres moralejas: *un cobro que sale bien no prueba que
-se registró bien*, *dos pantallas que se contradicen no producen ningún error*, y *un
-mensaje de error que no dice qué hacer es tan inútil como no tenerlo*.
+Y mirando esas pantallas **con sesión** aparecieron dos más (§10.25): el descuento estaba
+pintado como un botón y no lo era —«no me deja clickear nada»— y el mensaje de requisitos
+no se entendía, porque nunca decía cuál era el requisito.
+
+**Todo arreglado y aplicado.** Las moralejas: *un cobro que sale bien no prueba que se
+registró bien*, *dos pantallas que se contradicen no producen ningún error*, *un mensaje
+de error que no dice qué hacer es tan inútil como no tenerlo*, y ***un texto correcto no
+es un texto entendible, y solo uno de los dos tiene tests*.**
+
+⚠️ **Siete de los hallazgos de esta jornada salieron de mirar pantallas y ninguno de un
+test.** Cuatro de ellos solo se ven **con sesión iniciada**, donde el chequeo de navegador
+de §B no llega.
 
 **Lo primero, en orden:**
 

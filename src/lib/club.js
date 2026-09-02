@@ -314,6 +314,67 @@ export const faltaParaBeneficio = (beneficio, elegibilidad) => {
   return { faltanMeses, faltaMonto, texto: partes.join(' o ') };
 };
 
+/** Un monto como lo lee una persona en Argentina. */
+const plata = (n) => `$${Number(n).toLocaleString('es-AR')}`;
+const enMeses = (n) => `${n} ${n === 1 ? 'mes' : 'meses'}`;
+
+/**
+ * El mensaje completo para «tiene acceso pero no llega a este beneficio».
+ *
+ * POR QUÉ SE REESCRIBIÓ (2026-09-02, §10.25). La primera versión decía:
+ *
+ *     «Te faltan 5 meses de aporte o $25.000 más acumulados para este
+ *      beneficio. Tu aporte ya está vigente.»
+ *
+ * El dueño del proyecto lo leyó en producción y dijo que no se entendía. Tenía
+ * razón, y por tres motivos distintos:
+ *
+ *  1. **Nunca dice cuál es el requisito.** «Te faltan 5 meses» no significa
+ *     nada sin saber que pide 6: el número flota sin referencia y no se puede
+ *     saber si falta poco o mucho.
+ *  2. **«Tu aporte ya está vigente» al final suena a contradicción.** Primero
+ *     te dice que te falta algo y después que ya estás bien. Puesto adelante
+ *     es lo contrario: enmarca la buena noticia y explica el «pero».
+ *  3. **«acumulados» es jerga nuestra**, no de quien lee.
+ *
+ * Y estaba bajo el título «¿Cómo lo obtengo?», así que la pregunta era «cómo»
+ * y la respuesta hablaba de lo que falta. Ahora contesta las tres cosas que
+ * una persona necesita: **qué pide, dónde estás y cuánto falta.**
+ */
+export const mensajeRequisitos = (beneficio, elegibilidad) => {
+  const falta = faltaParaBeneficio(beneficio, elegibilidad);
+  if (!falta) return null;
+
+  const minMeses = beneficio?.antiguedad_minima_meses ?? null;
+  const minMonto = beneficio?.aporte_minimo_acumulado ?? null;
+  const meses = Number(elegibilidad?.meses_aportados ?? 0);
+  const monto = Number(elegibilidad?.aporte_acumulado ?? 0);
+
+  const pide = [];
+  const vas = [];
+  const restan = [];
+  if (minMeses != null) {
+    pide.push(`${enMeses(minMeses)} de aporte`);
+    vas.push(enMeses(meses));
+    restan.push(enMeses(falta.faltanMeses));
+  }
+  if (minMonto != null) {
+    pide.push(`${plata(minMonto)} en total`);
+    vas.push(plata(monto));
+    restan.push(plata(falta.faltaMonto));
+  }
+
+  // La concordancia sigue al PRIMER elemento: «te falta 1 mes o $25.000»,
+  // «te faltan 5 meses». Con solo monto va plural, que es el uso corriente
+  // («te faltan $25.000»).
+  const verbo = falta.faltanMeses === 1 ? 'falta' : 'faltan';
+
+  return (
+    `Ya tenés aporte vigente, pero este beneficio pide ${pide.join(' o ')}. ` +
+    `Vas por ${vas.join(' y ')}, así que te ${verbo} ${restan.join(' o ')}.`
+  );
+};
+
 export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = {}) => {
   const requiere = Boolean(beneficio?.requiere_acceso);
   const tieneAcceso = Boolean(acceso?.tiene_acceso);
@@ -367,7 +428,7 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
       puedeCanjear: false,
       // Se dice el número exacto y no "no cumplís": alguien a un mes de
       // distancia se queda; alguien a quien le dicen "no podés", se va.
-      mensaje: `Te ${falta.faltanMeses === 1 ? 'falta' : 'faltan'} ${falta.texto} para este beneficio. Tu aporte ya está vigente.`,
+      mensaje: mensajeRequisitos(beneficio, elegibilidad),
       cta: { texto: 'Ver mi carnet', href: '/carnet' },
       falta,
     };

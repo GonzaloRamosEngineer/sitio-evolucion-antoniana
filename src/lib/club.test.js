@@ -11,6 +11,7 @@ import {
   mapearABeneficio,
   accionVidriera,
   faltaParaBeneficio,
+  mensajeRequisitos,
   normalizarCodigo,
   esCodigoValido,
 } from '@/lib/club';
@@ -74,6 +75,91 @@ describe('estadoCanje', () => {
 
   it('sin canje no rompe', () => {
     expect(estadoCanje(null, ahora)).toBe('ninguno');
+  });
+});
+
+describe('mensajeRequisitos', () => {
+  /*
+    ESTE MENSAJE NO TENÍA NINGÚN TEST, y es el que el dueño del proyecto leyó
+    en producción y no entendió (§10.25). Decía:
+
+      «Te faltan 5 meses de aporte o $25.000 más acumulados para este
+       beneficio. Tu aporte ya está vigente.»
+
+    Los tests de abajo fijan las tres cosas que le faltaban, porque «hay un
+    mensaje» no es lo mismo que «se entiende».
+  */
+  const pide6oTreinta = { antiguedad_minima_meses: 6, aporte_minimo_acumulado: 30000 };
+  const suCaso = { meses_aportados: 1, aporte_acumulado: 5000 };
+
+  it('🔑 dice EL REQUISITO, no solo lo que falta', () => {
+    // Sin esto, «te faltan 5 meses» flota: no se puede saber si falta poco o
+    // mucho porque nunca se dijo contra qué.
+    const m = mensajeRequisitos(pide6oTreinta, suCaso);
+    expect(m).toMatch(/6 meses de aporte/);
+    expect(m).toMatch(/\$30\.000/);
+  });
+
+  it('dice DÓNDE ESTÁ la persona', () => {
+    const m = mensajeRequisitos(pide6oTreinta, suCaso);
+    expect(m).toMatch(/Vas por 1 mes y \$5\.000/);
+  });
+
+  it('dice CUÁNTO FALTA, con el signo y sin jerga', () => {
+    const m = mensajeRequisitos(pide6oTreinta, suCaso);
+    expect(m).toMatch(/te faltan 5 meses o \$25\.000/);
+    // «acumulados» es jerga nuestra, no de quien lee.
+    expect(m).not.toMatch(/acumulados/);
+  });
+
+  it('la buena noticia va ADELANTE y no al final como contradicción', () => {
+    // «Te faltan X… Tu aporte ya está vigente» se leía como que primero te
+    // falta algo y después que ya estás bien.
+    const m = mensajeRequisitos(pide6oTreinta, suCaso);
+    expect(m.indexOf('vigente')).toBeLessThan(m.indexOf('faltan'));
+    expect(m).not.toMatch(/vigente\.$/);
+  });
+
+  it('concuerda en singular cuando falta un solo mes', () => {
+    const m = mensajeRequisitos(pide6oTreinta, { meses_aportados: 5, aporte_acumulado: 25000 });
+    expect(m).toMatch(/te falta 1 mes o \$5\.000/);
+    expect(m).not.toMatch(/te faltan 1 mes/);
+  });
+
+  it('con un solo requisito no inventa el otro', () => {
+    const soloMeses = mensajeRequisitos({ antiguedad_minima_meses: 6 }, suCaso);
+    expect(soloMeses).toMatch(/pide 6 meses de aporte\./);
+    expect(soloMeses).not.toMatch(/\$30/);
+    expect(soloMeses).not.toMatch(/ o /);
+
+    const soloMonto = mensajeRequisitos({ aporte_minimo_acumulado: 30000 }, suCaso);
+    expect(soloMonto).toMatch(/pide \$30\.000 en total/);
+    expect(soloMonto).not.toMatch(/meses de aporte/);
+    // Con solo monto va plural, que es el uso corriente.
+    expect(soloMonto).toMatch(/te faltan \$25\.000/);
+  });
+
+  it('devuelve null cuando la persona SÍ cumple (control positivo)', () => {
+    // Si devolviera un texto acá, la pantalla le diría que le falta algo a
+    // alguien que ya puede canjear. Y todas las aserciones de arriba pasarían
+    // igual, porque solo miran el texto cuando existe.
+    expect(mensajeRequisitos(pide6oTreinta, { meses_aportados: 6, aporte_acumulado: 0 })).toBeNull();
+    expect(mensajeRequisitos(pide6oTreinta, { meses_aportados: 0, aporte_acumulado: 30000 })).toBeNull();
+    expect(mensajeRequisitos({}, suCaso)).toBeNull();
+  });
+
+  it('y accionVidriera lo usa, no una copia propia', () => {
+    // Es lo que evita que el texto se arregle acá y siga viejo en la pantalla.
+    const a = accionVidriera({
+      beneficio: { requiere_acceso: true, ...pide6oTreinta },
+      acceso: { tiene_acceso: true, en_gracia: false },
+      haySesion: true,
+      elegibilidad: suCaso,
+    });
+    expect(a.estado).toBe('sin_requisitos');
+    expect(a.puedeCanjear).toBe(false);
+    expect(a.mensaje).toBe(mensajeRequisitos({ requiere_acceso: true, ...pide6oTreinta }, suCaso));
+    expect(a.mensaje).toMatch(/6 meses de aporte/);
   });
 });
 

@@ -2669,6 +2669,89 @@ de verdad, hay que confirmar el texto contra lo que llegó en vez de darlo por b
 
 ---
 
+### 10.25 — Un cartel que parecía un botón, y un mensaje que no se entendía (2026-09-02)
+
+Dos cosas que solo aparecen **usando la pantalla con una sesión real**, las dos reportadas
+por el dueño del proyecto sobre `/beneficios/30-de-descuento-...`.
+
+#### 1. «No me deja clickear nada»
+
+El descuento se mostraba en una caja de ancho completo, con borde, fondo y texto centrado
+en negrita, **pegada justo debajo de un botón `outline` de ancho completo**. O sea:
+visualmente idéntica a un botón. Textual: *«tengo que hacer click sobre % 30% de
+descuento?? no me deja clickear nada, o sea como que no hay acción permitida de nada»*.
+
+Tenía razón en las dos mitades, y la segunda es la que importa:
+
+- **parecía un botón y no lo era** — un elemento inerte pintado como acción;
+- y en el estado «tiene acceso pero no cumple los requisitos» **la única acción real es
+  «Ver mi carnet»**, que quedaba compitiendo visualmente con ese cartel muerto. La
+  pantalla se leía como si no hubiera nada que hacer.
+
+El descuento **es un dato del beneficio**, igual que la vigencia y los legales. Se movió
+a «Info adicional», con el mismo formato de fila que los otros datos: ícono, rótulo,
+valor. La caja centrada desapareció, y con ella la ambigüedad.
+
+⚠️ **Y es la tercera vez en la jornada que el problema es «una pieza nueva no se agregó
+mirando qué había».** El comentario que quedó en ese archivo ya advertía de lo mismo para
+el bloque de al lado —dos mensajes y dos botones para lo mismo, §12.10.13— y el cartel
+del descuento seguía ahí, heredado, sin que nadie se preguntara qué parecía **al lado de
+un botón**.
+
+#### 2. El mensaje de requisitos, que no se entendía
+
+Decía, palabra por palabra:
+
+> «Te faltan 5 meses de aporte o $25.000 más acumulados para este beneficio. Tu aporte ya
+> está vigente.»
+
+Y no se entiende por **tres** motivos distintos, no uno:
+
+| Problema | Por qué |
+|---|---|
+| No dice el requisito | «Te faltan 5 meses» flota: sin saber que pide 6, no hay forma de saber si falta poco o mucho |
+| La buena noticia va al final | «Te falta algo… ya estás bien» se lee como contradicción. Adelante, enmarca el «pero» |
+| «acumulados» | Es jerga nuestra, no de quien lee |
+
+Encima estaba bajo el título **«¿Cómo lo obtengo?»**, así que la pregunta era *cómo* y la
+respuesta hablaba de lo que falta.
+
+Ahora contesta las tres cosas que una persona necesita —**qué pide, dónde estás, cuánto
+falta**— en `mensajeRequisitos()`:
+
+> «Ya tenés aporte vigente, pero este beneficio pide 6 meses de aporte o $30.000 en total.
+> Vas por 1 mes y $5.000, así que te faltan 5 meses o $25.000.»
+
+Y concuerda: a un mes de distancia dice *«te **falta** 1 mes o $5.000»*.
+
+#### Lo que esto dejó claro sobre los tests
+
+**Ese mensaje no tenía ningún test.** Ninguno. Los 25 tests de `club-reglas.ts` cubrían
+*la decisión* —quién cumple y quién no, que estaba bien— y **nadie miraba lo que la
+decisión le dice a la persona.** Es una frontera que este repo no tenía marcada: la
+lógica estaba probada y la redacción no existía como cosa verificable.
+
+Ahora hay 8 tests que fijan las tres propiedades y la concordancia, y se vieron fallar:
+reintroduciendo el mensaje viejo, **7 de 8 se ponen en rojo**.
+
+⚠️ Uno de ellos no comprueba el texto sino que `mensajeRequisitos` devuelva `null` cuando
+la persona **sí** cumple. Sin él, todas las demás aserciones pasarían igual con una
+función que siempre devuelve el mensaje, y la pantalla le diría «te falta» a alguien que
+ya puede canjear.
+
+#### La lección
+
+**Un texto correcto no es un texto entendible, y solo uno de los dos tiene tests.** Los
+dos hallazgos de esta sección salieron de una persona mirando una pantalla con su propia
+sesión: uno es puramente visual (dos elementos con el mismo aspecto y distinta función) y
+el otro es de redacción. Ninguno de los dos produce un error, ninguno lo encuentra un
+test que no se haya escrito a propósito, y **ninguno se puede ver sin sesión** — el
+chequeo de navegador de §B tampoco los alcanza (§10.23).
+
+Van **siete** hallazgos en la jornada que salieron de mirar pantallas.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
