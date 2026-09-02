@@ -116,6 +116,9 @@ export async function beneficioConComercio(admin: SupabaseClient, beneficioId: s
       "id, comercio_id, titulo, tipo, valor, requiere_acceso, estado, " +
         "limite_por_persona, ventana, limite_total, stock, " +
         "vigencia_desde, vigencia_hasta, dias_semana, hora_desde, hora_hasta, " +
+        // Requisitos y tope (§12.11). Si faltan acá, `cumpleRequisitos()` los ve
+        // como null y NO exige nada: la protección se caería en silencio.
+        "antiguedad_minima_meses, aporte_minimo_acumulado, ahorro_maximo, " +
         "club_comercios!inner(id, nombre, estado)",
     )
     .eq("id", beneficioId)

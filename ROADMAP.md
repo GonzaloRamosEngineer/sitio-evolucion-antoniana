@@ -47,7 +47,16 @@ está bloqueado para todo el mundo.
 
 2. **Que alguien tenga acceso vigente.** Vuelve a ser *el* bloqueante, y ahora con más peso:
    toda la vidriera está construida y verificada, y el estado «puede canjear» **sigue sin
-   poder ejercitarse** porque no hay una sola persona con aporte vigente (§10.17, §12.10.9). «Prueba interna del sistema de canje» quedó
+   poder ejercitarse** porque no hay una sola persona con aporte vigente (§10.17, §12.10.9).
+
+   ✅ **La economía del club ya está arreglada** (§12.11): el umbral es proporcional al valor
+   del beneficio, así que la primera persona que se suscriba entra a un club calibrado y no
+   a uno donde $5.000 desbloqueaban $45.000. La cuota queda en **$5.000, simbólica y a
+   propósito** — se buscó volumen de socios, no margen por socio.
+
+3. **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Es lo que convierte el
+   catálogo en un club: ticket bajo y frecuencia alta construyen el hábito que un descuento
+   de una sola vez no puede construir. «Prueba interna del sistema de canje» quedó
    **activo** y lo ve cualquier visitante de `/club`. Se apaga en un minuto desde
    `/admin → Club de beneficios → DigitalMatch Global`, poniéndolo en «De baja». Es lo único
    con urgencia real, y no es técnico.
@@ -1448,6 +1457,115 @@ credencial y digitalizar comercio por comercio.
 
 Queda una sola decisión abierta, y **a propósito**: los umbrales de los niveles de
 comercio (12.6). Se fijan con 3 meses de datos reales, no antes.
+
+---
+
+### 12.11 — El umbral tenía que ser proporcional al valor (2026-09-02) ✅ APLICADO
+
+**Lo encontró una pregunta del dueño del proyecto, no una prueba.** Y es la tercera vez
+seguida que el hueco lo destapa pensar el negocio en voz alta y no ejecutar código.
+
+#### El problema, con los números reales
+
+La regla de acceso es **una sola para todo el sistema**: `cuota_referencia` = $5.000 dan un
+mes. El beneficio de DigitalMatch es 30% sobre desarrollo web, y una cotización va de
+$150.000 a $500.000. Y el límite es `1 / total`: **un canje por persona, en la vida.**
+
+| Cotización | 30% off | Aporte para acceder | Gana la persona | Recibe la Fundación | Pone el comercio |
+|---|---|---|---|---|---|
+| $150.000 | $45.000 | **$5.000** | $40.000 | $5.000 | $45.000 |
+| $300.000 | $90.000 | **$5.000** | $85.000 | $5.000 | $90.000 |
+| $500.000 | $150.000 | **$5.000** | $145.000 | $5.000 | $150.000 |
+
+> **La estrategia óptima del socio era aportar $5.000 una vez, canjear e irse.** Y como el
+> límite es de por vida, no le quedaba ninguna razón para volver a aportar. **El club
+> premiaba irse** — exactamente lo contrario de lo que §10.7 identificó como el motivo más
+> fuerte para sostener una entidad.
+
+Y volvía **casi teórico** al bloqueante de §10.17: cuando por fin hubiera un socio con
+acceso, iba a recibir lo que ya tenía cualquiera.
+
+#### Tres decisiones de negocio, tomadas
+
+**1. La cuota se mantiene en $5.000, simbólica.** Decisión del dueño del proyecto: el
+objetivo es **volumen de socios, no margen por socio** — una cuota de $25.000 no llegaría
+ni al 10% del alcance posible. Así que el beneficio caro **no se protege encareciendo la
+entrada**, que mataría el volumen: se protege **pidiendo tiempo**.
+
+**2. No se parte el descuento entre la persona y la Fundación.** Se evaluó que el comercio
+diera 10% a la persona y donara 20%. **El instinto es correcto** —el valor debería volver
+en parte a la entidad— pero el mecanismo convierte un **descuento** (el comercio resigna
+margen, no se mueve plata) en una **cobranza con rendición**: factura el total, tributa
+sobre el total y transfiere. La Fundación pasa a ser **acreedora de cada comercio**, con
+conciliación y pagos que perseguir, que es lo que mata a los clubes chicos. Y **obliga a
+reabrir §12.9.2**, que dejó el monto opcional justamente porque exigirlo hace que el cajero
+lo complete con cualquier número. La misma economía se consigue sin mover un peso.
+
+**3. Los dos caminos son O, no Y.** Se cumple con la antigüedad **o** con el aporte
+acumulado. Pedir los dos dejaría afuera al donante que pone una suma grande de una vez, que
+es **el que más aporta**.
+
+#### Qué se construyó
+
+| Pieza | Dónde |
+|---|---|
+| `antiguedad_minima_meses`, `aporte_minimo_acumulado`, `ahorro_maximo` | `20260902160000_club_requisitos_beneficio.sql` |
+| `elegibilidad_club(uuid)` / `mi_elegibilidad_club()` | idem — devuelven **hechos**, no decisiones |
+| `cumpleRequisitos()` y el tope en `calcularAhorro()` | `club-reglas.ts` — puro y testeable |
+| La exigencia | `club-generar-canje/index.ts` |
+| `faltaParaBeneficio()` y el estado `sin_requisitos` | `src/lib/club.js` — **UX, no frontera** |
+| Los 6 campos del ABM | `ComercioDetalle.jsx` + `clubAdminApi.js` |
+
+**`antiguedad_socio()` ya existía desde la fase 1 de §10 y no lo usaba nadie.** Se usa
+`meses_aportados` (acumulado) y **no `racha_meses`**: la racha castigaría un cobro fallido
+por tarjeta vencida, que es justo lo que §10.4.3 dice evitar.
+
+⚠️ **La regla vive dos veces y no se puede evitar**: el browser no puede importar del
+runtime de Deno. La del front es UX; **la autoridad es la Edge Function**, que vuelve a
+preguntar con `service_role`. La única defensa contra que divergan es que **las dos se
+prueben con la misma tabla de casos**, y así están escritas.
+
+#### Los números elegidos, y por qué son provisorios
+
+**6 meses de aporte O $30.000 acumulados, con el ahorro topado en $30.000.**
+
+| | Antes | Ahora |
+|---|---|---|
+| Aporta la persona | $5.000 | **$30.000** |
+| Ahorra en un trabajo de $150.000 | $45.000 | $30.000 |
+| Su resultado neto | **+$40.000** | **±$0** |
+| Recibe la Fundación | $5.000 | **$30.000** (6×) |
+| Pone el comercio | $45.000 | **$30.000** (un tercio) |
+
+**Por qué 6 y no 12:** doce meses serían $60.000 de aporte contra $30.000 de ahorro — el
+beneficio quedaría en pérdida explícita, y entonces no es un beneficio. Seis lo deja a la
+par, y la persona sostuvo la Fundación medio año en el camino.
+
+⚠️ **Son la mejor estimación posible, no un dato.** §12.6 ya fijó el criterio: los umbrales
+se fijan con datos reales. **Hoy hay 0 personas con acceso vigente, así que no hay datos.**
+Por eso viven en la base y se editan desde el panel sin desplegar nada (§11.4: lo que varía
+por entidad va en datos).
+
+#### Lo que queda pendiente de esto
+
+- [ ] **12.11.1 — Ejercitar el rechazo con una cuenta real.** Se probó que las funciones
+  arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 25 tests. **Pero el camino
+  «tiene acceso y NO cumple los requisitos» nunca corrió contra la base**, y es la rama
+  nueva. Se puede ejercitar en cuanto exista un socio con un aporte y menos de 6 meses —
+  que es, justamente, el primero que se suscriba.
+
+- [ ] **12.11.2 — El club necesita beneficios de ticket bajo y frecuencia alta.** Es el
+  problema de fondo y no lo arregla ninguna columna: **un beneficio de ticket alto y una
+  sola vez no es un beneficio de club de fidelidad.** Los clubes funcionan con lo contrario
+  —el café, la farmacia, la librería: $2.000 de ahorro veinte veces al año—, que construye
+  hábito y premia la permanencia sin que nadie diseñe nada. **DigitalMatch es una vidriera
+  excelente y un cimiento malo.** Sumar tres o cuatro comercios de consumo cotidiano vale
+  más que cualquier ajuste de umbral.
+
+- [ ] **12.11.3 — El tope cambia los números de §12.6.** `ahorro_maximo` alimenta el
+  `ahorro` de `club_canjes`, que es la métrica de nivel del comercio. Cuando se definan los
+  umbrales de la fase 4, hay que tener presente que un ahorro topado no es comparable con
+  uno sin tope.
 
 ---
 

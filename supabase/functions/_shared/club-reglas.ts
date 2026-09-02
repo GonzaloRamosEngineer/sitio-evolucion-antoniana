@@ -22,6 +22,18 @@ export interface Beneficio {
   dias_semana: number[] | null; // 0 = domingo
   hora_desde: string | null; // HH:MM[:SS]
   hora_hasta: string | null;
+  // Requisitos proporcionales al valor del beneficio (§12.11). Los tres son
+  // opcionales: un beneficio sin ellos se comporta igual que antes de existir.
+  antiguedad_minima_meses?: number | null;
+  aporte_minimo_acumulado?: number | null;
+  ahorro_maximo?: number | null;
+}
+
+/** Los HECHOS de la persona. Los da `elegibilidad_club()`; acá no se consultan. */
+export interface Elegibilidad {
+  tiene_acceso: boolean;
+  meses_aportados: number;
+  aporte_acumulado: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -201,23 +213,99 @@ export function disponibleAhora(
  * llevó la persona, y el sistema no lo sabe. Guardar 0 ahí mentiría en el
  * reporte que después se le muestra al comercio para que renueve (12.6).
  */
+/**
+ * ¿Esta persona cumple los requisitos de ESTE beneficio? (§12.11)
+ *
+ * POR QUÉ ESTO EXISTE. La regla de acceso es una sola para todo el sistema:
+ * $5.000 dan un mes. Pero un 30% sobre desarrollo web vale entre $45.000 y
+ * $150.000, así que con el umbral único **la estrategia óptima del socio era
+ * aportar una vez, canjear e irse** — el club premiaba irse.
+ *
+ * La corrección NO es encarecer la cuota: la entidad la mantiene simbólica a
+ * propósito, porque busca volumen de socios y no margen por socio. Lo que se
+ * pide es TIEMPO. Entrada baratísima, y antigüedad para lo caro.
+ *
+ * LOS DOS CAMINOS SON OR, NO AND. Se cumple con la antigüedad **o** con el
+ * aporte acumulado. Pedir los dos dejaría afuera al donante que pone una suma
+ * grande de una vez, que es el que más aporta.
+ *
+ * Devuelve el motivo, no solo el veredicto: la pantalla necesita decir "te
+ * faltan 3 meses" y no "no podés", que es lo que hace que alguien se quede.
+ */
+export function cumpleRequisitos(
+  beneficio: Pick<
+    Beneficio,
+    "antiguedad_minima_meses" | "aporte_minimo_acumulado"
+  >,
+  elegibilidad: Elegibilidad | null | undefined,
+): { ok: boolean; motivo?: string; codigo?: string; faltan_meses?: number; falta_monto?: number } {
+  const minMeses = beneficio.antiguedad_minima_meses ?? null;
+  const minMonto = beneficio.aporte_minimo_acumulado ?? null;
+
+  // Sin requisitos declarados no hay nada que verificar.
+  if (minMeses == null && minMonto == null) return { ok: true };
+
+  const meses = Number(elegibilidad?.meses_aportados ?? 0);
+  const monto = Number(elegibilidad?.aporte_acumulado ?? 0);
+
+  const porAntiguedad = minMeses != null && meses >= minMeses;
+  const porMonto = minMonto != null && monto >= minMonto;
+  if (porAntiguedad || porMonto) return { ok: true };
+
+  // No cumple. Se calcula lo que falta por CADA camino disponible, y se ofrece
+  // el más cercano: decirle "te faltan 9 meses" a quien está a $5.000 de
+  // llegar por monto es empujarlo a irse.
+  const faltanMeses = minMeses != null ? Math.max(0, minMeses - meses) : null;
+  const faltaMonto = minMonto != null ? Math.max(0, minMonto - monto) : null;
+
+  const partes: string[] = [];
+  if (faltanMeses != null) {
+    partes.push(`${faltanMeses} ${faltanMeses === 1 ? "mes" : "meses"} de aporte`);
+  }
+  if (faltaMonto != null) {
+    partes.push(`${faltaMonto.toLocaleString("es-AR")} de aporte acumulado`);
+  }
+
+  return {
+    ok: false,
+    codigo: "requisitos",
+    motivo: `Este beneficio pide ${partes.join(" o ")}.`,
+    ...(faltanMeses != null ? { faltan_meses: faltanMeses } : {}),
+    ...(faltaMonto != null ? { falta_monto: faltaMonto } : {}),
+  };
+}
+
 export function calcularAhorro(
-  beneficio: Pick<Beneficio, "tipo" | "valor">,
+  beneficio: Pick<Beneficio, "tipo" | "valor" | "ahorro_maximo">,
   montoOperacion: number | null | undefined,
 ): number | null {
   if (montoOperacion == null || !Number.isFinite(montoOperacion) || montoOperacion < 0) {
     return null;
   }
+
+  // El tope se aplica AL FINAL y sobre cualquier tipo: "30% OFF hasta $30.000"
+  // es lo que acota la exposición del comercio, y es lo que hace que un tercero
+  // acepte entrar (§12.11). Un 30% sin tope sobre una cotización de $500.000
+  // son $150.000 que salen de su bolsillo en un solo canje.
+  //
+  // ⚠️ Se aplica al AHORRO, no al monto de la operación. Toparlo antes daría
+  // "30% de los primeros $30.000" = $9.000, que es otra cosa y mucho menos.
+  const tope = beneficio.ahorro_maximo ?? null;
+  const conTope = (bruto: number | null) =>
+    bruto == null || tope == null ? bruto : Math.min(bruto, tope);
+
   switch (beneficio.tipo) {
     case "porcentaje":
       if (beneficio.valor == null) return null;
-      return Math.round(montoOperacion * (beneficio.valor / 100) * 100) / 100;
+      return conTope(Math.round(montoOperacion * (beneficio.valor / 100) * 100) / 100);
     case "monto_fijo":
       if (beneficio.valor == null) return null;
       // No se puede ahorrar más de lo que se gastó.
-      return Math.min(beneficio.valor, montoOperacion);
+      return conTope(Math.min(beneficio.valor, montoOperacion));
     case "2x1":
     case "regalo":
+      // Sigue siendo "no calculable" y NO 0: un 0 mentiría en el reporte al
+      // comercio (§11.7.12). Un tope no lo vuelve calculable.
       return null;
   }
 }

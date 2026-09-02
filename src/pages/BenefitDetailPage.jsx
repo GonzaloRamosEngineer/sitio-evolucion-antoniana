@@ -15,7 +15,12 @@ import {
   Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useBeneficiosVidriera, useAllPartners, useMiAcceso } from "@/hooks/useContentQueries";
+import {
+  useBeneficiosVidriera,
+  useAllPartners,
+  useMiAcceso,
+  useMiElegibilidadClub,
+} from "@/hooks/useContentQueries";
 import { useAuth } from "@/hooks/useAuth";
 import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
 import { accionVidriera } from "@/lib/club";
@@ -60,7 +65,13 @@ const BenefitDetailPage = () => {
   // en `src/lib/club.js` porque la comparten el listado, el detalle y /club, y
   // el bug de §12.10.13 fue justamente que dos pantallas del mismo beneficio
   // decidieran distinto.
-  const accion = accionVidriera({ beneficio: benefit, acceso, haySesion: Boolean(user) });
+  const { data: elegibilidad = null } = useMiElegibilidadClub(user?.id);
+  const accion = accionVidriera({
+    beneficio: benefit,
+    acceso,
+    haySesion: Boolean(user),
+    elegibilidad,
+  });
 
   // Acá estaba `handleCopyCode`. Se fue con el bloque "Tu código": copiar al
   // portapapeles un texto fijo que ya era público no tiene a quién servirle

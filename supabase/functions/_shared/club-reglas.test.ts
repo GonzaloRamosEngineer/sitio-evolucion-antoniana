@@ -5,6 +5,7 @@ import {
   disponibleAhora,
   calcularAhorro,
   inicioVentanaUTC,
+  cumpleRequisitos,
   type Beneficio,
 } from './club-reglas.ts';
 
@@ -139,5 +140,116 @@ describe('calcularAhorro', () => {
   it('un monto inválido no se convierte en un ahorro inventado', () => {
     expect(calcularAhorro({ tipo: 'porcentaje', valor: 30 }, -50)).toBeNull();
     expect(calcularAhorro({ tipo: 'porcentaje', valor: 30 }, NaN)).toBeNull();
+  });
+});
+
+/* ============================================================
+   REQUISITOS POR BENEFICIO (§12.11)
+
+   Lo que fijan estas pruebas es la economía del club, no un detalle: con el
+   umbral único de acceso, $5.000 desbloqueaban un descuento de $45.000 a
+   $150.000, y como el límite es 1/total la estrategia óptima era **aportar
+   una vez, canjear e irse**. Los casos de abajo son los números REALES de la
+   cuota ($5.000) y de una cotización de desarrollo web.
+   ============================================================ */
+describe('cumpleRequisitos', () => {
+  const sinRequisitos = { antiguedad_minima_meses: null, aporte_minimo_acumulado: null };
+  const pideSeisMeses = { antiguedad_minima_meses: 6, aporte_minimo_acumulado: null };
+  const pideTreintaMil = { antiguedad_minima_meses: null, aporte_minimo_acumulado: 30000 };
+  const pideAmbos = { antiguedad_minima_meses: 6, aporte_minimo_acumulado: 30000 };
+
+  const eleg = (meses: number, monto: number) => ({
+    tiene_acceso: true,
+    meses_aportados: meses,
+    aporte_acumulado: monto,
+  });
+
+  it('sin requisitos declarados no verifica nada — el comportamiento de antes', () => {
+    expect(cumpleRequisitos(sinRequisitos, eleg(0, 0)).ok).toBe(true);
+    expect(cumpleRequisitos(sinRequisitos, null).ok).toBe(true);
+  });
+
+  it('EL CASO QUE MOTIVA TODO: un aporte de $5.000 no alcanza para el beneficio caro', () => {
+    // Un mes de cuota, $5.000 acumulados. Antes esto desbloqueaba $45.000.
+    const r = cumpleRequisitos(pideAmbos, eleg(1, 5000));
+    expect(r.ok).toBe(false);
+    expect(r.codigo).toBe('requisitos');
+  });
+
+  it('los dos caminos son OR: la antigüedad sola alcanza', () => {
+    // 6 meses de cuota simbólica = $30.000, pero lo que se mide es el tiempo.
+    expect(cumpleRequisitos(pideAmbos, eleg(6, 30000)).ok).toBe(true);
+    expect(cumpleRequisitos(pideSeisMeses, eleg(6, 0)).ok).toBe(true);
+  });
+
+  it('los dos caminos son OR: el monto solo también alcanza, sin esperar meses', () => {
+    // El donante que pone $30.000 de una no tiene que esperar medio año: es
+    // el que MÁS aporta, y pedirle las dos cosas lo dejaría afuera.
+    expect(cumpleRequisitos(pideAmbos, eleg(1, 30000)).ok).toBe(true);
+    expect(cumpleRequisitos(pideTreintaMil, eleg(0, 30000)).ok).toBe(true);
+  });
+
+  it('dice QUÉ falta y por cuál camino, no solo que no se puede', () => {
+    const r = cumpleRequisitos(pideAmbos, eleg(2, 10000));
+    expect(r.ok).toBe(false);
+    expect(r.faltan_meses).toBe(4);
+    expect(r.falta_monto).toBe(20000);
+    expect(r.motivo).toMatch(/4 meses/);
+    expect(r.motivo).toMatch(/20.000/);
+  });
+
+  it('el borde exacto cumple: 6 de 6 y $30.000 de $30.000', () => {
+    expect(cumpleRequisitos(pideSeisMeses, eleg(6, 0)).ok).toBe(true);
+    expect(cumpleRequisitos(pideTreintaMil, eleg(0, 30000)).ok).toBe(true);
+    // Y uno menos, no.
+    expect(cumpleRequisitos(pideSeisMeses, eleg(5, 0)).ok).toBe(false);
+    expect(cumpleRequisitos(pideTreintaMil, eleg(0, 29999)).ok).toBe(false);
+  });
+
+  it('sin elegibilidad (sin sesión) no cumple, y no explota', () => {
+    for (const e of [null, undefined]) {
+      expect(cumpleRequisitos(pideAmbos, e).ok).toBe(false);
+    }
+  });
+
+  it('singular/plural: "1 mes", no "1 meses"', () => {
+    expect(cumpleRequisitos(pideSeisMeses, eleg(5, 0)).motivo).toMatch(/1 mes de/);
+  });
+});
+
+describe('calcularAhorro con tope (§12.11)', () => {
+  const treintaPorCiento = { tipo: 'porcentaje' as const, valor: 30, ahorro_maximo: 30000 };
+  const sinTope = { tipo: 'porcentaje' as const, valor: 30, ahorro_maximo: null };
+
+  it('sin tope, un 30% sobre $500.000 son $150.000 del bolsillo del comercio', () => {
+    expect(calcularAhorro(sinTope, 500000)).toBe(150000);
+  });
+
+  it('con tope, ese mismo canje le cuesta $30.000 — es lo que hace que acepte entrar', () => {
+    expect(calcularAhorro(treintaPorCiento, 500000)).toBe(30000);
+    expect(calcularAhorro(treintaPorCiento, 150000)).toBe(30000); // 45.000 topado
+  });
+
+  it('por debajo del tope el descuento es el real, no el tope', () => {
+    // 30% de $50.000 = $15.000. El tope NO debe inflar nada.
+    expect(calcularAhorro(treintaPorCiento, 50000)).toBe(15000);
+  });
+
+  it('el tope se aplica al AHORRO y no al monto de la operación', () => {
+    // Si se topara el monto antes, seria 30% de $30.000 = $9.000. Es otra cosa.
+    expect(calcularAhorro(treintaPorCiento, 200000)).toBe(30000);
+    expect(calcularAhorro(treintaPorCiento, 200000)).not.toBe(9000);
+  });
+
+  it('monto_fijo también respeta el tope, y sigue sin poder superar lo gastado', () => {
+    const fijo = { tipo: 'monto_fijo' as const, valor: 50000, ahorro_maximo: 20000 };
+    expect(calcularAhorro(fijo, 100000)).toBe(20000);
+    expect(calcularAhorro(fijo, 10000)).toBe(10000); // no se ahorra mas que el gasto
+  });
+
+  it('2x1 y regalo siguen dando null: un tope no los vuelve calculables', () => {
+    // Un 0 mentiria en el reporte al comercio (§11.7.12).
+    expect(calcularAhorro({ tipo: '2x1', valor: null, ahorro_maximo: 30000 }, 100000)).toBeNull();
+    expect(calcularAhorro({ tipo: 'regalo', valor: null, ahorro_maximo: 30000 }, 100000)).toBeNull();
   });
 });

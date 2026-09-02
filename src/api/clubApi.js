@@ -62,6 +62,7 @@ export const getBeneficiosVidriera = async () =>
       .select(
         'id, titulo, descripcion, terminos, tipo, valor, requiere_acceso, ' +
           'slug, instrucciones, imagen_url, estado, ' +
+          'antiguedad_minima_meses, aporte_minimo_acumulado, ahorro_maximo, ' +
           'vigencia_desde, vigencia_hasta, limite_por_persona, ventana, ' +
           'dias_semana, hora_desde, hora_hasta, ' +
           'club_comercios!inner(id, nombre, slug, logo_url, rubro, partner_id, ' +
@@ -70,6 +71,18 @@ export const getBeneficiosVidriera = async () =>
       .order('orden', { ascending: true }),
     'getBeneficiosVidriera',
   );
+
+/**
+ * Los hechos de la persona para saber si cumple los requisitos de un beneficio
+ * (§12.11): acceso vigente, meses aportados y aporte acumulado.
+ *
+ * Se pregunta por RPC sin parámetro —`mi_elegibilidad_club()`— y no leyendo
+ * tablas, por el mismo motivo que `mi_acceso()`: la versión con parámetro es
+ * solo para `service_role`, así que desde el browser **no se puede preguntar
+ * por otra persona**. Cuánto aportó alguien no es dato público.
+ */
+export const getMiElegibilidadClub = async () =>
+  listResult(await supabase.rpc('mi_elegibilidad_club'), 'getMiElegibilidadClub');
 
 /** Sucursales activas de un comercio, para elegir dónde se está canjeando. */
 export const getSucursales = async (comercioId) =>

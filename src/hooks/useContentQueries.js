@@ -23,7 +23,7 @@ import { getGastos } from '@/api/gastosApi';
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
-import { getBeneficiosVidriera } from '@/api/clubApi';
+import { getBeneficiosVidriera, getMiElegibilidadClub } from '@/api/clubApi';
 import { mapearABeneficio } from '@/lib/club';
 
 /**
@@ -165,6 +165,23 @@ export const useActiveBenefits = ({ select, ...options } = {}) =>
  * activos (§12.5). Volver a filtrarlo acá es la duplicación que hace que la
  * página y la base se desincronicen el día que la regla cambie.
  */
+/**
+ * Elegibilidad para los requisitos del club (§12.11). `mi_elegibilidad_club()`
+ * devuelve TABLE, así que llega como array de una fila.
+ *
+ * ⚠️ Esto es para MOSTRAR estado, no para autorizar. La autoridad es
+ * `club-generar-canje`, que vuelve a preguntar con `service_role`. Mismo
+ * criterio que el bloqueo del catálogo en la fase 1 (§12.8): acá es UX.
+ */
+export const useMiElegibilidadClub = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.elegibilidadClub(userId),
+    queryFn: () => unwrap(getMiElegibilidadClub()),
+    select: (rows) => (Array.isArray(rows) ? rows[0] : rows) ?? null,
+    enabled: Boolean(userId),
+    ...options,
+  });
+
 export const useBeneficiosVidriera = ({ select, ...options } = {}) =>
   useQuery({
     queryKey: queryKeys.beneficiosVidriera,

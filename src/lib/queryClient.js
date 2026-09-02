@@ -33,6 +33,9 @@ export const queryKeys = {
   // distintas y compartir la clave haría que invalidar el ABM viejo pise el
   // catálogo nuevo con datos de la forma vieja (ROADMAP §12.10.8).
   beneficiosVidriera: ['club', 'beneficios', 'vidriera'],
+  // Anidada bajo 'acceso' a propósito: reclamar un aporte cambia el acceso Y la
+  // elegibilidad del club, así que una sola invalidación por prefijo alcanza.
+  elegibilidadClub: (userId) => ['acceso', userId, 'elegibilidad-club'],
   activities: ['activities'],
   userRegistrations: (userId) => ['registrations', userId],
   userMemberships: (userId) => ['memberships', userId],

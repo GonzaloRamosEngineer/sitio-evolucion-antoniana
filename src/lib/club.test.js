@@ -9,6 +9,7 @@ import {
   sanearInstrucciones,
   mapearABeneficio,
   accionVidriera,
+  faltaParaBeneficio,
   normalizarCodigo,
   esCodigoValido,
 } from '@/lib/club';
@@ -303,5 +304,101 @@ describe('accionVidriera', () => {
           const a = accionVidriera({ beneficio: b, acceso: ac, haySesion: s });
           expect(a).not.toHaveProperty('codigo');
         }
+  });
+});
+
+/* ============================================================
+   REQUISITOS EN LA VIDRIERA (§12.11)
+
+   La misma comparación vive dos veces: acá (UX) y en `club-reglas.ts`
+   (autoridad). No se puede importar entre el browser y el runtime de Deno, así
+   que **la única defensa contra que divergan es que las dos se prueben con la
+   MISMA tabla de casos.** Los de abajo son idénticos a los de
+   `supabase/functions/_shared/club-reglas.test.ts`, a propósito y con los
+   números reales: cuota de $5.000 y una cotización de desarrollo web.
+   ============================================================ */
+describe('faltaParaBeneficio', () => {
+  const pideAmbos = { antiguedad_minima_meses: 6, aporte_minimo_acumulado: 30000 };
+  const eleg = (meses, monto) => ({ tiene_acceso: true, meses_aportados: meses, aporte_acumulado: monto });
+
+  it('sin requisitos declarados no falta nada', () => {
+    expect(faltaParaBeneficio({ antiguedad_minima_meses: null, aporte_minimo_acumulado: null }, eleg(0, 0)))
+      .toBeNull();
+  });
+
+  it('EL CASO QUE MOTIVA TODO: $5.000 y un mes no alcanzan', () => {
+    expect(faltaParaBeneficio(pideAmbos, eleg(1, 5000))).not.toBeNull();
+  });
+
+  it('OR: la antigüedad sola alcanza, y el monto solo también', () => {
+    expect(faltaParaBeneficio(pideAmbos, eleg(6, 0))).toBeNull();
+    expect(faltaParaBeneficio(pideAmbos, eleg(0, 30000))).toBeNull();
+  });
+
+  it('dice los números exactos por los dos caminos', () => {
+    const f = faltaParaBeneficio(pideAmbos, eleg(2, 10000));
+    expect(f.faltanMeses).toBe(4);
+    expect(f.faltaMonto).toBe(20000);
+    expect(f.texto).toMatch(/4 meses/);
+    expect(f.texto).toMatch(/20\.000/);
+  });
+
+  it('el borde exacto cumple, y uno menos no', () => {
+    expect(faltaParaBeneficio(pideAmbos, eleg(6, 0))).toBeNull();
+    expect(faltaParaBeneficio(pideAmbos, eleg(5, 29999))).not.toBeNull();
+  });
+
+  it('sin elegibilidad no cumple y no explota', () => {
+    for (const e of [null, undefined]) expect(faltaParaBeneficio(pideAmbos, e)).not.toBeNull();
+  });
+
+  it('singular: "1 mes", no "1 meses"', () => {
+    expect(faltaParaBeneficio({ antiguedad_minima_meses: 6 }, eleg(5, 0)).texto).toMatch(/1 mes de/);
+  });
+});
+
+describe('accionVidriera con requisitos (§12.11)', () => {
+  const caro = { requiere_acceso: true, antiguedad_minima_meses: 6, aporte_minimo_acumulado: 30000 };
+  const conAcceso = { tiene_acceso: true, en_gracia: false };
+  const sinAcceso = { tiene_acceso: false, en_gracia: false };
+
+  it('con acceso pero sin antigüedad: NO puede canjear, y se le dice cuánto falta', () => {
+    const a = accionVidriera({
+      beneficio: caro, acceso: conAcceso, haySesion: true,
+      elegibilidad: { tiene_acceso: true, meses_aportados: 2, aporte_acumulado: 10000 },
+    });
+    expect(a.estado).toBe('sin_requisitos');
+    expect(a.puedeCanjear).toBe(false);
+    expect(a.mensaje).toMatch(/4 meses/);
+    // Y se le confirma que su aporte SÍ está vigente: no es un rechazo, es un
+    // "todavía no", que es la diferencia entre que se quede y que se vaya.
+    expect(a.mensaje).toMatch(/vigente/);
+  });
+
+  it('cumplidos los requisitos, recién ahí se habilita el botón', () => {
+    const a = accionVidriera({
+      beneficio: caro, acceso: conAcceso, haySesion: true,
+      elegibilidad: { tiene_acceso: true, meses_aportados: 6, aporte_acumulado: 30000 },
+    });
+    expect(a.estado).toBe('puede_canjear');
+    expect(a.puedeCanjear).toBe(true);
+  });
+
+  it('sin acceso gana el mensaje de acceso, que es el más urgente', () => {
+    // No tiene sentido decirle "te faltan 4 meses" a quien no aportó nunca.
+    const a = accionVidriera({
+      beneficio: caro, acceso: sinAcceso, haySesion: true,
+      elegibilidad: { tiene_acceso: false, meses_aportados: 0, aporte_acumulado: 0 },
+    });
+    expect(a.estado).toBe('sin_acceso');
+    expect(a.mensaje).toMatch(/aporte vigente/);
+  });
+
+  it('nunca devuelve un código, tampoco en el estado nuevo', () => {
+    const a = accionVidriera({
+      beneficio: caro, acceso: conAcceso, haySesion: true,
+      elegibilidad: { tiene_acceso: true, meses_aportados: 1, aporte_acumulado: 5000 },
+    });
+    expect(a).not.toHaveProperty('codigo');
   });
 });

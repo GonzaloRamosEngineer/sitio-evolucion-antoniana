@@ -78,6 +78,9 @@ const MENSAJES = {
   sesion: 'Iniciá sesión para usar tus beneficios.',
   config: 'El servicio no está disponible en este momento. Probá más tarde.',
   sin_acceso: 'Este beneficio es para socios con acceso vigente.',
+  // §12.11. La Edge Function manda el motivo ya redactado con los números
+  // exactos ("te faltan 4 meses"); esto es solo la red si llegara sin texto.
+  requisitos: 'Todavía no cumplís los requisitos de este beneficio.',
   fuera_de_ventana: 'Este beneficio no está disponible en este momento.',
   agotado: 'Este beneficio se agotó.',
   limite_alcanzado: 'Ya usaste este beneficio.',
@@ -204,6 +207,11 @@ export const mapearABeneficio = (fila) => {
     // Lo que la vidriera necesita para ofrecer el canje sin ir a buscar nada.
     tipo: fila.tipo,
     valor: fila.valor ?? null,
+    // Requisitos del beneficio (§12.11). Se mapean para que la pantalla pueda
+    // decir QUÉ falta; quien los HACE CUMPLIR es la Edge Function.
+    antiguedad_minima_meses: fila.antiguedad_minima_meses ?? null,
+    aporte_minimo_acumulado: fila.aporte_minimo_acumulado ?? null,
+    ahorro_maximo: fila.ahorro_maximo ?? null,
     comercio: comercio && {
       id: comercio.id,
       nombre: comercio.nombre,
@@ -225,7 +233,41 @@ export const mapearABeneficio = (fila) => {
  * `puedeCanjear` es lo único que habilita el botón real. Notar que NUNCA
  * devuelve un código: el código lo emite la Edge Function.
  */
-export const accionVidriera = ({ beneficio, acceso, haySesion } = {}) => {
+/**
+ * Qué le falta a esta persona para los requisitos del beneficio (§12.11).
+ *
+ * ⚠️ ESTO ES UX, NO UNA FRONTERA. La misma comparación vive en
+ * `supabase/functions/_shared/club-reglas.ts` (`cumpleRequisitos`), que es
+ * quien decide de verdad porque corre con `service_role` y vuelve a preguntar
+ * los hechos a la base. Acá se duplica una comparación de `>=` a propósito:
+ * el browser no puede importar del runtime de Deno, y mostrar el estado sin
+ * pedirle permiso al servidor es lo que hace que la pantalla se sienta viva.
+ * **Si las dos divergen, la que manda es la Edge Function.**
+ *
+ * Los dos caminos son OR: alcanza con la antigüedad **o** con el monto.
+ */
+export const faltaParaBeneficio = (beneficio, elegibilidad) => {
+  const minMeses = beneficio?.antiguedad_minima_meses ?? null;
+  const minMonto = beneficio?.aporte_minimo_acumulado ?? null;
+  if (minMeses == null && minMonto == null) return null;
+
+  const meses = Number(elegibilidad?.meses_aportados ?? 0);
+  const monto = Number(elegibilidad?.aporte_acumulado ?? 0);
+  if ((minMeses != null && meses >= minMeses) || (minMonto != null && monto >= minMonto)) {
+    return null;
+  }
+
+  const faltanMeses = minMeses != null ? Math.max(0, minMeses - meses) : null;
+  const faltaMonto = minMonto != null ? Math.max(0, minMonto - monto) : null;
+  const partes = [];
+  if (faltanMeses != null) {
+    partes.push(`${faltanMeses} ${faltanMeses === 1 ? 'mes' : 'meses'} de aporte`);
+  }
+  if (faltaMonto != null) partes.push(`${faltaMonto.toLocaleString('es-AR')} acumulados`);
+  return { faltanMeses, faltaMonto, texto: partes.join(' o ') };
+};
+
+export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = {}) => {
   const requiere = Boolean(beneficio?.requiere_acceso);
   const tieneAcceso = Boolean(acceso?.tiene_acceso);
 
@@ -265,6 +307,22 @@ export const accionVidriera = ({ beneficio, acceso, haySesion } = {}) => {
       // este archivo cayó en ella el 2026-09-02. Hay un test que ahora cruza
       // cada href de acá contra las rutas reales de App.jsx.
       cta: { texto: 'Quiero aportar', href: '/collaborate' },
+    };
+  }
+
+  // Tiene acceso, pero el beneficio puede pedir antigüedad además (§12.11).
+  // Va DESPUÉS del acceso a propósito: "te falta un aporte vigente" es un
+  // mensaje distinto, y más urgente, que "te faltan 4 meses".
+  const falta = faltaParaBeneficio(beneficio, elegibilidad);
+  if (falta) {
+    return {
+      estado: 'sin_requisitos',
+      puedeCanjear: false,
+      // Se dice el número exacto y no "no cumplís": alguien a un mes de
+      // distancia se queda; alguien a quien le dicen "no podés", se va.
+      mensaje: `Te ${falta.faltanMeses === 1 ? 'falta' : 'faltan'} ${falta.texto} para este beneficio. Tu aporte ya está vigente.`,
+      cta: { texto: 'Ver mi carnet', href: '/carnet' },
+      falta,
     };
   }
 

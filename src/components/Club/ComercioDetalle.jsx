@@ -40,6 +40,8 @@ const BENEFICIO_VACIO = {
   requiere_acceso: true, limite_por_persona: '', ventana: '', limite_total: '', stock: '',
   vigencia_desde: '', vigencia_hasta: '', dias_semana: [], hora_desde: '', hora_hasta: '',
   estado: 'borrador', orden: 0,
+  slug: '', instrucciones: '', imagen_url: '',
+  antiguedad_minima_meses: '', aporte_minimo_acumulado: '', ahorro_maximo: '',
 };
 
 const SIN_VENTANA = '__sin__';
@@ -126,6 +128,11 @@ const ComercioDetalle = ({ comercio }) => {
             vigencia_desde: b.vigencia_desde ?? '', vigencia_hasta: b.vigencia_hasta ?? '',
             dias_semana: b.dias_semana ?? [], hora_desde: b.hora_desde ?? '', hora_hasta: b.hora_hasta ?? '',
             estado: b.estado ?? 'borrador', orden: b.orden ?? 0,
+            slug: b.slug ?? '', instrucciones: b.instrucciones ?? '',
+            imagen_url: b.imagen_url ?? '',
+            antiguedad_minima_meses: b.antiguedad_minima_meses ?? '',
+            aporte_minimo_acumulado: b.aporte_minimo_acumulado ?? '',
+            ahorro_maximo: b.ahorro_maximo ?? '',
           }
         : BENEFICIO_VACIO,
     );
@@ -496,6 +503,104 @@ const ComercioDetalle = ({ comercio }) => {
                   </SelectContent>
                 </Select>
                 {benErrores.ventana && <p className="mt-1 text-sm text-red-600">{benErrores.ventana}</p>}
+              </div>
+            </div>
+
+            {/* --- La vidriera pública (§12.10.15) --- */}
+            <div className="rounded-sm border border-brand-dark/10 bg-brand-sand/40 p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-brand-dark/60">
+                Cómo se ve en el catálogo público
+              </p>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="b-slug" className="text-brand-dark font-semibold">
+                    URL del beneficio
+                  </Label>
+                  <Input
+                    id="b-slug" className="mt-1" placeholder="30-de-descuento-en-sitios-web"
+                    value={benForm.slug}
+                    onChange={(e) => setBenForm((f) => ({ ...f, slug: e.target.value }))}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Queda como /beneficios/&lt;esto&gt;. Si ya se compartió, no la cambies.
+                  </p>
+                  {benErrores.slug && <p className="mt-1 text-sm text-red-600">{benErrores.slug}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="b-instr" className="text-brand-dark font-semibold">
+                    Instrucciones
+                  </Label>
+                  <Textarea
+                    id="b-instr" className="mt-1" rows={3}
+                    placeholder="Generá tu código desde el club y presentalo al contratar."
+                    value={benForm.instrucciones}
+                    onChange={(e) => setBenForm((f) => ({ ...f, instrucciones: e.target.value }))}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    ⚠️ Nunca pongas un código acá: esta página la ve cualquiera sin sesión.
+                  </p>
+                  {benErrores.instrucciones && (
+                    <p className="mt-1 text-sm text-red-600">{benErrores.instrucciones}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="b-img" className="text-brand-dark font-semibold">
+                    Imagen (opcional)
+                  </Label>
+                  <Input
+                    id="b-img" className="mt-1" placeholder="https://..."
+                    value={benForm.imagen_url}
+                    onChange={(e) => setBenForm((f) => ({ ...f, imagen_url: e.target.value }))}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Si la dejás vacía se usa el logo del comercio.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* --- Requisitos: que el umbral sea proporcional al valor (§12.11) --- */}
+            <div className="rounded-sm border border-brand-dark/10 bg-brand-sand/40 p-4">
+              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-dark/60">
+                Requisitos para canjearlo
+              </p>
+              <p className="mb-3 text-xs text-gray-600">
+                Para un beneficio caro, el acceso vigente no alcanza: con una cuota
+                simbólica, un solo aporte desbloquearía un descuento de decenas de miles.
+                Se cumple con la antigüedad <strong>o</strong> con el aporte acumulado.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="b-antig" className="text-brand-dark font-semibold">Meses aportados</Label>
+                  <Input
+                    id="b-antig" type="number" min="0" className="mt-1" value={benForm.antiguedad_minima_meses}
+                    onChange={(e) => setBenForm((f) => ({ ...f, antiguedad_minima_meses: e.target.value }))}
+                  />
+                  {benErrores.antiguedad_minima_meses && (
+                    <p className="mt-1 text-sm text-red-600">{benErrores.antiguedad_minima_meses}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="b-apmin" className="text-brand-dark font-semibold">O aporte acumulado</Label>
+                  <Input
+                    id="b-apmin" type="number" min="0" className="mt-1" value={benForm.aporte_minimo_acumulado}
+                    onChange={(e) => setBenForm((f) => ({ ...f, aporte_minimo_acumulado: e.target.value }))}
+                  />
+                  {benErrores.aporte_minimo_acumulado && (
+                    <p className="mt-1 text-sm text-red-600">{benErrores.aporte_minimo_acumulado}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="b-tope" className="text-brand-dark font-semibold">Tope de ahorro</Label>
+                  <Input
+                    id="b-tope" type="number" min="1" className="mt-1" value={benForm.ahorro_maximo}
+                    onChange={(e) => setBenForm((f) => ({ ...f, ahorro_maximo: e.target.value }))}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Lo que como máximo pone el comercio.</p>
+                  {benErrores.ahorro_maximo && (
+                    <p className="mt-1 text-sm text-red-600">{benErrores.ahorro_maximo}</p>
+                  )}
+                </div>
               </div>
             </div>
 

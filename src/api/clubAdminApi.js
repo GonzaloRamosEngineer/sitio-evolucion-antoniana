@@ -107,6 +107,32 @@ export const validarBeneficio = (f) => {
     e.valor = 'Un porcentaje no puede pasar de 100.';
   }
 
+  // El slug va a una URL pública: si trae espacios o mayúsculas, el enlace
+  // que se comparta por WhatsApp no resuelve. Se avisa acá y no en la base,
+  // donde el único control es el índice único.
+  if (f.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(f.slug).trim())) {
+    e.slug = 'Solo minúsculas, números y guiones. Sin espacios ni tildes.';
+  }
+
+  // ⚠️ La red de contención de §12.11: un texto que menciona un código NO puede
+  // ir a la vidriera. Es el bug de §12.10.13, que se filtró por texto libre.
+  if (f.instrucciones && /\b(c[óo]digo|cupon|cup[óo]n|promo|voucher)\b/i.test(f.instrucciones)) {
+    e.instrucciones =
+      'No pongas un código acá: la vidriera es pública. El código lo emite el sistema al canjear.';
+  }
+
+  for (const [campo, etiqueta] of [
+    ['antiguedad_minima_meses', 'La antigüedad'],
+    ['aporte_minimo_acumulado', 'El aporte mínimo'],
+    ['ahorro_maximo', 'El tope de ahorro'],
+  ]) {
+    const v = f[campo];
+    if (v !== '' && v != null && Number(v) < 0) e[campo] = `${etiqueta} no puede ser negativa.`;
+  }
+  if (f.ahorro_maximo !== '' && f.ahorro_maximo != null && Number(f.ahorro_maximo) === 0) {
+    e.ahorro_maximo = 'Un tope de 0 anularía el beneficio. Dejalo vacío para no poner tope.';
+  }
+
   // `ventana` sin `limite_por_persona` no significa nada, y al revés tampoco.
   const tieneLimite = f.limite_por_persona !== '' && f.limite_por_persona != null;
   if (tieneLimite && Number(f.limite_por_persona) <= 0) {
@@ -153,6 +179,25 @@ export const beneficioAPayload = (f) => ({
   hora_hasta: f.hora_hasta || null,
   estado: f.estado,
   orden: Number(f.orden) || 0,
+
+  // Contenido de la vidriera (§12.10.15). Faltaban en el ABM y solo se podían
+  // cargar por SQL, que es lo que §12.7 quiere evitar: dar de alta un beneficio
+  // no debería necesitar un desarrollador.
+  slug: f.slug?.trim() || null,
+  instrucciones: f.instrucciones?.trim() || null,
+  imagen_url: f.imagen_url?.trim() || null,
+
+  // Requisitos proporcionales al valor del beneficio (§12.11).
+  antiguedad_minima_meses:
+    f.antiguedad_minima_meses === '' || f.antiguedad_minima_meses == null
+      ? null
+      : Number(f.antiguedad_minima_meses),
+  aporte_minimo_acumulado:
+    f.aporte_minimo_acumulado === '' || f.aporte_minimo_acumulado == null
+      ? null
+      : Number(f.aporte_minimo_acumulado),
+  ahorro_maximo:
+    f.ahorro_maximo === '' || f.ahorro_maximo == null ? null : Number(f.ahorro_maximo),
 });
 
 /* ============================

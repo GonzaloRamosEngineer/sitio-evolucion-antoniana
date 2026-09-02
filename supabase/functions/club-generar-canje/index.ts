@@ -26,9 +26,11 @@ import {
 } from "../_shared/club-db.ts";
 import {
   claveLimite,
+  cumpleRequisitos,
   disponibleAhora,
   inicioVentanaUTC,
   type Beneficio,
+  type Elegibilidad,
   type Ventana,
 } from "../_shared/club-reglas.ts";
 
@@ -87,17 +89,42 @@ Deno.serve(async (req) => {
     }
 
     // ---- 2) Elegibilidad -----------------------------------------------------
-    // El club NUNCA sabe POR QUÉ alguien es elegible (12.7 regla 1): pregunta y
-    // punto. En otro proyecto esta función puede ser `select true`.
-    if (beneficio.requiere_acceso) {
-      const { data: tieneAcceso, error: accErr } = await admin.rpc("tiene_acceso", {
+    // El club NUNCA sabe POR QUÉ alguien es elegible (12.7 regla 1): pide los
+    // HECHOS —acceso vigente, meses aportados, aporte acumulado— y la decisión
+    // la toma `cumpleRequisitos()`, que es puro y se testea sin desplegar. En
+    // otro proyecto `elegibilidad_club` puede ser `select true, 999, 999999`.
+    const pideRequisitos =
+      beneficio.antiguedad_minima_meses != null || beneficio.aporte_minimo_acumulado != null;
+
+    if (beneficio.requiere_acceso || pideRequisitos) {
+      const { data: elegRows, error: elegErr } = await admin.rpc("elegibilidad_club", {
         p_user_id: callerId,
       });
-      if (accErr) return jsonResponse({ error: "No se pudo verificar tu acceso" }, 500);
-      if (!tieneAcceso) {
+      if (elegErr) return jsonResponse({ error: "No se pudo verificar tu acceso" }, 500);
+
+      // La función devuelve TABLE, así que llega como array de una fila.
+      const eleg = (Array.isArray(elegRows) ? elegRows[0] : elegRows) as Elegibilidad | null;
+
+      if (beneficio.requiere_acceso && !eleg?.tiene_acceso) {
         // 403 y no 401: la sesión es válida, lo que falta es el aporte vigente.
         return jsonResponse(
           { error: "Este beneficio es para socios con acceso vigente.", codigo_error: "sin_acceso" },
+          403,
+        );
+      }
+
+      // Requisitos proporcionales al valor del beneficio (§12.11). Va DESPUÉS
+      // del acceso a propósito: "te falta un aporte vigente" es un mensaje
+      // distinto —y más urgente— que "te faltan 4 meses".
+      const req = cumpleRequisitos(beneficio, eleg);
+      if (!req.ok) {
+        return jsonResponse(
+          {
+            error: req.motivo,
+            codigo_error: req.codigo,
+            faltan_meses: req.faltan_meses ?? null,
+            falta_monto: req.falta_monto ?? null,
+          },
           403,
         );
       }
