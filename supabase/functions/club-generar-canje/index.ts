@@ -56,6 +56,27 @@ Deno.serve(async (req) => {
     const ttlMin = num(cfg, "canje_ttl_minutos", 5);
     const ahora = new Date();
 
+    // ⚠️ ESTO NO ES UNA OPTIMIZACIÓN, ES LO QUE EVITA QUE UN SOCIO QUEDE
+    // BLOQUEADO PARA SIEMPRE.
+    //
+    // El índice único del límite por persona cubre `estado IN ('pendiente',
+    // 'confirmado')`. Un canje que vence sigue diciendo 'pendiente' hasta que
+    // alguien lo expire — y NO hay cron que lo haga. Con un beneficio de
+    // `limite_por_persona = 1`, un código generado y nunca usado deja a esa
+    // persona sin el beneficio de por vida, y encima el error le dice "ya
+    // usaste este beneficio" cuando no lo usó.
+    //
+    // Reproducido en PostgreSQL 15 antes de escribir esto (§11.7.12). Llamarlo
+    // acá hace el sistema auto-reparable sin depender de infraestructura de
+    // scheduling que este plan de Supabase no tiene. Es un UPDATE sobre un
+    // índice parcial de pendientes: barato.
+    const { error: reaperErr } = await admin.rpc("club_expirar_canjes");
+    if (reaperErr) {
+      // No se aborta: si esto falla, lo peor que pasa es que un canje viejo
+      // siga contando. Cortar acá sería negarle el canje a alguien que sí puede.
+      console.error("club-generar-canje: el reaper falló", reaperErr);
+    }
+
     // ---- 1) El beneficio existe y está publicado -----------------------------
     const beneficio = await beneficioConComercio(admin, beneficioId);
     if (!beneficio) return jsonResponse({ error: "Ese beneficio no existe" }, 404);
