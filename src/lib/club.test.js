@@ -266,7 +266,11 @@ describe('accionVidriera', () => {
     const a = accionVidriera({ beneficio: exclusivo, acceso: sinAcceso, haySesion: true });
     expect(a.estado).toBe('sin_acceso');
     expect(a.puedeCanjear).toBe(false);
-    expect(a.cta.href).toBe('/colaborar');
+    // '/collaborate', en ingles. Este assert decia '/colaborar' y por eso el
+    // test PASABA con el bug puesto: un valor escrito a mano no puede detectar
+    // que el valor esta mal. La defensa real es rutas-cta.test.js, que lo cruza
+    // contra App.jsx.
+    expect(a.cta.href).toBe('/collaborate');
     expect(a.mensaje).toMatch(/aporte vigente/);
   });
 

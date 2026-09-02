@@ -252,7 +252,18 @@ const BenefitDetailPage = () => {
                           lo emite la Edge Function a nombre de una persona y por
                           una sola vez. La vidriera muestra el beneficio; el canje
                           pasa en el mostrador.
+
+                          ⚠️ SOLO cuando NO está bloqueado, y el motivo importa.
+                          El panel "Reservado" de arriba YA resuelve el estado
+                          bloqueado, y lo dice mejor: explica que se accede con la
+                          cuota al día o con una donación. Al desplegar esto el
+                          2026-09-02 los dos bloques salieron juntos y la página
+                          quedó con dos mensajes y dos botones para lo mismo.
+                          Una pieza nueva no se agrega sin mirar qué había: es el
+                          mismo error de §12.10.13 —dos lugares decidiendo sobre
+                          el mismo beneficio— cometido al arreglarlo.
                         */}
+                        {!bloqueado && (
                         <div>
                             <h4 className="text-sm font-bold text-gray-900 mb-2">
                                 {accion.puedeCanjear ? "Canjealo" : "¿Cómo lo obtengo?"}
@@ -274,6 +285,7 @@ const BenefitDetailPage = () => {
                                 </Button>
                             )}
                         </div>
+                        )}
 
                         {benefit.descuento && (
                             <div className="flex items-center gap-2 text-brand-action font-bold bg-brand-sand/60 p-3 rounded-sm border border-brand-dark/10 justify-center">

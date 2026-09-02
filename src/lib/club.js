@@ -259,7 +259,12 @@ export const accionVidriera = ({ beneficio, acceso, haySesion } = {}) => {
       // Se dice qué falta y no "no tenés permiso": el que mira esto ya tiene
       // cuenta, así que está a un aporte de distancia y conviene que lo sepa.
       mensaje: 'Te falta un aporte vigente para canjear este beneficio.',
-      cta: { texto: 'Quiero aportar', href: '/colaborar' },
+      // ⚠️ '/collaborate', en inglés. NO '/colaborar': esa ruta no existe y
+      // renderiza el 404 — que mide 25.865 bytes y tiene <nav> y <footer>, así
+      // que no se ve roto. Es literalmente la trampa que documenta §11.4, y
+      // este archivo cayó en ella el 2026-09-02. Hay un test que ahora cruza
+      // cada href de acá contra las rutas reales de App.jsx.
+      cta: { texto: 'Quiero aportar', href: '/collaborate' },
     };
   }
 
