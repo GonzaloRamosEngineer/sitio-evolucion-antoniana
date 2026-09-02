@@ -302,6 +302,36 @@ botón, un texto propio de esa página— y no solo el esqueleto. Un chequeo que
 Y como con cualquier verificación: **confirmar que detecta el fallo** corriéndola una
 vez contra el build roto, si no, no se sabe si sirve.
 
+### Capturar el layout móvil: `--window-size` MIENTE por debajo de 504 px
+
+`--window-size=390` **no da un viewport de 390**: en esta máquina el piso es **504 px**, y
+el screenshot recorta los 390 de la izquierda de una página maquetada a 504. Se pierde
+contenido que está perfecto, y se lee como si el sitio desbordara (§12.10.18).
+
+**Calibrá el instrumento antes de creerle**, con una página que imprima su propio ancho:
+
+```bash
+cat > /tmp/regla.html <<'HTML'
+<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body style="margin:0;font:16px monospace"><div id="r"></div>
+<script>r.textContent='innerWidth='+innerWidth+' scrollWidth='+document.documentElement.scrollWidth</script>
+HTML
+chrome --headless=new --dump-dom --window-size=390,120 "file:///tmp/regla.html" | grep innerWidth
+```
+
+**Reglas prácticas:**
+
+- Capturar a **504** (el piso) y no a 390: se obtiene el viewport entero y **sí ejercita el
+  layout móvil**, porque el breakpoint `sm` de Tailwind es 640.
+- Agregar `--headless=new --hide-scrollbars`. (Probado: el modo headless **no** era la
+  causa del recorte — las dos versiones daban igual.)
+- **Verificar el ancho del PNG**: si sale más angosto que el `--window-size` pedido, se
+  está recortando. Los bytes 16 y 20 de la cabecera PNG son ancho y alto, big-endian.
+- Para un ancho real de teléfono (360-430) hace falta **emulación de dispositivo por CDP**,
+  no `--window-size`. Queda como lo único que este procedimiento no cubre.
+- Servir el build con `npx vite preview` en vez de pegarle a producción: se puede mirar
+  **antes** de desplegar, que es cuando sirve.
+
 ### Cómo saber si un deploy llegó (y dos formas de creer que sí sin que haya llegado)
 
 Aprendido el 2026-09-02, las dos en la misma tarde:
@@ -1779,20 +1809,48 @@ para no volver a descubrir un hueco preguntando.
   apariciones** en las tres páginas. Los 8 links del nav cruzados contra `App.jsx`: todos
   existen.
 
-- [ ] **12.10.18 — Falta la pasada en ancho de teléfono, y NO se puede dar por hecha.**
+- [x] ~~**12.10.18 — La pasada en ancho de teléfono.**~~ **✅ HECHA el 2026-09-02, y el
+  problema era el método.**
 
-  Se intentó con Chrome headless a 390 px y **el resultado no concluye nada**: el contenido
-  sale recortado a la derecha, pero **sale igual de recortado en `/club` —que se arregló
-  para teléfono en su momento— y en la propia página 404**, que nadie tocó. O sea que el
-  método de captura no distingue «el sitio desborda» de «mi captura está mal dimensionada»,
-  y sin esa distinción no mide nada (§11.4).
+  Durante horas el contenido salió «recortado a la derecha» a 390 px, en las páginas nuevas
+  **y también** en `/club` —arreglada para teléfono en su momento— y en la propia 404.
+  Que fallara en todas era la pista, y la conclusión honesta de entonces fue que el chequeo
+  no medía nada. **Era peor: medía algo falso.**
 
-  **Lo que falta es mirarlo en un teléfono real**, o con emulación de dispositivo de verdad
-  (CDP, no `--window-size`). Anotado como pendiente y no como aprobado: dar por bueno un
-  chequeo que no puede fallar es exactamente lo que este archivo viene pagando.
+  #### La medición que lo cerró
 
-  ⚠️ Y sigue sin poder verse el estado «puede canjear» del CTA hasta que exista un socio con
+  Una página de una línea que imprime `window.innerWidth`, capturada con el mismo comando:
+
+  ```
+  --window-size=200  ->  innerWidth=504
+  --window-size=290  ->  innerWidth=504
+  --window-size=390  ->  innerWidth=504   <-- lo que se venía usando
+  --window-size=504  ->  innerWidth=504
+  --window-size=600  ->  innerWidth=582
+  --window-size=800  ->  innerWidth=782
+  ```
+
+  **El viewport tiene un piso de 504 px** en esta máquina: por debajo, `--window-size` no
+  baja más. Así que la página se maquetaba a **504** y el screenshot guardaba los **390 de
+  la izquierda**, cortando contenido que estaba perfecto. Encima de 504 hay ~18 px de
+  diferencia por el marco.
+
+  ✅ **Recapturado a 504 —el piso real, con el viewport entero— el sitio se ve bien**: nada
+  recortado, el título en una línea, el texto envolviendo, el nav inferior con sus cuatro
+  ítems y el menú hamburguesa. Verificado sobre el build local servido con `vite preview`.
+
+  **Y 504 sí sirve para esto:** el breakpoint `sm` de Tailwind es 640 px, así que a 504 se
+  está ejercitando el layout móvil, no el de escritorio. Un teléfono real mide 360-430, así
+  que **no cubre lo que pueda romperse solo por debajo de 504** — para eso hace falta
+  emulación por CDP, no `--window-size`.
+
+  ⚠️ Sigue sin poder verse el estado «puede canjear» del CTA hasta que exista un socio con
   aporte vigente (§12.10.9). Hoy se verifican «sin sesión» y «sin acceso».
+
+  **La lección, y es incómoda:** una verificación que falla siempre se lee como «el sistema
+  está mal» cuando lo más probable es que **el instrumento esté mal**. Van cuatro veces en
+  la jornada que el problema era el instrumento y no lo medido. La regla que queda:
+  **antes de creerle a una medición, medí el instrumento contra algo cuyo valor conozcas.**
 
 - [ ] **12.10.19 — Los dos bugs que el deploy hizo visibles, y la defensa que quedó.**
 

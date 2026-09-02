@@ -23,3 +23,22 @@ export function escapeHtml(value) {
 export function escapeHtmlMultiline(value) {
 	return escapeHtml(value).replace(/\r?\n/g, '<br>');
 }
+/**
+ * La palabra más larga de un texto, en caracteres.
+ *
+ * POR QUÉ EXISTE. Un título grande en una columna angosta desborda cuando el
+ * dato trae una palabra que no entra — "DigitalMatchGlobal", 18 caracteres sin
+ * espacios. Lo que NO sirve es medir el largo total: "Fundación Cooperadora del
+ * Hospital" son 34 caracteres y envuelve perfecto, porque tiene espacios.
+ *
+ * Con esto, la pantalla puede elegir el tamaño del título según lo que de
+ * verdad puede desbordar. Y la alternativa que se descartó: `hyphens-auto`
+ * parte la palabra con guión —"DigitalMatchGlo-bal"— y **partir un nombre
+ * propio con guión es peor que el recorte que venía a arreglar** (§12.10.21).
+ */
+export function palabraMasLarga(texto) {
+  return String(texto ?? '')
+    .trim()
+    .split(/\s+/)
+    .reduce((max, palabra) => Math.max(max, palabra.length), 0);
+}

@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
+import { cn, palabraMasLarga } from '@/lib/utils';
 import { etiquetaBeneficio } from '@/lib/club';
 import {
   DIAS_SEMANA, ESTADOS_BENEFICIO, TIPOS_BENEFICIO, VENTANAS, ROLES_COMERCIO,
@@ -202,7 +203,14 @@ const ComercioDetalle = ({ comercio }) => {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-2xl font-display font-bold text-brand-dark break-words">{comercio.nombre}</h2>
+        <h2
+          className={cn(
+            'font-display font-bold text-brand-dark break-words',
+            palabraMasLarga(comercio.nombre) > 15 ? 'text-xl' : 'text-2xl',
+          )}
+        >
+          {comercio.nombre}
+        </h2>
         <Badge>{comercio.estado}</Badge>
       </div>
       <p className="mt-1 text-sm text-brand-dark/60">

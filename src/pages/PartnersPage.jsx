@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { cn, palabraMasLarga } from '@/lib/utils';
 import { Plus, ArrowRight, Handshake, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -114,7 +115,14 @@ const PartnersPage = () => {
                   </div>
 
                   <div className="p-8 flex-grow flex flex-col">
-                    <h3 className="text-2xl font-bold font-poppins text-brand-dark mb-3 break-words group-hover:text-brand-action transition-colors">
+                    {/* Mismo criterio que el perfil (§12.10.21): el tamaño lo
+                        decide la palabra más larga, no el largo del nombre. */}
+                    <h3
+                      className={cn(
+                        'font-bold font-poppins text-brand-dark mb-3 break-words group-hover:text-brand-action transition-colors',
+                        palabraMasLarga(partner.nombre) > 15 ? 'text-xl' : 'text-2xl',
+                      )}
+                    >
                       {partner.nombre}
                     </h3>
                     

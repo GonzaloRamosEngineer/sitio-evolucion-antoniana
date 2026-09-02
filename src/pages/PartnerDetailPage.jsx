@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SanitizedHtml } from '@/components/ui/sanitized-html';
 import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
 import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
+import { cn, palabraMasLarga } from '@/lib/utils';
 
 const slugify = (s = '') =>
   s
@@ -116,13 +117,24 @@ const PartnerDetailPage = () => {
                     )}
 
                     {/*
-                      `break-words`: el nombre puede ser UNA sola palabra larga
-                      —"DigitalMatchGlobal", 18 caracteres— y en esta columna
-                      angosta se pasaba del borde de la tarjeta. El texto de
-                      alrededor envolvía bien porque tiene espacios, así que el
-                      recorte se veía solo en el título y solo con nombres largos.
+                      EL TAMAÑO SE ELIGE SEGÚN LA PALABRA MÁS LARGA, no según el
+                      largo del nombre: "Fundación Cooperadora del Hospital" son
+                      34 caracteres y envuelve perfecto porque tiene espacios;
+                      "DigitalMatchGlobal" son 18 y no entra en esta columna.
+
+                      ⚠️ Y NO se usa `hyphens-auto`, que fue el primer intento:
+                      parte la palabra con guión —"DigitalMatchGlo-bal"— y
+                      **partir un nombre propio con guión es peor que el recorte
+                      que venía a arreglar** (§12.10.21). `break-words` queda
+                      igual, como red para un nombre absurdamente largo: que
+                      envuelva sin guión es mejor que que se desborde.
                     */}
-                    <h1 className="text-3xl font-bold font-poppins text-brand-dark mb-2 leading-tight break-words hyphens-auto">
+                    <h1
+                        className={cn(
+                            'font-bold font-poppins text-brand-dark mb-2 leading-tight break-words',
+                            palabraMasLarga(partner.nombre) > 15 ? 'text-2xl' : 'text-3xl',
+                        )}
+                    >
                         {partner.nombre}
                     </h1>
 

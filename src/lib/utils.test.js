@@ -1,7 +1,7 @@
 // Tests de los helpers de src/lib/utils.js: cn() (clases del design system) y
 // el escapado de HTML que usan los formularios públicos al armar mails.
 import { describe, it, expect } from 'vitest';
-import { cn, escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
+import { cn, escapeHtml, escapeHtmlMultiline, palabraMasLarga } from '@/lib/utils';
 
 describe('cn', () => {
   it('combina clases sueltas', () => {
@@ -47,5 +47,23 @@ describe('escapeHtmlMultiline', () => {
 
   it('normaliza CRLF', () => {
     expect(escapeHtmlMultiline('uno\r\ndos')).toBe('uno<br>dos');
+  });
+});
+
+describe('palabraMasLarga', () => {
+  it('mide la palabra más larga, no el largo total — que es el punto', () => {
+    // El caso real: 18 caracteres sin espacios, desbordaba el título.
+    expect(palabraMasLarga('DigitalMatchGlobal')).toBe(18);
+    // Más del doble de largo TOTAL, pero envuelve perfecto: 11 es su máximo.
+    expect(palabraMasLarga('Fundación Cooperadora del Hospital')).toBe(11);
+  });
+
+  it('ignora espacios de sobra y saltos', () => {
+    expect(palabraMasLarga('  hola   mundoLargo  ')).toBe(10);
+    expect(palabraMasLarga('uno\ndoscientos')).toBe(10);
+  });
+
+  it('no explota con vacío ni con nulo', () => {
+    for (const v of ['', '   ', null, undefined]) expect(palabraMasLarga(v)).toBe(0);
   });
 });
