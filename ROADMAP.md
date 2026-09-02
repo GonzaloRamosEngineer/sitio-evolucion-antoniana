@@ -38,10 +38,13 @@ el 2026-09-02 **se cobró la primera cuota real y ya hay un socio con acceso vig
 que el bloqueante que dominó este archivo durante semanas («nadie tiene acceso») **está
 levantado**, y lo que queda es de contenido y de producto, no de infraestructura.
 
-⚠️ **Y el primer cobro real destapó tres bugs que ningún test podía ver** (§10.22): el socio
-mensual no tenía los 30 días de gracia, y un cobro mensual de $50.000 habría otorgado **diez
-meses** de acceso. Ya está arreglado y aplicado. **La moraleja para lo que sigue: un cobro
-que sale bien no prueba que se registró bien.**
+⚠️ **Y el primer cobro real destapó cuatro cosas que ningún test podía ver.** Tres en el
+registro del cobro (§10.22): el socio mensual no tenía los 30 días de gracia, y un cobro
+mensual de $50.000 habría otorgado **diez meses** de acceso. Y una en las pantallas
+(§10.23): `/dashboard` y `/carnet` le decían cosas contradictorias a la misma persona,
+porque el dashboard nunca migró a la capa de acceso e inventaba su propia taxonomía.
+**Todo arreglado y aplicado.** Las dos moralejas: *un cobro que sale bien no prueba que se
+registró bien*, y *dos pantallas que se contradicen no producen ningún error*.
 
 **Lo primero, en orden:**
 
@@ -107,6 +110,12 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 6. **Un circuito que sale bien a la primera no probó el camino del fracaso.** El canje real
    se confirmó en 53 segundos, así que nunca ejercitó qué pasa cuando alguien abandona — que
    según §12.3 es el caso normal.
+7. **Una pantalla nueva que habla de algo que otra ya explicaba: preguntá de dónde saca el
+   dato.** No «¿está bien?», sino **«¿es el mismo lugar?»**. Pasó con `/beneficios` vs
+   `/club` (§12.10.16) y otra vez con `/dashboard` vs `/carnet` (§10.23). Dos pantallas
+   contradictorias **no tiran ningún error**: compilan, pasan el lint y se ven bien por
+   separado. Van cinco hallazgos de la jornada que salieron de mirar pantallas y ninguno de
+   un test.
 
 ---
 
@@ -331,6 +340,20 @@ chrome --headless=new --dump-dom --window-size=390,120 "file:///tmp/regla.html" 
   no `--window-size`. Queda como lo único que este procedimiento no cubre.
 - Servir el build con `npx vite preview` en vez de pegarle a producción: se puede mirar
   **antes** de desplegar, que es cuando sirve.
+
+### ⚠️ El chequeo de navegador NO cubre nada detrás de sesión
+
+Comprobado el 2026-09-02: un Chrome headless sobre `/dashboard` y `/carnet` responde 200
+y devuelve **«Iniciar sesión»** en los dos casos. `ProtectedRoute` redirige antes de que
+el componente se monte, así que **el procedimiento de arriba no verifica ni una línea** de
+una pantalla privada — y un error de render ahí aparece recién en producción, con el socio
+adentro (§10.23).
+
+Para esas pantallas la verificación es **montarlas en un test** con `QueryClientProvider`
+y `MemoryRouter`, mockeando los hooks de datos: ver
+`src/components/Dashboard/DashboardHeader.test.jsx`. Es lo único que se puede hacer sin
+una sesión real, y alcanza para lo que suele romperse (un hook sin provider, un icono que
+no existe, un estado sin rama).
 
 ### Cómo saber si un deploy llegó (y dos formas de creer que sí sin que haya llegado)
 

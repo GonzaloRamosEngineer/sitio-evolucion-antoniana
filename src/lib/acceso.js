@@ -46,6 +46,41 @@ export const estadoAcceso = (acceso) => {
 };
 
 /**
+ * Etiqueta corta del estado, para un badge.
+ *
+ * POR QUÉ VIVE ACÁ Y NO EN LA PÁGINA. Hasta el 2026-09-02 `/dashboard` y
+ * `/carnet` contestaban «cómo está esta persona» desde fuentes DISTINTAS: el
+ * carnet desde esta capa, y el dashboard inventando su propia taxonomía a
+ * partir de `users` y `memberships` («SOCIO NIVEL BASE», «RANGO: PADRINO»,
+ * «SOCIO DESDE 2025»). Le decían cosas contradictorias a la misma persona el
+ * mismo día (§10.23). El vocabulario del estado se declara una vez.
+ *
+ * ⚠️ Son etiquetas de badge, no títulos: el carnet usa frases completas
+ * («Tu aporte venció, estás en período de tolerancia») porque tiene el espacio
+ * y es la credencial. Lo que NO puede diferir es el estado, y ese sale de
+ * `estadoAcceso()` en los dos lados.
+ */
+const ETIQUETAS_ESTADO = {
+  vigente: 'Aporte vigente',
+  gracia: 'En tolerancia',
+  vencido: 'Aporte vencido',
+  sin_aportes: 'Sin aportes',
+};
+
+export const etiquetaEstado = (acceso) => ETIQUETAS_ESTADO[estadoAcceso(acceso)];
+
+/**
+ * Una fecha `YYYY-MM-DD` de la base, como la lee una persona.
+ *
+ * El `T00:00:00` no es adorno: sin él, `new Date('2026-09-02')` se interpreta
+ * como UTC y en Argentina (UTC-3) muestra el día ANTERIOR. Estaba resuelto en
+ * el carnet y se movió acá cuando el dashboard necesitó la misma fecha, para
+ * que no haya dos formatos —ni dos zonas horarias— para el mismo dato.
+ */
+export const formatearFecha = (d) =>
+  d ? new Date(`${d}T00:00:00`).toLocaleDateString('es-AR', { dateStyle: 'long' }) : null;
+
+/**
  * Cómo se llama en pantalla el origen del acceso.
  *
  * Los valores vienen de `aportes.origen` en la base y son

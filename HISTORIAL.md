@@ -2414,6 +2414,143 @@ como cosmético algo que no lo era. Cuando algo se anota como imprecisión, conv
 
 ---
 
+### 10.23 — `/dashboard` y `/carnet` le decían cosas distintas a la misma persona (2026-09-02)
+
+El mismo día, con la misma cuenta y a minutos de distancia:
+
+| | `/dashboard` decía | `/carnet` decía |
+|---|---|---|
+| Condición | «SOCIO NIVEL BASE» | «Tu acceso está vigente» |
+| Desde cuándo | «SOCIO DESDE **2025**» | «parte de la comunidad desde el **2 de septiembre de 2026**» |
+| Qué es | «RANGO: MIEMBRO» | «origen del acceso: cuota social» |
+| Y encima | ofrecía «ACTIVAR MEMBRESÍA» | — |
+
+Lo encontró el dueño del proyecto mirando las dos pantallas al lado, justo después
+de suscribirse. **Es el mismo patrón que `/beneficios` vs `/club`** (§12.10.16): dos
+piezas que funcionan, cada una con su propia fuente de verdad, contestando la misma
+pregunta con datos distintos.
+
+#### La causa: el dashboard nunca migró a la capa de acceso
+
+`/carnet` nació después de §10 y pregunta a `mi_acceso()` / `mi_antiguedad()`, o sea a
+`aportes`. `DashboardHeader.jsx` es anterior y se armaba su propia respuesta:
+
+```jsx
+activeMembership ? 'MEMBRESÍA ACTIVA' : 'SOCIO NIVEL BASE'
+Rango: activeMembership ? 'Padrino' : 'Miembro'
+Socio desde: new Date(user.created_at).getFullYear()   // ¡la CUENTA!
+```
+
+Tres problemas, y el tercero era un bug:
+
+1. **La jerarquía no existe.** No hay tabla `socios` ni `categorias_socio` — §10.1.a
+   sigue abierto. «NIVEL BASE» y «RANGO: PADRINO» prometían niveles que nadie podía
+   subir porque no había de dónde.
+
+2. **«Socio desde» era el alta de la cuenta**, no el primer aporte, con un `'2025'`
+   hardcodeado de fallback. Son cosas distintas y la diferencia se mide: hay **23
+   cuentas y 6 aportes**.
+
+3. **`.eq('status','active').maybeSingle()`** falla con más de una fila, y desde que
+   se permite una membresía viva **por destino** eso es alcanzable. El error se tragaba
+   en un `logger.error` y la pantalla le decía «SOCIO NIVEL BASE» a alguien con dos
+   suscripciones activas: **el `else` que adivina**, la misma lección que `estadosPago.js`
+   documenta desde el 2026-08-16.
+
+#### Qué se hizo
+
+La condición sale ahora de la capa de acceso, igual que en el carnet. **El dashboard
+pregunta y punto** — es la regla 1 de §12.7 aplicada a otra pantalla.
+
+⚠️ **Y la consulta a `memberships` no se reemplazó por otra: se borró.** `Dashboard.jsx`
+ya las cargaba con `useUserMemberships` para las tarjetas de suscripción, así que había
+**dos consultas de lo mismo** y solo una tenía el bug. Ahora la cabecera las recibe por
+prop. Menos código y una fuente menos.
+
+| Antes | Ahora | De dónde sale |
+|---|---|---|
+| «MEMBRESÍA ACTIVA» / «SOCIO NIVEL BASE» | «Aporte vigente» / «En tolerancia» / «Aporte vencido» / «Sin aportes» | `estadoAcceso()` |
+| «Rango: Padrino / Miembro» | «Origen del aporte: Cuota social» | `aportes.origen` |
+| «Socio desde 2025» (la cuenta) | «Aportando desde el 2 de septiembre de 2026» | `antiguedad_socio().socio_desde` |
+| — | «Tiempo aportado: 1 mes» | `meses_aportados` |
+
+**El CTA pasó de dos estados a tres**, y el que faltaba es el que importaba:
+
+- con acceso → **«Ver mi carnet»**, que además conecta una pieza que existía y a la que
+  no se llegaba desde acá (misma familia que §12.10.20)
+- con una suscripción `pending`/`active` pero sin acceso todavía → **«Suscripción en
+  curso: tu acceso se habilita en cuanto se acredite el primer cobro»**
+- sin nada → «Activar membresía»
+
+Ese caso del medio **es el que vio el dueño del proyecto**: entre que MercadoPago crea el
+`preapproval` y avisa del primer cobro pasan un par de minutos, y en esa ventana la
+pantalla le ofrecía suscribirse a alguien que acababa de suscribirse. El botón viejo era
+`!activeMembership && "ACTIVAR MEMBRESÍA"`, así que también se lo ofrecía a quien aporta
+por donación.
+
+También se movieron a `src/lib/acceso.js` el vocabulario del estado (`etiquetaEstado`) y
+el formato de fecha (`formatearFecha`), que estaba resuelto en el carnet. Ese formateo
+tiene una trampa que valía centralizar: sin el `T00:00:00`, `new Date('2026-09-02')` se
+lee como UTC y en Argentina muestra **el día anterior**.
+
+#### Cómo se verificó, que es donde estuvo el trabajo
+
+Arreglar esto una vez no alcanza: lo que hay que impedir es que **vuelva**. Y no vuelve
+por un error — vuelve porque alguien agrega una pantalla y resuelve la condición a mano.
+Así que hay dos defensas, y las dos se vieron fallar antes de creerles:
+
+**1. `src/lib/fuente-unica-socio.test.js`** — lee el código de las pantallas que hablan
+de la condición del socio y verifica que la pregunten a la capa de acceso. Se probó
+reintroduciendo el patrón viejo: las tres aserciones fallan y vuelven a pasar al
+revertir.
+
+⚠️ **La primera versión de ese test falló por su propia documentación.** El comentario
+que explica el bug **cita** el código borrado (`'Padrino'`, `user.created_at`), y un
+detector que mira el archivo entero no distingue «esto lo hace» de «esto explica lo que
+ya no hace». Un test así obliga a elegir entre documentar el error o tener la protección,
+y las dos hacen falta. Se agregó un limpiador de comentarios — con su propio control de
+que no se lleve el código por delante, porque «limpia bien» y «borra todo» se ven igual
+desde afuera.
+
+**2. `src/components/Dashboard/DashboardHeader.test.jsx`** — 7 casos que la **montan de
+verdad**. Hacía falta porque **`/dashboard` no se puede verificar en un navegador**: está
+detrás de sesión, y un Chrome headless cae en el login sin montar la cabecera. Se
+comprobó: las dos rutas responden, y las dos muestran «Iniciar sesión». O sea que el
+chequeo de navegador —el procedimiento de §B— **no cubre nada detrás de auth**, y ahí un
+error de render aparecería recién en producción con el socio adentro.
+
+Los casos: los cuatro estados, el CTA en cada uno, la suscripción pendiente, **tres
+membresías a la vez** (el escenario del `maybeSingle`) y los hooks sin datos. Se
+verificó que no son vacíos reintroduciendo el `created_at`: dos casos fallan.
+
+Y en el bundle: «SOCIO NIVEL BASE» **desapareció** de todos los chunks, y las etiquetas
+nuevas quedaron en el chunk **compartido** (`useContentQueries-*.js`), no en el de la
+página — que es la trampa que §B documenta y por la que un deploy se puede dar por
+llegado mirando el archivo equivocado.
+
+#### Lo que queda dicho
+
+- **`/dashboard` sigue teniendo una identidad distinta de `/carnet`, y está bien.** No se
+  unificaron las pantallas: se unificó **la fuente**. El carnet es la credencial; el
+  dashboard es la cuenta —movimientos, suscripciones, actividades—. Dos vistas, un solo
+  dato, como quedó `/beneficios` (vidriera) y `/club` (mostrador).
+- **Sacar el «rango» fue una decisión de producto, no técnica.** Hoy no hay jerarquía; si
+  se implementa la fase 4 de §10.3 (`socios` + `categorias_socio`), el test de fuente
+  única se actualiza **junto con la tabla, no antes**.
+
+#### La lección
+
+**Dos pantallas que se contradicen no producen ningún error.** Compilan, pasan el lint,
+pasan los 313 tests y se ven bien por separado. Lo único que las delata es verlas juntas,
+y eso solo pasa si alguien usa el sitio como lo usa una persona. Van **cinco** hallazgos
+en la jornada que salieron de mirar pantallas y **ninguno** de un test.
+
+El corolario operativo: cuando aparece una pantalla nueva que habla de algo que otra
+pantalla ya explicaba, la pregunta no es «¿está bien?» sino **«¿de dónde saca el dato, y
+es el mismo lugar?»**.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

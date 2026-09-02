@@ -189,7 +189,17 @@ const Dashboard = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-6 -mt-36 relative z-20">
-        <DashboardHeader user={currentUser} onUpdateSuccess={(data) => { setCurrentUser(data); setAuthUser(data); }} />
+        {/*
+          `memberships` va por prop y no lo consulta la cabecera: esta
+          página ya las tiene con `useUserMemberships` y había DOS
+          consultas de lo mismo, una de ellas con un `.maybeSingle()` que
+          rompe con más de una fila (§10.23).
+        */}
+        <DashboardHeader
+          user={currentUser}
+          memberships={userMemberships}
+          onUpdateSuccess={(data) => { setCurrentUser(data); setAuthUser(data); }}
+        />
 
         {/* --- MÉTRICAS COMUNITARIAS --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16">

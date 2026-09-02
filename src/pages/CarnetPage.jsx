@@ -8,10 +8,9 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
 import ReclamarAportes from '@/components/Acceso/ReclamarAportes';
-import { SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen } from '@/lib/acceso';
-
-const fmtFecha = (d) =>
-  d ? new Date(`${d}T00:00:00`).toLocaleDateString('es-AR', { dateStyle: 'long' }) : null;
+import {
+  SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen, formatearFecha,
+} from '@/lib/acceso';
 
 /**
  * Presentación de cada estado. Vive en un objeto y no en cadenas de ternarios
@@ -118,7 +117,7 @@ const CarnetPage = () => {
 
                   {estado === 'vigente' && acceso.vence_el && (
                     <p className="mt-2 text-brand-dark/70">
-                      Vence el {fmtFecha(acceso.vence_el)}
+                      Vence el {formatearFecha(acceso.vence_el)}
                       {diasRestantes !== null && diasRestantes >= 0 && (
                         <> — te quedan {diasRestantes} {diasRestantes === 1 ? 'día' : 'días'}</>
                       )}
@@ -128,14 +127,14 @@ const CarnetPage = () => {
 
                   {estado === 'gracia' && (
                     <p className="mt-2 text-brand-dark/70">
-                      Tu último aporte venció el {fmtFecha(acceso.vence_el)}, pero conservás el
+                      Tu último aporte venció el {formatearFecha(acceso.vence_el)}, pero conservás el
                       acceso durante 30 días de tolerancia. Regularizá para no perderlo.
                     </p>
                   )}
 
                   {estado === 'vencido' && (
                     <p className="mt-2 text-brand-dark/70">
-                      Tu último aporte cubrió hasta el {fmtFecha(acceso.vence_el)}. Podés
+                      Tu último aporte cubrió hasta el {formatearFecha(acceso.vence_el)}. Podés
                       retomar cuando quieras: tu antigüedad no se borra.
                     </p>
                   )}
@@ -193,7 +192,7 @@ const CarnetPage = () => {
               <div className="px-6 sm:px-8 py-2">
                 {user?.dni && <Dato etiqueta="Documento" valor={user.dni} />}
                 {antiguedad?.socio_desde && (
-                  <Dato etiqueta="Parte de la comunidad desde" valor={fmtFecha(antiguedad.socio_desde)} />
+                  <Dato etiqueta="Parte de la comunidad desde" valor={formatearFecha(antiguedad.socio_desde)} />
                 )}
                 {antiguedad && (
                   <Dato
