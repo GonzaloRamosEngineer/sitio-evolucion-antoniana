@@ -118,3 +118,56 @@ describe('AvisoSesion — con sesión', () => {
     expect(screen.getByText(/sinnombre@mail.com/)).toBeInTheDocument();
   });
 });
+
+describe('AvisoSesion — con sesión, pagar con otro email (§10.24)', () => {
+  /*
+    POR QUÉ ESTA OPCIÓN EXISTE, porque sin el contexto parece una perilla de
+    más: el email de la sesión del dueño del proyecto está registrado en
+    MercadoPago URUGUAY, y una cuenta de otro país no puede pagarle a un
+    cobrador argentino. MercadoPago devolvía `guest_site_mismatch` y —con el
+    email de la sesión fijo— el ÚNICO email posible era el que no funcionaba.
+    No había salida dentro del sitio.
+  */
+  const conSesion = (extra = {}) => props({ user: { email: 'socia@test.com' }, ...extra });
+
+  it('por defecto NO muestra el campo: es una salida, no un paso', () => {
+    enRouter(<AvisoSesion {...conSesion()} />);
+    expect(screen.queryByLabelText(/Email para el pago/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pagar con otro email/i })).toBeInTheDocument();
+  });
+
+  it('al abrirla aparece el campo, con el email de la sesión como referencia', () => {
+    enRouter(<AvisoSesion {...conSesion()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Pagar con otro email/i }));
+
+    const campo = screen.getByLabelText(/Email para el pago/i);
+    expect(campo).toBeInTheDocument();
+    expect(campo).toHaveAttribute('placeholder', 'socia@test.com');
+  });
+
+  it('aclara que el aporte igual queda a nombre de la persona', () => {
+    // Es la duda obvia al ver el campo, y la respuesta es verificable: la
+    // atribución viaja en `external_reference`, no en `payer_email`.
+    enRouter(<AvisoSesion {...conSesion()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Pagar con otro email/i }));
+    expect(screen.getByText(/aporte igual queda a tu nombre/i)).toBeInTheDocument();
+  });
+
+  it('si ya hay un email escrito, el campo aparece abierto', () => {
+    // Si no, el valor viajaría al checkout sin que se vea de dónde salió.
+    enRouter(<AvisoSesion {...conSesion({ email: 'otro@mail.com' })} />);
+    expect(screen.getByLabelText(/Email para el pago/i)).toHaveValue('otro@mail.com');
+  });
+
+  it('avisa si está mal escrito, y dice qué se va a usar en su lugar', () => {
+    enRouter(<AvisoSesion {...conSesion({ email: 'no-es-email' })} />);
+    expect(screen.getByText(/no parece un email/i)).toBeInTheDocument();
+    expect(screen.getByText(/se usa socia@test.com/i)).toBeInTheDocument();
+  });
+
+  it('sigue confirmando a nombre de quién va el aporte', () => {
+    // Lo que ya funcionaba no se perdió al agregar la opción.
+    enRouter(<AvisoSesion {...conSesion()} />);
+    expect(screen.getByText(/Vas a aportar como/i)).toBeInTheDocument();
+  });
+});

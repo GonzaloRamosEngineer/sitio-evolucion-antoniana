@@ -43,8 +43,14 @@ registro del cobro (§10.22): el socio mensual no tenía los 30 días de gracia,
 mensual de $50.000 habría otorgado **diez meses** de acceso. Y una en las pantallas
 (§10.23): `/dashboard` y `/carnet` le decían cosas contradictorias a la misma persona,
 porque el dashboard nunca migró a la capa de acceso e inventaba su propia taxonomía.
-**Todo arreglado y aplicado.** Las dos moralejas: *un cobro que sale bien no prueba que se
-registró bien*, y *dos pantallas que se contradicen no producen ningún error*.
+Y una tercera cosa que el mismo intento destapó (§10.24): al suscribirse, el error de
+MercadoPago se mostraba como **JSON crudo** en un cartel rojo, y con sesión iniciada
+**no había forma de usar otro email** — así que el único email posible era el que
+MercadoPago rechazaba.
+
+**Todo arreglado y aplicado.** Las tres moralejas: *un cobro que sale bien no prueba que
+se registró bien*, *dos pantallas que se contradicen no producen ningún error*, y *un
+mensaje de error que no dice qué hacer es tan inútil como no tenerlo*.
 
 **Lo primero, en orden:**
 
@@ -270,6 +276,7 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | `HISTORIAL.md` §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
 | `handle_new_user()` explota si el alta no trae `name` en `raw_user_meta_data` | Detectado el 2026-08-16 al arreglar el check T6 | El trigger inserta en `public.users`, donde `name` es NOT NULL, leyendo `raw_user_meta_data->>'name'`. Un alta sin ese campo **falla entera**. El registro propio sí lo manda; el riesgo es un proveedor OAuth que use otra clave (`full_name`). Un `COALESCE(name, full_name, email)` lo cerraría. |
 | `donations.donation_type` es texto libre y de él depende que una renovación entre como cuota | Detectado el 2026-09-02 al arreglar §10.22 | La columna **no tiene CHECK** (verificado en producción): vale `'única'` o `'suscripción'` por convención del webhook. `aporte_desde_donacion()` acepta las dos grafías de «suscripción», pero si un futuro escritor manda otra palabra, la renovación vuelve a clasificarse como donación **sin ningún error** — y el síntoma sería un socio sin gracia, no una excepción. Un `CHECK (donation_type IN (...))` lo vuelve estructural. |
+| Tres de las cuatro reglas de `src/lib/erroresPago.js` nunca se vieron disparar | Escritas el 2026-09-02 con §10.24 | Solo `guest_site_mismatch` es una firma **observada**; `mismo_usuario`, `email_invalido` y `monto_invalido` están contra firmas plausibles de MercadoPago, no contra un error real. El campo `observado` de cada regla lo dice. Cuando aparezca uno de verdad, **confirmar el texto contra lo que llegó** en vez de darlo por bueno — una regla que nunca se disparó puede estar mal escrita y nadie se entera. El camino de descarte cubre el caso igual, así que no urge. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | `HISTORIAL.md` §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
 
 ---

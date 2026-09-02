@@ -21,9 +21,33 @@ describe('esEmailPlausible', () => {
 describe('emailParaCheckout', () => {
   const conSesion = { email: 'Socia@Gmail.com' };
 
-  it('con sesión gana el email de la cuenta, aunque haya texto escrito', () => {
-    // El de la cuenta ya lo verificó Supabase; el escrito a mano, nadie.
-    expect(emailParaCheckout(conSesion, 'otro@mail.com')).toBe('Socia@Gmail.com');
+  /*
+    ⚠️ ESTE CASO SE DIO VUELTA EL 2026-09-02 (§10.24), y el test viejo decía
+    exactamente lo contrario: «con sesión gana el email de la cuenta, aunque
+    haya texto escrito», con el argumento de que el de la cuenta lo verificó
+    Supabase y el escrito a mano nadie.
+
+    El argumento era bueno y la regla estaba mal, porque `payer_email` no es
+    una credencial: es **con qué cuenta de MercadoPago se paga**. El caso real
+    lo mostró — el email de la sesión estaba registrado en MercadoPago Uruguay,
+    MercadoPago devolvía `guest_site_mismatch`, y con la regla vieja el único
+    email posible era el que no funcionaba. Cero salidas dentro del sitio.
+
+    Y no se pierde nada: la atribución viaja en `external_reference`, armado
+    con `user_id` en el servicio de pagos, sin mirar `payer_email`.
+  */
+  it('el email escrito le gana al de la sesión (es con qué cuenta se paga)', () => {
+    expect(emailParaCheckout(conSesion, 'otro@mail.com')).toBe('otro@mail.com');
+  });
+
+  it('con sesión y sin nada escrito, usa el de la cuenta', () => {
+    expect(emailParaCheckout(conSesion, '')).toBe('Socia@Gmail.com');
+    expect(emailParaCheckout(conSesion)).toBe('Socia@Gmail.com');
+  });
+
+  it('con sesión, un email mal escrito NO pisa el de la cuenta', () => {
+    // Degrada al de la sesión, no al placeholder: hay un dato mejor a mano.
+    expect(emailParaCheckout(conSesion, 'no-es-email')).toBe('Socia@Gmail.com');
   });
 
   it('sin sesión usa el que se escribió, normalizado', () => {

@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 // ⬇️ usamos el microservicio en Render vía membershipApi
 import { createSubscription, createOneTimeDonation } from '@/api/membershipApi';
+import { mensajeErrorPago } from '@/lib/erroresPago';
 import { useDestinosActivos } from '@/hooks/useContentQueries';
 import { destinoEfectivo } from '@/api/destinosApi';
 import { emailParaCheckout } from '@/lib/aportante';
@@ -112,10 +113,12 @@ const Collaborate = () => {
     }
 
     setIsProcessingDonation(false);
+    // El mensaje se traduce en `erroresPago.js`: acá llegaba el JSON crudo de
+    // MercadoPago y se mostraba tal cual dentro del cartel rojo (§10.24).
+    const { titulo, descripcion, codigo } = mensajeErrorPago(error, { accion: 'donacion' });
     toast({
-      title: error?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Donación',
-      description:
-        error?.message || 'No se pudo iniciar el proceso de pago. Inténtalo de nuevo.',
+      title: titulo,
+      description: codigo === 'desconocido' ? descripcion : `${descripcion} (${codigo})`,
       variant: 'destructive',
     });
   };
@@ -147,11 +150,10 @@ const Collaborate = () => {
     }
 
     setIsProcessingSubscription(false);
+    const { titulo, descripcion, codigo } = mensajeErrorPago(error, { accion: 'suscripcion' });
     toast({
-      title: error?.isColdStart ? 'El servicio está iniciándose' : 'Error al Procesar Suscripción',
-      description:
-        error?.message ||
-        'No se pudo iniciar el proceso de suscripción. Inténtalo de nuevo.',
+      title: titulo,
+      description: codigo === 'desconocido' ? descripcion : `${descripcion} (${codigo})`,
       variant: 'destructive',
     });
   };

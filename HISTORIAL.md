@@ -2551,6 +2551,124 @@ es el mismo lugar?»**.
 
 ---
 
+### 10.24 — El cartel rojo con JSON adentro, y el callejón sin salida (2026-09-02)
+
+Al intentar suscribirse, el dueño del proyecto recibió esto:
+
+```json
+{"message":"invalid_request","error":"bad_request","status":400,
+ "cause":[{"code":2034,"description":"guest_site_mismatch"}]}
+```
+
+El JSON crudo de MercadoPago, dentro de un cartel rojo, como único mensaje. **Y el
+diagnóstico real era accionable**: ese email está registrado en **MercadoPago Uruguay**,
+y una cuenta de otro país no puede pagarle a un cobrador argentino. La salida era usar
+otro email — que es exactamente lo que hizo, después de averiguarlo por su cuenta.
+
+#### Cómo llega un JSON a una pantalla
+
+Tres pasos, ninguno mal por separado:
+
+1. el servicio de pagos hace `res.status(400).json({ error: data })` con la respuesta
+   **entera** de MercadoPago (`subscription.controller.js`);
+2. `membershipApi.js` recibía un `error` que no es string y lo pasaba por
+   `JSON.stringify`;
+3. `Collaborate.jsx` lo mostraba como `description` del toast.
+
+El resultado: la persona que estaba a un clic de aportar ve una estructura de datos.
+
+#### Y encima, el callejón sin salida
+
+Peor que el mensaje. `emailParaCheckout()` devolvía `user.email` cuando había sesión, sin
+excepción:
+
+```js
+if (user?.email) return user.email;   // y no había forma de usar otro
+```
+
+Así que **el único email posible era justamente el que MercadoPago rechazaba**. Con
+sesión iniciada no había ninguna salida dentro del sitio: la única opción era cerrar
+sesión, o averiguar el problema por fuera y usar otra cuenta.
+
+La regla vieja tenía un argumento bueno —el email de la sesión lo verificó Supabase, el
+escrito a mano no lo verificó nadie— y estaba **mal de todas formas**, porque
+`payer_email` **no es una credencial**: es *con qué cuenta de MercadoPago se paga*. Con
+sesión, quién aporta ya está resuelto por otro lado.
+
+⚠️ **Verificado antes de tocarlo, no supuesto:** en el servicio de pagos,
+`external_reference` se arma con `user_id`, `kind` y `destino_id` (`lib/destino.js`), sin
+mirar `payer_email`. Así que el aporte queda a nombre de la sesión aunque el pago salga
+de otra cuenta — que es, además, lo que pasa cuando alguien paga con la tarjeta de un
+familiar, un caso que antes tampoco se podía.
+
+#### Qué se hizo
+
+| | Antes | Ahora |
+|---|---|---|
+| El mensaje | el JSON de MercadoPago | «Ese email es de una cuenta de MercadoPago de otro país» + qué hacer |
+| El email con sesión | fijo, el de la cuenta | el de la cuenta por defecto, **con la opción de usar otro** |
+| El payload del error | aplastado con `JSON.stringify` | conservado en `WebhookError.payload` |
+
+`src/lib/erroresPago.js` traduce. Dos decisiones que valen más que la lista de mensajes:
+
+- **El reconocimiento junta TODAS las cadenas del objeto** y busca firmas ahí, en vez de
+  leer rutas fijas como `payload.cause[0].description`. La forma del error de MercadoPago
+  **no es un contrato nuestro**: una ruta fija se rompe en silencio el día que cambian el
+  envoltorio, y «no reconocí nada» se ve igual que «no había nada».
+- **El camino de descarte es el que más vale.** Para un error que no conocemos, extrae el
+  texto más específico que MercadoPago haya mandado (`cause[].description`, después
+  `message`) en vez de volcar la estructura. Eso cubre los errores que todavía no vimos,
+  que son la mayoría. Y `bad_request` se descarta explícitamente: es la categoría HTTP, no
+  lo que pasó — **cambiar un JSON incomprensible por una palabra incomprensible no es
+  traducir**.
+
+Las reglas llevan un campo `observado` que distingue lo que vimos (`guest_site_mismatch`,
+2026-09-02) de lo que está por precaución. No es estilo: una regla que nunca se disparó
+puede estar mal escrita y nadie se enteraría.
+
+En la interfaz, «Pagar con otro email» va **plegado**. Que exista una salida no significa
+ponerla en el camino de todos: un campo de email extra arriba del botón de aportar es
+fricción para el 99% que no tiene el problema.
+
+#### Dos cosas que encontraron los tests
+
+**1. El test viejo defendía la regla equivocada.** `aportante.test.js` tenía
+*«con sesión gana el email de la cuenta, aunque haya texto escrito»* y falló al invertir
+la precedencia. Hizo exactamente su trabajo: obligó a justificar el cambio en vez de
+dejarlo pasar. Se reescribió **con el motivo adentro**, para que la próxima persona que
+lo lea no lo «arregle» de vuelta.
+
+**2. La guarda contra el JSON tenía un agujero.** Era `!message.startsWith('{')`, y se le
+escapaba `[{"x":1}]` — un array JSON no empieza con llave. Lo encontró el propio test
+porque recorre **varias formas** de JSON en vez de una: con una sola forma habría dado
+verde. Ahora la guarda parsea y pregunta si el texto **es** una estructura, en vez de
+adivinarlo por el primer carácter.
+
+Es la misma lección de §11.6.3 desde otro ángulo: un caso de prueba no prueba una regla,
+prueba un caso. Si la regla dice «nunca», el test tiene que intentar varias formas de
+violarla.
+
+#### Verificado
+
+- **9 tests** de `erroresPago.js`, incluida la firma real de MercadoPago con su forma
+  exacta, la misma firma anidada en otro lugar, la misma solo dentro del `message`
+  aplastado, y el «NUNCA devuelve JSON» sobre seis formas distintas.
+- **6 tests** de la rama con sesión de `AvisoSesion`, y los 10 que ya tenía siguen
+  pasando.
+- **`/collaborate` en el navegador**, que acá sí se puede porque es pública (a diferencia
+  de §10.23): renderiza los 45.912 bytes, y **sin sesión el botón nuevo no aparece** —
+  que es lo correcto, y el control de que la rama vieja quedó intacta.
+
+348 tests en total (eran 331), lint 0 errores.
+
+#### Lo que queda
+
+⚠️ **La regla `mismo_usuario` y las otras dos defensivas no se vieron disparar.** Están
+escritas contra firmas plausibles de MercadoPago, no observadas. El día que aparezca una
+de verdad, hay que confirmar el texto contra lo que llegó en vez de darlo por bueno.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

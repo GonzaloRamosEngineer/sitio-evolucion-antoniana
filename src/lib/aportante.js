@@ -37,17 +37,35 @@ export const esEmailPlausible = (valor) =>
 /**
  * El email que viaja al checkout de MercadoPago.
  *
- * El orden expresa confiabilidad:
- *   1. el de la sesión, que Supabase ya verificó;
- *   2. el que escribió a mano quien no tiene sesión, si parece un email;
+ * El orden expresa **para qué sirve cada uno**:
+ *   1. el que la persona escribió a mano, si parece un email;
+ *   2. el de la sesión, que Supabase ya verificó;
  *   3. el placeholder, que no identifica a nadie.
  *
+ * ⚠️ **El escrito le gana al de la sesión, y eso es un cambio del 2026-09-02**
+ * (§10.24). Antes, con sesión iniciada, esta función devolvía `user.email` y no
+ * había forma de usar otro. Parecía lo correcto —el de la sesión está
+ * verificado— hasta que apareció el caso real: el email del dueño del proyecto
+ * está registrado en **MercadoPago Uruguay**, y una cuenta de otro país no
+ * puede pagarle a un cobrador argentino. MercadoPago devolvía
+ * `guest_site_mismatch` y la persona quedaba **sin ninguna salida dentro del
+ * sitio**: el único email posible era el que no funcionaba.
+ *
+ * Y no cuesta nada, porque **la atribución no viaja por acá**. Verificado en el
+ * servicio de pagos: `external_reference` se arma con `user_id`, `kind` y
+ * `destino_id` (`lib/destino.js`), sin mirar `payer_email`. El aporte queda a
+ * nombre de la sesión aunque el pago salga de otra cuenta de MercadoPago — que
+ * es, además, lo que pasa cuando alguien paga con la tarjeta de un familiar.
+ *
+ * `payer_email` sirve para otra cosa: es el único rastro de identidad cuando NO
+ * hay sesión (§10.18). Con sesión es un dato del medio de pago, no de quién
+ * aporta.
+ *
  * **Nunca devuelve vacío**: un dato accesorio no puede hacer fallar un cobro.
- * Un email mal escrito degrada a placeholder en silencio, que es exactamente lo
- * mismo que pasaba antes de que existiera el campo — no se pierde nada.
+ * Un email mal escrito degrada al de la sesión —o al placeholder— en silencio.
  */
 export const emailParaCheckout = (user, emailEscrito = '') => {
-  if (user?.email) return user.email;
   if (esEmailPlausible(emailEscrito)) return emailEscrito.trim().toLowerCase();
+  if (user?.email) return user.email;
   return PLACEHOLDER_ANONIMO;
 };

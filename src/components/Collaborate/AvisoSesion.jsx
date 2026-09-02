@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserCheck, IdCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,28 +30,89 @@ import { esEmailPlausible } from '@/lib/aportante';
  * dejar su email y reclamar el aporte más adelante. Es opcional de verdad: si
  * está vacío, o si no parece un email, se dona igual (`Collaborate` cae al
  * placeholder de siempre). Un dato accesorio nunca puede impedir un cobro.
+ *
+ * Y CON SESIÓN TAMBIÉN SE PUEDE CAMBIAR EL EMAIL (§10.24, 2026-09-02). No es
+ * una opción de más: es la salida de un callejón real. El email de la sesión
+ * del dueño del proyecto está registrado en **MercadoPago Uruguay**, y una
+ * cuenta de otro país no puede pagarle a un cobrador argentino — MercadoPago
+ * devuelve `guest_site_mismatch`. Con el email de la sesión fijo, el único
+ * email posible era justamente el que no funcionaba, y no había ninguna salida
+ * dentro del sitio: hubo que averiguarlo por fuera y suscribirse con otra
+ * cuenta.
+ *
+ * Va **plegado** a propósito. Que exista una salida no significa ponerla en el
+ * camino de todos: la mayoría no la necesita, y un campo de email extra arriba
+ * del botón de aportar es fricción para el 99% que no tiene el problema.
  */
 const AvisoSesion = ({ user, email, onEmailChange }) => {
-  // Con sesión: una línea y nada más. Quien ya hizo lo correcto no necesita que
-  // le expliquen por qué; necesita saber que va a funcionar.
-  if (user) {
-    return (
-      <div className="mb-8 flex items-start gap-3 rounded-sm border border-brand-primary/25 bg-white px-5 py-4">
-        <UserCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-primary" />
-        <p className="text-sm leading-relaxed text-brand-dark/75">
-          Vas a aportar como <span className="font-semibold text-brand-dark">{user.name || user.email}</span>.
-          Tu aporte queda registrado a tu nombre y suma para{' '}
-          <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
-            tu carnet
-          </Link>
-          .
-        </p>
-      </div>
-    );
-  }
+  // Solo controla si el campo está a la vista. El valor vive en `Collaborate`,
+  // que es quien lo manda al checkout.
+  const [otroEmail, setOtroEmail] = useState(false);
 
   const emailEscrito = email.trim().length > 0;
   const emailSirve = esEmailPlausible(email);
+
+  if (user) {
+    return (
+      <div className="mb-8 rounded-sm border border-brand-primary/25 bg-white px-5 py-4">
+        <div className="flex items-start gap-3">
+          <UserCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-primary" />
+          <div className="flex-1">
+            <p className="text-sm leading-relaxed text-brand-dark/75">
+              Vas a aportar como <span className="font-semibold text-brand-dark">{user.name || user.email}</span>.
+              Tu aporte queda registrado a tu nombre y suma para{' '}
+              <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
+                tu carnet
+              </Link>
+              .
+            </p>
+
+            {/*
+              La salida del callejón, plegada. Se muestra el email que va a
+              viajar cuando hay uno escrito, porque si no, "pagar con otro
+              email" quedaría abierto sin ninguna señal de que está en uso.
+            */}
+            {!otroEmail && !emailEscrito ? (
+              <button
+                type="button"
+                onClick={() => setOtroEmail(true)}
+                className="mt-2 text-xs font-semibold text-brand-primary underline underline-offset-4"
+              >
+                Pagar con otro email
+              </button>
+            ) : (
+              <div className="mt-4 border-t border-brand-dark/10 pt-4">
+                <Label htmlFor="email-pago" className="font-semibold text-brand-dark">
+                  Email para el pago
+                </Label>
+                <p className="mt-1 max-w-[46rem] text-sm leading-relaxed text-brand-dark/60">
+                  Solo si tu cuenta de MercadoPago está en otro país, o si querés pagar
+                  desde otra cuenta. <span className="font-semibold text-brand-dark/75">Tu
+                  aporte igual queda a tu nombre</span> — la atribución no depende de este
+                  email.
+                </p>
+                <Input
+                  id="email-pago"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder={user.email}
+                  value={email}
+                  onChange={(e) => onEmailChange(e.target.value)}
+                  className="mt-2 h-11 max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
+                />
+                {emailEscrito && !emailSirve && (
+                  <p className="mt-2 text-sm text-red-600">
+                    Eso no parece un email. Revisalo, o dejalo vacío y se usa {user.email}.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-8 rounded-sm border border-brand-gold/50 bg-brand-gold/10 px-5 py-5 sm:px-6 sm:py-6">

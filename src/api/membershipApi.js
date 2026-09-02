@@ -67,11 +67,26 @@ export const COLD_START_MESSAGE =
 
 /** Error de la capa de pagos, con la info que el llamador necesita para el mensaje. */
 export class WebhookError extends Error {
-  constructor(message, { cause, isColdStart = false, status = null } = {}) {
+  constructor(message, { cause, isColdStart = false, status = null, payload = null } = {}) {
     super(message);
     this.name = 'WebhookError';
     this.isColdStart = isColdStart;
     this.status = status;
+    /*
+      El cuerpo del error TAL COMO LLEGÓ, sin aplastar.
+
+      El servicio de pagos reenvía la respuesta entera de MercadoPago
+      (`res.status(400).json({ error: data })`), así que acá abajo el `error`
+      suele ser un OBJETO y no un string. Antes se resolvía con
+      `JSON.stringify` y ese string terminaba, tal cual, dentro del cartel rojo
+      que veía la persona (§10.24).
+
+      Se conserva estructurado para que `src/lib/erroresPago.js` pueda buscar
+      la firma del problema —`guest_site_mismatch` y compañía— en cualquier
+      parte del objeto. La forma del error de MercadoPago no es un contrato
+      nuestro, así que leerlo por rutas fijas se rompería en silencio.
+    */
+    this.payload = payload;
     if (cause) this.cause = cause;
   }
 }
@@ -89,14 +104,25 @@ async function fetchWithTimeout(url, init, timeoutMs) {
   }
 }
 
-/** Extrae el mensaje de error del body, o '' si no hay JSON válido / campo `error`. */
-async function readErrorMessage(res) {
+/**
+ * El error del body, en las dos formas que hacen falta:
+ *   - `mensaje`: texto plano, para el log y para `Error.message`.
+ *   - `payload`: la estructura sin tocar, para que se le pueda reconocer la
+ *     firma más adelante.
+ *
+ * Devuelve los dos vacíos si el body no es JSON o no trae `error`.
+ */
+async function readError(res) {
   try {
     const data = await res.json();
-    if (!data?.error) return '';
-    return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+    if (!data?.error) return { mensaje: '', payload: null };
+    if (typeof data.error === 'string') return { mensaje: data.error, payload: data };
+    // ⚠️ El `JSON.stringify` sigue acá a propósito, pero ahora SOLO alimenta
+    // `Error.message` (útil en un log). Lo que se le muestra a una persona sale
+    // de `erroresPago.js` leyendo `payload`, nunca de este string.
+    return { mensaje: JSON.stringify(data.error), payload: data.error };
   } catch {
-    return '';
+    return { mensaje: '', payload: null };
   }
 }
 
@@ -131,17 +157,21 @@ async function callWebhook(path, options = {}) {
     // 5xx (incluye el 502/504 que devuelve el proxy mientras Render levanta):
     // reintentable. Si el server manda un mensaje propio, lo conservamos.
     if (res.status >= 500) {
-      const detail = await readErrorMessage(res);
-      transientError = new WebhookError(detail || COLD_START_MESSAGE, {
+      const { mensaje, payload } = await readError(res);
+      transientError = new WebhookError(mensaje || COLD_START_MESSAGE, {
         status: res.status,
-        isColdStart: !detail
+        isColdStart: !mensaje,
+        payload
       });
       continue;
     }
 
     if (!res.ok) {
-      const detail = await readErrorMessage(res);
-      throw new WebhookError(detail || 'Error en la operación', { status: res.status });
+      const { mensaje, payload } = await readError(res);
+      throw new WebhookError(mensaje || 'Error en la operación', {
+        status: res.status,
+        payload
+      });
     }
 
     try {
