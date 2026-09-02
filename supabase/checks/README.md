@@ -14,6 +14,12 @@ la base.
   cualquiera, y que el backfill no pise datos buenos.
 - **`reclamar-check.sql`** — `reclamar_donaciones()`. Otorga privilegios, así que lo que
   importa no es que funcione: es que **nadie pueda reclamar el aporte de otro**.
+- **`renovacion-check.sql`** — que una renovación de suscripción entre al libro como
+  **cuota y no como donación** (§10.22). No es un detalle de nombres: de `origen` dependen
+  los 30 días de gracia del socio mensual, y antes del arreglo un cobro mensual de $50.000
+  otorgaba **diez meses** de acceso porque se convertía con la regla proporcional de las
+  donaciones. Trae el par que lo hace discriminar: R1 (una donación **sí** da 3 meses) al
+  lado de R2 (una renovación del mismo monto da 1).
 - **`club-check.sql`** — el club fase 2 (§12). `club_canjes` otorga **valor económico**:
   del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
   `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al
@@ -50,6 +56,7 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/acceso-c
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/payer-email-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/reclamar-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
 
 # Leer el resultado: lo único que importa es que no haya ninguna línea FALLA.
 #   ... | grep -E 'FALLA|^ERROR'      -> sin salida = todo bien

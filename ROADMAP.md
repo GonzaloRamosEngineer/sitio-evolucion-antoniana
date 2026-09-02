@@ -27,52 +27,51 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-02, cierre del club fase 2)
+## 🚦 Por dónde arrancar (actualizado 2026-09-02, primera cuota real cobrada)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-**Estado en una línea:** el circuito de ingresos está cerrado y **la fase 2 del club también
-—probada de punta a punta el 2026-09-02 con un canje real** (§11.7.12)—, pero **el club
-sigue sin socios**: 0 de 23 personas con acceso vigente, así que el único beneficio real
-está bloqueado para todo el mundo.
+**Estado en una línea:** el circuito de ingresos está cerrado, la fase 2 del club también, y
+el 2026-09-02 **se cobró la primera cuota real y ya hay un socio con acceso vigente** — así
+que el bloqueante que dominó este archivo durante semanas («nadie tiene acceso») **está
+levantado**, y lo que queda es de contenido y de producto, no de infraestructura.
+
+⚠️ **Y el primer cobro real destapó tres bugs que ningún test podía ver** (§10.22): el socio
+mensual no tenía los 30 días de gracia, y un cobro mensual de $50.000 habría otorgado **diez
+meses** de acceso. Ya está arreglado y aplicado. **La moraleja para lo que sigue: un cobro
+que sale bien no prueba que se registró bien.**
 
 **Lo primero, en orden:**
 
-1. ✅ **La unificación del catálogo está aplicada y desplegada** (12.10.16 y 12.10.17). La
-   fuga de `DMGlobal` está cerrada, hay un solo catálogo, el beneficio de prueba está
-   archivado y la URL vieja sigue viva. **Queda una sola cosa de esto: mirarlo en un
-   teléfono real (12.10.18)** — el chequeo headless no concluye.
+1. ✅ **La unificación del catálogo está aplicada, desplegada y mirada en ancho de teléfono**
+   (12.10.16, 12.10.17, 12.10.18). La fuga de `DMGlobal` está cerrada, hay un solo catálogo,
+   el beneficio de prueba está archivado y la URL vieja sigue viva.
 
-2. **Que alguien tenga acceso vigente.** Vuelve a ser *el* bloqueante, y ahora con más peso:
-   toda la vidriera está construida y verificada, y el estado «puede canjear» **sigue sin
-   poder ejercitarse** porque no hay una sola persona con aporte vigente (§10.17, §12.10.9).
+2. **Ejercitar el rechazo por requisitos contra la base** (§12.11.1). Ahora **sí se puede**:
+   hay un socio con acceso vigente, 1 mes aportado y $5.000 acumulados, y el beneficio pide
+   6 meses o $30.000. Es la rama nueva de `cumpleRequisitos()` y **nunca corrió contra la
+   base**. El caso real existe por primera vez; no hay excusa para dejarlo sin probar.
 
-   ✅ **La economía del club ya está arreglada** (§12.11): el umbral es proporcional al valor
-   del beneficio, así que la primera persona que se suscriba entra a un club calibrado y no
-   a uno donde $5.000 desbloqueaban $45.000. La cuota queda en **$5.000, simbólica y a
-   propósito** — se buscó volumen de socios, no margen por socio.
+   ✅ La economía del club ya está arreglada (§12.11): el umbral es proporcional al valor del
+   beneficio. La cuota queda en **$5.000, simbólica y a propósito** — se buscó volumen de
+   socios, no margen por socio.
 
 3. **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Es lo que convierte el
    catálogo en un club: ticket bajo y frecuencia alta construyen el hábito que un descuento
-   de una sola vez no puede construir. «Prueba interna del sistema de canje» quedó
-   **activo** y lo ve cualquier visitante de `/club`. Se apaga en un minuto desde
-   `/admin → Club de beneficios → DigitalMatch Global`, poniéndolo en «De baja». Es lo único
-   con urgencia real, y no es técnico.
-2. **Que alguien tenga acceso vigente.** Es *el* bloqueante, y no es del club: es §10.17. Sin
-   un aporte de $5.000 o más atribuido a una cuenta, el beneficio real no se puede canjear ni
-   probar. Las dos salidas —un aporte real, o uno manual que **aparece en la rendición
-   pública**— tienen costo, y la decisión es de la entidad.
-3. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
+   de una sola vez no puede construir. **DigitalMatch es una vidriera excelente y un cimiento
+   malo.** Es lo único con urgencia real, y no es técnico.
+
+4. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
    archivo**: `.env.db`. ⚠️ Este archivo dijo cuatro veces que también estaba en
    `~/.config/antoniana/db.url` — **ese archivo no existe**. Y rotar **no toca producción**:
    el webhook usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el único
    consumidor es `tools/db.sh`.
-4. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
+5. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
    único `high`. Y después, en rama propia, **`react-router-dom` → `7.18.3`**, que es el
    resto. ⚠️ Este renglón decía «la única vulnerabilidad viva»: son cuatro (6.7).
-5. **La deuda del club está toda en §12.10**, ordenada por lo que duele. Lo más barato con
+6. **La deuda del club está toda en §12.10**, ordenada por lo que duele. Lo más barato con
    más valor: la **UI de anulación** (12.10.6), que ahora sí se puede probar porque existe un
    canje confirmado real.
 
@@ -261,6 +260,7 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | `getPartnerBySlug` sin consumidores | `HISTORIAL.md` §8, Sesión F2 | Borrar en la próxima limpieza. Se conservó por simetría con `getNewsBySlug`. |
 | 53 warnings de lint (imports sin usar, 2 `exhaustive-deps`) | `HISTORIAL.md` §4, ítem 4.7 | Barrer de a poco. El gate falla solo en errores; **0 errores es la barra**. |
 | `handle_new_user()` explota si el alta no trae `name` en `raw_user_meta_data` | Detectado el 2026-08-16 al arreglar el check T6 | El trigger inserta en `public.users`, donde `name` es NOT NULL, leyendo `raw_user_meta_data->>'name'`. Un alta sin ese campo **falla entera**. El registro propio sí lo manda; el riesgo es un proveedor OAuth que use otra clave (`full_name`). Un `COALESCE(name, full_name, email)` lo cerraría. |
+| `donations.donation_type` es texto libre y de él depende que una renovación entre como cuota | Detectado el 2026-09-02 al arreglar §10.22 | La columna **no tiene CHECK** (verificado en producción): vale `'única'` o `'suscripción'` por convención del webhook. `aporte_desde_donacion()` acepta las dos grafías de «suscripción», pero si un futuro escritor manda otra palabra, la renovación vuelve a clasificarse como donación **sin ningún error** — y el síntoma sería un socio sin gracia, no una excepción. Un `CHECK (donation_type IN (...))` lo vuelve estructural. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | `HISTORIAL.md` §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
 
 ---
@@ -1615,8 +1615,12 @@ por entidad va en datos).
 - [ ] **12.11.1 — Ejercitar el rechazo con una cuenta real.** Se probó que las funciones
   arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 25 tests. **Pero el camino
   «tiene acceso y NO cumple los requisitos» nunca corrió contra la base**, y es la rama
-  nueva. Se puede ejercitar en cuanto exista un socio con un aporte y menos de 6 meses —
-  que es, justamente, el primero que se suscriba.
+  nueva.
+
+  ✅ **El caso real ya existe (2026-09-02).** Hay un socio con acceso vigente, **1 mes
+  aportado y $5.000 acumulados**, y DigitalMatch pide 6 meses o $30.000: cae exactamente en
+  la rama que nunca se ejercitó. Ya no hace falta esperar a nadie — y conviene hacerlo antes
+  de que ese socio acumule seis meses, porque después el caso se va hasta que aparezca otro.
 
 - [ ] **12.11.2 — El club necesita beneficios de ticket bajo y frecuencia alta.** Es el
   problema de fondo y no lo arregla ninguna columna: **un beneficio de ticket alto y una

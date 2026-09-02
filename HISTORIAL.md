@@ -1861,7 +1861,7 @@ Una donación de prueba de $100 lo cierra.
 
 | Qué | Estado |
 |---|---|
-| El `origen` del aporte de una renovación dice `donacion`, no `membresia` | Imprecisión conocida. `aportes.origen = 'membresia'` exige `membership_id`, y ligarlo requiere resolver la ambigüedad de las 6 filas con el mismo `external_reference` |
+| ~~El `origen` del aporte de una renovación dice `donacion`, no `membresia`~~ | ✅ **CERRADO el 2026-09-02 (§10.22), y no era una imprecisión: eran tres bugs.** El más caro no tenía nada que ver con la etiqueta — un cobro mensual de $50.000 otorgaba **diez meses** de acceso, porque la renovación se convertía con la regla proporcional de las donaciones. El bloqueante que este renglón declaraba (las 6 filas ambiguas) **ya se había caído solo**: la suscripción nueva trae `external_reference` única |
 | Las 6 suscripciones con `anon:suscripcion` idéntico | Bloquean el match inequívoco. Son todas de prueba (§10.10): lo más limpio es cancelarlas en MercadoPago y darlas de baja |
 | `MP_WEBHOOK_SECRET` sin definir | Sin él **no se valida la firma** de los webhooks: hoy cualquiera que sepa la URL puede postear un evento falso. Es la mejora de seguridad más barata que queda |
 | Portar a Vercel | Sigue valiendo por el cold start de 22 s y por tener un solo repo. Ya sin urgencia |
@@ -2260,6 +2260,157 @@ simular una notificación —o sea, ejercitar el camino de error— para que apa
 Corolario práctico: **el camino feliz no es el que hay que probar en una integración con
 un tercero**. Lo que rompe no es que MercadoPago conteste distinto, es que conteste mal, y
 eso solo se ve pidiéndole algo que no puede responder.
+
+---
+
+### 10.22 — Una renovación entraba al libro como donación, y costaba tres cosas (2026-09-02)
+
+El 2026-09-02 se cobró **la primera cuota real del proyecto** (`payment_id`
+175967372005, $5.000). El canal recurrente funcionó de punta a punta por primera vez:
+la membresía quedó `active`, con `preapproval_id`, `destino_id` y —esto no había pasado
+nunca— **`last_payment_id` escrito**. Lo que §10.10 dio por muerto («el canal recurrente
+nunca funcionó») quedó cerrado.
+
+Y en `/carnet` el socio leía **«ORIGEN DEL ACCESO: Donación»**.
+
+#### Lo que parecía una etiqueta mal puesta
+
+§10.16 lo había anotado como *«imprecisión conocida»*, con un bloqueante razonable: ligar
+la membresía exigía resolver la ambigüedad de las 6 filas de prueba que comparten
+`external_reference`. **Ese bloqueante ya no existía** —la suscripción nueva trae una
+referencia única, y por eso el `last_payment_id` se pudo escribir— así que se fue a mirar.
+No era una imprecisión. Eran **tres defectos encadenados**, y el del medio era caro.
+
+#### La causa: el orden de dos escrituras
+
+El webhook (`index.js`, repo aparte) hace, en este orden y en transacciones separadas:
+
+```
+1. INSERT en donations  (donation_type = 'suscripción')
+2. UPDATE de memberships.last_payment_id
+```
+
+Entrar a `donations` es lo que hace **nacer** el aporte, y es deliberado: es la regla de
+oro del servicio, que el registro del cobro no se pierda aunque la membresía no se pueda
+resolver. Pero entonces el trigger de la donación corre primero y crea el aporte; después
+corre el de la membresía, choca contra `referencia_externa UNIQUE` y su
+`ON CONFLICT DO NOTHING` lo descarta.
+
+**No es una carrera que a veces se pierde: se pierde siempre.** El único trigger que sabe
+que ese cobro es una cuota es el único cuya escritura se tira.
+
+#### Los tres defectos
+
+| # | Qué | Consecuencia |
+|---|---|---|
+| 1 | `acceso_vigente()` da los 30 días de gracia solo si `origen='membresia'` | El socio mensual **no tenía gracia**. Verificado en producción: `en_gracia = f`. Si le fallaba la tarjeta el 02/10, perdía el acceso el 03/10 — exactamente lo que §10.17 decidió evitar |
+| 2 | `meses_por_donacion()` convierte monto → meses **proporcionalmente** | Correcto para una donación puntual, ruinoso para un cobro mensual |
+| 3 | `aportes_origen_chk` exigía que `membresia` tuviera `donation_id` NULL | Reclasificar obligaba a **borrar el rastro al cobro** para arreglar la etiqueta |
+
+El 2 es el que asusta. `Collaborate.jsx` ofrece cuotas de $5.000 a $50.000 y
+`membershipApi.js` fija `frequency: 1, frequency_type: 'months'`, así que **un** cobro
+mensual otorgaba (medido contra producción, no razonado):
+
+```
+$ 5.000/mes  ->  1 mes     <- coincide, y por eso no se veía
+$15.000/mes  ->  3 meses
+$25.000/mes  ->  5 meses
+$50.000/mes  -> 10 meses
+```
+
+Quien eligiera $50.000/mes acumulaba diez meses por cobro, y al mes siguiente diez más.
+**Nadie lo sufrió porque la única suscripción viva es de $5.000, donde 1 cuota = 1 mes por
+casualidad aritmética.** El defecto estaba a un clic del menú, y el caso que lo habría
+mostrado es el del socio que aporta *más*.
+
+#### Por qué se arregló en la base y no en el webhook
+
+La tentación era que el webhook no escriba en `donations` para una renovación. Eso rompe
+la regla de oro: con el match ambiguo —y hoy lo es para 6 filas— el cobro no quedaría
+registrado en ningún lado. **Perder plata para ganar una etiqueta.**
+
+La base tiene los dos datos y puede converger sin importar el orden. Cada trigger usa
+solo lo que sabe:
+
+- `aporte_desde_donacion()` sabe por `donation_type` que es una renovación. No puede
+  resolver *cuál* membresía —el webhook todavía no escribió `last_payment_id`— pero sí
+  puede dejar de aplicar la regla proporcional. Cierra el defecto 2 por sí solo.
+- `aporte_desde_membresia()` sabe cuál membresía y cuándo es el próximo cobro. En vez de
+  descartar por conflicto, **reclasifica**. Cierra el 1.
+
+Y queda **orden-independiente**: si mañana el webhook invierte las dos escrituras, el de
+membresía crea la fila ya bien clasificada y el de donación choca y no toca nada. Probado
+en los dos órdenes (R8).
+
+La regla, en una línea: **un cobro recurrente compra un mes, y solo si llega al piso.** Se
+escribió `LEAST(1, meses_por_donacion(monto))` en vez de un `1` pelado para **heredar** el
+piso en lugar de copiarlo — la misma decisión que §10.17 tomó para `piso_monto = NULL`.
+
+#### Tres trampas que costaron pensar
+
+1. **`EXCLUDED.acceso_desde` está envenenado.** Se calcula con `proximo_acceso_desde()`
+   cuando la fila del conflicto **ya existe**, así que devuelve el día siguiente al acceso
+   que esa misma fila otorga. Usarlo en el `DO UPDATE` habría empujado el período un mes
+   al futuro y dejado al socio **sin acceso hoy**. Se conserva el `acceso_desde` existente
+   y se recalcula solo el `hasta`. Es R5, y es la prueba que más costó redactar.
+2. **El `WHERE` del `DO UPDATE` no es decorativo.** Solo se toca una fila que siga siendo
+   `donacion` sin membresía: eso deja sobrevivir cualquier corrección de la comisión
+   (§10.16) y hace la operación idempotente. Probado (R9).
+3. **El piso faltaba en la rama de membresía.** Esa rama nunca lo miró, así que una
+   suscripción de $1 armada contra la API —el menú arranca en $5.000, pero la API no
+   valida— habilitaba el club. Se cerró de paso.
+
+#### Cómo se verificó
+
+`supabase/checks/renovacion-check.sql`, **12 comprobaciones**, cada negativo con su
+positivo al lado. Lo importante no es que dé 12/12: es que **se corrió primero contra el
+código viejo y falló donde tenía que fallar** —R2, R4, R6 y R12— y recién después con la
+migración aplicada encima. Una prueba que no se vio fallar no probó nada (§11.6.3).
+
+| Prueba | Qué distingue |
+|---|---|
+| R1 ←→ R2 | una donación de $15.000 **sigue** dando 3 meses; una renovación de $15.000 da 1 |
+| R6 ←→ R7 | la cuota vencida hace 10 días sigue vigente en gracia; la donación no |
+| R11 ←→ R12 | el CHECK sigue rechazando lo incoherente, y **ya no** rechaza la cuota con las dos referencias |
+| R8 | los dos órdenes de escritura convergen |
+| R9 | una corrección humana sobrevive al reintento |
+
+Aplicado en **PostgreSQL 15** (la versión de producción, `pg15-bootstrap/`), con la
+migración encima del estado ya aplicado — o sea, con convergencia probada, no solo
+idempotencia. Y se corrieron los otros cinco checks contra un contenedor **con** y **sin**
+la migración: el contenido de la salida es idéntico, cero regresiones.
+
+#### El dato viejo
+
+`supabase/data/reclasificar_renovaciones.sql` arregla la fila que ya estaba en el libro,
+porque el trigger de la membresía solo corre cuando `last_payment_id` **cambia** y ahí ya
+estaba escrito. Reclasifica **por regla y no por id**, con tres hechos independientes que
+tienen que decir lo mismo: el aporte sigue siendo `donacion` sin membresía, su
+`referencia_externa` es el `last_payment_id` de una membresía, y la donación de la que
+nació dice `donation_type = 'suscripción'`.
+
+⚠️ **`acceso_hasta` no se toca**, y la tentación de recalcularlo a `next_charge_date` era
+un error: esa fecha **se mueve con cada cobro**, así que reclasificar dentro de un mes
+usaría la fecha del cobro siguiente y regalaría un mes.
+
+Antes de aplicar: backup con `tools/db.sh dump` **restaurado y verificado** en un
+contenedor limpio (6 aportes / $12.241, el total conocido). El libro después: **6 aportes
+/ $12.241** — nada duplicado, nada perdido. Y el socio queda cubierto hasta el
+**2026-11-01** si el cobro del 02/10 falla.
+
+#### La lección
+
+**Un cobro que sale bien no prueba que se registró bien.** El circuito funcionó de punta a
+punta, la plata entró, el total del libro estaba perfecto — y la clasificación estaba mal
+de una forma que le sacaba un derecho al socio y podía regalar diez meses de acceso. Lo
+único que lo delató fue **una pantalla mostrando una palabra rara**: «Donación» donde
+tenía que decir cuota. Van cuatro hallazgos de esta jornada que salieron de mirar
+pantallas y ninguno de un test.
+
+Y el corolario sobre este archivo: **«imprecisión conocida» es una etiqueta peligrosa.**
+Estuvo escrita quince días al lado de un bloqueante que ya se había caído, y describía
+como cosmético algo que no lo era. Cuando algo se anota como imprecisión, conviene anotar
+**qué habría que medir para saber si molesta** — o se vuelve una excusa con fecha.
 
 ---
 
