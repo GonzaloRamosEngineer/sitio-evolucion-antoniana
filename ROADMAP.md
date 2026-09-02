@@ -316,9 +316,43 @@ Aprendido el 2026-09-02, las dos en la misma tarde:
    con él: local `index-BF9WSxx3.js` contra `index-CnVEx8ZX.js` en producción. **Esperar el
    chunk del build local es esperar un archivo que nunca va a existir.**
 
-**Lo que sí funciona: pedir la página con Chrome headless y buscar en el DOM un marcador
-del cambio** —un texto que antes no estaba, o uno que tenía que desaparecer—. Es la única
-verificación que mide lo que importa en vez de un proxy.
+3. **Un marcador que sale de la BASE no prueba nada del front.** Tercer intento fallido del
+   2026-09-02: se esperó a que `/beneficios/:slug` mostrara los términos nuevos, y esos
+   términos salen de `club_beneficios.terminos` — el front **anterior** ya los leía. El
+   chequeo dio verde en la primera vuelta sin medir el deploy.
+
+4. **Y el chunk de la página tampoco alcanza.** El código de `src/lib/club.js` y
+   `src/api/clubApi.js` lo comparten varias pantallas, así que Vite lo pone en un chunk
+   propio (`club-*.js`) y **no** en `BenefitDetailPage-*.js`. Buscar el marcador en el chunk
+   de la página da 0 aunque el deploy ya esté.
+
+#### El procedimiento que sí funciona
+
+Dos verificaciones distintas, porque son dos cosas distintas:
+
+**Para un cambio VISIBLE** (copy, layout, un bloque que aparece o desaparece): Chrome
+headless sobre la ruta real y `grep` en el DOM por un marcador **que solo pueda venir del
+código nuevo** — no de la base, no de un texto que ya existía.
+
+**Para un cambio NO visible sin sesión** (lógica, una RPC nueva, un estado interno): seguir
+el grafo de módulos hasta el chunk servido y buscar el símbolo adentro.
+
+```bash
+# 1) el index desplegado (su hash NO es el del build local)
+IDX=$(curl.exe -sL https://evolucionantoniana.com/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+# 2) todos los chunks que referencia
+curl.exe -sL "https://evolucionantoniana.com/$IDX" | grep -oE '[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.js' | sort -u > /tmp/chunks.txt
+# 3) buscar el simbolo nuevo en cada uno, salteando los que devuelven el fallback HTML
+while read -r c; do
+  curl.exe -sL "https://evolucionantoniana.com/assets/$c" -o /tmp/x.js
+  grep -q '<!doctype' /tmp/x.js && continue
+  grep -q 'mi_elegibilidad_club' /tmp/x.js && echo "ENCONTRADO en $c"
+done < /tmp/chunks.txt
+```
+
+Así se confirmó el deploy de §12.11: el símbolo apareció en `club-Dkfqlm4O.js`, un chunk
+compartido. **De paso el mismo grep sirve de control de la fuga**: `DMGlobal` da 0
+apariciones en el bundle público.
 
 ### Migraciones: validar en Docker, nunca contra producción
 
