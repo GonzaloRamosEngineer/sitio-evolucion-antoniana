@@ -1652,9 +1652,50 @@ por entidad va en datos).
 #### Lo que queda pendiente de esto
 
 - [ ] **12.11.1 — Ejercitar el rechazo con una cuenta real.** Se probó que las funciones
-  arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 25 tests. **Pero el camino
+  arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 35 tests. **Pero el camino
   «tiene acceso y NO cumple los requisitos» nunca corrió contra la base**, y es la rama
   nueva.
+
+  #### Cómo ejercitarlo, y por qué NO hay que tocar el umbral
+
+  La tentación es bajar el umbral desde el ABM (`/admin → Club de beneficios →
+  DigitalMatch Global → Requisitos para canjearlo`, que existe y está cableado). **No
+  hace falta y es peor**, por dos motivos medidos:
+
+  1. **DigitalMatch tiene `limite_por_persona = 1`, ventana `total`.** Si con el umbral
+     bajo se aprieta el botón, se consume el único canje de esa persona *para siempre*,
+     y es un descuento real de hasta $30.000.
+  2. **El rechazo ocurre ANTES de cualquier escritura** (paso 2 de `club-generar-canje`,
+     antes del insert). Así que llamar a la función con el umbral REAL no puede consumir
+     nada: no llega a escribir.
+
+  Entonces se llama a la función directamente, con la sesión ya iniciada en el sitio.
+  Comprobado el 2026-09-02: **el header `apikey` NO hace falta**, alcanza con
+  `Authorization`, así que el snippet no lleva ninguna clave adentro.
+
+  ```js
+  // consola del navegador, con sesión iniciada en evolucionantoniana.com
+  (async () => {
+    const k = Object.keys(localStorage).find(x => x.startsWith('sb-') && x.endsWith('-auth-token'));
+    if (!k) return console.error('Sin sesión.');
+    const tok = JSON.parse(localStorage[k]).access_token;
+    const r = await fetch('https://lbtyxnbyetsvngsxczkt.supabase.co/functions/v1/club-generar-canje', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ beneficio_id: 'dc100000-0000-4000-8000-000000000003' }),
+    });
+    console.log('HTTP', r.status, await r.json());
+  })();
+  ```
+
+  **Esperado** para un socio con 1 mes y $5.000: `HTTP 403` con
+  `codigo_error: "requisitos"`, `faltan_meses: 5`, `falta_monto: 25000` y el `error` con
+  la frase completa. Cualquier otra cosa —200, 500, o un 403 con otro código— es el
+  hallazgo.
+
+  ⚠️ **Controles**: sin sesión la misma llamada da `401 codigo_error: "sesion"` (probado),
+  que confirma que responde la función y no el gateway. Y `403 sin_acceso` sería un
+  resultado distinto: significaría que el problema es el aporte, no el umbral.
 
   ✅ **El caso real ya existe (2026-09-02).** Hay un socio con acceso vigente, **1 mes
   aportado y $5.000 acumulados**, y DigitalMatch pide 6 meses o $30.000: cae exactamente en

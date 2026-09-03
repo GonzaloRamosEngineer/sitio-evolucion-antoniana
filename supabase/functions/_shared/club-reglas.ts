@@ -258,18 +258,49 @@ export function cumpleRequisitos(
   const faltanMeses = minMeses != null ? Math.max(0, minMeses - meses) : null;
   const faltaMonto = minMonto != null ? Math.max(0, minMonto - monto) : null;
 
-  const partes: string[] = [];
-  if (faltanMeses != null) {
-    partes.push(`${faltanMeses} ${faltanMeses === 1 ? "mes" : "meses"} de aporte`);
+  /*
+    ⚠️ EL MENSAJE DECÍA EL NÚMERO EQUIVOCADO. Era:
+
+        `Este beneficio pide ${faltanMeses} meses de aporte o ${faltaMonto} ...`
+
+    o sea la palabra «pide» seguida de **lo que FALTA**. Con el umbral real
+    —6 meses o $30.000— y alguien que va por 1 mes, decía «este beneficio pide
+    5 meses de aporte o 25.000 de aporte acumulado»: **anuncia un requisito
+    que no existe**, y encima el monto sin el `$`.
+
+    Y el test tampoco: asertaba `/4 meses/` y `/20.000/`, que son justamente
+    los números del hueco. Le daba la razón al defecto (§11.4), igual que pasó
+    con `faltaParaBeneficio` en el front el mismo día.
+
+    Ahora dice las TRES cosas que hacen falta —qué pide, dónde estás, cuánto
+    falta— con la misma redacción que `mensajeRequisitos()` en `src/lib/club.js`,
+    para que la persona lea la misma frase la anuncie la pantalla o la rechace
+    la función.
+  */
+  const plata = (n: number) => `$${n.toLocaleString("es-AR")}`;
+  const enMeses = (n: number) => `${n} ${n === 1 ? "mes" : "meses"}`;
+
+  const pide: string[] = [];
+  const vas: string[] = [];
+  const restan: string[] = [];
+  if (minMeses != null) {
+    pide.push(`${enMeses(minMeses)} de aporte`);
+    vas.push(enMeses(meses));
+    restan.push(enMeses(faltanMeses as number));
   }
-  if (faltaMonto != null) {
-    partes.push(`${faltaMonto.toLocaleString("es-AR")} de aporte acumulado`);
+  if (minMonto != null) {
+    pide.push(`${plata(minMonto)} en total`);
+    vas.push(plata(monto));
+    restan.push(plata(faltaMonto as number));
   }
+  const verbo = faltanMeses === 1 ? "falta" : "faltan";
 
   return {
     ok: false,
     codigo: "requisitos",
-    motivo: `Este beneficio pide ${partes.join(" o ")}.`,
+    motivo:
+      `Este beneficio pide ${pide.join(" o ")}. ` +
+      `Vas por ${vas.join(" y ")}, así que te ${verbo} ${restan.join(" o ")}.`,
     ...(faltanMeses != null ? { faltan_meses: faltanMeses } : {}),
     ...(faltaMonto != null ? { falta_monto: faltaMonto } : {}),
   };
