@@ -8,7 +8,8 @@ Sitio web institucional de la **Fundación Evolución Antoniana** (Salta, Argent
 
 ## Stack
 
-- **Vite 4 + React 18** (JavaScript, sin TypeScript), `react-router-dom` v6 (client-side routing, SPA).
+- **Vite 7 + React 18** (JavaScript, sin TypeScript), `react-router-dom` v6 (client-side routing, SPA).
+  ⚠️ Decía «Vite 4» hasta el 2026-09-05: el `package.json` tiene `vite@^7.3.6` desde hace meses.
 - **Supabase** como backend (auth + Postgres + Storage). La lógica de datos corre en el browser con la **anon key**; la única excepción es la **Edge Function `create-user`** (Deno), que usa la `service_role` para dar de alta usuarios desde el panel admin.
 - **Tailwind** + Radix/shadcn (`src/components/ui/`), `framer-motion`, `react-helmet-async`. Validación de forms **híbrida**: `react-hook-form` + `zod` en `EducationForm`, `LoginPage` y `RegisterPage` (patrón a seguir); quedan con `useState` manual `Contact`, `ContactModal` y `ApplyPartnerPage` (a migrar en la Sesión F).
 - Deploy en **Vercel**. Funciones serverless en `api/` (OG/share). `vercel.json` proxea `/api/*` a un webhook externo en Render.
@@ -156,16 +157,22 @@ nadie lo notara):
   razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
   motivo documentado.
 
-**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan ~35 archivos de código
-en comentarios. Mové ítems entre archivos si hace falta, pero no los renumeres.
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **102 archivos** de código
+en comentarios (remedido el 2026-09-05; decía ~35, y el ROADMAP decía 85). Mové ítems entre archivos si hace falta, pero no los renumeres.
 
-Estado al 2026-09-02: **2 vulnerabilidades**, la única viva es `react-router-dom@6.30.4`
-(open redirect → XSS) y su arreglo es react-router v7, un major. **265 tests** en el sitio
-(más 95 en el servicio de pagos, repo aparte); falta cobertura del flujo real, y en
-particular **el runtime de las Edge Functions no se puede probar acá** (`supabase start`
-falla en esta máquina), así que cada cambio en un `index.ts` se prueba recién en producción.
-ESLint deja **53 warnings** de backlog: **la barra es 0 errores**, los warnings se barren de
-a poco.
+Estado al **2026-09-05** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
+1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
+cuyo arreglo es react-router v7 —un major—. **368 tests en 31 archivos** (más los del
+servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
+runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
+máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
+se testea con vitest, y cada `index.ts` se prueba recién en producción. ESLint deja **50
+warnings** de backlog: **la barra es 0 errores**.
+
+⚠️ Este párrafo decía «2 vulnerabilidades, 265 tests, 53 warnings» y las tres cifras
+estaban viejas. **Es el archivo que se carga en cada sesión: si miente acá, arranca
+mintiendo todo lo demás.** Remedirlo es un minuto:
+`npm test`, `npm run lint`, `npm audit`.
 
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre

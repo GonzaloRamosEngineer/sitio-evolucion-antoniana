@@ -21,13 +21,13 @@
 > 👉 **Si buscás un `§N` y no está en este archivo, está en `HISTORIAL.md` con el mismo
 > número.** Las referencias cruzadas de abajo (§10.17, §11.7.12, …) siguen siendo válidas.
 >
-> **La numeración de los ítems no se toca** (`3.4`, `6.7`, …): hay **85 archivos** de
-> código con comentarios que la citan (remedido el 2026-09-02; decía 35). Por eso mover una
-> sección a `HISTORIAL.md` **nunca** implica renumerarla.
+> **La numeración de los ítems no se toca** (`3.4`, `6.7`, …): hay **102 archivos** de
+> código con comentarios que la citan (remedido el 2026-09-05; decía 85 el 2026-09-02 y 35
+> antes). Por eso mover una sección a `HISTORIAL.md` **nunca** implica renumerarla.
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-02, primera cuota real cobrada)
+## 🚦 Por dónde arrancar (actualizado 2026-09-05, club cerrado de punta a punta)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
@@ -63,23 +63,22 @@ de §B no llega.
 
 **Lo primero, en orden:**
 
-1. ✅ **La unificación del catálogo está aplicada, desplegada y mirada en ancho de teléfono**
-   (12.10.16, 12.10.17, 12.10.18). La fuga de `DMGlobal` está cerrada, hay un solo catálogo,
-   el beneficio de prueba está archivado y la URL vieja sigue viva.
+1. ✅ **El módulo del club está cerrado de punta a punta.** El catálogo unificado (12.10.16
+   a 12.10.18), la economía calibrada (§12.11) y **el rechazo por requisitos ejercitado
+   contra la base con una cuenta real** (§12.11.1, §10.26): `403 requisitos`,
+   `faltan_meses: 5`, `falta_monto: 25000`. La vidriera anuncia y la función decide **con la
+   misma frase**. No queda nada del club sin probar salvo lo listado en §12.10.
 
-2. **Ejercitar el rechazo por requisitos contra la base** (§12.11.1). Ahora **sí se puede**:
-   hay un socio con acceso vigente, 1 mes aportado y $5.000 acumulados, y el beneficio pide
-   6 meses o $30.000. Es la rama nueva de `cumpleRequisitos()` y **nunca corrió contra la
-   base**. El caso real existe por primera vez; no hay excusa para dejarlo sin probar.
+2. 🔴 **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). **Es lo único con
+   urgencia real, y no es técnico.** Ticket bajo y frecuencia alta construyen el hábito que
+   un descuento de una sola vez no puede construir: hoy el club tiene **un** beneficio, de
+   ticket alto y canjeable **una sola vez por persona**. DigitalMatch es una vidriera
+   excelente y un cimiento malo.
 
-   ✅ La economía del club ya está arreglada (§12.11): el umbral es proporcional al valor del
-   beneficio. La cuota queda en **$5.000, simbólica y a propósito** — se buscó volumen de
-   socios, no margen por socio.
-
-3. **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Es lo que convierte el
-   catálogo en un club: ticket bajo y frecuencia alta construyen el hábito que un descuento
-   de una sola vez no puede construir. **DigitalMatch es una vidriera excelente y un cimiento
-   malo.** Es lo único con urgencia real, y no es técnico.
+3. 🟡 **El segundo socio.** Hay **1 persona con acceso vigente** de 23 cuentas (§12.10.9,
+   remedido el 2026-09-05). El circuito funciona entero; lo que falta es gente adentro, y
+   eso no se arregla con código. La cuota queda en **$5.000, simbólica y a propósito** — se
+   buscó volumen de socios, no margen por socio.
 
 4. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
    archivo**: `.env.db`. ⚠️ Este archivo dijo cuatro veces que también estaba en
@@ -137,8 +136,9 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 ## Estado
 
 Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
-producción, con lint en 0 errores, **265 tests** en 26 archivos y `vite@7`.
-(Decía «174» hasta el 2026-09-02: era la medición de la Sesión I.)
+producción, con lint en **0 errores (50 warnings)**, **368 tests en 31 archivos** y `vite@7`.
+(Decía «174» hasta el 2026-09-02 y «265» hasta el 2026-09-05: las dos eran mediciones
+viejas que nadie volvió a tomar. **Remedir antes de citar** — son treinta segundos.)
 
 Lo que queda son **dos cosas de naturaleza distinta**:
 
@@ -1752,7 +1752,18 @@ para no volver a descubrir un hueco preguntando.
   define un premio— se convierte en un incentivo perverso. Son dos líneas en la Edge
   Function. **Bloquearlo antes de construir la fase 4, no después.**
 
-- [ ] **12.10.2 — `benefits.codigo` sigue siendo de lectura pública.** Es la limitación
+- [x] ~~**12.10.2 — `benefits.codigo` sigue siendo de lectura pública.**~~ **✅ CERRADO,
+  y verificado contra producción el 2026-09-05 por las DOS puntas** —que es lo que este
+  repo pide, porque «no se ve» y «no existe» se parecen desde afuera:
+
+  | Comprobación | Resultado |
+  |---|---|
+  | La policy pública es `estado = 'activo'` | y la única fila de `benefits` está **`inactivo`**: no la alcanza |
+  | Los campos en sí | `codigo` y `codigo_descuento` están **en NULL** |
+
+  O sea que no hay código que filtrar aunque la policy fallara. La protección real la da
+  §12 fase 2: el código se emite por persona y de un solo uso desde una Edge Function.
+  Diagnóstico original:** Es la limitación
   declarada de la fase 1 (12.8): ocultar el código en pantalla no impide leerlo por API. Se
   cierra sola cuando el contenido de `benefits` migre a `club_beneficios`, porque ahí el
   código es por persona y de un solo uso. Hasta entonces: **no poner en `requiere_acceso` un
@@ -1763,8 +1774,13 @@ para no volver a descubrir un hueco preguntando.
   probó: el único canje real se confirmó en 53 segundos. Es la rama que corre cuando el
   local se queda sin señal, o sea justo cuando nadie está mirando.
 
-- [ ] **12.10.13 — 🔴 El código del beneficio real está publicado, y se filtra por TRES
-  campos.** Esto **agrava y corrige a 12.10.2**, que lo describía como «lectura pública por
+- [x] ~~**12.10.13 — 🔴 El código del beneficio real está publicado, y se filtra por TRES
+  campos.**~~ **✅ CERRADO el 2026-09-02, y estructuralmente** (§12.10.16). Verificado en
+  producción el 2026-09-05: `benefits` tiene **1 fila y está `inactivo`**, y el adaptador
+  `mapearABeneficio()` **no copia** `codigo` ni `codigo_descuento` — así que la fuga no es
+  «no se muestra», es **que no hay de dónde mostrarla**. El texto original queda abajo
+  porque explica los tres campos por los que se filtraba, que es lo que hay que no repetir.
+  Diagnóstico original:** Esto **agrava y corrige a 12.10.2**, que lo describía como «lectura pública por
   API». Es peor: está **impreso en una página pública e indexable**. El mismo 30% de
   DigitalMatch vive en los dos catálogos con reglas opuestas —`benefits` con
   `requiere_acceso = false`, `club_beneficios` con `true`— y **el público anula al gateado:
@@ -1809,13 +1825,25 @@ para no volver a descubrir un hueco preguntando.
 
 #### C. Contenido y catálogo
 
-- [ ] **12.10.8 — El catálogo está partido en dos.** `/beneficios` lee `benefits` (viejo, 1
+- [x] ~~**12.10.8 — El catálogo está partido en dos.**~~ **✅ CERRADO el 2026-09-02.**
+  Verificado el 2026-09-05: `benefits` quedó con su única fila en `inactivo` y el nav
+  (`Header.jsx`) manda «Colaborá → Beneficios» a `/beneficios`, que ahora lee
+  `club_beneficios`. Diagnóstico original:** `/beneficios` lee `benefits` (viejo, 1
   fila, código estático) y `/club` lee `club_beneficios` (nuevo, con canje). §12.4 decidió
   deprecar el primero migrando su contenido, no romperlo. **Mientras las dos existan, la
   regla es: lo que se canjea vive en `/club`.** Migrar la fila de DigitalMatch y retirar la
   vieja cierra este punto y el 12.10.2 de una vez.
 
-- [ ] **12.10.14 — 🔴 `/club` es una página huérfana: no hay un solo enlace en el sitio.**
+- [x] ~~**12.10.14 — 🔴 `/club` es una página huérfana: no hay un solo enlace en el sitio.**~~
+  **✅ RESUELTO en lo que importaba, el 2026-09-02.** La queja concreta era que el nav
+  apuntaba al catálogo **viejo**; hoy apunta a `/beneficios`, que es el unificado.
+
+  ⚠️ **Pero queda una pregunta abierta que conviene no perder** (anotada el 2026-09-05):
+  después de unificar, `/beneficios` y `/club` leen **la misma tabla**, y `/club` sigue sin
+  ninguna entrada en el nav — solo se llega desde el CTA de un detalle. O son dos vistas con
+  trabajos distintos (vidriera / mostrador) y hay que decirlo en la interfaz, o una sobra.
+  **Es exactamente el patrón que ya costó dos veces** (§12.10.16 y §10.23): dos pantallas
+  que hablan de lo mismo sin que nadie decida cuál manda. Diagnóstico original:**
   Grep sobre todo `src/`: fuera de su propia carpeta, la única mención de `/club` es la
   definición de la ruta en `App.jsx`. No está en el `Header`, ni en `/beneficios`, ni en el
   carnet. **Se llega solo tipeando la URL.** Y el nav sí ofrece «Colaborá → Beneficios», que
@@ -1828,7 +1856,10 @@ para no volver a descubrir un hueco preguntando.
   que una que anda** — es el mismo patrón de §11.7.13, el reaper que existía sin que nada lo
   llamara, en la capa de navegación.
 
-- [ ] **12.10.15 — Unificar el catálogo necesita TRES columnas antes de poder migrar.**
+- [x] ~~**12.10.15 — Unificar el catálogo necesita TRES columnas antes de poder migrar.**~~
+  **✅ APLICADO el 2026-09-02** (`20260902120000_club_beneficios_vidriera.sql`). Verificado
+  en producción el 2026-09-05: `slug`, `instrucciones` e `imagen_url` existen en
+  `club_beneficios`. Diagnóstico original:**
   §12.4 decidió «deprecar el viejo migrando su contenido» y 12.10.8 lo hace sonar como mover
   una fila. No lo es: `club_beneficios` todavía no puede recibir todo ese contenido.
 
@@ -1852,9 +1883,14 @@ para no volver a descubrir un hueco preguntando.
   opcional. Si el join se escribe plano, la vidriera sale sin logo y nadie se entera hasta
   mirarla.
 
-- [ ] **12.10.9 — El club sigue sin socios.** 0 de 23 personas con acceso vigente, así que el
-  beneficio real está bloqueado para todo el mundo. **No es un problema del club**: es el
-  bloqueante de §10.17 y se resuelve con aportes, no con código.
+- [ ] 🟡 **12.10.9 — El club tiene UN socio.** Remedido contra producción el 2026-09-05:
+  **1 de 23 cuentas** tiene acceso vigente. Decía «0 de 23» y era cierto hasta que se cobró
+  la primera cuota real el 2026-09-02.
+
+  Lo que cambió no es cosmético: con ese socio se pudo **ejercitar el rechazo por
+  requisitos** (§12.11.1), que era la última rama del club sin correr contra la base. O sea
+  que el bloqueante técnico se levantó — **queda el de negocio**, que no se arregla con
+  código: hace falta gente aportando. Sigue siendo §10.17, no un problema del club.
 
 - [x] ~~**12.10.10 — Queda un beneficio de prueba en el catálogo.**~~ **✅ ARCHIVADO el
   2026-09-02** por el paso 2 de 12.10.16. Verificado en el sitio vivo: «Prueba interna»
@@ -1950,7 +1986,13 @@ para no volver a descubrir un hueco preguntando.
   la jornada que el problema era el instrumento y no lo medido. La regla que queda:
   **antes de creerle a una medición, medí el instrumento contra algo cuyo valor conozcas.**
 
-- [ ] **12.10.19 — Los dos bugs que el deploy hizo visibles, y la defensa que quedó.**
+- [x] ~~**12.10.19 — Los dos bugs que el deploy hizo visibles, y la defensa que quedó.**~~
+  **✅ CERRADO.** Los dos arreglados, la defensa quedó en `rutas-cta.test.js`, y la
+  «vidriera vacía» que este ítem declaraba como regresión temporal se cerró con el deploy
+  del front — `/beneficios/:slug` se viene mirando en el navegador desde entonces.
+  Se conserva porque **las dos lecciones valen más que el ítem**: un test que afirma un
+  valor escrito a mano no puede detectar que ese valor está mal, y una pieza nueva no se
+  agrega a una pantalla sin leer qué ya renderiza. Diagnóstico original:**
 
   Ninguno lo encontró un test: los encontró **mirar la pantalla desplegada**. Van dos
   jornadas seguidas así (§12.10.13 salió de abrir el sitio en un navegador).
