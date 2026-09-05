@@ -49,7 +49,13 @@ consulta legal; de infraestructura ya no queda nada bloqueando.
 de actividades y el esquema del apadrinamiento. Cuatro migraciones, validadas en
 PostgreSQL 15 y con `supabase/checks/membresia-check.sql` — **36 assertions, 0 FALLA**.
 
-✅ **APLICADAS EN PRODUCCIÓN el 2026-09-05**, con backup previo restaurado y probado.
+✅ **APLICADAS EN PRODUCCIÓN el 2026-09-05**, y **el front desplegado y verificado**:
+los cuatro símbolos nuevos (`mi_membresia`, `reclamar_huellas`, `huellas_sin_cuenta`,
+`mi_precio_actividad`) aparecen en `useContentQueries-DYpOLrFh.js` y el padrón en
+`AdminPanel-B01OEU--.js`. Siete rutas renderizadas con Chrome headless, todas con `<nav>`,
+`<footer>` y contenido propio, ninguna en los 25.900 bytes del 404. El detalle de una
+actividad **no muestra precio**, que es lo correcto con `precio_general = 0`.
+Con backup previo restaurado y probado.
 Verificado después de aplicar: el padrón tiene **1 miembro (N°1, alta 2026-09-02)** con su
 categoría, `acceso_vigente()` **sigue devolviendo `true`** para el socio vigente —que era
 el riesgo de la jornada—, y las 12 actividades quedaron en `precio_general = 0`, o sea que
