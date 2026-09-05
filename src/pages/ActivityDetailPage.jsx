@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
+import PrecioActividad from '@/components/Activities/PrecioActividad';
 
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -332,6 +333,11 @@ const ActivityDetailPage = () => {
               </div>
 
               {/* ✅ Fix \n (pro) */}
+              {/* Precio (ROADMAP 10.1.d). No renderiza nada si la actividad es
+                  gratuita, que hoy son las 12: aparece solo el dia que exista la
+                  primera arancelada. */}
+              <PrecioActividad activityId={activity.id} className="mb-8" />
+
               <div className="text-gray-600 mb-10 whitespace-pre-line leading-relaxed text-base">
                 {descBody}
               </div>

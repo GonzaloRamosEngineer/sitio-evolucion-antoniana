@@ -11,10 +11,26 @@ todo cambio de backend queda acá documentado.
 supabase/
   config.toml                  # project_id público (sin secretos)
   migrations/                  # SQL en orden por timestamp (YYYYMMDDHHMMSS_*.sql)
+  data/                        # cargas de datos de ESTE cliente. NO son migraciones
+  checks/                      # verificación de las RLS contra un Postgres real
   functions/
     _shared/cors.ts            # helpers CORS reutilizables
+    _shared/club-reglas.ts     # la lógica que DECIDE del club (pura, testeable)
     create-user/index.ts       # alta de usuarios con rol (service_role)
 ```
+
+**`migrations/` vs `data/` — la distinción importa y se confunde fácil.** En
+`migrations/` va lo que es igual para toda entidad: tablas, funciones, policies.
+En `data/` va lo que es de la Fundación y de nadie más: sus destinos, su
+categoría de miembro. Es la regla de ROADMAP §10.9 —*lo que varía por entidad va
+en datos*— aplicada a la carpeta.
+
+Consecuencia práctica: **`tools/db.sh apply` se niega a aplicar algo que no esté
+en `migrations/`**, a propósito. Las cargas de `data/` van por
+`cat archivo.sql | tools/db.sh sql`, y son idempotentes igual.
+
+⚠️ Al levantar una entidad nueva, `migrations/` se aplica entero y `data/`
+**no**: ahí está el contenido del primer cliente.
 
 ## Aplicar las migraciones
 
@@ -28,6 +44,14 @@ supabase login
 supabase link --project-ref lbtyxnbyetsvngsxczkt
 supabase db push            # aplica las migraciones pendientes al proyecto remoto
 ```
+
+## Verificar las RLS antes de aplicar
+
+`checks/` prueba que las policies se comporten como el código asume — los tests con
+mocks no pueden: prueban nuestro código, no la base. **Toda migración que toque una
+tabla que otorga algo** (`aportes`, `club_canjes`, `miembros`, `padrinazgos`) va con su
+check. Ver `checks/README.md`, que explica cómo correrlos en la versión de producción
+(**PostgreSQL 15**, no 17) y dos trampas que ya costaron tiempo.
 
 ## Base local para probar (Docker) y tests de integración
 

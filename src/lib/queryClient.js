@@ -37,6 +37,10 @@ export const queryKeys = {
   // elegibilidad del club, así que una sola invalidación por prefijo alcanza.
   elegibilidadClub: (userId) => ['acceso', userId, 'elegibilidad-club'],
   activities: ['activities'],
+  // Lleva `userId` en la clave a propósito: el precio DEPENDE de quién mira
+  // (categoría de miembro y descuento). Sin eso, al cambiar de sesión la
+  // siguiente persona vería el precio con descuento de la anterior.
+  precioActividad: (activityId, userId) => ['activities', activityId, 'precio', userId ?? 'anon'],
   userRegistrations: (userId) => ['registrations', userId],
   userMemberships: (userId) => ['memberships', userId],
   userDonations: (userId) => ['donations', userId],
@@ -48,6 +52,18 @@ export const queryKeys = {
   // la antigüedad y esta misma lista, así que una sola invalidación por prefijo
   // tiene que alcanzar a las tres.
   reclamables: (userId) => ['acceso', userId, 'reclamables'],
+  // Mismo prefijo, misma razón: reclamar una huella no cambia el acceso, pero
+  // el botón que la ofrece vive al lado del de aportes y los dos tienen que
+  // apagarse juntos. Una sola invalidación por prefijo alcanza a las dos listas.
+  huellas: (userId) => ['acceso', userId, 'huellas'],
+  // La condición institucional (§10.1.a) también va por usuario y bajo el mismo
+  // prefijo: el primer aporte que otorga acceso DA DE ALTA al miembro, así que
+  // reclamar cambia las dos cosas a la vez y no pueden quedar desfasadas.
+  membresia: (userId) => ['acceso', userId, 'membresia'],
+  reglasMembresia: ['reglas-membresia'],
+  padron: ['miembros'],
+  huellasSinCuenta: ['huellas-sin-cuenta'],
+  categoriasMiembro: ['categorias-miembro'],
   foundationMetrics: ['fundacion_metrics'],
   preinscriptions: ['preinscriptions'],
   destinos: ['destinos'],

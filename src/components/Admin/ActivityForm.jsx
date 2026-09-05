@@ -25,6 +25,10 @@ const ActivityForm = ({ onSave, onCancel, initialData, isLoading }) => {
   const [modality, setModality] = useState('');
   const [status, setStatus] = useState('Abierta');
   const [maxParticipants, setMaxParticipants] = useState('');
+  // Precio (ROADMAP §10.1.d). Vacío = 0 = gratuita, que es lo que son las 12
+  // actividades que existen hoy: aplicar la migración no volvió paga ninguna.
+  const [precioGeneral, setPrecioGeneral] = useState('');
+  const [precioSocio, setPrecioSocio] = useState('');
   const [unlimitedParticipants, setUnlimitedParticipants] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageDetailUrl, setImageDetailUrl] = useState('');
@@ -44,6 +48,12 @@ const ActivityForm = ({ onSave, onCancel, initialData, isLoading }) => {
       setStatus(initialData.status || 'Abierta');
       setUnlimitedParticipants(initialData.max_participants === null || initialData.max_participants === -1);
       setMaxParticipants(initialData.max_participants === null || initialData.max_participants === -1 ? '' : initialData.max_participants?.toString() || '');
+      setPrecioGeneral(
+        initialData.precio_general == null ? '' : String(initialData.precio_general)
+      );
+      // `null` y `0` NO son lo mismo acá: null = "aplicá el descuento de la
+      // categoría", 0 = "gratis para miembros". Un `|| ''` los aplastaría en uno.
+      setPrecioSocio(initialData.precio_socio == null ? '' : String(initialData.precio_socio));
       setImageUrl(initialData.image_url || '');
       setImageDetailUrl(initialData.image_detail_url || '');
       setInstagramUrl(initialData.instagram_url || '');
@@ -93,6 +103,9 @@ const ActivityForm = ({ onSave, onCancel, initialData, isLoading }) => {
       modality,
       status,
       max_participants: unlimitedParticipants ? null : parseInt(maxParticipants, 10),
+      precio_general: precioGeneral === '' ? 0 : Number(precioGeneral),
+      // Vacío -> null a propósito, no 0. Ver el comentario de la carga inicial.
+      precio_socio: precioSocio === '' ? null : Number(precioSocio),
       image_url: imageUrl || null,
       image_detail_url: imageDetailUrl || null,
       instagram_url: instagramUrl || null,
@@ -247,6 +260,54 @@ const ActivityForm = ({ onSave, onCancel, initialData, isLoading }) => {
                     <Label htmlFor="unlimitedParticipants" className="text-sm font-bold text-brand-dark cursor-pointer">
                         Sin límite de participantes
                     </Label>
+                </div>
+            </div>
+        </div>
+
+        {/* PRECIO — ROADMAP §10.1.d.
+            Dejar los dos vacíos es lo correcto para una actividad gratuita, que
+            hoy son todas. El CHECK `activities_precio_orden_chk` impide guardar
+            un precio de miembro MAYOR que el general: nadie decide que ser
+            miembro salga más caro, así que es un error de carga y no una
+            configuración posible. */}
+        <div className="mt-6 p-6 bg-brand-sand rounded-2xl border border-brand-primary/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label htmlFor="precioGeneral" className="font-bold text-brand-dark flex items-center gap-2">
+                        <Info className="w-4 h-4" /> Precio general
+                    </Label>
+                    <Input
+                        id="precioGeneral"
+                        type="number"
+                        value={precioGeneral}
+                        onChange={(e) => setPrecioGeneral(e.target.value)}
+                        placeholder="0 = gratuita"
+                        className="h-11 bg-white border-gray-200 rounded-xl"
+                        min="0"
+                        step="any"
+                    />
+                    <p className="text-xs text-brand-dark/55">
+                        Vacío o 0: la actividad es gratuita para todo el mundo.
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="precioSocio" className="font-bold text-brand-dark flex items-center gap-2">
+                        <Users className="w-4 h-4" /> Precio para miembros
+                    </Label>
+                    <Input
+                        id="precioSocio"
+                        type="number"
+                        value={precioSocio}
+                        onChange={(e) => setPrecioSocio(e.target.value)}
+                        placeholder="dejar vacío = descuento de la categoría"
+                        className="h-11 bg-white border-gray-200 rounded-xl"
+                        min="0"
+                        step="any"
+                    />
+                    <p className="text-xs text-brand-dark/55">
+                        Vacío: se aplica el descuento de la categoría de cada persona.
+                        Escribir 0 es distinto: significa gratis para miembros.
+                    </p>
                 </div>
             </div>
         </div>

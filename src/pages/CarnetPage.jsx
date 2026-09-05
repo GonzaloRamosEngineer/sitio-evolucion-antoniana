@@ -6,11 +6,14 @@ import { ShieldCheck, Clock, Lock, AlertTriangle, ArrowRight } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
-import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
+import { useMiAcceso, useMiAntiguedad, useMiMembresia } from '@/hooks/useContentQueries';
 import ReclamarAportes from '@/components/Acceso/ReclamarAportes';
 import {
   SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen, formatearFecha,
 } from '@/lib/acceso';
+import {
+  SIN_MEMBRESIA, estadoMembresia, etiquetaEstado, fraseEstado, etiquetaNumero,
+} from '@/lib/miembro';
 
 /**
  * Presentación de cada estado. Vive en un objeto y no en cadenas de ternarios
@@ -59,6 +62,11 @@ const CarnetPage = () => {
 
   const { data: acceso = SIN_ACCESO, isPending: cargandoAcceso } = useMiAcceso(userId);
   const { data: antiguedad } = useMiAntiguedad(userId);
+  // La condición institucional (§10.1.a). Es OTRA pregunta que el acceso, y por
+  // eso son dos consultas: alguien puede estar al día y suspendido, o en regla
+  // y con la cuota vencida. Las dos antigüedades salen de la misma función SQL
+  // (`antiguedad_socio`), así que esto NO es una segunda fuente de verdad.
+  const { data: membresia = SIN_MEMBRESIA } = useMiMembresia(userId);
 
   // Reloj en vivo. No es decoración: en la fase 1 el comercio MIRA el carnet en
   // vez de escanearlo (ROADMAP §12.8), así que lo único que distingue la
@@ -160,6 +168,21 @@ const CarnetPage = () => {
               )}
             </div>
 
+            {/* --- CONDICIÓN INSTITUCIONAL, cuando NO es la normal ---
+                Solo aparece si hay algo que explicar. Un cartel permanente que
+                diga "sos padrino activo" al lado de otro que ya dice "acceso
+                vigente" es ruido; uno que diga "estás suspendido" cuando el
+                acceso figura vigente es la única forma de que la persona
+                entienda por qué le rebotan las cosas. */}
+            {['suspendido', 'pendiente', 'baja'].includes(estadoMembresia(membresia)) && (
+              <div className="mt-8 rounded-sm border border-brand-dark/15 bg-white p-6 sm:p-8">
+                <h2 className="font-poppins font-bold text-lg text-brand-dark leading-tight">
+                  {etiquetaEstado(membresia)}
+                </h2>
+                <p className="mt-2 text-brand-dark/70 leading-relaxed">{fraseEstado(membresia)}</p>
+              </div>
+            )}
+
             {/* --- APORTES SIN VINCULAR (§10.18) ---
                 Va acá, entre el estado y la credencial, y no al pie: el caso
                 que resuelve es justamente el de quien lee "todavía no tenés
@@ -178,18 +201,41 @@ const CarnetPage = () => {
                     {user?.name || user?.email}
                   </span>
                 </div>
-                <span
-                  className={`text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full flex-shrink-0 ${
-                    acceso.tiene_acceso
-                      ? 'bg-brand-gold text-brand-dark'
-                      : 'bg-white/15 text-white/60'
-                  }`}
-                >
-                  {acceso.tiene_acceso ? 'Vigente' : 'Sin acceso'}
-                </span>
+                {/* Dos etiquetas y no una, porque son dos cosas distintas
+                    (§10.2): arriba la CONDICIÓN institucional —que sale del
+                    vocabulario de la entidad, no de la palabra "socio" escrita
+                    a mano— y abajo el ACCESO a beneficios, que depende del
+                    aporte. Un padrino suspendido con la cuota al día tiene que
+                    poder ver las dos cosas a la vez. */}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  {etiquetaEstado(membresia) && (
+                    <span
+                      className={`text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                        estadoMembresia(membresia) === 'activo'
+                          ? 'bg-white/15 text-brand-gold'
+                          : 'bg-white/10 text-white/55'
+                      }`}
+                    >
+                      {etiquetaEstado(membresia)}
+                    </span>
+                  )}
+                  <span
+                    className={`text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                      acceso.tiene_acceso
+                        ? 'bg-brand-gold text-brand-dark'
+                        : 'bg-white/15 text-white/60'
+                    }`}
+                  >
+                    {acceso.tiene_acceso ? 'Vigente' : 'Sin acceso'}
+                  </span>
+                </div>
               </div>
 
               <div className="px-6 sm:px-8 py-2">
+                {membresia?.numero != null && (
+                  <Dato etiqueta={etiquetaNumero()} valor={`N° ${membresia.numero}`} />
+                )}
+                {membresia?.categoria && <Dato etiqueta="Categoría" valor={membresia.categoria} />}
                 {user?.dni && <Dato etiqueta="Documento" valor={user.dni} />}
                 {antiguedad?.socio_desde && (
                   <Dato etiqueta="Parte de la comunidad desde" valor={formatearFecha(antiguedad.socio_desde)} />

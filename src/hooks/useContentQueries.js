@@ -9,14 +9,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@/lib/storage';
 import { getPreinscriptions } from '@/api/educationApi';
-import { getUserRegistrations } from '@/api/activitiesApi';
+import { getUserRegistrations, getMiPrecioActividad } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
 import {
   getMiAcceso,
   getMiAntiguedad,
   getDonacionesReclamables,
   reclamarDonaciones,
+  getHuellasReclamables,
+  reclamarHuellas,
+  getHuellasSinCuenta,
 } from '@/api/accesoApi';
+import { getMiMembresia, getReglasMembresia, getPadron, getCategoriasMiembro } from '@/api/miembroApi';
 import { getDestinos } from '@/api/destinosApi';
 import { getAportes } from '@/api/aportesApi';
 import { getGastos } from '@/api/gastosApi';
@@ -135,6 +139,114 @@ export const useReclamarDonaciones = (userId, options = {}) => {
     },
   });
 };
+
+/**
+ * Huellas reclamables: preinscripciones e inscripciones hechas sin cuenta
+ * (ROADMAP §10.1.c).
+ *
+ * Mismo `enabled` y misma trampa del `isPending` que las otras dos de acá
+ * arriba: deshabilitada NO queda en `isSuccess`, así que el consumidor combina
+ * con `Boolean(userId)`.
+ */
+export const useHuellasReclamables = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.huellas(userId),
+    queryFn: () => unwrap(getHuellasReclamables()),
+    enabled: Boolean(userId),
+    ...options,
+  });
+
+/**
+ * Reclamar TODO: aportes y huellas de una sola vez.
+ *
+ * Invalida `['acceso', userId]` por prefijo, que alcanza a las cinco cosas que
+ * pudieron cambiar: acceso, antigüedad, reclamables, huellas y **la membresía**
+ * — porque si entre lo reclamado había una donación que otorga acceso, el
+ * trigger acaba de dar de alta a la persona en el padrón.
+ */
+export const useReclamarHuellas = (userId, options = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(reclamarHuellas()),
+    ...options,
+    onSuccess: (data, ...resto) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.acceso(userId) });
+      options.onSuccess?.(data, ...resto);
+    },
+  });
+};
+
+/**
+ * Condición institucional + antigüedad, en una sola llamada (ROADMAP §10.1.a).
+ *
+ * Una sola query y no dos por la lección de §10.23: el carnet y el estado de
+ * cuenta muestran lo mismo, y dos fuentes es como llegaron a contradecirse.
+ */
+export const useMiMembresia = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.membresia(userId),
+    queryFn: () => unwrap(getMiMembresia()),
+    enabled: Boolean(userId),
+    ...options,
+  });
+
+/**
+ * Parámetros de membresía de la entidad. Sin `userId`: son públicos y no
+ * dependen de quién mire (`reglas_membresia` tiene lectura pública de la fila
+ * vigente, igual que `reglas_acceso`).
+ */
+export const useReglasMembresia = (options = {}) =>
+  useQuery({
+    queryKey: queryKeys.reglasMembresia,
+    queryFn: () => unwrap(getReglasMembresia()),
+    ...options,
+  });
+
+/**
+ * A cuánta gente NO reconoce el sistema, por fuente. Solo comisión: la función
+ * SQL rechaza al resto con 42501, así que un usuario común recibe un error y no
+ * una lista vacía — y eso está bien, porque una lista vacía se confundiría con
+ * "no hay nadie".
+ */
+export const useHuellasSinCuenta = (options = {}) =>
+  useQuery({
+    queryKey: queryKeys.huellasSinCuenta,
+    queryFn: () => unwrap(getHuellasSinCuenta()),
+    retry: false,
+    ...options,
+  });
+
+/** El padrón, para la comisión. La RLS decide qué devuelve; acá no se filtra. */
+export const usePadron = (options = {}) =>
+  useQuery({
+    queryKey: queryKeys.padron,
+    queryFn: () => unwrap(getPadron()),
+    ...options,
+  });
+
+/** Categorías activas. Lectura pública. */
+export const useCategoriasMiembro = (options = {}) =>
+  useQuery({
+    queryKey: queryKeys.categoriasMiembro,
+    queryFn: () => unwrap(getCategoriasMiembro()),
+    ...options,
+  });
+
+/**
+ * Precio de una actividad para quien está mirando (ROADMAP §10.1.d).
+ *
+ * SIN `enabled: Boolean(userId)`, y es a propósito: `mi_precio_actividad()`
+ * tiene EXECUTE para `anon` y devuelve el precio general cuando no hay sesión.
+ * Deshabilitarla dejaría al visitante sin ver ningún precio, que es justo la
+ * información que necesita para decidir si le conviene ser miembro.
+ */
+export const useMiPrecioActividad = (activityId, userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.precioActividad(activityId, userId),
+    queryFn: () => unwrap(getMiPrecioActividad(activityId)),
+    enabled: Boolean(activityId),
+    ...options,
+  });
 
 /** Los tres números de antigüedad (decisión D4). Solo para el carnet. */
 export const useMiAntiguedad = (userId, options = {}) =>
