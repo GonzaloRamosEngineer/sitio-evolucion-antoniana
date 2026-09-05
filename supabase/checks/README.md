@@ -20,6 +20,15 @@ la base.
   otorgaba **diez meses** de acceso porque se convertía con la regla proporcional de las
   donaciones. Trae el par que lo hace discriminar: R1 (una donación **sí** da 3 meses) al
   lado de R2 (una renovación del mismo monto da 1).
+- **`membresia-check.sql`** — lo que cierra §10: la figura institucional (`miembros`),
+  el reclamo universal de huellas, el precio de actividades y el apadrinamiento. Tres de
+  las cuatro piezas **otorgan algo** —condición, identidad o figurar sosteniendo un cupo—
+  así que lo que no puede fallar es que nadie se lo autoconceda. Trae los controles
+  positivos apareados con cada negativo, y **ejercita las dos puntas del interruptor**
+  `suspension_corta_acceso` (con `false` el suspendido conserva el acceso; con `true` lo
+  pierde), porque una opción que no hace nada y una que hace de más se ven igual desde
+  afuera. **No depende de ningún dato previo**: arma sus cuatro personas, sus destinos y
+  sus actividades. Ver más abajo por qué eso importa.
 - **`club-check.sql`** — el club fase 2 (§12). `club_canjes` otorga **valor económico**:
   del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
   `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al
@@ -56,14 +65,48 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/acceso-c
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/payer-email-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/reclamar-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/membresia-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
 
-# Leer el resultado: lo único que importa es que no haya ninguna línea FALLA.
+# Leer el resultado: que no haya ninguna línea FALLA.
 #   ... | grep -E 'FALLA|^ERROR'      -> sin salida = todo bien
+#
+# ⚠️ PERO CONTAR TAMBIÉN LOS **PASA**, y esto se aprendió el 2026-09-05:
+#   ... | grep -c 'PASA'
+# Un contenedor que todavía no terminó de inicializar acepta conexiones, hace
+# fallar las 21 migraciones, y después los siete checks dan **FALLA=0 con
+# PASA=0** — o sea, "todo bien" sin haber ejecutado una sola assertion. Cero
+# fallas y cero pruebas se ven idénticos si solo se mira una de las dos cifras.
+#
+# Referencia al 2026-09-05, sobre una base recién migrada:
+#   payer-email=8   reclamar=17   club=17   membresia=32
+#   rls=0  acceso=0  renovacion=0   <-- ver abajo, no es un error
 
 # 4. Limpiar
 docker rm -f pgtest
 ```
+
+## ⚠️ Tres de los checks no se autoevalúan
+
+`rls-check.sql` y `acceso-check.sql` **no tienen ni una assertion `PASA`/`FALLA`**:
+imprimen valores y errores esperados para que los lea una persona. `renovacion-check.sql`
+tiene solo las `FALLA`, sin el `PASA` del otro lado.
+
+O sea que en esos tres **«0 FALLA» es cierto aunque no se haya ejecutado nada**, y la
+regla de arriba —«lo único que importa es que no haya FALLA»— no alcanza para ellos.
+
+Para saber si rompiste algo con una migración nueva, el método que sí sirve es
+**comparar la salida contra un contenedor sin tu migración**:
+
+```bash
+# normalizar uuids y el orden en que se entrelazan stdout/stderr
+norm(){ sed -E 's/[0-9a-f-]{36}/UUID/g' "$1" | sort; }
+diff <(norm antes.txt) <(norm despues.txt)
+```
+
+Sin normalizar da falsos positivos: los uuid son aleatorios en cada corrida y las líneas
+de `ERROR` aparecen intercaladas en distinto orden. **Los checks nuevos van con `PASA` y
+`FALLA`**, para no depender de esto.
 
 ## ⚠️ Contra producción, solo la mitad de abajo
 
@@ -90,6 +133,36 @@ Dos trampas de ese `sed`, las dos aprendidas rompiéndolo el 2026-08-16:
 
 **Al agregar checks nuevos, van con savepoints.** Es lo que los hace correr en
 cualquier base sin dejar rastro.
+
+### ⚠️ Y que armen su propio escenario: hay checks que hoy no verifican nada
+
+`rls-check.sql` saca sus uuids con `\gset` sobre `public.users`:
+
+```sql
+SELECT id AS zz_uid_comision FROM public.users
+ WHERE role IN ('admin','comision_directiva') LIMIT 1 \gset
+```
+
+En una base recién migrada **no hay usuarios**, así que `\gset` no encuentra fila, la
+variable queda sin definir, y cada `:'zz_uid_comision'` de abajo revienta con
+`syntax error at or near ":"`. Medido el 2026-09-05: son **7 sentencias**, y se llevan
+puestas las assertions de **T14, T15 y T16** — justamente las tres de `aportes`, que es
+*la tabla que otorga privilegios*.
+
+No se nota porque el archivo **ya emite errores esperados** (los `permission denied` de
+los controles negativos), así que siete errores más pasan por parte del paisaje. Solo
+aparece si se cuentan: `grep -c 'syntax error'`.
+
+Contra producción sí corren, porque ahí hay usuarios. Pero eso significa que la mitad de
+`rls-check` **solo se verifica donde el README dice que hay que correr solo la otra
+mitad**. `membresia-check.sql` arma su escenario entero por este motivo.
+
+⚠️ Otra trampa del mismo escenario, y esta hace fallar el check con un mensaje que apunta
+al lugar equivocado: `UPDATE public.users SET role = 'comision_directiva'` **no hace
+nada** si quien lo ejecuta no es admin — `trg_prevent_privilege_escalation` revierte la
+columna en silencio, sin error. El síntoma es un control positivo fallando con "solo la
+comisión puede", que se lee como un bug del módulo cuando lo roto es el andamio. Se
+resuelve con `DISABLE TRIGGER` / `ENABLE TRIGGER` dentro de la transacción.
 
 ✅ **Orden de las migraciones (resuelto el 2026-08-16, §10 fase 0).** Antes había que
 aplicar **solo el baseline**, porque las 5 migraciones de junio lo precedían por

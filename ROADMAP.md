@@ -21,76 +21,88 @@
 > 👉 **Si buscás un `§N` y no está en este archivo, está en `HISTORIAL.md` con el mismo
 > número.** Las referencias cruzadas de abajo (§10.17, §11.7.12, …) siguen siendo válidas.
 >
-> **La numeración de los ítems no se toca** (`3.4`, `6.7`, …): hay **102 archivos** de
-> código con comentarios que la citan (remedido el 2026-09-05; decía 85 el 2026-09-02 y 35
-> antes). Por eso mover una sección a `HISTORIAL.md` **nunca** implica renumerarla.
+> **La numeración de los ítems no se toca** (`3.4`, `6.7`, …): hay **122 archivos** de
+> código que la citan — remedido el 2026-09-05 al cerrar §10, con
+> `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`. Decía 102 antes de esta jornada, 85 el
+> 2026-09-02 y 35 antes. Por eso mover una sección a `HISTORIAL.md` **nunca** implica
+> renumerarla.
+>
+> ⚠️ **El comando va junto al número, y esto se aprendió acá:** las cifras anteriores se
+> anotaron sin decir cómo se midieron, así que al remedir no hay forma de saber si el
+> número creció o cambió el patrón. Con el mismo `grep`, contando solo `§`, dan **95**.
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-05, club cerrado de punta a punta)
+## 🚦 Por dónde arrancar (actualizado 2026-09-05, §10 cerrado)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-**Estado en una línea:** el circuito de ingresos está cerrado, la fase 2 del club también, y
-el 2026-09-02 **se cobró la primera cuota real y ya hay un socio con acceso vigente** — así
-que el bloqueante que dominó este archivo durante semanas («nadie tiene acceso») **está
-levantado**, y lo que queda es de contenido y de producto, no de infraestructura.
+**Estado en una línea:** el circuito de ingresos está cerrado, el club está cerrado, y
+desde el 2026-09-05 **§10 también** — el modelo de dominio completo, que era la sección
+más larga y más vieja del archivo. Lo que queda es de contenido, de gente y de una
+consulta legal; de infraestructura ya no queda nada bloqueando.
 
-⚠️ **Y el primer cobro real destapó cuatro cosas que ningún test podía ver.** Tres en el
-registro del cobro (§10.22): el socio mensual no tenía los 30 días de gracia, y un cobro
-mensual de $50.000 habría otorgado **diez meses** de acceso. Y una en las pantallas
-(§10.23): `/dashboard` y `/carnet` le decían cosas contradictorias a la misma persona,
-porque el dashboard nunca migró a la capa de acceso e inventaba su propia taxonomía.
-Y una tercera cosa que el mismo intento destapó (§10.24): al suscribirse, el error de
-MercadoPago se mostraba como **JSON crudo** en un cartel rojo, y con sesión iniciada
-**no había forma de usar otro email** — así que el único email posible era el que
-MercadoPago rechazaba.
+**Lo que cerró §10** (relato en `HISTORIAL.md` §10.27): la figura institucional
+(`miembros`, con el comportamiento en datos), el reclamo universal de huellas, el precio
+de actividades y el esquema del apadrinamiento. Cuatro migraciones, validadas en
+PostgreSQL 15 y con `supabase/checks/membresia-check.sql` — **36 assertions, 0 FALLA**.
 
-Y mirando esas pantallas **con sesión** aparecieron dos más (§10.25): el descuento estaba
-pintado como un botón y no lo era —«no me deja clickear nada»— y el mensaje de requisitos
-no se entendía, porque nunca decía cuál era el requisito.
+✅ **APLICADAS EN PRODUCCIÓN el 2026-09-05**, con backup previo restaurado y probado.
+Verificado después de aplicar: el padrón tiene **1 miembro (N°1, alta 2026-09-02)** con su
+categoría, `acceso_vigente()` **sigue devolviendo `true`** para el socio vigente —que era
+el riesgo de la jornada—, y las 12 actividades quedaron en `precio_general = 0`, o sea que
+en pantalla no cambió nada, que es lo que se esperaba.
 
-**Todo arreglado y aplicado.** Las moralejas: *un cobro que sale bien no prueba que se
-registró bien*, *dos pantallas que se contradicen no producen ningún error*, *un mensaje
-de error que no dice qué hacer es tan inútil como no tenerlo*, y ***un texto correcto no
-es un texto entendible, y solo uno de los dos tiene tests*.**
+⚠️ **Y tres premisas de §10 resultaron falsas al ir a construirlas**, que es la novena,
+décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
 
-⚠️ **Siete de los hallazgos de esta jornada salieron de mirar pantallas y ninguno de un
-test.** Cuatro de ellos solo se ven **con sesión iniciada**, donde el chequeo de navegador
-de §B no llega.
+| Decía | Es |
+|---|---|
+| «no existe la entidad socio» → hay que crear `socios` con voto | Una **fundación no tiene socios ni voto**. La tabla es `miembros` y el vocabulario es un dato |
+| `registrations` y educación son el mismo problema de identidad | `registrations` tiene **0 invitados**. Educación tiene **156 personas** que el sistema no reconoce |
+| El precio de actividades es «la mitad del valor de ser socio» | Las **12 actividades son gratuitas**. La columna hacía falta igual, pero hoy no cambia nada |
 
 **Lo primero, en orden:**
 
-1. ✅ **El módulo del club está cerrado de punta a punta.** El catálogo unificado (12.10.16
-   a 12.10.18), la economía calibrada (§12.11) y **el rechazo por requisitos ejercitado
-   contra la base con una cuenta real** (§12.11.1, §10.26): `403 requisitos`,
-   `faltan_meses: 5`, `falta_monto: 25000`. La vidriera anuncia y la función decide **con la
-   misma frase**. No queda nada del club sin probar salvo lo listado en §12.10.
+1. 🔴 **Publicar las campañas que están en borrador.** Decidido el 2026-09-05 como lo
+   primero después de aplicar. **Es contenido, no código**, y enciende el circuito
+   `aporte → destino → gasto → rendición` que está construido, probado y sin estrenar:
+   de $12.241 aportados, **$12.141 fueron al destino institucional** — no porque la gente
+   lo eligiera, sino porque es el único publicado. Hay **8 campañas en borrador** y la
+   única activa con meta lleva $100 de $410.000. Según §10.7 este circuito es lo que
+   ningún competidor tiene; hoy no lo ve nadie.
+   ⚠️ **Regla de §10.8, y sigue en pie:** no publicar una campaña sin poder rendirla
+   después. `Collaborate.jsx:348` ya promete «recibís comprobante oficial».
 
-2. 🔴 **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). **Es lo único con
-   urgencia real, y no es técnico.** Ticket bajo y frecuencia alta construyen el hábito que
-   un descuento de una sola vez no puede construir: hoy el club tiene **un** beneficio, de
-   ticket alto y canjeable **una sola vez por persona**. DigitalMatch es una vidriera
-   excelente y un cimiento malo.
+2. 🔴 **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Ticket bajo y
+   frecuencia alta construyen el hábito que un descuento de una sola vez no puede
+   construir: hoy el club tiene **un** beneficio, de ticket alto y canjeable una sola vez
+   por persona.
 
-3. 🟡 **El segundo socio.** Hay **1 persona con acceso vigente** de 23 cuentas (§12.10.9,
-   remedido el 2026-09-05). El circuito funciona entero; lo que falta es gente adentro, y
-   eso no se arregla con código. La cuota queda en **$5.000, simbólica y a propósito** — se
-   buscó volumen de socios, no margen por socio.
+3. 🟡 **Las 156 personas de Educación — la decisión está tomada a medias.** El 2026-09-05
+   se decidió **mostrárselas a la comisión y no contactarlas desde el sistema**: el bloque
+   ya está en `/admin → Padrón` y dice «156 sin cuenta de 160». Lo que falta es que la
+   entidad decida si les escribe, y con qué. **No es una decisión técnica**, y tiene una
+   arista de consentimiento: dieron su email en un formulario de preinscripción a un
+   programa educativo, entre el 2026-02-13 y el 2026-03-22.
 
-4. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
-   archivo**: `.env.db`. ⚠️ Este archivo dijo cuatro veces que también estaba en
-   `~/.config/antoniana/db.url` — **ese archivo no existe**. Y rotar **no toca producción**:
-   el webhook usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el único
-   consumidor es `tools/db.sh`.
-5. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
-   único `high`. Y después, en rama propia, **`react-router-dom` → `7.18.3`**, que es el
-   resto. ⚠️ Este renglón decía «la única vulnerabilidad viva»: son cuatro (6.7).
-6. **La deuda del club está toda en §12.10**, ordenada por lo que duele. Lo más barato con
-   más valor: la **UI de anulación** (12.10.6), que ahora sí se puede probar porque existe un
-   canje confirmado real.
+4. 🟡 **El segundo socio.** 1 persona con acceso vigente de 23 cuentas. El circuito
+   funciona entero; falta gente adentro, y eso no se arregla con código.
+
+5. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
+   archivo**: `.env.db`. ⚠️ Ese archivo dijo cuatro veces que también estaba en
+   `~/.config/antoniana/db.url` — **no existe**. Rotar **no toca producción**: el webhook
+   usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el único consumidor es
+   `tools/db.sh`.
+
+6. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
+   único `high`. Después, en rama propia, **`react-router-dom` → `7.18.3`**.
+
+7. **Deuda menor, toda junta:** la del club en §12.10 (lo más barato con más valor sigue
+   siendo la **UI de anulación**, 12.10.6), el apadrinamiento público en **§13** (bloqueado
+   por legal, no por código) y **7 assertions muertas en `rls-check.sql`** — ver abajo.
 
 **Antes de tocar nada, tres comprobaciones que ya evitaron daño real:**
 
@@ -104,50 +116,68 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 `valida_firma_mp: true`, `backfill_habilitado: false`. Si `backfill_habilitado` dice `true`,
 **alguien dejó abierta la ruta temporal**: borrar `BACKFILL_TOKEN` en Render.
 
-**Las seis reglas que este proyecto pagó caro:**
+**Las ocho reglas que este proyecto pagó caro:**
 
-1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Cinco
-   afirmaciones resultaron falsas el 2026-08-30/31 (§11.6.2) y **cuatro más** el 2026-08-30
-   (§11.7.2). Van nueve. No es mala suerte: es lo que le pasa a un documento que se escribe
-   una vez y se relee nunca.
+1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Van **doce**
+   afirmaciones de este repo que resultaron falsas: cinco el 2026-08-30/31 (§11.6.2),
+   cuatro el 2026-08-30 (§11.7.2) y tres el 2026-09-05 (§10.27). No es mala suerte: es lo
+   que le pasa a un documento que se escribe una vez y se relee nunca.
 2. **Una verificación tiene que poder fallar.** Hacela fallar una vez antes de creerle
-   (§11.6.3). Y en seguridad, probá **las dos puntas**: que lo ilegítimo se rechace y que lo
-   legítimo pase.
+   (§11.6.3). Y en seguridad, probá **las dos puntas**: que lo ilegítimo se rechace y que
+   lo legítimo pase. ⚠️ **El 2026-09-05 esto atrapó un test decorativo**: «sin email
+   verificado no se reclama nada» pasaba porque no había nada que reclamar, no porque la
+   verificación funcionara. Se descubrió **saboteando** `email_verificado()` a propósito.
+   Y destapó además que **7 sentencias de `rls-check.sql` mueren sin ejecutar su
+   assertion** en una base sin usuarios — justo las tres de `aportes`. Ver
+   `supabase/checks/README.md`.
 3. **Migración a Docker primero**, nunca directo a producción (§B) — y **en la versión de
    producción**, que es PostgreSQL **15**, no 17 (§11.7.8).
 4. **Verificá en un navegador si tocaste una página** — rutas reales, y **contenido**, no
    tamaño: el 404 mide 25.900 bytes y `/club` 25.646. ⚠️ **Y confirmar contenido tampoco
-   alcanza: hay que MIRAR la pantalla, en ancho de teléfono** (§11.7.10).
+   alcanza: hay que MIRAR la pantalla, en ancho de teléfono** (§11.7.10), **y la consola**
+   (§10.26).
 5. **Escribir la función no es conectarla.** El reaper del club existió tres días con su
    peligro documentado en un comentario y **sin que nada lo llamara** (§11.7.13). Antes de
    dar algo por hecho, preguntá quién lo invoca.
 6. **Un circuito que sale bien a la primera no probó el camino del fracaso.** El canje real
-   se confirmó en 53 segundos, así que nunca ejercitó qué pasa cuando alguien abandona — que
-   según §12.3 es el caso normal.
+   se confirmó en 53 segundos, así que nunca ejercitó qué pasa cuando alguien abandona —
+   que según §12.3 es el caso normal.
 7. **Una pantalla nueva que habla de algo que otra ya explicaba: preguntá de dónde saca el
    dato.** No «¿está bien?», sino **«¿es el mismo lugar?»**. Pasó con `/beneficios` vs
-   `/club` (§12.10.16) y otra vez con `/dashboard` vs `/carnet` (§10.23). Dos pantallas
-   contradictorias **no tiran ningún error**: compilan, pasan el lint y se ven bien por
-   separado. Van cinco hallazgos de la jornada que salieron de mirar pantallas y ninguno de
-   un test.
+   `/club` (§12.10.16) y otra vez con `/dashboard` vs `/carnet` (§10.23).
+8. **Una configuración declarada y sin consumidor no gobierna nada.** `entidad.vocabulario`
+   existió tres semanas con la respuesta correcta adentro —`'padrino'`, no `'socio'`— y
+   mientras nadie la leyera, §10.2 seguía diseñando la tabla equivocada (§10.27). Cuando
+   agregues una opción, agregá en el mismo commit quién la lee.
 
 ---
 
 ## Estado
 
 Las nueve sesiones planificadas (A-I) están cerradas y desplegadas. El sitio está sano en
-producción, con lint en **0 errores (50 warnings)**, **368 tests en 31 archivos** y `vite@7`.
-(Decía «174» hasta el 2026-09-02 y «265» hasta el 2026-09-05: las dos eran mediciones
-viejas que nadie volvió a tomar. **Remedir antes de citar** — son treinta segundos.)
+producción, con lint en **0 errores (50 warnings)**, **387 tests en 32 archivos** y `vite@7`.
+(Decía «174» hasta el 2026-09-02, «265» hasta el 2026-09-05 y «368» hasta el cierre de
+§10: las tres eran mediciones viejas que nadie volvió a tomar. **Remedir antes de citar** —
+son treinta segundos.)
 
-Lo que queda son **dos cosas de naturaleza distinta**:
+⚠️ **Corregido el 2026-09-05: este bloque decía que el bloqueante era «las donaciones
+llegan sin saber quién donó, así que el acceso no le alcanza a nadie» (§10.17).** Está
+resuelto desde el 2026-08-30 —la persona reclama sus aportes con email verificado— y hay
+un socio con acceso vigente desde el 2026-09-02. **No queda ningún bloqueante técnico.**
+
+Lo que queda:
 
 | | Qué | Dónde |
 |---|---|---|
-| **Bloqueante** | Las donaciones llegan sin saber quién donó, así que el acceso no le alcanza a nadie | §10.17 |
+| **Contenido** | 8 campañas en borrador. El circuito de rendición existe y no lo ve nadie | «Por dónde arrancar» |
 | **Deuda** | 2 ítems técnicos + deuda menor. Nada bloquea nada | §A abajo |
-| **Producto** | Precio de socio en actividades, socios formales | §10 abajo |
-| **Producto** | El club de beneficios: el canje y el comercio como actor | §12 abajo |
+| **Bloqueado por legal** | El apadrinamiento de cara al público. El esquema está; falta saber qué se puede publicar | §13 abajo |
+| **Producto** | El club de beneficios: comercios de consumo cotidiano | §12 abajo |
+| **Producto** | Invitar a las 156 personas de Educación que el sistema ya puede reconocer | «Por dónde arrancar» |
+
+✅ **Cerrado el 2026-09-05: §10 entero** — la figura institucional (`miembros`), el reclamo
+universal de huellas, el precio de actividades y el esquema del apadrinamiento. Relato en
+`HISTORIAL.md` §10.27.
 
 ⚠️ **Corregido el 2026-09-02 — este párrafo decía «la única vulnerabilidad viva es
 `react-router-dom`».** Hoy `npm audit` reporta **4**: aparecieron `browserslist` (**high**,
@@ -287,6 +317,32 @@ entonces (b) para métricas. Mi sospecha, por la naturaleza de los datos, es que
 | `donations.donation_type` es texto libre y de él depende que una renovación entre como cuota | Detectado el 2026-09-02 al arreglar §10.22 | La columna **no tiene CHECK** (verificado en producción): vale `'única'` o `'suscripción'` por convención del webhook. `aporte_desde_donacion()` acepta las dos grafías de «suscripción», pero si un futuro escritor manda otra palabra, la renovación vuelve a clasificarse como donación **sin ningún error** — y el síntoma sería un socio sin gracia, no una excepción. Un `CHECK (donation_type IN (...))` lo vuelve estructural. |
 | Tres de las cuatro reglas de `src/lib/erroresPago.js` nunca se vieron disparar | Escritas el 2026-09-02 con §10.24 | Solo `guest_site_mismatch` es una firma **observada**; `mismo_usuario`, `email_invalido` y `monto_invalido` están contra firmas plausibles de MercadoPago, no contra un error real. El campo `observado` de cada regla lo dice. Cuando aparezca uno de verdad, **confirmar el texto contra lo que llegó** en vez de darlo por bueno — una regla que nunca se disparó puede estar mal escrita y nadie se entera. El camino de descarte cubre el caso igual, así que no urge. |
 | Micro-tipografía `text-[9-10px]` en paneles internos | `HISTORIAL.md` §5, ítem 5.7 | Backlog opcional declarado. Solo si molesta en uso real. |
+
+---
+
+### ⚠️ El backup de `tools/db.sh dump` no restaura tal cual en PostgreSQL 15
+
+Descubierto el 2026-09-05 **probando el backup antes de usarlo**, que es lo que el propio
+script pide («un backup sin restaurar no es un backup»).
+
+`tools/db.sh` usa la imagen de Postgres **17** como cliente, así que `pg_dump` es 17 y
+emite en la línea 13 un `SET transaction_timeout = 0;` — un parámetro que **PostgreSQL 15
+no conoce**. Producción es 15.
+
+Con `psql` a secas es un `ERROR` que se saltea y el resto entra bien (probado: restauró los
+23 usuarios, 6 aportes, 11 destinos y 160 preinscripciones). **Pero con
+`-v ON_ERROR_STOP=1` el restore aborta en la línea 13** — y el día que haga falta un
+backup, ese es el flag que uno usa.
+
+Mitigación mientras tanto, una línea:
+
+```bash
+sed '/transaction_timeout/d' backup.sql | psql ... -v ON_ERROR_STOP=1
+```
+
+El arreglo de fondo es que `dump` use una imagen 15, o que se le pase `--no-comments`… no:
+la opción correcta es alinear la versión del cliente con la del servidor. No se tocó en el
+momento para no cambiar `IMAGEN`, que también gobierna `apply` y `sql`.
 
 ---
 
@@ -453,7 +509,23 @@ tablas sensibles, y `anon` ya no conserva ningún GRANT destructivo — solo `SE
 
 El detalle del fix, el SQL y el punto ciego que lo causó viven en `HISTORIAL.md`.
 Lo único que sigue abierto de este frente es el resto de 10.1.g, en §A.
-## 10. Modelo de dominio: aporte → acceso (propuesta, 2026-08-16)
+## 10. Modelo de dominio: aporte → acceso ✅ CERRADO el 2026-09-05
+
+> **Esta sección está cerrada.** Las cinco fases de §10.3 están aplicadas, las seis
+> decisiones de negocio de §10.4 están tomadas y viven en datos, y `10.1.a` a `10.1.g`
+> están los siete resueltos. Lo único que sigue abierto y se sacó a §13 es el
+> **apadrinamiento de cara al público**, que está bloqueado por una consulta legal y no
+> por código.
+>
+> **Se conserva entera igual**, y no por archivo: es el razonamiento que explica por qué
+> el esquema es como es, y ya evitó tres errores caros. El relato de cómo se cerró está en
+> `HISTORIAL.md` §10.27.
+>
+> ⚠️ **Tres premisas de esta sección resultaron falsas al construirla**, y están corregidas
+> in situ: `10.1.a` (diseñaba `socios` con voto, para una fundación que no tiene voto),
+> `10.1.c` (culpaba a `registrations`, y el problema era diez veces más grande y estaba en
+> educación) y `10.1.d` («la mitad del valor de ser socio», sobre 12 actividades que son
+> todas gratuitas). **Van doce afirmaciones de este repo que se cayeron al verificarlas.**
 
 ### 10.0 — Por qué existe esta sección
 
@@ -484,17 +556,26 @@ Ninguno de los ítems de abajo es un bug. Son piezas del modelo que nunca se esc
 >
 > | | Estado al 2026-09-02 | Cómo se verificó |
 > |---|---|---|
-> | 10.1.a | 🔴 abierto | no existen `socios` ni `categorias_socio` |
+> | 10.1.a | ✅ resuelto 2026-09-05 | `miembros` + `categorias_miembro` + `reglas_membresia`. **No se llama `socios`**: ver abajo |
 > | 10.1.b | ✅ resuelto | `requiere_acceso` en `benefits` y `club_beneficios` |
-> | 10.1.c | 🟡 parcial | `donations` ya vincula; `registrations` y `education_preinscriptions` no |
-> | 10.1.d | 🔴 abierto | 0 columnas de precio en `activities` |
+> | 10.1.c | ✅ resuelto 2026-09-05 | reclamo universal: `fuentes_reclamables` + `reclamar_huellas()` |
+> | 10.1.d | ✅ resuelto 2026-09-05 | `precio_general` / `precio_socio` + `precio_actividad_para()` |
 > | 10.1.e | ✅ resuelto por otro camino | `destinos.tipo` + `donations.destino_id` |
 > | 10.1.f | ✅ resuelto | índice `uq_membresia_viva_por_destino` |
 > | 10.1.g | ✅ en su parte peligrosa | `anon` ya no tiene UPDATE/DELETE/TRUNCATE |
 
-- [ ] 🔴 **10.1.a — No existe la entidad socio.** *(sigue abierto — es la fase 4 de 10.3. La
-  capa de acceso de §10.17 resolvió la **consecuencia** —quién accede— pero no la **condición
-  institucional**: número de socio, antigüedad formal, categoría y voto.)*
+- [x] ✅ **10.1.a — No existe la entidad socio.** **RESUELTO el 2026-09-05**, y con una
+  corrección al diseño de §10.2 que conviene leer antes de tocar nada:
+  **la tabla se llama `miembros`, no `socios`, y en ningún dato aparece la palabra
+  "socio".** §10.2 la había diseñado con `otorga_voto` y categorías estatutarias, que es
+  el vocabulario de una **asociación civil**. Pero `entidad.tipo = 'fundacion'`: una
+  fundación no tiene asociados, ni asamblea, ni voto — tiene consejo de administración.
+  Construir `socios` habría metido el vocabulario del cliente 2 dentro del cliente 1.
+  Lo que varía por entidad quedó en `reglas_membresia`: `modo_alta`
+  (automática ↔ aprobación de comisión), `otorga_voto`, `renumera_al_reingresar` y
+  `suspension_corta_acceso`. Las palabras, en `entidad.vocabulario` — que **existía desde
+  el 2026-08-16 con la respuesta correcta adentro (`'padrino'`) y no la consumía nadie**.
+  El relato está en `HISTORIAL.md` §10.27. *Diagnóstico original abajo:*
   Existen `users` (cuenta de login, `baseline:583`) y `memberships` (suscripción de
   cobro de MercadoPago, `baseline:446`). No existe número de socio, fecha de alta como
   socio, categoría ni estado institucional. `memberships` modela **un cobro recurrente**,
@@ -512,9 +593,19 @@ Ninguno de los ítems de abajo es un bug. Son piezas del modelo que nunca se esc
   privilegio. **Esta es la causa de que los módulos se sientan sueltos**: no falta
   pegamento entre ellos, falta el concepto que los enhebra.
 
-- [ ] 🟡 **10.1.c — Cuatro identidades paralelas de la misma persona.** *(parcial: `donations`
-  ya trae `user_id` y `payer_email`, y §10.19 dio el reclamo de aportes con email verificado.
-  **Siguen sin reconciliar `registrations` y `education_preinscriptions`.**)*
+- [x] ✅ **10.1.c — Cuatro identidades paralelas de la misma persona.** **RESUELTO el
+  2026-09-05 con un mecanismo, no con un parche por tabla**: `fuentes_reclamables` es un
+  registro de qué tablas guardan huellas de gente sin cuenta, y `reclamar_huellas()` las
+  vincula todas con email verificado. Un cliente nuevo agrega una fila, no escribe SQL.
+  Tiene **lista negra**: `donations`, `memberships`, `aportes`, `miembros`, `users` y
+  `club_canjes` se rechazan, porque vincularlas no es reconocer a alguien sino
+  **otorgarle privilegios** — para eso está `reclamar_donaciones()` (§10.19), que se
+  invoca, no se copia.
+  ⚠️ **Y este ítem tenía mal el diagnóstico.** Nombraba a `registrations` y a educación
+  como el mismo problema: `registrations` tiene 5 filas y **0 invitados**, ahí no había
+  nada que reconciliar. El problema era uno solo y diez veces más grande —
+  `education_preinscriptions`: **160 filas, 156 emails distintos, y solo 4 con cuenta**,
+  contra 23 usuarios y 1 con acceso vigente. *Diagnóstico original abajo:*
   | Dónde | Campos | Se vincula a `users`? |
   |---|---|---|
   | `users` | `email` (unique), `dni`, `phone` | es la cuenta |
@@ -524,9 +615,16 @@ Ninguno de los ítems de abajo es un bug. Son piezas del modelo que nunca se esc
   Nada reconcilia los cuatro. La misma persona puede donar, preinscribir a un hijo,
   anotarse de invitada y ser socia, y el sistema la ve como cuatro personas distintas.
 
-- [ ] 🔴 **10.1.d — Las actividades no tienen precio.** *(sigue abierto, verificado el
-  2026-09-02: cero columnas de precio/arancel en `activities`. Es la mitad NO hecha de la
-  fase 2 de 10.3 — y es «la mitad del valor de ser socio» según este mismo ítem.)*
+- [x] ✅ **10.1.d — Las actividades no tienen precio.** **RESUELTO el 2026-09-05**:
+  `precio_general` (0 = gratuita) + `precio_socio` (NULL = aplicar el descuento de la
+  categoría; 0 = gratis para miembros), y `precio_actividad_para()` como única fuente del
+  cálculo — la card, el detalle y el checkout preguntan y no reimplementan nada.
+  ⚠️ **Pero la premisa de este ítem era falsa y conviene no repetirla.** Decía que la
+  distinción gratis/pago es «la mitad del valor de ser socio». Medido el 2026-09-05: hay
+  **12 actividades y ninguna menciona arancel, precio ni cuota**. Son todas gratuitas de
+  hecho, así que al aplicar la migración **en la pantalla no cambia nada**. Se construyó
+  igual, y por otro motivo: el día que exista la primera actividad arancelada el esquema
+  tiene que estar, porque si no ese día se cobra por afuera. *Diagnóstico original:*
   `activities` (`baseline:333`) tiene título, descripción, fecha, duración, modalidad,
   cupo, imágenes y redes. **Ningún campo de precio, arancel o costo.** La distinción
   "algunas actividades son gratis y otras pagas" —que es la mitad del valor de ser
@@ -746,9 +844,9 @@ pregunta original** (por qué los módulos se sienten desconectados).
 |---|---|---|---|
 | **0** | ~~Arreglar el orden de migraciones~~ **✅ HECHO 2026-08-16** — ver `HISTORIAL.md` | ~2-3 h | Prerrequisito, ya cubierto |
 | **1** | ~~`aportes` + `acceso_vigente()` + `tiene_acceso()` + backfill~~ **✅ HECHO 2026-08-30** (§10.17) | ~2-3 días | Historial de aportes en el panel del socio |
-| **2** | ⚠️ **A MEDIAS** — `requiere_acceso` en beneficios **✅ hecho**; `precio_general`/`precio_socio` en actividades **🔴 sin empezar** (10.1.d) | ~1-2 días lo que falta | **Acá la cuota empieza a valer algo** |
+| **2** | ~~`requiere_acceso` en beneficios + `precio_general`/`precio_socio` en actividades~~ **✅ COMPLETA 2026-09-05** (10.1.d) | — | ⚠️ Con 12 actividades gratuitas, **hoy no cambia nada en pantalla**. Ver 10.1.d |
 | **3** | ~~`campanas` + FK desde donaciones~~ **✅ RESUELTO POR OTRO CAMINO**: no hay tabla `campanas`; §10.9 unificó en `destinos` (`tipo`) + `donations.destino_id`. Falta solo la **barra de progreso pública** | ~medio día lo que falta | Donaciones dirigidas |
-| **4** | 🔴 `socios` + `categorias_socio` + número y antigüedad (10.1.a) — **la única fase entera sin empezar**. El carnet ya existe, pero muestra *acceso*, no *condición de socio* | ~2 días | Carnet, antigüedad, categorías |
+| **4** | ~~`socios` + `categorias_socio`~~ **✅ HECHA 2026-09-05 como `miembros`** (10.1.a). El carnet ya muestra número, categoría y condición, además del acceso | — | Carnet, antigüedad, categorías, padrón en `/admin` |
 | **5** | ~~Unicidad de membresía activa (10.1.f)~~ **✅** + achicar GRANTs (10.1.g) **✅ en su parte peligrosa**; queda el `SELECT` amplio | casi nada | Higiene |
 
 **La fase 0 ya está hecha** (2026-08-16). Era el prerrequisito de todo lo demás: las
@@ -771,6 +869,26 @@ Hay que volcar `memberships` y `donations` existentes a `aportes`. Requisitos:
 ---
 
 ### 10.4 — Decisiones de negocio pendientes (no son técnicas)
+
+> ✅ **Las cinco están tomadas y viven en datos** (2026-09-05). Se conservan enteras porque
+> explican *por qué* cada respuesta es la que es — y porque en otra entidad la respuesta
+> puede ser distinta, que es exactamente el punto de §10.5.
+>
+> | | Respuesta | Dónde vive |
+> |---|---|---|
+> | 1. Meses por donación | Proporcional, piso = la cuota | `reglas_acceso` (§10.17) |
+> | 2. Donante vs. socio | Mismo catálogo; la condición institucional es aparte | `miembros` ≠ `aportes` (§10.2) |
+> | 3. Gracia al fallar el cobro | 30 días, solo para aportes tipo cuota | `reglas_acceso.dias_gracia` |
+> | 4. Antigüedad y número al reingresar | **Antigüedad nunca se reinicia** (`antiguedad_socio()` la deriva de los aportes); el **número se conserva** salvo que la entidad pida lo contrario | `reglas_membresia.renumera_al_reingresar` |
+> | 5. Beneficios exclusivos | Excepción, no regla: default `false` | `benefits.requiere_acceso` |
+>
+> **Y apareció una sexta que §10.2 no había previsto:** *¿suspender a alguien le quita los
+> beneficios, o solo la condición institucional?* Las dos respuestas son legítimas y
+> ninguna es «la del software». Default `false` —el conservador— en
+> `reglas_membresia.suspension_corta_acceso`.
+>
+> La sexta de §10.7 —*¿la entidad está dispuesta a rendir cuentas por campaña?*— quedó
+> respondida por los hechos: `/rendicion` existe y está publicada.
 
 Ninguna de estas la puede tomar quien escribe el código:
 
@@ -1048,11 +1166,11 @@ de los tutores, qué se puede publicar y qué no. No es una decisión de arquite
 | Cobro recurrente y puntual (MercadoPago) | ✅ Funciona |
 | Roles, RLS, panel admin, portal de comisión | ✅ Funciona |
 | Storage privado + documentos versionados (→ comprobantes) | ✅ Reusable tal cual |
-| Campañas con meta y estado | ❌ No existe |
-| Libro de aportes con destino | ❌ No existe (10.2 lo diseña) |
-| **Gastos + comprobante + balance por campaña** | ❌ **No existe. Es la mitad faltante** |
-| Cupos/becas y apadrinamiento con beneficiario | ❌ No existe (y el UI ya lo promete) |
-| Rendición pública | ❌ No existe |
+| Campañas con meta y estado | ✅ `destinos` (§10.9), 11 cargados |
+| Libro de aportes con destino | ✅ `aportes` (§10.11) |
+| **Gastos + comprobante + balance por campaña** | ✅ `gastos` + `/rendicion` (§10.12) |
+| Cupos/becas y apadrinamiento **sin** beneficiario identificado | ✅ `padrinazgos` + `hitos_destino` (2026-09-05). ⚠️ La **vidriera pública** va en §13: falta legal |
+| Rendición pública | ✅ `/rendicion` |
 
 **No es "deuda técnica": es funcionalidad que nunca se construyó.** La deuda real que sí
 bloquea es corta: `donation_type` es texto libre sin escritor (10.1.e), `memberships` no
@@ -1065,7 +1183,7 @@ tiene destino ni unicidad (10.1.f), y la migración de seguridad de §C sigue si
 | **1** | `campanas` (tipo, meta, estado) + `aportes` con `campana_id` + elegir destino en el checkout | ~1 semana |
 | **2** | `gastos` + comprobante reusando Storage + balance por campaña | ~1 semana |
 | **3** | Rendición pública: barra de progreso y "así se gastó" | ~4-5 días |
-| **4** | Cupos/becas + apadrinamiento anonimizado + reporte al padrino | ~1 semana + legal |
+| **4** | ~~Cupos/becas + apadrinamiento anonimizado + reporte al padrino~~ **✅ EL ESQUEMA, 2026-09-05.** El sistema **no tiene ninguna columna donde guardar la identidad de un beneficiario**, así que las dos reglas de arriba se cumplen por estructura y no por disciplina. Falta la **vidriera pública** → §13 | hecho + legal |
 
 ⚠️ **Regla de lanzamiento: no publicar campañas antes de que funcione la fase 2.**
 Prometer "te muestro en qué se gastó" y no mostrarlo es peor que no prometerlo — y
@@ -1186,6 +1304,42 @@ sucesivas de «lo siguiente, en orden», cada una superada por la siguiente y ni
 borrada. §11.3 todavía encabezaba con `MP_WEBHOOK_SECRET`, que está hecho desde el
 2026-08-31. **Tres listas de prioridades que se contradicen son peor que ninguna.** La
 única lista viva es «Por dónde arrancar».
+## 13. Apadrinamiento de cara al público — bloqueado por legal, no por código
+
+> Se sacó de §10.8 el 2026-09-05 **para que §10 pudiera cerrarse sin esconder un
+> bloqueo**. Tres listas de prioridades que se contradicen ya costaron caro una vez
+> (§10.10); un ítem trabado dentro de una sección «cerrada» es la misma trampa.
+
+**Qué está hecho:** el esquema entero. `padrinazgos` con cupos y su contador,
+`hitos_destino` con el reporte agregado, `reporte_destino()` público, `mis_padrinazgos()`
+para quien sostiene. Ejercitado en `membresia-check.sql` (T13 a T16).
+
+**La garantía, y es estructural:** en el sistema **no existe ninguna columna donde
+guardar la identidad de un beneficiario** — no hay nombre, ni edad, ni foto, ni DNI, ni
+diagnóstico, ni FK a una tabla de chicos, porque esa tabla tampoco existe. Y
+`hitos_destino` **exige `cantidad`** cuando el destino es `anonimizado`, lo que obliga a
+que el impacto se cuente («24 entrenamientos») en vez de narrarse sobre un chico.
+
+**Qué falta, en orden:**
+
+1. 🔴 **La consulta legal.** Como el sistema no guarda ningún dato personal de menores, ya
+   **no es sobre qué se guarda sino sobre qué se publica**: qué se puede mostrar de un
+   programa con chicos y con qué consentimiento de los tutores. Es una consulta más chica
+   que la de §10.8, pero sigue siendo previa a publicar un destino padrinable.
+2. 🟡 **La vidriera y el checkout recurrente dirigido.** Hoy hay 2 destinos `padrinable`
+   —uno en borrador— **sin cupos cargados** y con $0 recaudado. El esquema los soporta;
+   falta la pantalla y que el checkout de suscripción pueda apuntar a uno.
+3. 🟡 **El UI ya promete lo que todavía no existe** (§10.8): `MembershipList.jsx:84` habla
+   de «red de padrinos», `DashboardHeader.jsx:113` muestra el rol `'Padrino'` y
+   `membershipApi.js:190` manda «Beca mensual» a MercadoPago. Ahora hay dónde apoyar esas
+   palabras, pero hasta que exista la vidriera **siguen prometiendo de más**.
+
+⚠️ **Regla de lanzamiento, la misma de §10.8:** no publicar destinos padrinables antes de
+que el reporte de impacto tenga algo adentro. Prometer «te muestro qué pasó con tu beca» y
+no mostrarlo es peor que no prometerlo.
+
+---
+
 ## 12. Club de beneficios: el canje (propuesta, 2026-08-30)
 
 ### 12.0 — Qué es esto y cómo se relaciona con §10

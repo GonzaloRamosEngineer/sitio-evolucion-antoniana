@@ -93,6 +93,34 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   - Un componente que use estos hooks necesita `QueryClientProvider` en sus tests (ver `PartnersAdmin.test.jsx`): cliente nuevo por caso y `retry: false`.
 - **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
 - **Acceso del socio (aporte → acceso, ROADMAP §10)**: la regla es *dos maneras de aportar (cuota o donación), una sola consecuencia (acceso a beneficios)*. Vive **en SQL**: `aportes` es el libro (escritura solo `service_role`, alimentado por los triggers de `memberships`/`donations`), y `tiene_acceso()` / `mi_acceso()` / `mi_antiguedad()` son la única fuente de la regla. Desde el front se consulta por RPC con `src/api/accesoApi.js` + `useMiAcceso()`; las reglas de presentación (bloqueo, estados, formato) están en `src/lib/acceso.js` y **no se duplican en las páginas**. `/carnet` es la credencial del socio. ⚠️ El bloqueo de un beneficio es **UX, no seguridad**: `benefits.codigo` sigue siendo público (ver la limitación en ROADMAP §12.8).
+- **Condición institucional (ROADMAP §10.1.a) — NO es el acceso**: `miembros` +
+  `categorias_miembro` + `reglas_membresia`. Son **dos preguntas distintas** y el sistema
+  tiene que poder hacer cada una por separado: alguien puede estar al día con su aporte y
+  **suspendido por la comisión**, o en regla y con la cuota vencida. El acceso se deriva de
+  `aportes`; la condición es un dato propio. Se consulta con `mi_membresia()` (trae también
+  la antigüedad, para que el carnet haga UNA llamada) vía `src/api/miembroApi.js`, y las
+  reglas de presentación viven en `src/lib/miembro.js`.
+  ⚠️ **La tabla NO se llama `socios`, y es a propósito.** `entidad.tipo = 'fundacion'`: una
+  fundación no tiene asociados ni voto. **Cómo se llama esa figura de cara a la gente sale
+  de `entidad.vocabulario`** (`'padrino'` acá, `'asociado'` en una cámara), nunca escrito a
+  mano en un componente. El alta la da un trigger sobre `aportes` cuando el aporte otorga
+  acceso —y **no reactiva a un suspendido**: pagar no revierte una sanción—. Cambiar un
+  estado va por `cambiar_estado_miembro()`, no por UPDATE directo.
+  ⚠️ **El alta asigna `categorias_miembro.por_defecto`** (una sola, garantizada por índice
+  único parcial). Sin ninguna marcada, todo el mundo queda con `categoria_id` NULL y el
+  descuento en 0: la tabla de categorías existe y no gobierna nada. La categoría de la
+  Fundación se carga con `supabase/data/seed_categoria_miembro_fundacion.sql` — una sola,
+  'General', 0% de descuento, porque hoy las 12 actividades son gratuitas.
+- **Reclamo universal de huellas (§10.1.c)**: qué tablas guardan rastros de gente sin cuenta
+  es un **dato** (`fuentes_reclamables`), no código; `reclamar_huellas()` las vincula con
+  email verificado. Tiene lista negra: `donations`, `memberships`, `aportes`, `miembros`,
+  `users` y `club_canjes` **no** se pueden registrar ahí, porque vincularlas no es
+  reconocer a alguien sino **otorgarle privilegios**. Para las donaciones sigue estando
+  `reclamar_donaciones()`, que es lo único que otorga acceso.
+- **Precio de actividades (§10.1.d)**: `precio_general` (0 = gratis) y `precio_socio`
+  (NULL = aplicar el descuento de la categoría; 0 = gratis para miembros). El número que se
+  le muestra a una persona sale **siempre** de `mi_precio_actividad()`, nunca de una cuenta
+  hecha en el front: es una cifra que alguien va a pagar.
 - **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
@@ -157,12 +185,15 @@ nadie lo notara):
   razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
   motivo documentado.
 
-**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **102 archivos** de código
-en comentarios (remedido el 2026-09-05; decía ~35, y el ROADMAP decía 85). Mové ítems entre archivos si hace falta, pero no los renumeres.
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **122 archivos** de código
+(remedido el 2026-09-05 al cerrar §10, con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`;
+decía 102 antes de la jornada). Mové ítems entre archivos si hace falta, pero no los
+renumeres. ⚠️ **Al remedir, citá el comando**: sin él no se sabe si el número creció o
+cambió el patrón.
 
 Estado al **2026-09-05** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **368 tests en 31 archivos** (más los del
+cuyo arreglo es react-router v7 —un major—. **387 tests en 32 archivos** (más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
@@ -181,7 +212,11 @@ afirmaciones de este repo que resultaron falsas** y tres verificaciones que no v
 nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda abierta del
 club vive toda junta en §12.10.**
 
-**Tres cosas que costaron trabajo real y conviene no volver a aprender:**
+⚠️ **`tools/db.sh dump` produce un backup que NO restaura con `ON_ERROR_STOP=1`.** El
+cliente es `pg_dump` **17** y producción es **15**: el dump trae `SET transaction_timeout`,
+que 15 no conoce. Se saltea con `sed '/transaction_timeout/d'`. Ver `ROADMAP.md` §A.
+
+**Cuatro cosas que costaron trabajo real y conviene no volver a aprender:**
 - **Antes de escribir una migración, `git fetch` y conectate a la base y mirá.** El
   2026-08-30 se escribieron tres commits contra un esquema que el repo describía mal
   (`HISTORIAL.md`, Sesión J) y sobre una copia local 20 commits atrás.
@@ -191,3 +226,7 @@ club vive toda junta en §12.10.**
 - **En una integración con un tercero, probá el camino de ERROR.** El webhook tomaba el
   cuerpo de error de MercadoPago como si fuera un pago y perdía cobros en silencio; estaba
   así desde el primer día y lo destapó simular una notificación (§10.21).
+- **Una configuración declarada y sin consumidor no gobierna nada.** `entidad.vocabulario`
+  existió tres semanas con la respuesta correcta adentro —`'padrino'`, no `'socio'`— y
+  mientras nadie la leyera, el ROADMAP siguió diseñando la tabla equivocada (§10.27).
+  Cuando agregues una opción de configuración, agregá en el mismo commit quién la lee.

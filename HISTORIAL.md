@@ -2852,6 +2852,178 @@ verifica una pantalla en el navegador, **mirar también la pestaña de red**, no
 
 ---
 
+### 10.27 — El cierre de §10: cuatro piezas, y tres premisas que no se sostenían (2026-09-05)
+
+§10 era la sección más larga del ROADMAP y llevaba abierta desde el 2026-08-16. Lo que
+quedaba de ella no era código a medias: eran **tres fases que nunca se empezaron** y una
+lista de decisiones de negocio sin tomar.
+
+Antes de escribir nada se releyó §10 **contra la base**, que es la regla 1. Tres de sus
+premisas no se sostenían, y las tres habrían llevado a construir mal:
+
+**1. «El precio de las actividades es la mitad del valor de ser socio» (§10.1.d).**
+Hay 12 actividades y **ninguna menciona arancel, precio ni cuota** en su descripción. Son
+todas gratuitas de hecho. La fase 2, «acá la cuota empieza a valer algo», no podía valer
+nada mientras la oferta propia fuera gratis. Se construyó igual —con la decisión tomada
+explícitamente— pero por otro motivo: el día que exista la primera actividad arancelada,
+el esquema tiene que estar, porque si no ese día se cobra por afuera. Al aplicarlo, las
+doce quedan en `precio_general = 0` y **en la pantalla no cambia nada**, que es lo honesto.
+
+**2. §10.2 diseñó `socios` + `categorias_socio` con `otorga_voto`.** Es el vocabulario de
+una asociación civil. Pero `entidad.tipo = 'fundacion'`, y **una fundación no tiene
+asociados, ni asamblea, ni voto**: tiene consejo de administración y beneficiarios.
+Escribir `socios` habría metido el vocabulario del cliente 2 dentro del cliente 1 —
+exactamente lo que §10.9 mandó no hacer. El repo ya lo sabía sin haberlo escrito:
+`entidad.vocabulario.aportante` decía 'padrino' desde el 2026-08-16, **y no lo consumía
+nadie**. Una configuración declarada y sin consumidor parece existir y no gobierna nada.
+
+**3. §10.1.c nombra a `registrations` y a educación como el mismo problema.** No lo son.
+`registrations` tiene 5 filas y **0 invitados**: ahí no hay nada que reconciliar.
+`education_preinscriptions` tiene **160 filas con 156 emails distintos** (feb–mar 2026), y
+**solo 4** coinciden con una cuenta. Contra 23 usuarios y 1 con acceso vigente.
+
+Ese último número reordenó la prioridad de la sección entera: **la base de contactos más
+grande de la Fundación es siete veces el sistema, y el sistema la ve como nadie.**
+
+#### Qué se construyó
+
+| Migración | Qué resuelve |
+|---|---|
+| `20260905120000_membresia_institucional` | `miembros` + `categorias_miembro` + `reglas_membresia`. La figura, con el comportamiento en datos |
+| `20260905130000_reclamo_universal` | `fuentes_reclamables` + `huellas_reclamables()` + `reclamar_huellas()` |
+| `20260905140000_actividades_precio` | `precio_general` / `precio_socio` + `precio_actividad_para()` |
+| `20260905150000_padrinazgos_y_reporte` | `padrinazgos` + cupos + `hitos_destino` + `reporte_destino()` |
+
+**La tabla se llama `miembros` y no `socios`, y en ningún dato aparece la palabra
+"socio".** Lo que varía por entidad quedó como parámetro: `modo_alta`
+(automática ↔ por aprobación de comisión), `otorga_voto`, `renumera_al_reingresar`
+(§10.4 pregunta 4, que llevaba tres semanas sin responder) y `suspension_corta_acceso`.
+
+Ese último es el más delicado y merece su renglón: **¿suspender a alguien le quita los
+beneficios, o solo la condición institucional?** Las dos respuestas son legítimas y
+ninguna es «la del software». El default es `false` —el conservador: quitarle los
+beneficios a alguien es una segunda decisión, no un efecto lateral de la primera— y el
+check ejercita **las dos puntas**, porque una opción que no hace nada y una que hace de
+más se ven idénticas desde afuera.
+
+**El reclamo universal es un mecanismo, no un parche por tabla.** §10.19 había resuelto el
+caso de `donations` con una función dedicada; escribir ahora `reclamar_preinscripciones()`,
+y mañana otra, es tres veces la misma lógica de seguridad, y la tercera copia es donde se
+olvida el `email_verificado`. La lista de qué se puede reclamar es un DATO, con **lista
+negra**: `donations`, `memberships`, `aportes`, `miembros`, `users` y `club_canjes` se
+rechazan al registrarse, porque vincularlas no es reconocer a alguien sino **otorgarle
+privilegios**. `reclamar_huellas()` invoca a `reclamar_donaciones()` en vez de copiarla.
+
+**El apadrinamiento cumple las dos reglas de §10.8 por estructura, no por disciplina.** En
+ese archivo **no existe ninguna columna donde guardar la identidad de un beneficiario**:
+no hay nombre, ni edad, ni foto, ni DNI, ni diagnóstico, ni FK a una tabla de chicos —
+porque esa tabla tampoco existe. No se puede filtrar lo que no se puede guardar. Y
+`hitos_destino` **exige `cantidad` cuando el destino es anonimizado**: obliga a que el
+hito sea un agregado («24 entrenamientos») en vez de un relato sobre un chico. Es un
+empujón del esquema; los filtros de texto se evaden.
+
+Como el sistema no guarda ningún dato personal de menores, la consulta legal pendiente
+pasa a ser sobre **qué se publica**, no sobre qué se guarda. Es más chica, pero sigue
+siendo previa a publicar un padrinable con fotos.
+
+#### Lo que encontró el check, y que ningún test iba a encontrar
+
+`membresia-check.sql`: **36 assertions** — 32 al escribirlo, más 4 que llegaron con la
+categoría por defecto y el resumen para la comisión. Controles positivos apareados con
+cada negativo.
+Se lo hizo fallar **tres veces a propósito** antes de creerle (regla 2), y la tercera es
+la que valió:
+
+- **Sabotaje 1** — abrir `miembros` a `authenticated`: T1 y T2 gritaron. ✅
+- **Sabotaje 2** — sacar el trigger que exige agregado en los hitos: T15 gritó. ✅
+- **Sabotaje 3** — hacer que `email_verificado()` devolviera `true` siempre: **el check
+  siguió pasando.**
+
+T10 decía «sin email verificado no se reclama nada» y pasaba **porque a Beto no se le
+había dejado ninguna huella**: pasaba por vacío, no por verificación. Una prueba que no
+puede fallar es decorado. Se le agregó una preinscripción a Beto y ahora el sabotaje 3
+hace fallar tres assertions.
+
+⚠️ **Y armando el escenario apareció algo preexistente en `rls-check.sql`.** Saca sus
+uuids con `\gset` sobre `public.users`; en una base recién migrada no hay usuarios, la
+variable queda sin definir, y **7 sentencias mueren con `syntax error at or near ":"` sin
+llegar a ejecutar su assertion** — se llevan puestas T14, T15 y T16, que son justamente
+las tres de `aportes`, *la tabla que otorga privilegios*. No se nota porque el archivo ya
+emite errores esperados y siete más pasan por paisaje. Contra producción sí corren, pero
+contra producción el README manda correr **solo la otra mitad**. Queda anotado en
+`supabase/checks/README.md`; `membresia-check.sql` arma su escenario entero por eso.
+
+⚠️ **Segunda trampa del mismo escenario:** `UPDATE public.users SET role =
+'comision_directiva'` **no hace nada** si quien lo ejecuta no es admin —
+`trg_prevent_privilege_escalation` revierte la columna en silencio, sin error. El síntoma
+fue un control positivo fallando con «solo la comisión puede», que se lee como un bug del
+módulo cuando lo roto es el andamio. Es el modo de falla de §11.4, y el README de la
+carpeta ya lo tenía anotado con un ⚠️ que nadie relacionó.
+
+#### Verificación
+
+Las **21 migraciones aplican desde cero en PostgreSQL 15** (la versión de producción, no
+17) y **convergen al reaplicarse**. Los seis checks previos dan **0 FALLA antes y
+después** —se comparó contra un contenedor sin las migraciones nuevas, porque «no rompí
+nada» sin línea de base es una afirmación sin respaldo—. `npm test`: **387 en 32
+archivos** (eran 368). Lint 0 errores, build limpio.
+
+⚠️ **`acceso_vigente()` se redefinió**, y eso es lo más riesgoso de la jornada: la
+consumen el club, el carnet y el dashboard. Se tocó la existente en vez de crear una
+segunda porque **una segunda fuente de verdad sobre el acceso es el bug de §10.23**, y no
+se repite a propósito. Con el default (`suspension_corta_acceso = false`) el
+comportamiento es idéntico al anterior, y el check lo ejercita en las dos direcciones.
+
+#### Aplicado en producción, y lo que apareció al aplicarlo
+
+Las cuatro migraciones se aplicaron el mismo 2026-09-05, y **al ir a cargar la categoría
+única apareció que la decisión no se podía cumplir**: el trigger de alta automática
+insertaba con `categoria_id` en NULL, así que la categoría sembrada **no la iba a tener
+nadie** y `descuento_actividades()` seguiría devolviendo 0 para todo el mundo. La tabla de
+categorías habría quedado como un ABM que no gobierna nada — *el mismo modo de falla que
+`entidad.vocabulario`, dos veces en la misma jornada*.
+
+Se corrigió dentro de `20260905120000` en vez de apilar una quinta migración, porque **no
+estaba aplicada en ningún lado todavía**: se agregó `categorias_miembro.por_defecto` con
+índice único parcial (una sola), `categoria_miembro_por_defecto()`, y la asignación en el
+trigger, en `solicitar_membresia()` y en el backfill.
+
+**El resultado en producción, verificado después de aplicar:**
+
+| | |
+|---|---|
+| Padrón | **1 miembro, N°1, alta 2026-09-02**, con categoría — el backfill tomó `min(acceso_desde)` |
+| `acceso_vigente()` | **sigue devolviendo `true`** para el socio vigente ← el riesgo de la jornada |
+| Actividades | 12 en `precio_general = 0`: en pantalla **no cambió nada**, como se esperaba |
+| Lo que verá la comisión | «Preinscripción a Educación: **156 sin cuenta de 160**» |
+
+⚠️ **Y el backup destapó una trampa que estaba desde siempre.** `tools/db.sh` imprime «un
+backup sin restaurar no es un backup», así que se lo restauró en Docker antes de tocar
+producción. **No restaura tal cual:** el cliente es `pg_dump` **17** y producción es
+PostgreSQL **15**, así que el dump trae en la línea 13 un `SET transaction_timeout = 0;`
+que 15 no conoce. Con `psql` a secas es un ERROR que se saltea y todo lo demás entra bien
+—restauró 23 usuarios, 6 aportes, 11 destinos, 160 preinscripciones—, pero **con
+`-v ON_ERROR_STOP=1` aborta en la línea 13**, que es exactamente el flag que uno usa el
+día que necesita el backup de verdad. Queda anotado en §A del ROADMAP.
+
+#### Las dos moralejas de la jornada
+
+**1. Una configuración declarada y sin consumidor no gobierna nada.**
+`entidad.vocabulario` existía hacía tres semanas con la respuesta correcta adentro
+—'padrino', no 'socio'— y mientras nadie la leyera, §10.2 seguía diseñando la tabla
+equivocada. Y volvió a pasar el mismo día con `categorias_miembro`: la tabla, el ABM y la
+función de descuento estaban, y sin `por_defecto` nadie iba a caer en ninguna categoría.
+**No alcanza con escribir la decisión en el lugar correcto: hasta que algo la lee, es un
+comentario.** Cuando agregues una opción de configuración, agregá en el mismo commit quién
+la lee.
+
+**2. Probá el backup antes de necesitarlo.** El script lo venía pidiendo por escrito y
+nadie lo había hecho; se hizo una vez y apareció que no restaura con el flag con el que
+uno restaura. Es el mismo principio que «una verificación tiene que poder fallar»,
+aplicado a la red de seguridad en lugar de a las pruebas.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

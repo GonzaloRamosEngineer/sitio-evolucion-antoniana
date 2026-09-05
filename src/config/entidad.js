@@ -78,10 +78,19 @@ export const entidad = {
   // producto se sienta propio depende de que hable el idioma del rubro, y eso
   // no justifica un fork: es un dato. Ver ROADMAP §10.9.
   //
-  // ⚠️ Todavía no lo consume nadie: se declara acá junto con el modelo de §10.9
-  // para que las pantallas de aportes nazcan usándolo en vez de escribir
-  // "socio" a mano y tener que barrerlo después. Si al implementar §10.9 alguna
-  // clave sobra o falta, esto se ajusta — no es un contrato cerrado.
+  // ✅ Ya lo consume `src/lib/miembro.js` (2026-09-05), y por ahí el carnet, el
+  // padrón de la comisión y el precio de actividades. Estuvo declarado y sin
+  // usar tres semanas, que es justo el estado en el que una configuración
+  // parece existir y no gobierna nada.
+  //
+  // ⚠️ POR QUÉ ESTO NO ES COSMÉTICA. Al construir la fase 4 de §10 apareció que
+  // §10.2 había diseñado una tabla `socios` con `otorga_voto` y categorías
+  // estatutarias — el vocabulario de una ASOCIACIÓN CIVIL. Pero `tipo` de acá
+  // arriba dice `fundacion`, y una fundación no tiene asociados, ni asamblea,
+  // ni voto: tiene consejo de administración. La tabla se llamó `miembros`, sin
+  // la palabra "socio" en ningún dato, y quién es esa figura lo decide este
+  // objeto. Un refugio de animales dirá 'padrino', una cámara 'asociado', y
+  // ninguno de los tres necesita un fork.
   vocabulario: {
     aportante: 'padrino',        // 'socio' | 'asociado' | 'padrino' | 'miembro'
     aportantePlural: 'padrinos',
