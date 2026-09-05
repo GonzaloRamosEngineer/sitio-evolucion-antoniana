@@ -166,7 +166,25 @@ const Dashboard = () => {
 
       {/* --- HERO SECTION --- */}
       <section className="bg-brand-dark pt-32 pb-56 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04] mix-blend-overlay"></div>
+        {/*
+          ACÁ HABÍA UNA TEXTURA TRAÍDA DE UN DOMINIO AJENO:
+          `bg-[url('https://grainy-gradients.vercel.app/noise.svg')]`, resto del
+          scaffold original. Se sacó el 2026-09-05 y **no cambia nada en
+          pantalla**, porque esa URL devuelve 404: la textura nunca se vio.
+          Apareció en la consola del dueño del proyecto mientras probaba otra
+          cosa.
+
+          Lo que sí hacía era pedirle un archivo a `grainy-gradients.vercel.app`
+          —un dominio que no controlamos— **en cada carga del panel, que es una
+          pantalla con sesión iniciada**. Un asset de terceros no es gratis
+          aunque sea decorativo: quien lo sirva ve la visita, y el día que
+          devuelva algo distinto de un 404 lo estaríamos pintando adentro de
+          nuestra página.
+
+          Si alguna vez se quiere el grano de vuelta, va como data: URI en el
+          CSS propio. No se agrega acá porque hoy no se ve nada y agregarlo
+          sería un cambio visual que nadie pidió.
+        */}
         <div className="absolute -top-24 -right-24 w-[600px] h-[600px] bg-brand-primary/10 blur-[150px] rounded-full" />
         
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-10 text-center md:text-left">

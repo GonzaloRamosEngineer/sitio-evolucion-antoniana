@@ -1651,7 +1651,7 @@ por entidad va en datos).
 
 #### Lo que queda pendiente de esto
 
-- [ ] **12.11.1 — Ejercitar el rechazo con una cuenta real.** Se probó que las funciones
+- [x] ~~**12.11.1 — Ejercitar el rechazo con una cuenta real.**~~ **✅ HECHO el 2026-09-05** — respuesta real abajo. Se probó que las funciones
   arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 35 tests. **Pero el camino
   «tiene acceso y NO cumple los requisitos» nunca corrió contra la base**, y es la rama
   nueva.
@@ -1696,6 +1696,20 @@ por entidad va en datos).
   ⚠️ **Controles**: sin sesión la misma llamada da `401 codigo_error: "sesion"` (probado),
   que confirma que responde la función y no el gateway. Y `403 sin_acceso` sería un
   resultado distinto: significaría que el problema es el aporte, no el umbral.
+
+  #### ✅ Corrido el 2026-09-05, con la cuenta del primer socio real
+
+  ```
+  HTTP 403 {
+    error: 'Este beneficio pide 6 meses de aporte o $30.000 en total. Vas por 1 mes
+            y $5.000, así que te faltan 5 meses o $25.000.',
+    codigo_error: 'requisitos', faltan_meses: 5, falta_monto: 25000
+  }
+  ```
+
+  **Los cuatro campos, exactos.** La rama nueva de §12.11 corrió contra la base por
+  primera vez y decidió bien. Nada se escribió: el `limite_por_persona = 1` del socio
+  sigue intacto, que es lo que hacía segura esta prueba.
 
   ✅ **El caso real ya existe (2026-09-02).** Hay un socio con acceso vigente, **1 mes
   aportado y $5.000 acumulados**, y DigitalMatch pide 6 meses o $30.000: cae exactamente en

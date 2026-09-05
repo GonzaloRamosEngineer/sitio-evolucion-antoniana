@@ -2752,6 +2752,106 @@ Van **siete** hallazgos en la jornada que salieron de mirar pantallas.
 
 ---
 
+### 10.26 — El rechazo del canje, ejercitado por fin (2026-09-05)
+
+§12.11 se construyó el 2026-09-02 y dejó una rama sin correr nunca contra la base: **«tiene
+acceso vigente pero no llega a los requisitos»**. No se podía probar porque no había un
+solo socio con aporte vigente. Con la primera cuota real cobrada, el caso existió.
+
+#### Lo que se encontró ANTES de dispararlo
+
+Preparando la prueba se fue a leer **qué iba a contestar la función**, y el mensaje estaba
+mal:
+
+> «Este beneficio pide **5 meses** de aporte o **25.000** de aporte acumulado.»
+
+Es la palabra «pide» seguida de **lo que falta**. El beneficio pide **6 meses o $30.000**,
+así que le anunciaba a la persona un umbral que no existe — y sin el `$`. Ese texto es el
+que la pantalla muestra cuando la función rechaza, así que **la primera persona en tocar
+el botón iba a leer un requisito falso.**
+
+⚠️ **Y el test asertaba `/4 meses/` y `/20.000/`**, que son justamente los números del
+hueco: le daba la razón al defecto. **Tercera vez en dos días** que pasa lo mismo
+(§10.24 con `faltaParaBeneficio`, §10.25 con el `$`). El patrón, ya identificado:
+
+> **Asertar un número suelto en vez de la frase.** `/4 meses/` pasa esté donde esté,
+> **incluso donde significa lo contrario**. La aserción tiene que fijar la frase, porque
+> lo que se está probando es lo que una persona va a leer.
+
+Se corrigió con la **misma redacción** que `mensajeRequisitos()` del front, y hay un test
+que compara la frase completa contra esa: si divergen, la persona leería una cosa antes de
+apretar y otra después. Seis tests se ponen en rojo con el mensaje viejo.
+
+#### Cómo se ejercitó sin arriesgar nada
+
+La tentación era bajar el umbral desde el ABM —que existe y está cableado— y apretar el
+botón. **Habría sido caro:** DigitalMatch tiene `limite_por_persona = 1`, ventana `total`,
+así que eso consumía el único canje de esa persona *para siempre*, sobre un descuento real
+de hasta $30.000.
+
+No hizo falta, y el motivo es una propiedad del diseño: **el rechazo ocurre en el paso 2,
+antes de cualquier escritura.** Llamar a la función con el umbral real no puede consumir
+nada porque nunca llega al insert. Así que se llamó directo, con la sesión del socio, sin
+tocar ni un dato.
+
+De paso quedó medido que **el header `apikey` no hace falta** —alcanza `Authorization`—,
+así que el snippet documentado en §12.11.1 no lleva ninguna clave adentro.
+
+#### El resultado
+
+```
+HTTP 403 {
+  error: 'Este beneficio pide 6 meses de aporte o $30.000 en total. Vas por 1 mes
+          y $5.000, así que te faltan 5 meses o $25.000.',
+  codigo_error: 'requisitos', faltan_meses: 5, falta_monto: 25000
+}
+```
+
+Los cuatro campos exactos. **El circuito del club está cerrado de punta a punta**: la
+vidriera anuncia, la función decide, y las dos dicen la misma frase.
+
+#### Y en la misma consola, un hallazgo que nadie buscaba
+
+En la captura aparecía, en rojo, una línea que no tenía nada que ver:
+
+```
+GET https://grainy-gradients.vercel.app/noise.svg  404 (Not Found)
+```
+
+`Dashboard.jsx` pedía una textura a **un dominio que no controlamos**, en cada carga del
+panel. Resto del scaffold original. Y la URL **devuelve 404**, así que la textura nunca se
+vio: era una petición a un tercero a cambio de nada.
+
+**Por qué importa más que un 404.** Es una pantalla **con sesión iniciada** pidiéndole un
+archivo a un dominio ajeno. Un asset de terceros no es gratis aunque sea decorativo: quien
+lo sirve ve la visita, y el día que devuelva algo distinto de un 404 lo estaríamos pintando
+adentro de nuestra página. Se borró — y **no cambia nada en pantalla**, porque nunca cargó.
+
+Quedó `src/lib/assets-externos.test.js`, que rechaza cualquier asset con URL absoluta a
+otro dominio. Dos cosas que costaron:
+
+1. **La primera versión marcó ocho páginas**, todas por su `<link rel="canonical">`, que
+   es SEO y no un asset. Un detector que marca de más es un detector que alguien apaga:
+   ahora los `<link>` se miran tag por tag y solo cuentan los `rel` que hacen bajar un
+   archivo.
+2. **Falló por su propia documentación**, porque el comentario que explica el hallazgo
+   cita la línea borrada. Es **exactamente** lo que le había pasado a
+   `fuente-unica-socio.test.js` tres días antes. Cuando el mismo tropiezo aparece dos
+   veces la solución deja de ser local: el limpiador de comentarios —con su control de que
+   no se lleve el código puesto— vive ahora en `src/lib/sin-comentarios.testutil.js`.
+
+#### La lección
+
+**Un `404` de un asset no rompe nada.** React renderiza, el build pasa, el lint pasa y los
+364 tests pasan. Solo se ve en la consola de alguien que estaba mirando otra cosa — y por
+eso estuvo ahí desde el scaffold original.
+
+Van **ocho** hallazgos en estas jornadas que salieron de mirar pantallas, y este es el
+primero que salió de mirar la **consola**. Vale agregarlo al procedimiento: cuando se
+verifica una pantalla en el navegador, **mirar también la pestaña de red**, no solo el DOM.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

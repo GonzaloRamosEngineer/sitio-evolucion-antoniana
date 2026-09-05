@@ -27,45 +27,21 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { sinComentarios, verificarQueSobrevivio } from '@/lib/sin-comentarios.testutil';
 
 const RAIZ = process.cwd();
 
-/**
- * El código del archivo SIN comentarios.
- *
- * ⚠️ Esto no es una comodidad, es una corrección: la primera versión de este
- * test falló sobre `DashboardHeader.jsx` **por su propia documentación**. El
- * comentario que explica el bug CITA el código que se borró («'Padrino'»,
- * «user.created_at»), y un detector que mira el archivo entero no distingue
- * «esto lo hace» de «esto explica lo que ya no hace». Un test así te obliga a
- * elegir entre documentar el error o tener la protección, y las dos hacen
- * falta.
- *
- * El limpiador es deliberadamente tosco —no entiende comillas ni literales de
- * expresión regular— y por eso lleva su propio control: `codigoDe()` verifica
- * que después de limpiar sigan estando las marcas de código conocidas. Si el
- * limpiador se come algo que no debía, ese control lo delata en vez de dejar
- * pasar un falso negativo silencioso.
- */
-const sinComentarios = (src) =>
-  src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    // El `[^:]` de adelante evita comerse el `//` de una URL (`https://…`),
-    // que es el falso positivo obvio de un limpiador hecho a mano.
-    .replace(/(^|[^:])\/\/[^\r\n]*/g, '$1');
-
+/*
+  El código SIN comentarios, con su control de que el limpiador no se llevó
+  puesto el código. Los dos viven en `sin-comentarios.testutil.js` porque
+  `assets-externos.test.js` tropezó exactamente con lo mismo dos días después:
+  **un test que lee código falla por su propia documentación**, porque el
+  comentario que explica un bug cita el código que se borró.
+*/
 const leer = (rel) => fs.readFileSync(path.join(RAIZ, rel), 'utf8');
 
-const codigoDe = (rel) => {
-  const bruto = leer(rel);
-  const codigo = sinComentarios(bruto);
-  // Control del limpiador: si se llevó el código por delante, decilo acá y no
-  // dejes que los detectores devuelvan `false` por archivo vacío.
-  if (!/return \(/.test(codigo) || !/import /.test(codigo)) {
-    throw new Error(`sinComentarios() destruyó el código de ${rel}`);
-  }
-  return codigo;
-};
+const codigoDe = (rel) =>
+  verificarQueSobrevivio(sinComentarios(leer(rel)), rel, [/import /, /return \(/]);
 
 /**
  * Las pantallas que le dicen a una persona CÓMO ESTÁ como socia.
