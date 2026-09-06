@@ -313,6 +313,20 @@ const Rendicion = () => {
               </Button>
             </div>
 
+            {/* La otra mitad de la transparencia. Las dos páginas se enlazan
+                entre sí a propósito: quien viene a ver la plata suele querer
+                después el papel que la respalda, y al revés. */}
+            <div className="rounded-3xl bg-white border border-gray-100 p-6 md:p-8">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Esta página muestra <strong>el movimiento del dinero</strong>. Los
+                instrumentos que lo respaldan —estatuto, balances, actas y convenios—
+                se publican aparte.
+              </p>
+              <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-3" asChild>
+                <Link to="/legal-documents">Ver la documentación oficial →</Link>
+              </Button>
+            </div>
+
           </div>
         </section>
       </div>

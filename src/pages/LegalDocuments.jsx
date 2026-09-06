@@ -1,6 +1,7 @@
 // src/pages/LegalDocuments.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Loader2, FileText, AlertTriangle, ArrowRight } from 'lucide-react';
@@ -180,6 +181,24 @@ const LegalDocuments = () => {
               ))}
             </ul>
           )}
+
+          {/* La otra mitad de la transparencia. Un estatuto dice cómo se decide;
+              la rendición dice qué se hizo con la plata. Las dos páginas se
+              enlazan entre sí a propósito. */}
+          <div className="mt-10 rounded-3xl bg-white border border-gray-100 p-6 md:p-8">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Estos son <strong>los instrumentos</strong>. Si querés ver el movimiento del
+              dinero —lo recaudado, en qué se gastó y con qué respaldo—, está publicado
+              aparte y se actualiza con cada gasto.
+            </p>
+            <Link
+              to="/rendicion"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-brand-action hover:underline"
+            >
+              Ver la rendición de cuentas
+              <ArrowRight aria-hidden="true" className="w-4 h-4" />
+            </Link>
+          </div>
         </motion.div>
       </section>
     </div>

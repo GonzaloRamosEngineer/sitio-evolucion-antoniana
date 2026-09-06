@@ -186,6 +186,18 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   importar**, porque sin eso un cambio de formato del banco se convierte en datos mal
   cargados en silencio.
 - **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
+- **Transparencia = dos páginas, un grupo de menú (2026-09-06)**: `/rendicion` (el
+  movimiento del dinero) y `/legal-documents` (los instrumentos: estatuto, balances,
+  actas). El item «Transparencia» del header es un grupo cuyo **padre lleva a
+  `/rendicion`** y cuyo subitem lleva a los documentos, y cada página enlaza a la otra.
+  ⚠️ Antes «Transparencia» apuntaba solo a los papeles: la rendición —lo único que
+  muestra plata entrando y saliendo, y el diferencial del producto según §14— no estaba
+  en el menú principal. **Todo esto es público sin sesión, y es deliberado**: la
+  protección no es quién mira sino qué se escribe (ver la regla de `gastos`); un muro de
+  registro no protegería nada y rompería el único uso que la rendición tiene.
+  ⚠️ Los submenús del header se guardan en **un mapa por `key`**, no en una variable por
+  grupo: el ternario de dos ramas que había hacía que todo grupo distinto de `nosotros`
+  compartiera el estado de `colabora`. `src/components/Layout/Header.test.jsx` lo fija.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
 
@@ -257,7 +269,7 @@ cambió el patrón.
 
 Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **447 tests en 35 archivos** (remedido el 2026-09-06 con `npm test`; más los del
+cuyo arreglo es react-router v7 —un major—. **451 tests en 36 archivos** (remedido el 2026-09-06 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
