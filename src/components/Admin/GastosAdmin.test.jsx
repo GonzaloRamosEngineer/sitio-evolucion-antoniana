@@ -204,20 +204,26 @@ describe('GastosAdmin', () => {
     vacía. Ni el build ni el lint ni los tests de comportamiento lo ven: el
     formulario funciona perfecto, se ve mal.
   */
-  it('🔒 el bloque del comprobante NO está anidado en la grilla de categoría', async () => {
+  it('🔒 todos los campos son hijos directos de la grilla del formulario', async () => {
     getGastos.mockResolvedValue({ data: [gasto()], error: null });
     render(<GastosAdmin />);
     fireEvent.click(await screen.findByRole('button', { name: /corregir/i }));
+    await screen.findByLabelText(/categoría/i);
 
-    const grillaDe = (el) => el.closest('.grid');
-    const categoria = grillaDe(await screen.findByLabelText(/categoría/i));
-    const tipoComp = grillaDe(screen.getByText('Tipo de comprobante'));
+    const formulario = document.querySelector('form');
+    expect(formulario.className).toMatch(/grid/);
 
-    expect(categoria).not.toBeNull();
-    expect(tipoComp).not.toBeNull();
-    // Hermanos, no uno adentro del otro.
-    expect(categoria).not.toBe(tipoComp);
-    expect(categoria.contains(tipoComp)).toBe(false);
+    // Una sola grilla y sin anidar: con esto, el ancho de cada campo lo decide su
+    // `col-span` y no la posición que le tocó dentro de otra grilla.
+    for (const id of [
+      'gasto-destino', 'gasto-fecha', 'gasto-concepto', 'gasto-monto',
+      'gasto-categoria', 'gasto-proveedor', 'gasto-tipo-comp', 'gasto-num-comp',
+      'gasto-notas',
+    ]) {
+      const campo = document.getElementById(id);
+      expect(campo, `falta el campo ${id}`).not.toBeNull();
+      expect(campo.closest('div').parentElement, `${id} no cuelga del form`).toBe(formulario);
+    }
   });
 
   // Lo que el dueño pidió el 2026-09-06 y resultó ser una regla del proyecto:
@@ -229,7 +235,7 @@ describe('GastosAdmin', () => {
     fireEvent.click(await screen.findByRole('button', { name: /corregir/i }));
 
     expect(await screen.findByText(/se lee en la rendición pública/i)).toBeInTheDocument();
-    expect(screen.getByText(/no el nombre de una persona/i)).toBeInTheDocument();
+    expect(screen.getByText(/no una persona/i)).toBeInTheDocument();
   });
 
   it('un error de carga se muestra como mensaje, no como objeto', async () => {

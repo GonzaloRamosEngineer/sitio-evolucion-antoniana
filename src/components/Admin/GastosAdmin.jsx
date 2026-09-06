@@ -386,7 +386,17 @@ const GastosAdmin = () => {
       )}
 
       <Dialog open={abierto} onOpenChange={setAbierto}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        {/*
+          ⚠️ EL ANCHO ES LO QUE EVITA EL SCROLL, NO RECORTAR EL CONTENIDO.
+          Con `max-w-lg` (512px) los nueve campos entraban sólo de a uno o de a
+          dos, y el modal medía más que la pantalla: había que scrollear para
+          llegar a «Guardar corrección». Un formulario contable que no se ve
+          entero invita a completar la mitad.
+
+          `max-h-[90vh] overflow-y-auto` se queda como red de seguridad para
+          pantallas bajas, pero a este ancho ya no debería activarse.
+        */}
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editando ? 'Corregir gasto' : 'Registrar gasto'}</DialogTitle>
             <DialogDescription>
@@ -396,9 +406,28 @@ const GastosAdmin = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={guardar} className="space-y-4">
-            <div>
-              <Label htmlFor="gasto-destino">Destino *</Label>
+          {/*
+            UNA SOLA GRILLA PARA TODO EL FORMULARIO, y no una grilla por fila.
+            Anidar grillas fue justamente lo que rompió el layout antes: el bloque
+            del comprobante terminó siendo el tercer item de la grilla de
+            categoría, ocupando un cuarto del ancho. Con seis columnas, cada campo
+            declara cuánto mide y no hay jerarquía que se pueda confundir.
+          */}
+          <form onSubmit={guardar} className="grid grid-cols-1 md:grid-cols-6 gap-x-4 gap-y-2">
+            <div className="md:col-span-4">
+              {/* El saldo va en la MISMA línea que la etiqueta, no debajo: es una
+                  fila entera de alto en un formulario que pelea por no scrollear. */}
+              <div className="flex items-baseline justify-between gap-3">
+                <Label htmlFor="gasto-destino">Destino *</Label>
+                {balance && (
+                  <span className="text-xs text-gray-500 tabular-nums truncate">
+                    recaudado {pesos(balance.recaudado)} · rendido {pesos(balance.rendido)} ·{' '}
+                    <span className={balance.saldo < 0 ? 'font-semibold text-red-600' : 'font-semibold text-brand-dark'}>
+                      saldo {pesos(balance.saldo)}
+                    </span>
+                  </span>
+                )}
+              </div>
               <Select
                 value={form.destino_id}
                 onValueChange={(v) => setForm((f) => ({ ...f, destino_id: v }))}
@@ -415,19 +444,21 @@ const GastosAdmin = () => {
               {errores.destino_id && (
                 <p className="mt-1 text-xs text-red-600">{errores.destino_id}</p>
               )}
-              {/* Ver el saldo mientras se carga evita el error más caro de esta
-                  pantalla: imputar un gasto a un destino que no tiene con qué. */}
-              {balance && (
-                <p className="mt-1.5 text-xs text-gray-500 tabular-nums">
-                  Recaudado {pesos(balance.recaudado)} · rendido {pesos(balance.rendido)} ·{' '}
-                  <span className={balance.saldo < 0 ? 'font-semibold text-red-600' : 'font-semibold text-brand-dark'}>
-                    saldo {pesos(balance.saldo)}
-                  </span>
-                </p>
-              )}
             </div>
 
-            <div>
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-fecha">Fecha *</Label>
+              <Input
+                id="gasto-fecha"
+                type="date"
+                className="mt-1"
+                value={form.fecha}
+                onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
+              />
+              {errores.fecha && <p className="mt-1 text-xs text-red-600">{errores.fecha}</p>}
+            </div>
+
+            <div className="md:col-span-6">
               <Label htmlFor="gasto-concepto">En qué se gastó *</Label>
               <Input
                 id="gasto-concepto"
@@ -437,126 +468,104 @@ const GastosAdmin = () => {
                 onChange={(e) => setForm((f) => ({ ...f, concepto: e.target.value }))}
               />
               {errores.concepto && <p className="mt-1 text-xs text-red-600">{errores.concepto}</p>}
+              {/* Los textos de ayuda de este formulario son cortos a propósito:
+                  cada línea que ocupan es altura, y la altura es lo que devuelve
+                  el scroll. El razonamiento largo vive en los comentarios. */}
               <p className="mt-1 text-xs text-brand-dark/55">
-                Es lo que se lee en la rendición pública. Va <strong>para qué fue</strong>,
-                no de quién se cobró: «certificación de firmas», no el nombre del escribano.
+                Es lo que se lee en la rendición pública: <strong>para qué fue</strong>, no
+                de quién se cobró.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="gasto-monto">Monto (ARS) *</Label>
-                <Input
-                  id="gasto-monto"
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  className="mt-1"
-                  value={form.monto}
-                  onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
-                />
-                {errores.monto && <p className="mt-1 text-xs text-red-600">{errores.monto}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="gasto-fecha">Fecha *</Label>
-                <Input
-                  id="gasto-fecha"
-                  type="date"
-                  className="mt-1"
-                  value={form.fecha}
-                  onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
-                />
-                {errores.fecha && <p className="mt-1 text-xs text-red-600">{errores.fecha}</p>}
-              </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-monto">Monto (ARS) *</Label>
+              <Input
+                id="gasto-monto"
+                type="number"
+                min="1"
+                step="0.01"
+                className="mt-1"
+                value={form.monto}
+                onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
+              />
+              {errores.monto && <p className="mt-1 text-xs text-red-600">{errores.monto}</p>}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="gasto-categoria">Categoría</Label>
-                <Input
-                  id="gasto-categoria"
-                  className="mt-1"
-                  placeholder="Ej: materiales"
-                  value={form.categoria}
-                  onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
-                />
-                {/* Texto libre a propósito: las categorías varían por rubro y son
-                    dato de la entidad, no estructura del sistema. */}
-              </div>
-
-              <div>
-                <Label htmlFor="gasto-proveedor">Proveedor</Label>
-                <Input
-                  id="gasto-proveedor"
-                  className="mt-1"
-                  placeholder="Ej: Ferretería del Centro"
-                  value={form.proveedor}
-                  onChange={(e) => setForm((f) => ({ ...f, proveedor: e.target.value }))}
-                />
-                {/* La misma advertencia que en la nota, y por el mismo motivo:
-                    publicar un gasto publica TAMBIÉN este campo. Desde §14.3 el
-                    importador ya no lo completa solo con la contraparte del
-                    extracto, que en una cuenta bancaria suele ser una persona. */}
-                <p className="mt-1 text-xs text-amber-700">
-                  Se publica junto con el gasto: un comercio o un estudio, no el nombre de
-                  una persona.
-                </p>
-              </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-categoria">Categoría</Label>
+              <Input
+                id="gasto-categoria"
+                className="mt-1"
+                placeholder="Ej: materiales"
+                value={form.categoria}
+                onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+              />
+              {/* Texto libre a propósito: las categorías varían por rubro y son
+                  dato de la entidad, no estructura del sistema. */}
             </div>
 
-            {/*
-              ⚠️ Este bloque estaba ANIDADO dentro de la grilla de
-              categoría/proveedor, así que era su tercer item: quedaba en la
-              mitad izquierda de la segunda fila y, al partirse a su vez en dos
-              columnas, cada campo ocupaba un cuarto del ancho del modal —con la
-              mitad derecha vacía—. «Número del comprobante» y su ayuda entraban
-              en una columna de ~120px.
-            */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="gasto-tipo-comp">Tipo de comprobante</Label>
-                <Select
-                  value={form.tipo_comprobante || 'ninguno'}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, tipo_comprobante: v === 'ninguno' ? '' : v }))}
-                >
-                  <SelectTrigger id="gasto-tipo-comp" className="mt-1">
-                    <SelectValue placeholder="Sin declarar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {/* «Sin declarar» es una opción de verdad y no un hueco: hay
-                        respaldos legítimos que no encajan en ninguna categoría, y
-                        obligar a elegir haría que se marque cualquiera. */}
-                    <SelectItem value="ninguno">Sin declarar</SelectItem>
-                    {TIPOS_COMPROBANTE.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="mt-1 text-xs text-brand-dark/55">
-                  Decirlo juega a favor: «recibo» declarado es más creíble que un
-                  comprobante sin nombre.
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="gasto-num-comp">Número del comprobante</Label>
-                <Input
-                  id="gasto-num-comp"
-                  className="mt-1"
-                  value={form.comprobante_numero}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, comprobante_numero: e.target.value }))}
-                  placeholder="Ej: A-0001-00000123"
-                />
-                <p className="mt-1 text-xs text-brand-dark/55">
-                  Acá va la letra, el punto de venta o el CAE: eso cambia por país y
-                  por eso es texto libre.
-                </p>
-              </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-proveedor">Proveedor</Label>
+              <Input
+                id="gasto-proveedor"
+                className="mt-1"
+                placeholder="Ej: Ferretería del Centro"
+                value={form.proveedor}
+                onChange={(e) => setForm((f) => ({ ...f, proveedor: e.target.value }))}
+              />
+              {/* La misma advertencia que en la nota, y por el mismo motivo:
+                  publicar un gasto publica TAMBIÉN este campo. Desde §14.3 el
+                  importador ya no lo completa solo con la contraparte del
+                  extracto, que en una cuenta bancaria suele ser una persona. */}
+              <p className="mt-1 text-xs text-amber-700">
+                Se publica. Un comercio, no una persona.
+              </p>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-tipo-comp">Tipo de comprobante</Label>
+              <Select
+                value={form.tipo_comprobante || 'ninguno'}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, tipo_comprobante: v === 'ninguno' ? '' : v }))}
+              >
+                <SelectTrigger id="gasto-tipo-comp" className="mt-1">
+                  <SelectValue placeholder="Sin declarar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* «Sin declarar» es una opción de verdad y no un hueco: hay
+                      respaldos legítimos que no encajan en ninguna categoría, y
+                      obligar a elegir haría que se marque cualquiera. */}
+                  <SelectItem value="ninguno">Sin declarar</SelectItem>
+                  {TIPOS_COMPROBANTE.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-brand-dark/55">
+                Declararlo suma credibilidad.
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="gasto-num-comp">Número del comprobante</Label>
+              <Input
+                id="gasto-num-comp"
+                className="mt-1"
+                value={form.comprobante_numero}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, comprobante_numero: e.target.value }))}
+                placeholder="Ej: A-0001-00000123"
+              />
+              <p className="mt-1 text-xs text-brand-dark/55">
+                La letra, el punto de venta o el CAE.
+              </p>
+            </div>
+
+            {/* La nota comparte fila con el comprobante en vez de tener la suya:
+                una fila menos son ~107px, y es la diferencia entre entrar o no en
+                una pantalla de 768 de alto. */}
+            <div className="md:col-span-2">
               <Label htmlFor="gasto-notas">Nota</Label>
               <Textarea
                 id="gasto-notas"
@@ -568,12 +577,11 @@ const GastosAdmin = () => {
               {/* La advertencia va acá, donde se escribe, y no en una ayuda
                   escondida: publicar un gasto publica también sus notas. */}
               <p className="mt-1 text-xs text-amber-700">
-                Si después publicás este gasto, la nota se publica con él. No escribas acá nada
-                que no pueda ser público.
+                Se publica con el gasto: no escribas acá nada que no pueda ser público.
               </p>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="md:col-span-6 mt-1">
               <Button type="button" variant="ghost" onClick={() => setAbierto(false)}>
                 Cancelar
               </Button>

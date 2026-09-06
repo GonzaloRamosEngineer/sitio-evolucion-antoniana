@@ -3536,6 +3536,92 @@ $921.251,30, que es el saldo del extracto.
 
 ---
 
+### 14.6 — Nombres en la rendición, y un modal que no entraba en la pantalla (2026-09-06)
+
+Dos pedidos del dueño mirando los gastos ya cargados. Los dos parecían de gusto
+y ninguno lo era.
+
+#### 1. «No pongamos nombres, sí para qué era»
+
+Al ir a mirar, no era una preferencia de redacción: **era una regla del proyecto
+que el importador estaba violando.** La migración que creó `gastos` la había
+dejado escrita, con el motivo:
+
+>     lo que no pueda ser público NO se escribe en un gasto.
+
+Porque `gastos` tiene lectura pública de las filas publicadas y **publicar una la
+publica entera** — las RLS filtran filas, no columnas, y la migración rechaza
+explícitamente los grants por columna «porque producen un modelo que nadie puede
+razonar».
+
+El importador metía la descripción literal del extracto como `concepto` y la
+contraparte como `proveedor`. «Transferencia enviada Maria Alejandra Torrado»
+—una escribana— quedaba a un click de ser pública, **y repetida en los dos
+campos**. Con 23 meses son cientos de filas.
+
+Ahora va `conceptoGenerico()` —la descripción sin el nombre— y `proveedor` queda
+null. El nombre no se pierde: `referencia_externa` apunta a la línea exacta del
+extracto, que es el respaldo documental igual.
+
+⚠️ **Y se verificó que en `aportes` NO había que hacer lo mismo, en vez de
+asumirlo:** esa tabla no tiene policy de lectura pública, solo
+`aportes_select_propio` y `aportes_select_board`. El nombre de quien transfiere
+nunca se expone; lo público son los agregados de `reporte_destino()`. La misma
+descripción es peligrosa en una tabla e inofensiva en la otra, y lo que decide es
+la policy, no el texto.
+
+#### 2. «¿No podemos ver todo sin scroll?»
+
+Había dos problemas encadenados, y el primero era un bug de verdad:
+
+**El bloque del comprobante estaba ANIDADO** dentro de la grilla de dos columnas
+de categoría/proveedor, o sea que era su tercer item: caía en la mitad izquierda
+de la segunda fila —con la mitad derecha vacía— y, al partirse a su vez en dos
+columnas, cada campo ocupaba **un cuarto** del ancho del modal.
+
+⚠️ **Con ese bug, `npm run build` pasa en verde.** Comprobado corriéndolo. Ni el
+build, ni el lint, ni los 11 tests de comportamiento del panel lo ven: el
+formulario *funciona* perfecto, se *ve* mal. Y la pantalla está detrás de sesión,
+así que el chequeo con Chrome headless de §B tampoco la toca.
+
+**El segundo era el ancho**: `max-w-lg` son 512px, y nueve campos ahí sólo entran
+apilados. El modal medía más que la pantalla.
+
+#### Cómo se midió, que es lo que hace que esto no sea opinión
+
+No se puede abrir esta pantalla en Chrome (redirige al login) ni medirla en jsdom
+(no calcula layout). Lo que sí se puede es **volcar el DOM real del componente
+desde un test, inyectarle el CSS del build y abrir eso en Chrome**:
+
+```
+DUMP_OUT=... npx vitest run <un test temporal que escribe document.body.innerHTML>
+# + el index-*.css del build + un <script> que mide scrollHeight vs clientHeight
+```
+
+Resultados reales, no estimados:
+
+| | contenido | 1080 | 900 | 768 |
+|---|---|---|---|---|
+| antes | 950px | scroll | scroll | scroll |
+| una sola grilla de 6 columnas | 726px | ok | scroll | scroll |
+| + saldo en la línea de la etiqueta, ayudas cortas | 668px | ok | ok | scroll |
+| + la nota comparte fila con el comprobante | **572px** | ok | ok | **ok** |
+
+⚠️ **Y la primera medición dio un número falso.** Decía 950px con la grilla
+resuelta en 2 columnas en vez de 6: **el CSS del build era anterior al cambio y
+Tailwind purga las clases que no existían todavía**. `md:grid-cols-6` y los
+`col-span` simplemente no estaban en el archivo. Medir contra un CSS viejo es
+medir otro sitio.
+
+#### La moraleja
+
+**Un layout roto es invisible para todo lo que este repo corre automáticamente.**
+Por eso el test nuevo es *estructural* y no de comportamiento: afirma que todos
+los campos son hijos directos de la grilla del formulario. El control negativo
+—reanidando el bloque, con el archivo compilando limpio— lo tumba, y sólo a él.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
