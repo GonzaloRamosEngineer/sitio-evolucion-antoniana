@@ -82,7 +82,29 @@ const ImportarMovimientos = () => {
 
   const destino = destinos.find((d) => d.id === destinoId) ?? null;
 
-  const analizar = async (entradas) => {
+  /**
+   * @param entradas  Archivos a analizar. Sin esto, los ya elegidos (o el pegado).
+   * @param conservarDecisiones  Mantener lo que la persona tildó y destildó a mano.
+   *
+   * ⚠️ POR QUÉ ESE SEGUNDO PARÁMETRO EXISTE, Y ES UNA TRAMPA REAL.
+   *
+   * Después de importar, esto se vuelve a correr para que lo que acaba de entrar
+   * aparezca como «Ya cargado» — la prueba visible de que reimportar no duplica.
+   * Pero al reanalizar se perdían las decisiones manuales, y las filas
+   * **marcadas y no destildadas** —las del día del inicio del destino— volvían a
+   * nacer tildadas.
+   *
+   * O sea que después de una importación correcta, la pantalla ofrecía importar
+   * exactamente las filas que la persona acababa de excluir a propósito, con el
+   * botón en rojo y un número chico al lado. Pasó de verdad el 2026-09-06: quedó
+   * diciendo «Importar 2 movimientos», y esos 2 eran los $943.402,93 que el fondo
+   * no gastó.
+   *
+   * Conservarlas es seguro **solo cuando la fuente no cambió**: los índices salen
+   * de `consolidarArchivos`, que es determinística sobre la misma entrada. Con
+   * archivos nuevos apuntarían a otras filas, y por eso el default es borrarlas.
+   */
+  const analizar = async (entradas, { conservarDecisiones = false } = {}) => {
     const fuentes = entradas ?? (archivos.length ? archivos : [{ nombre: 'Pegado', texto }]);
     setTrabajando(true);
     const { resumenes, filas, errores } = consolidarArchivos(fuentes);
@@ -106,7 +128,7 @@ const ImportarMovimientos = () => {
       return;
     }
 
-    setDecisiones(new Map());
+    if (!conservarDecisiones) setDecisiones(new Map());
     setAnalisis({
       resumenes,
       filas,
@@ -226,7 +248,10 @@ const ImportarMovimientos = () => {
     // Se vuelve a analizar en vez de limpiar: así la persona ve que lo que
     // acaba de entrar ahora figura como "ya cargado", que es la prueba visible
     // de que reimportar no duplica.
-    await analizar();
+    //
+    // Conservando las decisiones: la fuente es la misma, y lo que se destildó a
+    // mano se destildó por un motivo que no cambia porque el lote haya entrado.
+    await analizar(undefined, { conservarDecisiones: true });
   };
 
   const alternar = (f) => {

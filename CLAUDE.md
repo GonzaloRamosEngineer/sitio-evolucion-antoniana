@@ -249,7 +249,7 @@ cambió el patrón.
 
 Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **438 tests en 34 archivos** (remedido el 2026-09-06 con `npm test`; más los del
+cuyo arreglo es react-router v7 —un major—. **441 tests en 35 archivos** (remedido el 2026-09-06 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí

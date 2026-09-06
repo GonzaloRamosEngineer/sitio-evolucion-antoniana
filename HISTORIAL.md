@@ -3476,6 +3476,66 @@ pestaña después de más de una hora**, que es cuando el evento culpable existe
 
 ---
 
+### 14.5 — Dos trampas que solo aparecieron usando la pantalla (2026-09-06)
+
+El importador estaba construido, testeado y desplegado. Las dos cosas que
+siguieron rompiéndolo no las encontró ningún test: las encontró el dueño
+cargando el extracto real de octubre.
+
+#### 1. El aviso que llega después de que ya no sirve
+
+Con el lote analizado y el destino **sin elegir**, la pantalla se veía como si
+hubiera revisado todo y no tuviera nada que señalar: columna Estado vacía, ningún
+chip de «anteriores al inicio», las 27 filas tildadas. Es coherente —sin destino
+no hay fecha contra la cual comparar— y es **exactamente igual a que la
+verificación no hubiera encontrado nada**.
+
+El único aviso estaba al lado del botón, o sea **después de 27 filas**. Con 23
+meses van a ser cientos. Se movió arriba de la tabla y dice lo que NO pasó
+todavía, no solo que falta completar un campo.
+
+**La lección:** un aviso sobre algo que gobierna toda la pantalla no puede vivir
+al final de la pantalla. Y «el estado vacío porque falta un dato» tiene que verse
+distinto de «el estado vacío porque está todo bien».
+
+#### 2. ⚠️ Importar volvía a tildar lo que la persona acababa de excluir
+
+Este es el grave. Después de importar, la pantalla se reanaliza sola para que lo
+que entró figure como «Ya cargado» —la prueba visible de que reimportar no
+duplica—. Pero el reanálisis **borraba las decisiones manuales**, así que las
+filas *marcadas y no destildadas* volvían a nacer tildadas.
+
+Resultado real, con el fondo del convenio: la persona destildó las dos filas del
+10/10, importó los 4 gastos correctos… y la pantalla quedó ofreciendo **«Importar
+2 movimientos»**, en rojo, con los $943.402,93 que el fondo nunca gastó y que su
+saldo inicial ya tenía descontados. Un click de distancia de romper la rendición
+que este módulo existe para sostener.
+
+Ahora `analizar()` acepta `conservarDecisiones`, y el reanálisis posterior a
+importar lo usa. Conservarlas es seguro **solo cuando la fuente no cambió**: los
+índices salen de `consolidarArchivos`, determinística sobre la misma entrada. Con
+archivos nuevos apuntarían a otras filas, y por eso el default sigue siendo
+borrarlas — hay un control positivo que fija esa mitad.
+
+**La lección, y es la misma que §14.3 dejó escrita del otro lado:** cuando una
+regla automática decide *no* proteger algo —acá, no destildar lo del día del
+inicio— la protección queda en manos de la persona, y entonces **su decisión pasa
+a ser un dato que hay que cuidar como cualquier otro**. Borrarla en un refresco
+de UI es perder trabajo que el sistema le pidió hacer.
+
+`src/components/Admin/ImportarMovimientos.test.jsx` fija las dos mitades. El
+control negativo tumba el test correcto y solo ese.
+
+#### Y lo que sí funcionó
+
+El resto de la cadena hizo lo suyo sin intervención: **21 de 27 movimientos se
+destildaron solos** con su motivo en pantalla, los 2 del borde quedaron marcados,
+las tres verificaciones cuadraron al centavo contra lo que declara MercadoPago, y
+los 4 gastos que entraron suman **$78.748,70** — el fondo cierra octubre en
+$921.251,30, que es el saldo del extracto.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
