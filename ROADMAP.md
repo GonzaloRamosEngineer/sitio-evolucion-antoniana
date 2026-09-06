@@ -33,16 +33,23 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-06, con §14.3 cerrado)
+## 🚦 Por dónde arrancar (actualizado 2026-09-06, con la primera rendición publicada)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-**Estado en una línea:** el circuito de ingresos está cerrado, el club está cerrado, y
-desde el 2026-09-05 **§10 también** — el modelo de dominio completo, que era la sección
-más larga y más vieja del archivo. Lo que queda es de contenido, de gente y de una
-consulta legal; de infraestructura ya no queda nada bloqueando.
+**Estado en una línea:** el circuito de ingresos está cerrado, el club está cerrado, §10
+está cerrado desde el 2026-09-05 y **§14 se cerró el 2026-09-06**. Lo que queda es de
+contenido, de gente y de una consulta legal; de infraestructura ya no queda nada
+bloqueando.
+
+🟢 **Y por primera vez la rendición no está vacía.** El 2026-09-06 se importó octubre de
+2024 del fondo del convenio y se publicaron sus 4 gastos: `/rendicion` pasó de decir
+**«Rendido $0 · 0%»** a **«8% de lo recaudado ya tiene rendición publicada»**, verificado
+sin sesión desde afuera. Son $78.748,70 y el fondo cierra octubre en $921.251,30, que es
+exactamente el saldo del extracto. **La maquinaria completa —importar, verificar,
+corregir, publicar, mostrar— corrió de punta a punta con dinero real.**
 
 **Lo que cerró §10** (relato en `HISTORIAL.md` §10.27): la figura institucional
 (`miembros`, con el comportamiento en datos), el reclamo universal de huellas, el precio
@@ -84,37 +91,35 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
 
 **Lo primero, en orden:**
 
-1. 🔴 **Cargar el fondo del convenio y sus gastos.** ⚠️ **Esto reemplaza a «publicar las
-   campañas», que era lo que decía acá el 2026-09-05 y estaba mal ordenado**: al ir a
-   mirar apareció que `/rendicion` dice en público «Rendido $0 · **0%** de lo recaudado ya
-   tiene rendición publicada». Publicar 8 campañas encima de eso multiplica por nueve una
-   promesa vacía — justo lo que §10.8 prohíbe.
-   El destino ya está creado (`fondo-convenio-2024`, rindiendo **desde el 10/10/2024**) y
-   **desde §14.3 el importador toma archivos**: `/admin → Importar movimientos`, se eligen
-   **los 23 `.csv` de una vez** —se ordenan solos por período y avisa si falta un mes— y se
-   confirma. Reimportar no duplica.
-   Falta, y es de la Fundación:
-   **a)** el **saldo inicial** de $1.000.000 a mano — no es un aporte ni un movimiento del
-   extracto: es lo que había en la cuenta el 10/10/2024, y sin esa fila el libro arranca
-   con solo egresos y el saldo se va en negativo. Va con `referencia_externa =
-   `saldo-inicial:fondo-convenio-2024``, que a propósito **no** empieza con `mp:` para que
-   el importador nunca pueda chocar con ella. Comprobante: el acta, Foja E 00405399.
-   **b)** los 23 meses de extractos, con el importador.
-   ✅ **Hecho el 2026-09-06:** el saldo inicial está cargado ($1.000.000, 10/10/2024,
-   escritura Foja E 00405399). ⚠️ **Falta adjuntarle el PDF del acta** —el comprobante
-   figura declarado pero sin archivo—. Y desde §14.3 el ABM tiene el tilde **«es el saldo
-   inicial de este destino»**: conviene abrir ese aporte y marcarlo, para que quede con su
+1. 🔴 **Terminar de cargar el fondo del convenio: faltan 22 meses y un PDF.**
+   Octubre de 2024 ya está (importado, revisado y publicado). Lo que falta:
+
+   **a)** ⚠️ **Adjuntar el PDF del acta** al aporte de $1.000.000. El comprobante figura
+   declarado —escritura, Foja E 00405399— **pero sin archivo**. Es el documento que le da
+   sustento al fondo entero, y desde §14.4 «Documentación oficial» quedó más a la vista.
+   Se hace desde `/admin → Libro de aportes`, editando ese aporte.
+
+   **b)** Verificar que ese mismo aporte tenga tildado **«es el saldo inicial de este
+   destino»**. Se cargó antes de que el tilde existiera, y sin él le falta la
    `referencia_externa`.
-   ⚠️ **Al importar octubre de 2024 hay que destildar a mano las dos filas del 10/10** —la
-   transferencia de $937.776,27 al club y su impuesto de $5.626,66—: son de **antes** de
-   que el fondo existiera, el millón ya está neto de las dos, y cargarlas sería contarlas
-   dos veces. Las otras 21 filas previas **se destildan solas** desde §14.3; estas dos no,
-   porque comparten fecha con el día de inicio del fondo — la pantalla las marca
-   («del día del inicio: puede ser de la etapa anterior») justamente para que no se pasen.
-   Verificado: `1.000.000 − 4.639,50 − 20.000 − 120 − 53.989,20 = 921.251,30`, que es el
-   saldo del extracto al 31/10.
-   ⚠️ **Los gastos entran SIN publicar**, a propósito: la descripción de un movimiento
-   puede traer el nombre de un particular. Revisar y publicar es un paso aparte.
+
+   **c)** **Los 22 meses restantes de extractos**, de noviembre 2024 a hoy.
+   `/admin → Importar movimientos`, y **se pueden elegir todos los `.csv` de una vez**:
+   se ordenan solos por período y avisa si falta un mes.
+   🟢 **En esos meses ya no hay que destildar nada a mano**: el problema del borde era
+   sólo de octubre, porque el fondo arranca a mitad del 10/10/2024.
+   ⚠️ **Los gastos entran SIN publicar y hay que revisarlos uno por uno antes de
+   publicar.** No es burocracia: la descripción de un movimiento bancario trae el nombre
+   de la contraparte, y aunque el importador ya no la escribe en `concepto` ni en
+   `proveedor` (§14.4), el **concepto genérico no dice para qué fue**. Escribir «para qué
+   fue» es trabajo humano y es lo que hace que la rendición sirva.
+
+   **d)** ❓ **Decisión abierta: qué se hace con lo anterior al fondo.** El extracto de
+   octubre traía **21 movimientos de ingreso previos al 10/10/2024 ($244.795,30)** que se
+   destildaron por no pertenecer al fondo, y no están cargados en ningún lado. El saldo
+   inicial de $1.000.000 los resume en una línea, así que **no falta plata**; lo que falta
+   es decidir si algún día se quiere el libro completo de la cuenta desde 2022, y en ese
+   caso a qué destino van.
 
 2. 🟡 **Recién después, publicar las campañas en borrador.** Son 8, **ninguna tiene
    imagen ni meta** (verificado el 2026-09-05), así que además de activarlas hay que
@@ -136,16 +141,27 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
 5. 🟡 **El segundo socio.** 1 persona con acceso vigente de 23 cuentas. El circuito
    funciona entero; falta gente adentro, y eso no se arregla con código.
 
-6. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
+6. ⚠️ **Confirmar el arreglo del remontaje de sesión, que quedó SIN confirmar.**
+   El 2026-09-06 se arregló que cualquier evento de `onAuthStateChange` pusiera `loading`
+   en true y desmontara la pantalla protegida entera —se ve idéntico a una recarga—.
+   **Pero el evento culpable (`TOKEN_REFRESHED`) sale una vez por hora**, y el reporte era
+   «todo el tiempo», así que el arreglo puede no explicar todo el síntoma. Lo que **sí**
+   quedó probado con la consola del dueño es que **no era una recarga real**: los
+   listeners sobrevivieron a dos ciclos de ocultar/mostrar y nunca se disparó
+   `beforeunload` (descarta el Ahorro de memoria de Chrome).
+   **La prueba que cierra el caso:** dejar un lote analizado en `/admin → Importar
+   movimientos`, irse **más de una hora**, y volver. Si las filas siguen ahí, era esto.
+
+7. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
    archivo**: `.env.db`. ⚠️ Ese archivo dijo cuatro veces que también estaba en
    `~/.config/antoniana/db.url` — **no existe**. Rotar **no toca producción**: el webhook
    usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el único consumidor es
    `tools/db.sh`.
 
-7. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
+8. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
    único `high`. Después, en rama propia, **`react-router-dom` → `7.18.3`**.
 
-8. **Deuda menor, toda junta:** la del club en §12.10 (lo más barato con más valor sigue
+9. **Deuda menor, toda junta:** la del club en §12.10 (lo más barato con más valor sigue
    siendo la **UI de anulación**, 12.10.6), el apadrinamiento público en **§13** (bloqueado
    por legal, no por código) y **7 assertions muertas en `rls-check.sql`** — ver abajo.
 
@@ -163,10 +179,17 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
 
 **Las ocho reglas que este proyecto pagó caro:**
 
-1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Van **doce**
+1. **Verificá las premisas del ROADMAP contra el código antes de trabajar.** Van **trece**
    afirmaciones de este repo que resultaron falsas: cinco el 2026-08-30/31 (§11.6.2),
-   cuatro el 2026-08-30 (§11.7.2) y tres el 2026-09-05 (§10.27). No es mala suerte: es lo
-   que le pasa a un documento que se escribe una vez y se relee nunca.
+   cuatro el 2026-08-30 (§11.7.2), tres el 2026-09-05 (§10.27) y una el 2026-09-06
+   (`HISTORIAL.md` §14.4: una nota decía que el remontaje de las páginas protegidas estaba
+   resuelto porque se había quitado su disparador — **el mecanismo seguía intacto** y el
+   síntoma volvió por otra puerta). No es mala suerte: es lo que le pasa a un documento que
+   se escribe una vez y se relee nunca.
+   ⚠️ **Y el corolario que costó esta jornada: arreglar un síntoma quitando QUIÉN lo
+   dispara no es arreglarlo.** Preguntate siempre qué más puede disparar el mismo
+   mecanismo, y cerrá el mecanismo. Una nota que explica el daño y no lo cierra es peor que
+   no tener nota: la próxima persona lee «ya se resolvió» y no mira.
 2. **Una verificación tiene que poder fallar.** Hacela fallar una vez antes de creerle
    (§11.6.3). Y en seguridad, probá **las dos puntas**: que lo ilegítimo se rechace y que
    lo legítimo pase. ⚠️ **El 2026-09-05 esto atrapó un test decorativo**: «sin email
@@ -181,6 +204,18 @@ curl.exe https://mp-supabase-webhook.onrender.com/health
    tamaño: el 404 mide 25.900 bytes y `/club` 25.646. ⚠️ **Y confirmar contenido tampoco
    alcanza: hay que MIRAR la pantalla, en ancho de teléfono** (§11.7.10), **y la consola**
    (§10.26).
+   ⚠️ **Para las pantallas detrás de sesión, que el navegador no alcanza** (§B), se puede
+   **volcar el DOM real del componente desde un test, inyectarle el `index-*.css` del build
+   y medir eso en Chrome**. Así se midió el modal de gastos el 2026-09-06 (`HISTORIAL.md`
+   §14.6): 950px de alto → 572px, y el dato de si scrollea dejó de ser opinión.
+   ⚠️⚠️ **Rebuildeá ANTES de medir.** La primera medición dio un número falso porque el
+   CSS del build era anterior al cambio y **Tailwind purga las clases que todavía no
+   existían**: la grilla se resolvía en 2 columnas en vez de 6. Medir contra un CSS viejo
+   es medir otro sitio.
+   ⚠️⚠️ **Y si cambiaste una regla de privacidad, abrí la página PÚBLICA desde afuera**,
+   sin sesión. El 2026-09-06 el concepto de un gasto estaba corregido y el campo
+   `proveedor` seguía publicando el nombre de una escribana: media corrección se ve igual
+   que una corrección entera desde el panel (§14.7).
 5. **Escribir la función no es conectarla.** El reaper del club existió tres días con su
    peligro documentado en un comentario y **sin que nada lo llamara** (§11.7.13). Antes de
    dar algo por hecho, preguntá quién lo invoca.
@@ -1747,7 +1782,48 @@ empiece a usar esto con plata ya en la cuenta la va a necesitar.
   Ventas— y eso está sin explorar.
 
 **Toda la lógica que decide es pura y está en `src/lib/importarMovimientos.js`,
-con 41 tests sobre datos reales.** El componente solo muestra y confirma.
+con 45 tests sobre datos reales.** El componente solo muestra y confirma.
+
+---
+
+### 14.4 — ✅ La transparencia, publicada Y navegable (CERRADO el 2026-09-06)
+
+Los primeros gastos reales entraron y se publicaron, y ahí aparecieron tres cosas
+que ninguna pantalla avisa sola. Relato completo en `HISTORIAL.md` §14.5–14.7.
+
+**a) El importador escribía nombres de personas en `gastos`.** No era una
+preferencia de redacción: la migración `20260816150000` ya tenía la regla escrita
+—*lo que no pueda ser público NO se escribe en un gasto*, porque publicar publica
+la fila entera y las RLS filtran filas, no columnas—. El importador metía la
+descripción literal del extracto como `concepto` y la contraparte como
+`proveedor`, así que el nombre de un particular quedaba a un clic de ser público
+**y repetido en dos campos**. Ahora va `conceptoGenerico()` y `proveedor` queda
+null.
+⚠️ **En `aportes` NO hay que hacer lo mismo, y se verificó en vez de asumirlo**:
+esa tabla no tiene policy de lectura pública. La misma descripción es peligrosa
+en una tabla e inofensiva en la otra, y lo que decide es la policy.
+
+**b) «Transparencia» del menú apuntaba solo a los papeles.** `/rendicion` —lo
+único que muestra plata entrando y saliendo, y el diferencial de §14— se llegaba
+desde el pie o desde «Colaborá». Ahora «Transparencia» es un grupo cuyo **padre
+lleva a `/rendicion`** y cuyo subitem lleva a `/legal-documents`, y las dos
+páginas se enlazan entre sí.
+
+**c) Decidido: público sin registro.** No se protege *quién mira* sino *qué se
+escribe*. Un muro de registro no protegería nada —cualquiera se registra— y en
+este proyecto sería peor, porque el bloqueo del front es solo UX: gatear de
+verdad exigiría cambiar la policy, y entonces el dato deja de ser público. Lo que
+no se publica nunca son **los comprobantes**.
+
+#### Y dos bugs latentes que este trabajo destapó
+
+- **`loading` del `AuthProvider` desmontaba la aplicación entera** con cualquier
+  evento de sesión, incluidos los que no cambian la identidad. Ver §14.4 de
+  `HISTORIAL.md`: es la segunda vez que ese archivo pisa el mismo pozo.
+  ⚠️ **Queda una confirmación pendiente**, abajo.
+- **El menú de escritorio elegía el submenú con un ternario de dos ramas**, así
+  que con el tercer grupo dos compartían estado. Reemplazado por un mapa por
+  clave, con test.
 
 ---
 

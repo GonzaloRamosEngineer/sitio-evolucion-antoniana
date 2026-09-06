@@ -3622,6 +3622,145 @@ los campos son hijos directos de la grilla del formulario. El control negativo
 
 ---
 
+### 14.7 — La transparencia estaba publicada y escondida (2026-09-06)
+
+Con los cuatro gastos ya publicados, el dueño preguntó lo que ninguna pantalla
+pregunta sola: **«¿dónde se enchufa esto?»**. Y ahí apareció que la rendición
+estaba pública pero no en el menú.
+
+#### Lo primero: el nombre seguía público
+
+Antes de contestar nada se fue a mirar `/rendicion` con Chrome headless **sin
+sesión**, que es como lo ve cualquiera. El concepto estaba corregido y el
+`proveedor` **no**:
+
+```
+Transferencia enviada certificación de firmas - Escribania
+Transferencias enviadas · Maria Alejandra Torrado      ← el campo Proveedor
+```
+
+`proveedor` es la segunda línea de cada gasto en la rendición y también se
+publica. Corregido por el dueño y verificado de nuevo: sin nombres.
+
+**La lección:** cuando se cambia una regla de privacidad, la verificación no es
+leer el formulario — es **abrir la página pública desde afuera**. Media
+corrección se ve igual que una corrección entera desde el panel.
+
+#### El agujero de navegación
+
+`/rendicion` se llegaba desde el pie y desde «Colaborá». **«Transparencia» del
+menú principal apuntaba a `/legal-documents`** —el estatuto y los balances—, o
+sea que lo único que muestra plata entrando y saliendo, y que según §14 es el
+diferencial del producto, no estaba en el menú.
+
+Las dos páginas ya eran dos mitades de lo mismo: mismo hero, mismo eyebrow
+(«Transparencia» / «Transparencia institucional»). Faltaba decirlo.
+
+Ahora «Transparencia» es un grupo con el patrón que el menú ya tenía: **el padre
+lleva a `/rendicion`** y el subitem a los documentos, y cada página enlaza a la
+otra —«esta muestra el movimiento del dinero, los instrumentos se publican
+aparte» y al revés—. En el pie, «Transparencia» pasó a llamarse «Documentación
+oficial»: eran dos nombres distintos para las dos mitades, con el del paraguas
+puesto sobre una sola.
+
+#### ⚠️ El tercer grupo destapó un bug latente
+
+El menú de escritorio elegía qué submenú abrir así:
+
+```js
+open={item.key === "nosotros" ? openNos : openColab}
+```
+
+Funciona con **exactamente dos** grupos. Con el tercero, todo lo que no sea
+`nosotros` comparte el estado de `colabora`: pasar el mouse por uno abre el otro.
+Estaba escrito desde antes y no molestaba porque nadie había sumado un grupo.
+
+Se reemplazó por un mapa por clave —como ya era el acordeón de mobile— **en vez
+de agregar una tercera rama**, que habría dejado la misma trampa armada para el
+cuarto. Los tres `setOpenMob({ nosotros: false, colabora: false })` pasaron a
+`{}`: una clave ausente ya es «cerrado», y así no hay lista que mantener.
+
+El header no tenía **ningún** test. Ahora tiene cuatro, y el que importa fija que
+abrir un grupo no abre los otros. El control negativo tumba ese y sólo ese.
+
+#### La decisión de fondo: público sin registro
+
+El dueño preguntó si la rendición debía pedir registro. La respuesta quedó
+escrita porque va a volver:
+
+- **Un muro de registro no protegería nada.** Cualquiera se registra en treinta
+  segundos. Y acá sería peor: el bloqueo del frontend es **solo UX** —la frontera
+  son las RLS—, así que gatear de verdad exigiría cambiar la policy, y entonces el
+  dato deja de ser público.
+- **La protección ya existe y está en el lugar correcto**: no se protege *quién
+  mira* sino *qué se escribe*, campo por campo (`gastos`: «lo que no pueda ser
+  público no se escribe»). Eso es más fuerte que un login.
+- **El valor entero depende de que sea público.** Quien está decidiendo si dona no
+  se registra para ver cómo gastás; se va. Y frente al convenio, mandar un link
+  que abre sin cuenta es la diferencia entre rendir y decir que rendís.
+
+Lo que sigue sin publicarse nunca son **los comprobantes**: traen CUIT, domicilio
+y firmas de terceros. La página lo dice y ofrece pedirlos por contacto.
+
+---
+
+### 14.8 — Cierre de la jornada del 2026-09-06
+
+**Lo que cambió de verdad:** la rendición dejó de estar vacía. `/rendicion` pasó de
+«Rendido $0 · **0%**» a «**8%** de lo recaudado ya tiene rendición publicada»,
+verificado sin sesión desde afuera. Son los 4 gastos de octubre 2024 del fondo del
+convenio: **$78.748,70**, y el fondo cierra el mes en $921.251,30, que es
+exactamente el saldo del extracto.
+
+Importa menos la cifra que el hecho: **la maquinaria completa corrió de punta a
+punta con dinero real** — importar un `.csv` de MercadoPago, verificar contra lo
+que el banco declara, destildar lo que no corresponde, corregir los conceptos,
+publicar, y que se vea desde afuera.
+
+#### Los once commits, y qué los originó
+
+| Commit | Qué | De dónde salió |
+|---|---|---|
+| `64738099`+`a956d888` | §14.3: varios archivos, cadena, corte por fecha | los 3 pendientes anotados |
+| `28983d35` | el botón deshabilitado dice por qué | usarlo |
+| `8979ef05`+`496190fb` | auth: un evento sin cambio de identidad no desmonta | reporte del dueño |
+| `03ccd39d` | el aviso de destino va arriba | una captura |
+| `d920b685` | importar no re-tilda lo excluido | una captura |
+| `a5c0dde0` | el importador no escribe nombres en `gastos` | «no pongamos nombres» |
+| `e0d3c64f`+`e85761e8` | el modal de gastos: anidado y sin scroll | «que se vea bien» |
+| `f4816c03` | «Transparencia» abre la rendición | «¿dónde se enchufa?» |
+
+⚠️ **Siete de los once salieron de usar la pantalla, no de programar.** Ninguno lo
+habría encontrado el build, el lint ni los 447 tests que había: el formulario
+funcionaba, los datos entraban bien y el layout estaba roto; el importador cargaba
+correcto y ofrecía después importar justo lo que se había excluido; la rendición
+estaba publicada y no estaba en el menú.
+
+**Es el hallazgo de la jornada y conviene no olvidarlo: este proyecto tiene buena
+cobertura de lo que DECIDE y casi ninguna de lo que se VE.** Por eso los tests
+nuevos de esta jornada son de una clase distinta —estructurales, de navegación, de
+estado de UI— y por eso se incorporó una forma de medir layout de pantallas detrás
+de sesión (§14.6).
+
+#### Estado medido al cierre (no copiado)
+
+| | |
+|---|---|
+| Tests | **451 en 36 archivos** (`npm test`) |
+| Lint | **0 errores**, 50 warnings de backlog |
+| `npm audit` | 4 vulnerabilidades (1 low, 2 moderate, 1 high) |
+| Archivos que citan §  | **136** (`grep -rlE '§\|ROADMAP' src/ supabase/ api/ tools/`) |
+| Deploys verificados | 8, todos por símbolo servido, ninguno supuesto |
+
+#### ⚠️ Lo único que quedó sin confirmar
+
+El arreglo del remontaje de sesión (§14.4). `TOKEN_REFRESHED` sale **una vez por
+hora** y el reporte era «todo el tiempo», así que puede no explicar todo el
+síntoma. Sí quedó probado que **no era una recarga real**. La prueba pendiente:
+dejar un lote analizado, irse más de una hora y volver.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

@@ -28,7 +28,7 @@ npm run test:watch  # Vitest en watch
 
 - **Node 22** (ver `.nvmrc` = 22.12.0 y `engines`). Vercel buildea con la misma versión.
 - **ESLint** (`eslint.config.js`, flat) + **Vitest** (`vitest.config.js`) configurados en la
-  Sesión G. `npm run lint` es un gate que falla solo en errores; hoy quedan ~61 warnings
+  Sesión G. `npm run lint` es un gate que falla solo en errores; hoy quedan **50** warnings
   de backlog (imports sin usar, exhaustive-deps) para limpiar en las Sesiones D/E.
 
 ### Supabase (esquema y funciones, en `supabase/`)
@@ -261,9 +261,9 @@ nadie lo notara):
   razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
   motivo documentado.
 
-**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **133 archivos** de código
-(remedido el 2026-09-06 con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`; decía 122 al
-cerrar §10 y 102 antes de esa jornada). Mové ítems entre archivos si hace falta, pero no los
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **136 archivos** de código
+(remedido al cierre del 2026-09-06 con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`;
+decía 133 a mitad de esa jornada, 122 al cerrar §10 y 102 antes.) Mové ítems entre archivos si hace falta, pero no los
 renumeres. ⚠️ **Al remedir, citá el comando**: sin él no se sabe si el número creció o
 cambió el patrón.
 
@@ -283,9 +283,9 @@ mintiendo todo lo demás.** Remedirlo es un minuto:
 
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
-de la última jornada está en **§11.7** (la anterior, en §11.6). Entre las dos suman **nueve
-afirmaciones de este repo que resultaron falsas** y tres verificaciones que no verificaban
-nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda abierta del
+de la última jornada está en **§14.7** de `HISTORIAL.md`; los cierres anteriores, en §11.7 y
+§11.6. Entre todos suman **trece afirmaciones de este repo que resultaron falsas** y varias
+verificaciones que no verificaban nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda abierta del
 club vive toda junta en §12.10.**
 
 ⚠️ **`tools/db.sh dump` produce un backup que NO restaura con `ON_ERROR_STOP=1`.** El
