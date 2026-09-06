@@ -137,8 +137,10 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   al bucket privado `comision-docs`); lo público es que existe, vía `tiene_comprobante` y
   el conteo agregado de `reporte_destino()`. `tipo_comprobante` es genérico a propósito:
   la letra A/B/C es normativa argentina y va en `comprobante_numero`.
-- **Importar movimientos (ROADMAP §14.2)**: `/admin → Importar movimientos` convierte un
-  extracto pegado en filas del libro. La lógica que **decide** es pura y está testeada en
+- **Importar movimientos (ROADMAP §14.2/§14.3)**: `/admin → Importar movimientos` convierte
+  los extractos de la cuenta en filas del libro. Se eligen **varios `.csv` de una vez** y
+  `consolidarArchivos()` los ordena **por el primer movimiento, no por el nombre** (los de
+  MercadoPago se llaman `account_statement-<uuid>.csv`). La lógica que **decide** es pura y está testeada en
   `src/lib/importarMovimientos.js`; el componente solo muestra y confirma. Tres invariantes
   que no se tocan: **propone y no ejecuta** (nada se escribe sin confirmación), **nada entra
   publicado** (un movimiento puede traer el nombre de un particular en la descripción) y
@@ -146,6 +148,15 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   UNIQUE en `aportes` **y** en `gastos`. ⚠️ **El monto forma parte de la clave a propósito**:
   en MercadoPago el impuesto comparte el id de operación con su transferencia, y sin el monto
   el impuesto nunca entraría.
+  ⚠️ **Lo que no cuadra no se importa; lo incompleto sí.** Los niveles 1 y 2 (saldo corrido y
+  totales, **por archivo**) fallan cuando lo leído *está mal* y **bloquean**; el nivel 3
+  (cadena entre resúmenes) falla cuando *falta un mes* y **solo avisa** — importar octubre y
+  diciembre sin noviembre es incompleto, no incorrecto.
+  ⚠️ **`destinos.fecha_inicio` destilda lo anterior pero NO alcanza el borde.** Un fondo
+  puede arrancar a mitad de un día: los movimientos de ese día se **marcan** con
+  `delDiaDelInicio()` y no se destildan, porque pueden ser igual de bien los primeros del
+  fondo. Es el caso del fondo del convenio, y es el peligroso — el saldo inicial ya está neto
+  de ellos, así que importarlos los cuenta dos veces.
 - **El CSV de MercadoPago (ROADMAP §14.3)**, comprobado contra un archivo real el
   2026-09-06: encabezados **en inglés** (`RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE`),
   **dos bloques** —los totales del período arriba, los movimientos abajo— y números en
@@ -220,15 +231,15 @@ nadie lo notara):
   razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
   motivo documentado.
 
-**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **122 archivos** de código
-(remedido el 2026-09-05 al cerrar §10, con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`;
-decía 102 antes de la jornada). Mové ítems entre archivos si hace falta, pero no los
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **133 archivos** de código
+(remedido el 2026-09-06 con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`; decía 122 al
+cerrar §10 y 102 antes de esa jornada). Mové ítems entre archivos si hace falta, pero no los
 renumeres. ⚠️ **Al remedir, citá el comando**: sin él no se sabe si el número creció o
 cambió el patrón.
 
-Estado al **2026-09-05** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
+Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **387 tests en 32 archivos** (más los del
+cuyo arreglo es react-router v7 —un major—. **434 tests en 33 archivos** (remedido el 2026-09-06 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí

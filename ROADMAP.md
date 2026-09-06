@@ -33,7 +33,7 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-06, con la tesis de §14)
+## 🚦 Por dónde arrancar (actualizado 2026-09-06, con §14.3 cerrado)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
@@ -90,8 +90,9 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
    tiene rendición publicada». Publicar 8 campañas encima de eso multiplica por nueve una
    promesa vacía — justo lo que §10.8 prohíbe.
    El destino ya está creado (`fondo-convenio-2024`, rindiendo **desde el 10/10/2024**) y
-   **desde §14.2 hay importador**: `/admin → Importar movimientos`, se pega el extracto y
-   se confirma. Reimportar no duplica.
+   **desde §14.3 el importador toma archivos**: `/admin → Importar movimientos`, se eligen
+   **los 23 `.csv` de una vez** —se ordenan solos por período y avisa si falta un mes— y se
+   confirma. Reimportar no duplica.
    Falta, y es de la Fundación:
    **a)** el **saldo inicial** de $1.000.000 a mano — no es un aporte ni un movimiento del
    extracto: es lo que había en la cuenta el 10/10/2024, y sin esa fila el libro arranca
@@ -101,11 +102,15 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
    **b)** los 23 meses de extractos, con el importador.
    ✅ **Hecho el 2026-09-06:** el saldo inicial está cargado ($1.000.000, 10/10/2024,
    escritura Foja E 00405399). ⚠️ **Falta adjuntarle el PDF del acta** —el comprobante
-   figura declarado pero sin archivo— y quedó **sin `referencia_externa`** porque el ABM
-   no tiene ese campo (ver §14.3).
-   ⚠️ **Al importar octubre de 2024, destildar las dos filas del 10/10** —la transferencia
-   de $937.776,27 al club y su impuesto de $5.626,66—: son **anteriores** a que el fondo
-   existiera. El millón ya está neto de las dos, y cargarlas sería contarlas dos veces.
+   figura declarado pero sin archivo—. Y desde §14.3 el ABM tiene el tilde **«es el saldo
+   inicial de este destino»**: conviene abrir ese aporte y marcarlo, para que quede con su
+   `referencia_externa`.
+   ⚠️ **Al importar octubre de 2024 hay que destildar a mano las dos filas del 10/10** —la
+   transferencia de $937.776,27 al club y su impuesto de $5.626,66—: son de **antes** de
+   que el fondo existiera, el millón ya está neto de las dos, y cargarlas sería contarlas
+   dos veces. Las otras 21 filas previas **se destildan solas** desde §14.3; estas dos no,
+   porque comparten fecha con el día de inicio del fondo — la pantalla las marca
+   («del día del inicio: puede ser de la etapa anterior») justamente para que no se pasen.
    Verificado: `1.000.000 − 4.639,50 − 20.000 − 120 − 53.989,20 = 921.251,30`, que es el
    saldo del extracto al 31/10.
    ⚠️ **Los gastos entran SIN publicar**, a propósito: la descripción de un movimiento
@@ -1487,8 +1492,9 @@ el filtro y el insert hay una ventana y el segundo click cae justo ahí.
 
 #### Lo que quedó pendiente de esto
 
-- 🟡 **Subir los archivos en vez de pegarlos** → **§14.3**, diseñado y sin construir.
-  Con 23 meses de resúmenes, copiar y pegar tiene techo.
+- ✅ **Subir los archivos en vez de pegarlos** → **§14.3, cerrado el 2026-09-06.**
+  Se eligen varios `.csv` de una vez, se ordenan solos por período y se verifica la
+  cadena entre ellos. Pegar sigue existiendo, para un pedazo suelto.
 - 🟡 **Un extracto que mezcla destinos** hay que importarlo por partes: el lote
   entero se imputa a un destino. Reimputar después existe (§10.11) pero es más
   trabajo que separar antes.
@@ -1499,11 +1505,11 @@ el filtro y el insert hay una ventana y el segundo click cae justo ahí.
 
 ---
 
-### 14.3 — 🟡 Subir los resúmenes en vez de pegarlos (diseñado, sin construir)
+### 14.3 — ✅ Subir los resúmenes en vez de pegarlos (CERRADO el 2026-09-06)
 
-> **Estado: analizado y listo para arrancar en otra sesión.** No se construyó
-> para no empezarlo a medias; lo que sigue es el diseño completo, con la decisión
-> que lo hace confiable y las que quedan por tomar.
+> **Estado: construido y verificado contra los archivos reales.** Lo que sigue
+> conserva el diseño y la evidencia que lo fundó, porque las conclusiones sobre
+> el formato de MercadoPago no conviene volver a discutirlas.
 
 §14.2 dejó funcionando el importador **de copiar y pegar**. Sirve, y tiene un
 techo: son **23 meses de resúmenes**. Copiar y pegar veintitrés veces, cada una
@@ -1636,26 +1642,71 @@ reimportar habría duplicado todo. Ya está corregido, con test.
 - **La pantalla no deja importar si no cuadra.** El botón se deshabilita y explica
   qué no da. Es la regla de §14.3 aplicada: sin eso, esto sería un acto de fe.
 
-#### Lo que queda de §14.3
+#### ✅ Los tres pendientes, cerrados el 2026-09-06
 
-- 🟡 **Subir archivos en vez de pegar.** Es un `FileReader` sobre `.csv`, sin
-  dependencias — el parseo ya funciona. Con 23 archivos, arrastrarlos es la
-  diferencia entre hacerlo y abandonar.
-- 🟡 **La verificación de cadena en la pantalla.** La función existe y está
-  testeada; falta que la UI acepte varios archivos y los ordene por período para
-  poder decir «entre noviembre y enero falta un mes».
-- 🟡 **Avisar de los movimientos anteriores a `destinos.fecha_inicio`.** Sigue sin
-  resolverse y sigue siendo un agujero real.
+**1. Se eligen los archivos, y varios a la vez.** `<input type="file" multiple>` +
+`Blob.text()`, sin dependencias. Pegar sigue estando para un pedazo suelto, pero
+deja de ser el camino principal.
+
+Juntar varios trae **dos problemas que un archivo solo no tiene**, y los dos se
+resuelven en `consolidarArchivos()` (puro, testeado):
+
+- **El orden.** Se ordena por el primer movimiento, **no por el nombre**: los de
+  MercadoPago se llaman `account_statement-<uuid>.csv` y no dicen nada del
+  período. Hay un test cuyos nombres están elegidos para que el orden alfabético
+  dé el orden contrario — si alguna vez se ordena por nombre, falla.
+- **El mismo archivo elegido dos veces**, que con 23 en un diálogo es cuestión de
+  tiempo. Se detecta por `referencia` repetida **entre archivos distintos**: dos
+  extractos son períodos disjuntos, así que un movimiento en los dos es siempre el
+  mismo archivo cargado dos veces. Repetida *dentro* de un archivo **no** se toca:
+  ahí puede ser legítima, y marcarla dejaría afuera un gasto real.
+
+**2. La cadena, en la pantalla — y avisa sin bloquear.** Es la distinción que
+ordena las tres verificaciones, y no es un detalle de UI:
+
+| | Falla cuando | Qué hace |
+|---|---|---|
+| Niveles 1 y 2 | lo que se leyó **está mal** (importe mal interpretado, archivo cortado) | **bloquea**: cargarlo mete un error que después hay que buscar movimiento por movimiento contra el papel |
+| Nivel 3 | **falta un mes** | **avisa**: octubre y diciembre sin noviembre es *incompleto*, no *incorrecto*, y es justo lo que hace alguien que baja los extractos de a uno |
+
+Los niveles 1 y 2 se calculan **por archivo**: cada extracto declara sus propios
+totales, y sumarlos todos juntos escondería justo el que no cuadra.
+
+**3. Los movimientos anteriores al inicio del destino se destildan solos.** Un
+fondo restringido empieza un día concreto y el extracto del mes trae también lo de
+antes: imputados al fondo, la rendición muestra gastos que ese fondo nunca hizo,
+que es exactamente lo que un fondo restringido tiene que poder desmentir. Contra
+el archivo real, **21 de 27 movimientos de octubre 2024 son de la etapa previa**.
+
+Se destildan, **no se bloquean**: la fecha de inicio puede estar mal cargada, y un
+dato de configuración no puede impedir cargar un movimiento que existió.
+
+> ⚠️ **El borde que la fecha sola no resuelve, y que es el peligroso.**
+> `fecha_inicio` es una fecha, no un instante, y **un fondo puede arrancar a mitad
+> de un día**. El del convenio es exactamente eso: el 10/10/2024 la cuenta hizo la
+> transferencia de cierre y pagó su impuesto, y **recién después** el saldo que
+> quedó pasó a ser el fondo. Esos dos movimientos comparten fecha con el primer día
+> del fondo, así que `fecha < inicio` no los alcanza — y **el saldo inicial cargado
+> ya está neto de ellos**, así que importarlos los contaría dos veces.
+>
+> `delDiaDelInicio()` los **marca** y no los destilda, a propósito: un movimiento
+> del día del inicio puede ser igual de bien el primero del fondo. Destildar de más
+> hace desaparecer un gasto en silencio —el error que este módulo entero trata de
+> no cometer—; marcar obliga a mirar dos filas.
+
+**Y una consecuencia de escala que no estaba prevista:** `getReferenciasCargadas`
+ya no recibe un mes sino veintitrés, así que se trocea de a 500. Si una tanda
+falla, **corta** en vez de seguir: una lista incompleta de «ya cargadas» hace que
+la previsualización *prometa* insertar lo que la base va a saltear.
 
 #### Lo que hay que decidir después
 
 1. **¿Un destino por archivo o por movimiento?** Hoy el lote entero va a un
    destino. Para 23 meses de una cuenta institucional probablemente alcance, pero
    conviene confirmarlo antes que reimputar cientos de filas después (§10.11).
-2. **¿Qué hacer con los movimientos anteriores a `destinos.fecha_inicio`?**
-   ⚠️ **Hoy nada lo impide y es un agujero real**: pegar un resumen de septiembre
-   de 2024 cargaría movimientos previos a que el fondo existiera. Como mínimo,
-   avisar; probablemente, destildarlos por defecto.
+2. ~~**¿Qué hacer con los movimientos anteriores a `destinos.fecha_inicio`?**~~
+   ✅ **Resuelto el 2026-09-06: se destildan solos y se dice por qué.** Ver más
+   abajo, incluido el borde del día del inicio, que la fecha sola no resuelve.
 3. **¿Se guarda el archivo?** Un resumen de cuenta es respaldo documental y ya hay
    dónde ponerlo (`tipo_comprobante = extracto`, bucket privado). Guardarlo hace
    auditable la importación; no guardarlo deja el «de dónde salió esto» en el aire.
@@ -1683,16 +1734,20 @@ importación aunque el formulario traiga basura.
 de una entidad necesita una fila que diga «acá había esto». Cualquier cliente que
 empiece a usar esto con plata ya en la cuenta la va a necesitar.
 
-#### Lo que ya está hecho y se reusa
+#### Lo que quedó abierto de §14.3
 
-- `clasificar()`, `aNumero()`, `aFechaISO()` y `referenciaDe()` en
-  `src/lib/importarMovimientos.js` — puros y con 19 tests sobre datos reales.
-- La idempotencia entera: `referencia_externa` UNIQUE en las dos tablas y
-  `referencias_ya_cargadas()`.
-- La pantalla de previsualización, que solo cambiaría de fuente de datos.
+- 🟡 **El archivo no se guarda.** Un resumen de cuenta es respaldo documental y ya
+  hay dónde ponerlo (`tipo_comprobante = extracto`, bucket privado). Guardarlo hace
+  auditable la importación; hoy el «de dónde salió esto» queda en el aire. Es la
+  decisión 3 de arriba, todavía sin tomar.
+- 🟡 **Un lote, un destino.** Sigue igual: si un extracto mezcla destinos hay que
+  importarlo por partes (§10.11 permite reimputar, pero es más trabajo).
+- 🟡 **La comisión de la pasarela sigue sin poder rendirse.** No está en el resumen
+  de cuenta en ningún formato; requiere otro reporte de MercadoPago —Liberaciones o
+  Ventas— y eso está sin explorar.
 
-**Lo único genuinamente nuevo es la extracción y los tres niveles de
-verificación.** El resto ya funciona.
+**Toda la lógica que decide es pura y está en `src/lib/importarMovimientos.js`,
+con 41 tests sobre datos reales.** El componente solo muestra y confirma.
 
 ---
 

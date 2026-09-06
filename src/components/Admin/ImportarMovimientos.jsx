@@ -1,6 +1,6 @@
 // src/components/Admin/ImportarMovimientos.jsx
 //
-// Pegar un extracto y que salga la rendición — ROADMAP §14.2.
+// Subir los extractos de la cuenta y que salga la rendición — ROADMAP §14.2/§14.3.
 //
 // POR QUÉ ESTA PANTALLA ES EL ÍTEM CON MÁS VALOR DEL PROYECTO
 //
@@ -20,11 +20,24 @@
 //     un particular en la descripción, y publicar un gasto lo publica entero.
 //     Revisar y publicar es un acto aparte.
 //  3. **Reimportar es seguro.** La previsualización marca lo ya cargado y el
-//     INSERT igual usa `ignoreDuplicates`. Que se pueda pegar el mismo extracto
+//     INSERT igual usa `ignoreDuplicates`. Que se pueda subir el mismo extracto
 //     dos veces sin miedo es lo que hace que alguien se anime a empezar.
-import React, { useMemo, useState } from 'react';
+//
+// ⚠️ **LO QUE NO CUADRA NO SE IMPORTA, Y LO INCOMPLETO SÍ.** Es la distinción que
+// ordena las tres verificaciones y no es un detalle de UI:
+//   · niveles 1 y 2 (saldo corrido y totales del período) fallan cuando lo que se
+//     leyó **está mal** — un importe mal interpretado, un archivo cortado. Eso
+//     bloquea: cargarlo mete un error que después hay que buscar movimiento por
+//     movimiento contra el extracto en papel.
+//   · el nivel 3 (cadena entre resúmenes) falla cuando **falta un mes**. Eso avisa
+//     pero no bloquea: importar octubre y diciembre sin noviembre es incompleto,
+//     no incorrecto, y es exactamente lo que hace alguien que va bajando los
+//     extractos de a uno.
+import React, { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Loader2, AlertTriangle, CheckCircle2, FileSpreadsheet } from 'lucide-react';
+import {
+  Upload, Loader2, AlertTriangle, CheckCircle2, FileSpreadsheet, X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,29 +47,48 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { useDestinos } from '@/hooks/useContentQueries';
 import {
-  parsearExtracto, resumirLote, verificarSaldoCorrido, verificarTotales,
+  consolidarArchivos, anterioresA, delDiaDelInicio, resumirLote,
+  verificarSaldoCorrido, verificarTotales, verificarCadena,
 } from '@/lib/importarMovimientos';
 import { getReferenciasCargadas, importarLote } from '@/api/importarApi';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
 
+const enFecha = (iso, opciones) =>
+  iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('es-AR', opciones) : '—';
+
 const ImportarMovimientos = () => {
   const queryClient = useQueryClient();
   const { data: destinos = [] } = useDestinos();
+  const inputArchivos = useRef(null);
 
   const [texto, setTexto] = useState('');
+  const [archivos, setArchivos] = useState([]); // [{ nombre, texto }]
   const [destinoId, setDestinoId] = useState('');
-  const [analisis, setAnalisis] = useState(null); // { filas, errores, yaCargadas }
-  const [excluidas, setExcluidas] = useState(() => new Set());
+  const [analisis, setAnalisis] = useState(null); // { resumenes, filas, errores, yaCargadas }
   const [trabajando, setTrabajando] = useState(false);
 
-  const analizar = async () => {
+  /*
+    UNA SOLA DECISIÓN POR FILA, Y ES UN OVERRIDE.
+
+    No es un set de "excluidas" sino un mapa `indice -> entra`, porque el default
+    ya no es siempre "sí": una fila anterior a la fecha de inicio del destino
+    nace destildada. Con un set de exclusiones, cambiar de destino tendría que
+    reescribir el estado —y pisaría lo que la persona destildó a mano—. Con el
+    override, el default se recalcula solo y las decisiones manuales sobreviven.
+  */
+  const [decisiones, setDecisiones] = useState(() => new Map());
+
+  const destino = destinos.find((d) => d.id === destinoId) ?? null;
+
+  const analizar = async (entradas) => {
+    const fuentes = entradas ?? (archivos.length ? archivos : [{ nombre: 'Pegado', texto }]);
     setTrabajando(true);
-    const { filas, errores, declarado } = parsearExtracto(texto);
+    const { resumenes, filas, errores } = consolidarArchivos(fuentes);
 
     if (errores.length) {
-      setAnalisis({ filas: [], errores, declarado: null, yaCargadas: new Set() });
+      setAnalisis({ resumenes: [], filas: [], errores, yaCargadas: new Set() });
       setTrabajando(false);
       return;
     }
@@ -74,26 +106,62 @@ const ImportarMovimientos = () => {
       return;
     }
 
-    setExcluidas(new Set());
+    setDecisiones(new Map());
     setAnalisis({
+      resumenes,
       filas,
       errores: [],
-      declarado,
       yaCargadas: new Set((cargadas ?? []).map((c) => c.referencia_externa)),
     });
   };
 
-  // Lo que efectivamente se va a escribir: sin problemas, sin duplicados y sin
-  // lo que la persona destildó.
-  const aImportar = useMemo(() => {
-    if (!analisis) return [];
-    return analisis.filas.filter(
-      (f) =>
-        !f.problema &&
-        !excluidas.has(f.indice) &&
-        (!f.referencia || !analisis.yaCargadas.has(f.referencia))
+  const elegirArchivos = async (e) => {
+    const lista = Array.from(e.target.files ?? []);
+    if (!lista.length) return;
+    // `Blob.text()` y no FileReader: son 23 archivos, y esto es una promesa por
+    // archivo en vez de 23 callbacks anidados.
+    const leidos = await Promise.all(
+      lista.map(async (f) => ({ nombre: f.name, texto: await f.text() }))
     );
-  }, [analisis, excluidas]);
+    setArchivos(leidos);
+    setTexto('');
+    await analizar(leidos);
+  };
+
+  const limpiarArchivos = () => {
+    setArchivos([]);
+    setAnalisis(null);
+    setDecisiones(new Map());
+    if (inputArchivos.current) inputArchivos.current.value = '';
+  };
+
+  // Los movimientos anteriores a la fecha de inicio del destino: son de la etapa
+  // previa y no le pertenecen al fondo. Nacen destildados, no bloqueados.
+  const anteriores = useMemo(
+    () => (analisis ? anterioresA(analisis.filas, destino?.fecha_inicio) : new Set()),
+    [analisis, destino?.fecha_inicio]
+  );
+
+  // Los del día mismo del inicio. Se marcan pero NO se destildan: un fondo puede
+  // arrancar a mitad de un día, así que ahí conviven movimientos de las dos
+  // etapas y ninguna regla automática puede separarlos sin equivocarse.
+  const delDia = useMemo(
+    () => (analisis ? delDiaDelInicio(analisis.filas, destino?.fecha_inicio) : new Set()),
+    [analisis, destino?.fecha_inicio]
+  );
+
+  const estadoDe = (f) => {
+    const yaEsta = Boolean(f.referencia && analisis.yaCargadas.has(f.referencia));
+    const bloqueada = Boolean(f.problema) || yaEsta;
+    const porDefecto = !bloqueada && !anteriores.has(f.indice);
+    const entra = bloqueada ? false : decisiones.get(f.indice) ?? porDefecto;
+    return { yaEsta, bloqueada, entra };
+  };
+
+  const aImportar = useMemo(
+    () => (analisis ? analisis.filas.filter((f) => estadoDe(f).entra) : []),
+    [analisis, decisiones, anteriores] // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const resumen = useMemo(
     () => (analisis ? resumirLote(analisis.filas, analisis.yaCargadas) : null),
@@ -103,25 +171,29 @@ const ImportarMovimientos = () => {
   /*
     LAS VERIFICACIONES (§14.3). Salen de datos que el propio resumen de cuenta
     trae —el saldo corrido de cada fila y los totales del encabezado—, así que no
-    dependen de que le creemos al parser.
+    dependen de que le creamos al parser.
 
-    Son lo que convierte un cambio de formato del banco en un aviso claro en vez
-    de en datos silenciosamente mal cargados. Sin ellas, esta pantalla sería un
-    acto de fe.
+    Los niveles 1 y 2 son POR ARCHIVO: cada extracto declara sus propios totales,
+    y sumarlos todos juntos escondería justo el archivo que no cuadra.
   */
   const verificaciones = useMemo(() => {
-    if (!analisis?.declarado) return null;
-    return {
-      saldo: verificarSaldoCorrido(analisis.filas, analisis.declarado.saldoInicial),
-      totales: verificarTotales(analisis.filas, analisis.declarado),
-    };
+    if (!analisis) return [];
+    return analisis.resumenes.map((r) => ({
+      nombre: r.nombre,
+      desde: r.desde,
+      movimientos: r.filas.length,
+      saldo: r.declarado ? verificarSaldoCorrido(r.filas, r.declarado.saldoInicial) : null,
+      totales: r.declarado ? verificarTotales(r.filas, r.declarado) : null,
+    }));
   }, [analisis]);
 
-  // Con las verificaciones en rojo NO se importa: cargar un lote que no cuadra
-  // contra lo que declara el banco es meter un error que después hay que buscar
-  // movimiento por movimiento.
-  const cuadra =
-    !verificaciones || (verificaciones.saldo?.ok !== false && verificaciones.totales?.ok !== false);
+  const cuadra = verificaciones.every((v) => v.saldo?.ok !== false && v.totales?.ok !== false);
+
+  // Nivel 3. Solo tiene sentido con más de un resumen, y avisa sin bloquear.
+  const cadena = useMemo(
+    () => (analisis && analisis.resumenes.length > 1 ? verificarCadena(analisis.resumenes) : null),
+    [analisis]
+  );
 
   const importar = async () => {
     if (!destinoId) {
@@ -157,37 +229,74 @@ const ImportarMovimientos = () => {
     await analizar();
   };
 
-  const alternar = (indice) => {
-    setExcluidas((prev) => {
-      const s = new Set(prev);
-      if (s.has(indice)) s.delete(indice);
-      else s.add(indice);
-      return s;
-    });
+  const alternar = (f) => {
+    const { entra } = estadoDe(f);
+    setDecisiones((prev) => new Map(prev).set(f.indice, !entra));
   };
+
+  const variosArchivos = (analisis?.resumenes?.length ?? 0) > 1;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
       <SectionHeader
         icon={FileSpreadsheet}
         title="Importar movimientos"
-        description="Pegá el extracto de la cuenta y se propone qué cargar. Nada se escribe hasta que lo confirmes, y volver a pegar el mismo período no duplica nada."
+        description="Subí los extractos de la cuenta y se propone qué cargar. Podés elegir varios meses juntos; nada se escribe hasta que lo confirmes, y volver a subir el mismo período no duplica nada."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <div className="lg:col-span-2">
-          <Label htmlFor="extracto">Extracto pegado</Label>
-          <Textarea
-            id="extracto"
-            className="mt-1 font-mono text-xs h-48"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={'Fecha\tDescripción\tID de la operación\tValor\tSaldo\n10-10-2024\tTransferencia enviada …\t90165423466\t$ -937.776,27\t…'}
+          <Label htmlFor="archivos">Extractos (.csv)</Label>
+          <input
+            ref={inputArchivos}
+            id="archivos"
+            type="file"
+            accept=".csv,text/csv"
+            multiple
+            onChange={elegirArchivos}
+            className="mt-1 block w-full text-sm file:mr-3 file:rounded-sm file:border-0 file:bg-brand-sand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-dark hover:file:bg-brand-sand/70"
           />
           <p className="mt-1 text-xs text-brand-dark/55">
-            La primera línea tiene que ser el encabezado. Sirve lo que copies de la planilla
-            del extracto, separado por tabulaciones, punto y coma o comas.
+            El <code>.csv</code> que baja MercadoPago desde Reportes → Resumen de cuenta.
+            Elegí todos los meses de una vez: se ordenan solos por período y se avisa si
+            falta alguno. El <code>.xlsx</code> trae exactamente lo mismo, así que no hace
+            falta.
           </p>
+
+          {archivos.length > 0 && (
+            <div className="mt-2 flex items-start gap-2 text-xs text-brand-dark/70">
+              <span className="flex-1">
+                <strong>{archivos.length}</strong>{' '}
+                {archivos.length === 1 ? 'archivo elegido' : 'archivos elegidos'}
+              </span>
+              <button
+                type="button"
+                onClick={limpiarArchivos}
+                className="inline-flex items-center gap-1 text-brand-dark/60 hover:text-brand-dark"
+              >
+                <X className="h-3 w-3" /> Quitar
+              </button>
+            </div>
+          )}
+
+          {archivos.length === 0 && (
+            <>
+              <Label htmlFor="extracto" className="mt-4 block">
+                O pegar el extracto a mano
+              </Label>
+              <Textarea
+                id="extracto"
+                className="mt-1 font-mono text-xs h-32"
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder={'Fecha\tDescripción\tID de la operación\tValor\tSaldo\n10-10-2024\tTransferencia enviada …\t90165423466\t$ -937.776,27\t…'}
+              />
+              <p className="mt-1 text-xs text-brand-dark/55">
+                Sirve para un pedazo suelto. La primera línea tiene que ser el encabezado,
+                separado por tabulaciones, punto y coma o comas.
+              </p>
+            </>
+          )}
         </div>
 
         <div>
@@ -206,27 +315,40 @@ const ImportarMovimientos = () => {
             Todo el lote se imputa acá. Si un extracto mezcla destinos, conviene importarlo
             por partes: reimputar después es más trabajo que separar antes.
           </p>
+          {destino?.fecha_inicio && (
+            <p className="mt-1 text-xs text-brand-dark/55">
+              Este destino arranca el <strong>{enFecha(destino.fecha_inicio)}</strong>. Lo
+              anterior se destilda solo; lo de ese día mismo se marca para que lo revises,
+              porque un fondo puede empezar a mitad de un día.
+            </p>
+          )}
 
-          <Button
-            className="mt-4 w-full"
-            variant="outline"
-            onClick={analizar}
-            disabled={!texto.trim() || trabajando}
-          >
-            {trabajando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Analizar
-          </Button>
+          {archivos.length === 0 && (
+            <Button
+              className="mt-4 w-full"
+              variant="outline"
+              onClick={() => analizar()}
+              disabled={!texto.trim() || trabajando}
+            >
+              {trabajando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Analizar
+            </Button>
+          )}
         </div>
       </div>
 
       {analisis?.errores?.length > 0 && (
-        <div className="rounded-sm border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          <AlertTriangle className="inline h-4 w-4 mr-1.5" />
-          {analisis.errores.join(' ')}
+        <div className="rounded-sm border border-red-200 bg-red-50 p-4 text-sm text-red-800 space-y-1">
+          {analisis.errores.map((e) => (
+            <p key={e}>
+              <AlertTriangle className="inline h-4 w-4 mr-1.5" />
+              {e}
+            </p>
+          ))}
         </div>
       )}
 
-      {verificaciones && (
+      {verificaciones.length > 0 && (
         <div
           className={`mb-4 rounded-sm border p-4 text-sm ${
             cuadra ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
@@ -238,27 +360,105 @@ const ImportarMovimientos = () => {
               : 'Lo extraído NO cuadra con lo que declara el resumen'}
           </p>
 
-          <ul className="space-y-1 text-brand-dark/75">
-            <li>
-              {verificaciones.saldo?.ok ? '✅' : '❌'} <strong>Saldo corrido:</strong>{' '}
-              {verificaciones.saldo?.ok
-                ? `${analisis.filas.length} movimientos, sin desvíos`
-                : `${verificaciones.saldo?.desvios.length} desvío(s) — hay un importe mal leído`}
-            </li>
-            <li>
-              {verificaciones.totales?.ok ? '✅' : '❌'} <strong>Totales del período:</strong>{' '}
-              entradas {pesos(verificaciones.totales?.entradas.extraido)} contra{' '}
-              {pesos(verificaciones.totales?.entradas.declarado)} declaradas · salidas{' '}
-              {pesos(verificaciones.totales?.salidas.extraido)} contra{' '}
-              {pesos(verificaciones.totales?.salidas.declarado)}
-            </li>
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs tabular-nums">
+              <thead className="text-left text-brand-dark/55">
+                <tr>
+                  <th className="py-1 pr-3 font-semibold">Resumen</th>
+                  <th className="py-1 pr-3 font-semibold">Período</th>
+                  <th className="py-1 pr-3 font-semibold text-right">Movim.</th>
+                  <th className="py-1 pr-3 font-semibold">Saldo corrido</th>
+                  <th className="py-1 font-semibold">Totales del período</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-dark/10">
+                {verificaciones.map((v) => (
+                  <tr key={v.nombre}>
+                    <td className="py-1 pr-3 max-w-[16rem] truncate" title={v.nombre}>
+                      {v.nombre}
+                    </td>
+                    <td className="py-1 pr-3 whitespace-nowrap">
+                      {enFecha(v.desde, { month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="py-1 pr-3 text-right">{v.movimientos}</td>
+                    <td className="py-1 pr-3 whitespace-nowrap">
+                      {!v.saldo && <span className="text-brand-dark/40">sin saldo declarado</span>}
+                      {v.saldo?.ok === true && '✅ sin desvíos'}
+                      {v.saldo?.ok === false && (
+                        <span className="text-red-800">
+                          ❌ {v.saldo.desvios.length} desvío(s) — hay un importe mal leído
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-1 whitespace-nowrap">
+                      {!v.totales && (
+                        <span className="text-brand-dark/40">sin totales declarados</span>
+                      )}
+                      {v.totales?.ok === true && (
+                        <>
+                          ✅ {pesos(v.totales.entradas.extraido)} /{' '}
+                          {pesos(v.totales.salidas.extraido)}
+                        </>
+                      )}
+                      {v.totales?.ok === false && (
+                        <span className="text-red-800">
+                          ❌ entradas {pesos(v.totales.entradas.extraido)} contra{' '}
+                          {pesos(v.totales.entradas.declarado)} · salidas{' '}
+                          {pesos(v.totales.salidas.extraido)} contra{' '}
+                          {pesos(v.totales.salidas.declarado)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {!cuadra && (
             <p className="mt-2 text-red-800">
-              No se puede importar hasta que cuadre. Lo más probable: el texto pegado está
-              incompleto, o falta una parte del período.
+              No se puede importar hasta que cuadre. Lo más probable: el archivo está
+              cortado, o falta una parte del período.
             </p>
+          )}
+        </div>
+      )}
+
+      {/*
+        Nivel 3. Va en su propio recuadro y en ámbar, no en rojo, porque significa
+        otra cosa: los datos están bien, falta un mes. Importar igual es válido.
+      */}
+      {cadena && (
+        <div
+          className={`mb-4 rounded-sm border p-4 text-sm ${
+            cadena.ok ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
+          }`}
+        >
+          {cadena.ok ? (
+            <p className="text-brand-dark/75">
+              ✅ <strong>La cadena cierra:</strong> el saldo final de cada resumen es el
+              inicial del siguiente, en los {analisis.resumenes.length} archivos.
+            </p>
+          ) : (
+            <>
+              <p className="font-bold text-brand-dark mb-1">
+                <AlertTriangle className="inline h-4 w-4 mr-1.5" />
+                Falta al menos un resumen en el medio
+              </p>
+              <ul className="space-y-1 text-brand-dark/75">
+                {cadena.huecos.map((h) => (
+                  <li key={h.entre.join('→')}>
+                    Entre <strong>{h.entre[0]}</strong> y <strong>{h.entre[1]}</strong>: uno
+                    cierra en {pesos(h.cierra)} y el otro abre en {pesos(h.abre)} —{' '}
+                    <strong>{pesos(Math.abs(h.diferencia))}</strong> sin explicar.
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-brand-dark/75">
+                Se puede importar igual: lo que hay está bien, pero la rendición va a quedar
+                incompleta hasta que subas el período que falta.
+              </p>
+            </>
           )}
         </div>
       )}
@@ -277,6 +477,17 @@ const ImportarMovimientos = () => {
                 <strong>{resumen.duplicadas}</strong> ya cargados, se saltean
               </span>
             )}
+            {anteriores.size > 0 && (
+              <span className="text-amber-700">
+                <strong>{anteriores.size}</strong> anteriores al inicio del destino,
+                destildados
+              </span>
+            )}
+            {delDia.size > 0 && (
+              <span className="text-amber-700">
+                <strong>{delDia.size}</strong> del día del inicio: revisalos a mano
+              </span>
+            )}
             {resumen.conProblema > 0 && (
               <span className="text-amber-700">
                 <strong>{resumen.conProblema}</strong> sin entender
@@ -290,6 +501,7 @@ const ImportarMovimientos = () => {
                 <tr>
                   <th className="p-2 w-8" />
                   <th className="p-2">Fecha</th>
+                  {variosArchivos && <th className="p-2">Resumen</th>}
                   <th className="p-2">Descripción</th>
                   <th className="p-2">Categoría</th>
                   <th className="p-2 text-right">Monto</th>
@@ -298,20 +510,27 @@ const ImportarMovimientos = () => {
               </thead>
               <tbody className="divide-y divide-brand-dark/10">
                 {analisis.filas.map((f) => {
-                  const yaEsta = f.referencia && analisis.yaCargadas.has(f.referencia);
-                  const entra = !f.problema && !yaEsta && !excluidas.has(f.indice);
+                  const { yaEsta, bloqueada, entra } = estadoDe(f);
                   return (
                     <tr key={f.indice} className={entra ? '' : 'opacity-50'}>
                       <td className="p-2">
                         <input
                           type="checkbox"
                           checked={entra}
-                          disabled={Boolean(f.problema) || Boolean(yaEsta)}
-                          onChange={() => alternar(f.indice)}
+                          disabled={bloqueada}
+                          onChange={() => alternar(f)}
                           aria-label={`Incluir el movimiento ${f.descripcion}`}
                         />
                       </td>
                       <td className="p-2 tabular-nums whitespace-nowrap">{f.fecha ?? '—'}</td>
+                      {variosArchivos && (
+                        <td
+                          className="p-2 text-xs text-brand-dark/50 max-w-[10rem] truncate"
+                          title={f.archivo}
+                        >
+                          {f.archivo}
+                        </td>
+                      )}
                       <td className="p-2 max-w-xs truncate" title={f.descripcion}>
                         {f.descripcion || f.linea}
                       </td>
@@ -326,6 +545,14 @@ const ImportarMovimientos = () => {
                       <td className="p-2 text-xs">
                         {f.problema && <span className="text-amber-700">{f.problema}</span>}
                         {yaEsta && <span className="text-brand-dark/50">Ya cargado</span>}
+                        {!bloqueada && anteriores.has(f.indice) && (
+                          <span className="text-amber-700">Anterior al inicio de este destino</span>
+                        )}
+                        {!bloqueada && delDia.has(f.indice) && (
+                          <span className="text-amber-700">
+                            Del día del inicio: puede ser de la etapa anterior
+                          </span>
+                        )}
                         {f.aviso && <span className="text-amber-700">{f.aviso}</span>}
                       </td>
                     </tr>

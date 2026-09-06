@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   aNumero, aFechaISO, clasificar, referenciaDe, parsearExtracto, resumirLote,
-  verificarSaldoCorrido, verificarTotales, verificarCadena,
+  verificarSaldoCorrido, verificarTotales, verificarCadena, consolidarArchivos, anterioresA, delDiaDelInicio,
 } from '@/lib/importarMovimientos';
 
 // Extracto real, recortado. El encabezado es el que trae MercadoPago.
@@ -263,5 +263,130 @@ describe('las tres verificaciones (§14.3)', () => {
       { nombre: 'nov', declarado: { saldoInicial: 921251.3, saldoFinal: 800000 } },
     ]);
     expect(v.ok).toBe(true);
+  });
+});
+
+/*
+  Varios archivos de una vez. Lo que se fija acá es lo que aparece SOLO al
+  juntarlos: el orden, la renumeración de índices y el mismo archivo elegido dos
+  veces. Con 23 extractos, los tres son cuestión de tiempo.
+*/
+const CSV_OCT = [
+  'INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE',
+  '1.000,00;500,00;-300,00;1.200,00',
+  '',
+  'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+  '05-10-2024;Liquidación de dinero;111;500,00;1.500,00',
+  '20-10-2024;Impuesto por extracción;222;-300,00;1.200,00',
+].join('\n');
+
+const CSV_NOV = [
+  'INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE',
+  '1.200,00;100,00;0,00;1.300,00',
+  '',
+  'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+  '03-11-2024;Liquidación de dinero;333;100,00;1.300,00',
+].join('\n');
+
+describe('consolidarArchivos — varios extractos en un lote', () => {
+  // Los nombres están elegidos para que el orden alfabético dé el orden CONTRARIO
+  // al cronológico: si esto pasa ordenando por nombre, el test falla.
+  const elegidos = [
+    { nombre: 'account_statement-aaa.csv', texto: CSV_NOV },
+    { nombre: 'account_statement-zzz.csv', texto: CSV_OCT },
+  ];
+
+  it('🔒 ordena por el primer movimiento, no por el nombre del archivo', () => {
+    const { resumenes } = consolidarArchivos(elegidos);
+    expect(resumenes.map((r) => r.nombre)).toEqual([
+      'account_statement-zzz.csv',
+      'account_statement-aaa.csv',
+    ]);
+  });
+
+  it('🔒 renumera los índices de corrido: por archivo se pisarían', () => {
+    const { filas } = consolidarArchivos(elegidos);
+    expect(filas.map((f) => f.indice)).toEqual([0, 1, 2]);
+    expect(filas.map((f) => f.fecha)).toEqual(['2024-10-05', '2024-10-20', '2024-11-03']);
+  });
+
+  it('lleva el archivo de origen en cada fila, para poder señalarlo', () => {
+    const { filas } = consolidarArchivos(elegidos);
+    expect(filas[0].archivo).toBe('account_statement-zzz.csv');
+    expect(filas[2].archivo).toBe('account_statement-aaa.csv');
+  });
+
+  it('🔒 detecta el mismo extracto elegido dos veces', () => {
+    const { filas } = consolidarArchivos([
+      { nombre: 'octubre.csv', texto: CSV_OCT },
+      { nombre: 'octubre (1).csv', texto: CSV_OCT },
+    ]);
+    const sanas = filas.filter((f) => !f.problema);
+    expect(sanas).toHaveLength(2);
+    expect(filas.filter((f) => f.problema)).toHaveLength(2);
+    // Cuál de los dos archivos queda como el bueno lo decide el desempate por
+    // nombre y da igual; lo que importa es que sobreviva UNO SOLO entero y que
+    // el aviso señale cuál, para que la persona sepa qué archivo sacar.
+    expect(new Set(sanas.map((f) => f.archivo)).size).toBe(1);
+    expect(filas[2].problema).toContain(sanas[0].archivo);
+  });
+
+  it('NO marca una referencia repetida dentro de un mismo archivo', () => {
+    // Ahí sí puede ser legítima, y marcarla dejaría afuera un movimiento real.
+    const dosIguales = [
+      'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+      '05-10-2024;Comisión;111;-10,00;90,00',
+      '05-10-2024;Comisión;111;-10,00;80,00',
+    ].join('\n');
+    const { filas } = consolidarArchivos([{ nombre: 'x.csv', texto: dosIguales }]);
+    expect(filas.every((f) => !f.problema)).toBe(true);
+  });
+
+  it('dice de qué archivo es cada error', () => {
+    const { errores } = consolidarArchivos([{ nombre: 'roto.csv', texto: 'una;cosa\n1;2' }]);
+    expect(errores[0]).toMatch(/^roto\.csv: /);
+  });
+
+  it('lo consolidado alimenta la verificación de cadena sin retoques', () => {
+    const { resumenes } = consolidarArchivos(elegidos);
+    expect(verificarCadena(resumenes).ok).toBe(true);
+  });
+});
+
+describe('anterioresA — el corte por fecha de inicio del destino', () => {
+  const { filas } = consolidarArchivos([
+    { nombre: 'oct.csv', texto: CSV_OCT },
+    { nombre: 'nov.csv', texto: CSV_NOV },
+  ]);
+
+  it('🔒 marca lo que pasó antes de que el fondo existiera', () => {
+    // El caso real: el fondo del convenio arranca el 10/10/2024 y el extracto de
+    // octubre trae también movimientos de la etapa anterior.
+    expect([...anterioresA(filas, '2024-10-10')]).toEqual([0]);
+  });
+
+  it('sin fecha de inicio no marca nada, en vez de marcar todo', () => {
+    expect(anterioresA(filas, null).size).toBe(0);
+  });
+
+  it('no marca el movimiento del día mismo del inicio', () => {
+    expect(anterioresA(filas, '2024-10-05').size).toBe(0);
+  });
+});
+
+describe('delDiaDelInicio — el borde que la fecha sola no resuelve', () => {
+  const { filas } = consolidarArchivos([{ nombre: 'oct.csv', texto: CSV_OCT }]);
+
+  it('🔒 marca los movimientos del día del inicio, que `anterioresA` no ve', () => {
+    // El caso real: el 10/10/2024 la cuenta hizo la transferencia de cierre del
+    // convenio y pagó su impuesto, y RECIÉN DESPUÉS el resto pasó a ser el fondo.
+    // El saldo inicial cargado ya está neto de esos dos: importarlos los cuenta
+    // dos veces.
+    expect([...anterioresA(filas, '2024-10-05')]).toEqual([]);
+    expect([...delDiaDelInicio(filas, '2024-10-05')]).toEqual([0]);
+  });
+
+  it('no marca nada sin fecha de inicio', () => {
+    expect(delDiaDelInicio(filas, null).size).toBe(0);
   });
 });
