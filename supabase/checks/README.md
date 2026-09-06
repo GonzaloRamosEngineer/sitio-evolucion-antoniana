@@ -24,7 +24,9 @@ la base.
   que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
   trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que
   es la razón entera de la migración. Un check que solo probara «se puede crear con los
-  dos flags en false» no probaría lo segundo.
+  dos flags en false» no probaría lo segundo. Cubre además la **idempotencia de la
+  importación** (§14.2): que reimportar no duplique, y que el impuesto que comparte id de
+  operación con su transferencia **sí** entre — sin eso desaparecería en silencio.
 - **`membresia-check.sql`** — lo que cierra §10: la figura institucional (`miembros`),
   el reclamo universal de huellas, el precio de actividades y el apadrinamiento. Tres de
   las cuatro piezas **otorgan algo** —condición, identidad o figurar sosteniendo un cupo—
@@ -85,7 +87,7 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovaci
 # fallas y cero pruebas se ven idénticos si solo se mira una de las dos cifras.
 #
 # Referencia al 2026-09-05, sobre una base recién migrada:
-#   payer-email=8   reclamar=17   club=17   membresia=36   fondos=10
+#   payer-email=8   reclamar=17   club=17   membresia=36   fondos=15
 #   rls=0  acceso=0  renovacion=0   <-- ver abajo, no es un error
 
 # 4. Limpiar

@@ -89,12 +89,15 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
    mirar apareció que `/rendicion` dice en público «Rendido $0 · **0%** de lo recaudado ya
    tiene rendición publicada». Publicar 8 campañas encima de eso multiplica por nueve una
    promesa vacía — justo lo que §10.8 prohíbe.
-   El destino ya está creado (`fondo-convenio-2024`) y el ABM acepta comprobante en los
-   ingresos desde §14. Falta la carga, que es de la Fundación:
-   **a)** el aporte de $1.000.000 con la certificación notarial adjunta;
-   **b)** los gastos, que salen del extracto de MercadoPago con fecha y concepto.
-   ⚠️ **Usar el id del movimiento como `referencia_externa`**: las donaciones que el
-   webhook ya cargó están en ese mismo extracto, y sin eso entran dos veces.
+   El destino ya está creado (`fondo-convenio-2024`, rindiendo **desde el 10/10/2024**) y
+   **desde §14.2 hay importador**: `/admin → Importar movimientos`, se pega el extracto y
+   se confirma. Reimportar no duplica.
+   Falta, y es de la Fundación:
+   **a)** el aporte de $1.000.000 con la certificación notarial adjunta (a mano: no es un
+   movimiento del extracto, es el resguardo que quedó al liquidar);
+   **b)** los 23 meses de extractos, con el importador.
+   ⚠️ **Los gastos entran SIN publicar**, a propósito: la descripción de un movimiento
+   puede traer el nombre de un particular. Revisar y publicar es un paso aparte.
 
 2. 🟡 **Recién después, publicar las campañas en borrador.** Son 8, **ninguna tiene
    imagen ni meta** (verificado el 2026-09-05), así que además de activarlas hay que
@@ -1379,6 +1382,11 @@ eso es lo que no se compite por precio.
 **El diferencial no es la página de rendición. Es que cargar los datos salga tan
 barato que efectivamente se haga.**
 
+✅ **Y por eso §14.2 se construyó el mismo día**: pegar el extracto y que salga la
+rendición. Lo que sigue abajo es la evidencia de por qué era urgente, y se
+conserva porque la advertencia sigue viva — **la herramienta existe, el hábito de
+usarla no**.
+
 La evidencia está en esta misma base. La fase 2 —gastos, comprobante y
 `/rendicion` pública— está construida, probada y desplegada **desde el
 2026-08-16**. Al 2026-09-06 tiene **cero gastos cargados**, y la página dice en
@@ -1418,30 +1426,62 @@ construirlo.
 ⚠️ **Y no inventar el estado antes de tener el caso.** Es la lección de §10.1.d:
 se construyó `precio_socio` sobre 12 actividades gratuitas y hoy no mueve nada.
 
-### 14.2 — 🔴 Importación desde extracto — es la que decide
+### 14.2 — ✅ Importación desde extracto (2026-09-06)
 
-**El ítem con más valor de todo lo que queda, y con diferencia.**
+**Construida.** Era el ítem con más valor de lo que quedaba y dejó de estar
+pendiente el mismo día que se escribió la tesis, porque apareció el dato que lo
+volvió urgente: la Fundación tiene extractos de MercadoPago **de octubre de 2024
+hasta hoy — 23 meses**. Cargar eso de a uno no iba a pasar nunca.
 
-Pegar un extracto de la pasarela o del banco y que salga la rendición. Es la
-diferencia entre una funcionalidad que **se usa** y una que **se demuestra**.
+`/admin → Importar movimientos`: se pega el extracto, se elige el destino, se
+previsualiza y se confirma.
 
-Lo que lo hace viable ya está construido sin que fuera el objetivo:
+**Las tres reglas de la pantalla:**
 
-- **`aportes.referencia_externa` es UNIQUE** (§10.11, para que un reintento del
-  webhook no duplicara un cobro). Usando el id del movimiento como referencia,
-  **una importación repetida no duplica nada**: la base rechaza el duplicado sola,
-  sin que nadie tenga que acordarse.
-- `origen = 'manual'` ya contempla plata que no vino de una pasarela.
-- `gastos` ya tiene fecha, concepto, proveedor y comprobante.
+1. **Propone, no ejecuta.** Nada se escribe hasta que alguien mira y aprieta. Las
+   heurísticas de clasificación aciertan la mayoría y se equivocan algunas; el
+   trabajo humano es destildar tres filas, no escribir cuatrocientas.
+2. **Nada entra publicado.** La descripción de un movimiento bancario puede traer
+   el nombre de un particular, y publicar un gasto lo publica entero. Revisar y
+   publicar es un acto aparte.
+3. **Reimportar es seguro**, y eso es lo que hace que alguien se anime a empezar.
 
-⚠️ **La trampa a no pisar, y es concreta:** los aportes que el webhook ya escribió
-—las donaciones y las cuotas cobradas— **están en el extracto también**. Importar
-sin `referencia_externa` los carga dos veces y la rendición queda mal para siempre.
+#### La clave de idempotencia, y por qué no es solo el id
 
-**Lo realista:** parte del trabajo va a seguir siendo humano. Un movimiento que
-dice «Transferencia a CBU …» no tiene concepto, y alguien va a tener que
-escribirlo. El objetivo no es cero trabajo: es que cargar tres meses de
-movimientos deje de ser una tarde y pase a ser un rato.
+`<fuente>:<id de operación>:<monto>`, p. ej. `mp:90165423466:-5626.66`.
+
+⚠️ **En el extracto de MercadoPago el impuesto comparte el id de operación con la
+transferencia que lo generó.** Del extracto real de octubre de 2024:
+
+```
+10-10-2024  Transferencia enviada Centro Juventud Antoniana  90165423466  -937.776,27
+10-10-2024  Impuesto por extracción                          90165423466    -5.626,66
+```
+
+Con la clave siendo solo el id, el segundo se rechaza como duplicado y **el
+impuesto no entra nunca**: un gasto que desaparece en silencio, que es peor que
+uno duplicado porque nadie lo busca. Está ejercitado en `fondos-check.sql` (T6b) y
+se comprobó saboteándolo.
+
+**Su límite, declarado:** dos movimientos con el mismo id **y** el mismo monto se
+verían como uno. No apareció un caso así; el costo de equivocarse es un gasto no
+cargado, no uno duplicado.
+
+#### La garantía, en dos capas a propósito
+
+La previsualización descarta lo ya cargado —eso es UX— y el INSERT igual usa
+`upsert` con `ignoreDuplicates` —eso es la garantía—. Con solo lo primero, entre
+el filtro y el insert hay una ventana y el segundo click cae justo ahí.
+
+#### Lo que quedó pendiente de esto
+
+- 🟡 **Un extracto que mezcla destinos** hay que importarlo por partes: el lote
+  entero se imputa a un destino. Reimputar después existe (§10.11) pero es más
+  trabajo que separar antes.
+- 🟡 **Las heurísticas de clasificación son de vocabulario castellano de
+  MercadoPago.** Están como dato (`REGLAS` en `src/lib/importarMovimientos.js`),
+  así que sumar otro banco es agregar filas — pero todavía nadie lo probó con
+  otro.
 
 ---
 

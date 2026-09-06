@@ -6,13 +6,43 @@
 -- concreto, con su monto y su historia, es de la Fundación y de nadie más.
 --
 -- QUÉ ES
--- Entre 2022 y 2024 la Fundación destinó prácticamente toda su energía a
--- colaborar con una institución deportiva. Al cerrarse el convenio de
--- cooperación, esa institución dejó $1.000.000 con un destino estipulado:
--- dejar cubierto el ordenamiento contable y legal —balances, honorarios de
--- contadores y certificación del colegio profesional—. El acuerdo está
--- respaldado por documentación certificada ante escribano, con firmas de
--- autoridades de las dos instituciones.
+--
+-- ⚠️ CORREGIDO EL 2026-09-06 CONTRA LOS DOCUMENTOS. La primera versión de este
+-- archivo decía que la institución deportiva «dejó $1.000.000» y que la
+-- Fundación «recibió un aporte único». **Los documentos dicen otra cosa, y la
+-- diferencia importa para la credibilidad de la rendición.**
+--
+-- Lo que pasó: entre julio de 2021 y septiembre de 2024 la Fundación administró
+-- los ingresos del Centro Juventud Antoniana **en sus propias cuentas** —cuotas
+-- sociales, polideportivo, indumentaria— según el acuerdo del 7 de febrero de
+-- 2024. Al rescindirse el convenio (efectivo el 30/09/2024), el Acta de
+-- Finalización del 09/10/2024 dispuso un **resguardo de fondos de $1.000.000**
+-- para cerrar la gestión: balances 2024, copias de respaldo, saldar el
+-- descubierto de Santander y cualquier otro egreso necesario.
+--
+-- O sea: **NADIE TRANSFIRIÓ UN MILLÓN.** La plata ya estaba en la cuenta —era
+-- mayormente del club— y al liquidar se devolvió el resto y se retuvo el millón.
+--
+-- Y esto se verifica al peso en el extracto de MercadoPago de octubre de 2024:
+--
+--     08-10  saldo                                            1.933.533,58
+--            ↑ es el monto exacto que el Acta declara disponible
+--     10-10  Transferencia enviada Centro Juventud Antoniana    -937.776,27
+--     10-10  Impuesto por extracción (misma operación)            -5.626,66
+--            → saldo 1.000.000,00 EXACTO
+--
+-- La transferencia se calculó para que, después del impuesto, quedara el millón
+-- redondo. Y el descubierto de Santander que el Acta nombra con centavos
+-- ($53.989,20) aparece pagado el 15-10.
+--
+-- POR QUÉ IMPORTA DECIRLO ASÍ: si la rendición dice «recibimos un aporte de
+-- $1.000.000», quien vaya al extracto **no va a encontrar ningún ingreso de
+-- $1.000.000** — y se vería mal justo ante quien lo revisa en serio. El término
+-- correcto es el que usa el Acta: **resguardo de fondos**.
+--
+-- Respaldo: Acta de Finalización del Convenio de Cooperación Institucional,
+-- firmas certificadas en Foja de Actuación Especial N° E 00405399, Salta,
+-- 10/10/2024, Registro Notarial N° 220.
 --
 -- POR QUÉ VA APARTE Y NO AL DESTINO `institucional`
 --
@@ -55,24 +85,56 @@
 INSERT INTO public.destinos
   (tipo, nombre, slug, descripcion, estado,
    otorga_acceso, admite_puntual, admite_recurrente,
-   meta_monto, visibilidad_beneficiario, orden)
+   meta_monto, visibilidad_beneficiario, orden, fecha_inicio)
 SELECT
   'campana',
   'Fondo de ordenamiento institucional — convenio 2024',
   'fondo-convenio-2024',
-  'Al cerrarse el convenio de cooperación con la institución deportiva con la que '
-  || 'trabajamos entre 2022 y 2024, se recibió un aporte único destinado exclusivamente '
-  || 'a dejar cubierto el ordenamiento contable y legal de la Fundación: balances, '
-  || 'honorarios profesionales y certificación del colegio de contadores. El acuerdo '
-  || 'está respaldado por documentación certificada ante escribano con firmas de '
-  || 'autoridades de ambas instituciones. Este fondo no recibe aportes nuevos y no '
-  || 'puede aplicarse a otros fines. El remanente está afectado al trámite de '
-  || 'Personería Jurídica, que se encuentra en curso.',
+  'Entre 2021 y 2024 la Fundación administró los ingresos del Centro Juventud '
+  || 'Antoniana en sus propias cuentas, en el marco de un convenio de cooperación '
+  || 'institucional. Al finalizar ese convenio, el acta de cierre —con firmas '
+  || 'certificadas ante escribano público— dispuso un resguardo de $1.000.000 para '
+  || 'dejar la gestión en orden: los balances 2024, los honorarios profesionales, las '
+  || 'copias de respaldo y la cancelación de un descubierto bancario. Este fondo no '
+  || 'recibe aportes nuevos y no puede aplicarse a otros fines. El remanente está '
+  || 'afectado al trámite de Personería Jurídica, que se encuentra en curso.',
   'activo',
   false,   -- no habilita el club a nadie
   false,   -- cerrado a aportes puntuales
   false,   -- cerrado a aportes recurrentes
   NULL,    -- sin meta: no se recaudó, llegó completo
   'anonimizado',
-  5
+  5,
+  -- ⚠️ LA FECHA DESDE LA QUE SE RINDE, y no es cosmética. El fondo se constituyó
+  -- el 10/10/2024, cuando el saldo quedó en el millón exacto. Todo lo anterior en
+  -- esa cuenta era administración de plata de un TERCERO y no le corresponde a la
+  -- rendición de la Fundación. Sin esta fecha, cualquiera que compare el libro
+  -- con el extracto completo va a encontrar movimientos que faltan.
+  DATE '2024-10-10'
 WHERE NOT EXISTS (SELECT 1 FROM public.destinos WHERE slug = 'fondo-convenio-2024');
+
+-- ---------------------------------------------------------------------
+-- Convergencia desde la versión anterior de este archivo
+--
+-- El `WHERE NOT EXISTS` de arriba no toca una fila que ya existe, así que la
+-- descripción incorrecta —la que decía «se recibió un aporte único»— ya está en
+-- producción y no se corrige sola. Es exactamente lo que advierte `CLAUDE.md`:
+-- «los datos semilla que cambien de valor van con un UPDATE acotado a la firma
+-- del valor viejo».
+--
+-- El filtro busca la frase equivocada: si alguien ya editó la descripción a mano
+-- desde el ABM, esto no la pisa.
+-- ---------------------------------------------------------------------
+UPDATE public.destinos
+   SET descripcion =
+         'Entre 2021 y 2024 la Fundación administró los ingresos del Centro Juventud '
+         || 'Antoniana en sus propias cuentas, en el marco de un convenio de cooperación '
+         || 'institucional. Al finalizar ese convenio, el acta de cierre —con firmas '
+         || 'certificadas ante escribano público— dispuso un resguardo de $1.000.000 para '
+         || 'dejar la gestión en orden: los balances 2024, los honorarios profesionales, las '
+         || 'copias de respaldo y la cancelación de un descubierto bancario. Este fondo no '
+         || 'recibe aportes nuevos y no puede aplicarse a otros fines. El remanente está '
+         || 'afectado al trámite de Personería Jurídica, que se encuentra en curso.',
+       fecha_inicio = COALESCE(fecha_inicio, DATE '2024-10-10')
+ WHERE slug = 'fondo-convenio-2024'
+   AND descripcion LIKE '%se recibió un aporte único%';
