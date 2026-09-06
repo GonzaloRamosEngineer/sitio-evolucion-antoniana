@@ -348,6 +348,28 @@ const ImportarMovimientos = () => {
         </div>
       )}
 
+      {/*
+        ⚠️ EL DESTINO GOBIERNA TODO LO DE ABAJO, ASÍ QUE EL AVISO VA ARRIBA.
+        Sin destino no hay contra qué comparar las fechas, así que no se destilda
+        nada y la columna Estado queda vacía: la pantalla se ve como si hubiera
+        analizado y no hubiera encontrado nada que señalar. Con 27 filas —y con 23
+        meses van a ser cientos— el aviso al lado del botón llega después de que la
+        persona ya revisó todo, que es justo cuando ya no sirve.
+      */}
+      {analisis?.filas?.length > 0 && !destinoId && (
+        <div className="mb-4 rounded-sm border border-amber-300 bg-amber-50 p-4 text-sm">
+          <p className="font-bold text-brand-dark mb-1">
+            <AlertTriangle className="inline h-4 w-4 mr-1.5" />
+            Falta elegir el destino del lote
+          </p>
+          <p className="text-brand-dark/75">
+            Hasta que lo elijas no se puede importar, y sobre todo{' '}
+            <strong>no se destilda solo lo anterior al inicio del destino</strong>: lo que
+            ves tildado abajo todavía no tuvo en cuenta desde cuándo rinde ese destino.
+          </p>
+        </div>
+      )}
+
       {verificaciones.length > 0 && (
         <div
           className={`mb-4 rounded-sm border p-4 text-sm ${
