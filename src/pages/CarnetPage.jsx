@@ -269,13 +269,18 @@ const CarnetPage = () => {
               </div>
             </div>
 
+            {/* Va a `/club` y no a `/beneficios`, desde el 2026-09-06. Quien
+                tiene el carnet abierto ya está adentro: lo que necesita es el
+                MOSTRADOR —generar el código y ver los que generó—, no la
+                vidriera que existe para convencer a quien todavía no aporta
+                (§12.10.14). La vidriera queda a un clic desde ahí. */}
             <p className="mt-6 text-sm text-brand-dark/55 leading-relaxed">
               ¿Buscás qué usar?{' '}
               <Link
-                to="/beneficios"
+                to="/club"
                 className="font-bold text-brand-primary underline underline-offset-4"
               >
-                Mirá el club de beneficios
+                Canjeá un beneficio
               </Link>
               .
             </p>

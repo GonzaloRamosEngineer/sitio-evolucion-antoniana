@@ -13,7 +13,7 @@
 //
 // Las lecturas sí van directas, filtradas por RLS.
 import { supabase } from '@/lib/supabase';
-import { listResult, attempt } from '@/lib/dataResult';
+import { listResult, rowResult, attempt } from '@/lib/dataResult';
 
 /* ============================
    Catálogo
@@ -179,6 +179,108 @@ export const getCanjesDelComercio = async (comercioId, { limite = 50 } = {}) =>
       .order('created_at', { ascending: false })
       .limit(limite),
     'getCanjesDelComercio',
+  );
+
+/* ============================
+   El reporte al comercio (fase 3 de §12.8)
+   ============================ */
+
+/**
+ * LOS NÚMEROS QUE EL COMERCIO LE MUESTRA A SU CONTADOR (§12.6).
+ *
+ * Van por RPC y no como consulta armada acá por dos motivos que no son de
+ * estilo:
+ *
+ *   1) `personas` es `count(distinct user_id)`. Calcularlo en el browser
+ *      obliga a bajarse el `user_id` de cada canje —quién consumió qué— cuando
+ *      el comercio solo necesita el número. La función devuelve el agregado.
+ *   2) El mismo reporte va a existir dos veces (el panel y, algún día, el mail
+ *      trimestral). Con la definición en SQL hay una sola; con la definición
+ *      acá, dos que se van a desincronizar.
+ *
+ * La autorización la resuelve la base por `auth.uid()`: pasarle el id de otro
+ * comercio devuelve error, no filas de más.
+ */
+export const getReporteComercio = async (comercioId, { desde = null, hasta = null } = {}) =>
+  listResult(
+    await supabase.rpc('club_reporte_comercio', {
+      p_comercio_id: comercioId,
+      p_desde: desde,
+      p_hasta: hasta,
+    }),
+    'getReporteComercio',
+  );
+
+/** Desglose por beneficio: cuál trae gente y cuál no mueve a nadie. */
+export const getReportePorBeneficio = async (comercioId, { desde = null, hasta = null } = {}) =>
+  listResult(
+    await supabase.rpc('club_reporte_comercio_por_beneficio', {
+      p_comercio_id: comercioId,
+      p_desde: desde,
+      p_hasta: hasta,
+    }),
+    'getReportePorBeneficio',
+  );
+
+/** La serie mensual. Trae los meses vacíos en 0: un gráfico no puede tener huecos. */
+export const getReportePorMes = async (comercioId, meses = 12) =>
+  listResult(
+    await supabase.rpc('club_reporte_comercio_por_mes', {
+      p_comercio_id: comercioId,
+      p_meses: meses,
+    }),
+    'getReportePorMes',
+  );
+
+/* ============================
+   Postulación pública (§12.10.5)
+   ============================ */
+
+/**
+ * Un comercio pide entrar al club sin tener cuenta. Escribe directo con la
+ * anon key —no por Edge Function— y está bien que así sea: la policy solo
+ * permite INSERT con `estado = 'nueva'` y sin los campos de revisión, así que
+ * lo peor que se puede hacer desde afuera es dejar una solicitud.
+ *
+ * ⚠️ Y NO se puede leer: `anon` tiene INSERT y nada más. Una postulación trae
+ * mail y teléfono de una persona; si además tuviera SELECT, cualquiera se
+ * bajaría el padrón de comercios interesados.
+ */
+export const postularComercio = async (datos) =>
+  // Sin `.select()` a propósito: la policy no le da SELECT a `anon`, así que
+  // pedir la fila de vuelta haría fallar un insert que SÍ funcionó. El
+  // resultado viene con `data: null`, y acá eso es lo correcto.
+  rowResult(
+    await supabase
+      .from('club_postulaciones')
+      .insert({
+        nombre: datos.nombre,
+        rubro: datos.rubro || null,
+        contacto_nombre: datos.contacto_nombre || null,
+        contacto_email: datos.contacto_email,
+        contacto_telefono: datos.contacto_telefono || null,
+        sitio_web: datos.sitio_web || null,
+        direccion: datos.direccion || null,
+        propuesta: datos.propuesta,
+      }),
+    'postularComercio',
+  );
+
+/* ============================
+   Invitar a alguien al mostrador (§12.10.4)
+   ============================ */
+
+/**
+ * Crea (o reutiliza) la cuenta, la ata al comercio y le manda el magic link.
+ * Devuelve `{ enviado, link? }`: si Resend no está configurado o el envío
+ * falla, viene el link para pasarlo por WhatsApp — que con comercios chicos es
+ * el canal real, no un plan B.
+ */
+export const invitarOperador = async ({ comercioId, email, nombre = null, rol = 'cajero' }) =>
+  invocar(
+    'club-invitar-operador',
+    { comercio_id: comercioId, email, nombre, rol },
+    'invitarOperador',
   );
 
 /** Los canjes de la persona de la sesión, para su historial. */

@@ -253,11 +253,213 @@ SELECT CASE WHEN bool_and(c ~ '^[2-9A-HJKMNP-Z]{6}$') AND count(DISTINCT c) > 90
             ELSE 'FALLA · el generador produce códigos inválidos o repetidos' END
   FROM (SELECT public.club_nuevo_codigo() AS c FROM generate_series(1,100)) s;
 
+
 \echo ''
-\echo '--- T14: CONTROL FINAL — nada de esto quedó escrito'
+\echo '=== §12.10.5 — LA POSTULACIÓN PÚBLICA ==='
+\echo '    Es una escritura abierta a anon, o sea la superficie más expuesta que'
+\echo '    tiene el módulo. Lo que no puede fallar: que nadie se autoapruebe y'
+\echo '    que nadie LEA lo que postuló otro (trae mail y teléfono).'
+
+-- Una persona de la comisión, para los controles positivos de lectura. Va acá y
+-- no en el escenario de arriba a propósito: si se le cambiara el rol a Beto,
+-- `is_board_member()` empezaría a decir true y T5 —que prueba que Beto NO ve el
+-- canje de Ana— pasaría a probar otra cosa sin que nadie se entere.
+DO $esc2$
+DECLARE v_col text;
+BEGIN
+  SELECT c.column_name INTO v_col
+    FROM information_schema.columns c
+   WHERE c.table_schema='auth' AND c.table_name='users'
+     AND c.column_name IN ('email_confirmed_at','confirmed_at')
+   ORDER BY CASE c.column_name WHEN 'email_confirmed_at' THEN 0 ELSE 1 END
+   LIMIT 1;
+
+  EXECUTE format($i$
+    INSERT INTO auth.users (id, email, aud, role, raw_user_meta_data, created_at, %I)
+    VALUES ('e0000000-0000-0000-0000-0000000000e1','zz-comision@ejemplo.com',
+            'authenticated','authenticated','{"name":"ZZ Comision"}', now(), now());
+  $i$, v_col);
+END $esc2$;
+
+-- ⚠️ Hay que desactivar `trg_prevent_privilege_escalation`, igual que en
+-- `membresia-check.sql`. El trigger PISA el cambio de rol en silencio cuando
+-- quien ejecuta no es admin, y acá no hay sesión de admin: sin esto el UPDATE
+-- "funciona" —0 errores, 1 fila afectada— y la persona sigue siendo 'user'.
+-- La primera versión de este check falló así, y el FALLA que devolvía culpaba
+-- a la policy en vez de al andamio: el modo de fallo de §11.4 otra vez.
+ALTER TABLE public.users DISABLE TRIGGER trg_prevent_privilege_escalation;
+UPDATE public.users SET role = 'comision_directiva'
+ WHERE id = 'e0000000-0000-0000-0000-0000000000e1';
+ALTER TABLE public.users ENABLE TRIGGER trg_prevent_privilege_escalation;
+
+\echo '--- T15: un comercio sin cuenta SÍ puede postularse (control positivo)'
+-- Primero el positivo: si esto falla, todos los "no puede" de abajo pasan
+-- porque la tabla es inescribible, y el formulario público no existiría.
+RESET ROLE;
+SET LOCAL ROLE anon;
+DO $$
+BEGIN
+  INSERT INTO public.club_postulaciones (nombre, contacto_email, propuesta)
+  VALUES ('ZZ Pizzeria del barrio', 'zz-pizza@ejemplo.com',
+          'Queremos ofrecer 15% de descuento a los socios de lunes a jueves.');
+  RAISE NOTICE 'PASA · un comercio puede postularse sin tener cuenta';
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'FALLA · nadie puede postularse (%) — el formulario público no funcionaría', SQLERRM;
+END $$;
+
+\echo '--- T16: 🔒 pero NO puede postularse ya aprobado'
+DO $$
+BEGIN
+  INSERT INTO public.club_postulaciones (nombre, contacto_email, propuesta, estado)
+  VALUES ('ZZ Vivo', 'zz-vivo@ejemplo.com',
+          'Me apruebo solo y entro al catalogo sin que nadie me mire.', 'aprobada');
+  RAISE NOTICE 'FALLA · GRAVE: cualquiera se autoaprueba y entra al club';
+EXCEPTION WHEN insufficient_privilege OR check_violation THEN
+  RAISE NOTICE 'PASA · la autoaprobación se rechaza (%)', SQLERRM;
+END $$;
+
+\echo '--- T17: 🔒 ni atarse a un comercio existente'
+DO $$
+BEGIN
+  INSERT INTO public.club_postulaciones (nombre, contacto_email, propuesta, comercio_id)
+  VALUES ('ZZ Secuestrador', 'zz-sec@ejemplo.com',
+          'Me cuelgo del comercio de otro para operar su mostrador.',
+          '11111111-0000-0000-0000-000000000001');
+  RAISE NOTICE 'FALLA · GRAVE: una postulación puede atarse a un comercio ajeno';
+EXCEPTION WHEN insufficient_privilege OR check_violation THEN
+  RAISE NOTICE 'PASA · no se puede insertar con comercio_id (%)', SQLERRM;
+END $$;
+
+\echo '--- T18: 🔒 anon NO puede LEER las postulaciones (traen mail y teléfono)'
+DO $$
+DECLARE v_n integer;
+BEGIN
+  SELECT count(*) INTO v_n FROM public.club_postulaciones;
+  IF v_n = 0 THEN
+    RAISE NOTICE 'PASA · anon no ve ninguna postulación';
+  ELSE
+    RAISE NOTICE 'FALLA · GRAVE: anon lee % postulación(es) con datos de contacto', v_n;
+  END IF;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'PASA · a anon se le niega la lectura entera (%)', SQLERRM;
+END $$;
+
+\echo '--- T19: 🔒 un usuario logueado cualquiera tampoco las ve'
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','b0000000-0000-0000-0000-0000000000b1', true);
+SELECT CASE WHEN count(*) = 0 THEN 'PASA · Beto no ve las postulaciones'
+            ELSE 'FALLA · GRAVE: cualquier usuario lee ' || count(*) || ' postulación(es)' END
+  FROM public.club_postulaciones;
+
+\echo '--- T20: la comisión SÍ las ve (si esto falla, T18/T19 pasaban por tabla vacía)'
+SELECT set_config('request.jwt.claim.sub','e0000000-0000-0000-0000-0000000000e1', true);
+SELECT CASE WHEN count(*) = 1 THEN 'PASA · la comisión ve la postulación y puede trabajarla'
+            ELSE 'FALLA · la comisión no ve las postulaciones (' || count(*) || ') — nadie las revisaría' END
+  FROM public.club_postulaciones;
+
+\echo ''
+\echo '=== FASE 3 — EL REPORTE AL COMERCIO ==='
+\echo '    El reporte agrega canjes de OTRA gente. Lo que no puede fallar es que'
+\echo '    un comercio vea los números de otro: sería decirle a la pizzería'
+\echo '    cuánto factura la de enfrente.'
+
+-- Un canje confirmado del comercio B, para que el reporte de A tenga algo
+-- ajeno que NO debe contar. Sin esta fila, un reporte que ignorara el filtro
+-- por comercio daría el mismo número y el test pasaría igual.
+RESET ROLE;
+SET LOCAL ROLE service_role;
+INSERT INTO public.club_beneficios (id, comercio_id, titulo, tipo, valor, estado)
+VALUES ('66666666-0000-0000-0000-000000000006','22222222-0000-0000-0000-000000000002',
+        'ZZ 10% comercio B', 'porcentaje', 10, 'activo');
+INSERT INTO public.club_canjes
+  (beneficio_id, user_id, codigo, estado, expira_en, confirmado_en, cajero_id, monto_operacion, ahorro)
+VALUES ('66666666-0000-0000-0000-000000000006','a0000000-0000-0000-0000-0000000000a1',
+        'ZZB234','confirmado', now() + interval '5 minutes', now(),
+        'd0000000-0000-0000-0000-0000000000d1', 1000, 100);
+
+\echo '--- T21: 🔒 el cajero del comercio B NO puede pedir el reporte del A'
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-0000000000d1', true);
+DO $$
+DECLARE v_n integer;
+BEGIN
+  SELECT canjes_generados INTO v_n
+    FROM public.club_reporte_comercio('11111111-0000-0000-0000-000000000001');
+  RAISE NOTICE 'FALLA · GRAVE: un comercio obtiene el reporte de otro (% canjes)', v_n;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'PASA · el reporte ajeno se rechaza (%)', SQLERRM;
+END $$;
+
+\echo '--- T22: el cajero del comercio A SÍ obtiene el suyo, y NO cuenta al B'
+SELECT set_config('request.jwt.claim.sub','c0000000-0000-0000-0000-0000000000c1', true);
+DO $$
+DECLARE r record; v_real integer;
+BEGIN
+  SELECT * INTO r FROM public.club_reporte_comercio('11111111-0000-0000-0000-000000000001');
+  -- Lo que el comercio A tiene de verdad, contado aparte de la función.
+  SELECT count(*) INTO v_real
+    FROM public.club_canjes c
+    JOIN public.club_beneficios b ON b.id = c.beneficio_id
+   WHERE b.comercio_id = '11111111-0000-0000-0000-000000000001';
+
+  IF r.canjes_generados = v_real AND v_real > 0 THEN
+    RAISE NOTICE 'PASA · el reporte cuenta % canje(s), los del comercio A y ninguno del B', v_real;
+  ELSE
+    RAISE NOTICE 'FALLA · el reporte dice % y el comercio tiene % (o no tiene ninguno)',
+                 r.canjes_generados, v_real;
+  END IF;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'FALLA · el operador no puede ver su propio reporte (%) — el panel no funcionaría', SQLERRM;
+END $$;
+
+\echo '--- T23: el desglose por beneficio incluye los que tienen CERO canjes'
+-- Un beneficio publicado que nadie canjea es el dato más accionable del
+-- reporte. Con INNER JOIN desaparecería, y el comercio nunca sabría que su
+-- promo no mueve a nadie.
+DO $$
+DECLARE v_n integer;
+BEGIN
+  SELECT count(*) INTO v_n
+    FROM public.club_reporte_comercio_por_beneficio('11111111-0000-0000-0000-000000000001');
+  IF v_n = 2 THEN
+    RAISE NOTICE 'PASA · aparecen los 2 beneficios del comercio, incluido el que no tuvo canjes';
+  ELSE
+    RAISE NOTICE 'FALLA · el desglose trae % fila(s) y el comercio tiene 2 beneficios', v_n;
+  END IF;
+END $$;
+
+\echo '--- T24: la serie mensual devuelve los meses vacíos, no los saltea'
+DO $$
+DECLARE v_n integer;
+BEGIN
+  SELECT count(*) INTO v_n
+    FROM public.club_reporte_comercio_por_mes('11111111-0000-0000-0000-000000000001', 12);
+  IF v_n = 12 THEN
+    RAISE NOTICE 'PASA · 12 meses, con los vacíos en 0 (un gráfico sin huecos)';
+  ELSE
+    RAISE NOTICE 'FALLA · la serie trae % meses en vez de 12', v_n;
+  END IF;
+END $$;
+
+\echo '--- T25: 🔒 anon no puede ejecutar el reporte'
+RESET ROLE;
+SET LOCAL ROLE anon;
+DO $$
+BEGIN
+  PERFORM public.club_reporte_comercio('11111111-0000-0000-0000-000000000001');
+  RAISE NOTICE 'FALLA · GRAVE: anon ejecuta el reporte de un comercio';
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'PASA · a anon se le niega el EXECUTE (%)', SQLERRM;
+END $$;
+RESET ROLE;
+\echo ''
+\echo '--- T26: CONTROL FINAL — nada de esto quedó escrito'
 ROLLBACK;
 
 SELECT CASE WHEN (SELECT count(*) FROM public.club_comercios WHERE slug LIKE 'zz-%') = 0
              AND (SELECT count(*) FROM public.club_canjes WHERE codigo LIKE 'ZZ%') = 0
+             AND (SELECT count(*) FROM public.club_postulaciones WHERE nombre LIKE 'ZZ %') = 0
             THEN 'PASA · la transacción revirtió, no quedó residuo'
             ELSE 'FALLA · quedaron datos de prueba en la base' END;

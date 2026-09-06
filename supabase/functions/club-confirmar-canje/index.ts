@@ -32,7 +32,7 @@ import {
   num,
   operaElComercio,
 } from "../_shared/club-db.ts";
-import { calcularAhorro } from "../_shared/club-reglas.ts";
+import { calcularAhorro, decidirRescate } from "../_shared/club-reglas.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -52,6 +52,10 @@ Deno.serve(async (req) => {
     const cfg = await leerConfig(admin);
     const diferidaHs = num(cfg, "confirmacion_diferida_horas", 2);
     const montoObligatorio = cfg["monto_operacion_obligatorio"] === true;
+    // Por defecto NO se permite: la clave puede no existir todavía en un
+    // proyecto que copió el módulo antes de la migración 20260906140000, y la
+    // postura segura tiene que ser la que sale de la ausencia del dato.
+    const permiteAuto = cfg["permitir_autoconfirmacion"] === true;
     const ahora = new Date();
 
     // ---- 1) Buscar el canje --------------------------------------------------
@@ -80,6 +84,31 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Este código no es de tu comercio", codigo_error: "ajeno" }, 403);
     }
 
+    // ---- 2b) El que confirma no puede ser el que generó (§12.10.1) ----------
+    // Va DESPUÉS de la pertenencia y ANTES del estado a propósito: a alguien
+    // ajeno al comercio no hay que contarle nada, ni siquiera que se
+    // autoconfirmó.
+    //
+    // POR QUÉ ESTO IMPORTA Y NO ES CELO. Confirmar el canje propio no le saca
+    // plata a nadie hoy —el descuento sale del bolsillo del mismo comercio—,
+    // pero `club_canjes.ahorro` es la métrica con la que §12.6 define el nivel
+    // del comercio, y un nivel da publicidad de la entidad. En cuanto exista
+    // la fase 4, autoconfirmarse es fabricar el número que decide el premio:
+    // exactamente el vector de inflación que §12.6 advierte.
+    //
+    // Queda como CONFIG y no como regla fija porque «probar solo/a» es
+    // legítimo mientras se da de alta un comercio (así se probó el circuito
+    // entero el 2026-09-02). Se prende, se prueba, se apaga.
+    if (canje.user_id === callerId && !permiteAuto) {
+      return jsonResponse(
+        {
+          error: "El canje lo tiene que confirmar otra persona del comercio, no quien lo generó.",
+          codigo_error: "autoconfirmacion",
+        },
+        403,
+      );
+    }
+
     // ---- 3) Estado ----------------------------------------------------------
     if (canje.estado === "confirmado") {
       // Idempotencia amable: el cajero apretó dos veces. No es un error.
@@ -89,8 +118,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Este canje fue anulado", codigo_error: "anulado" }, 409);
     }
 
-    const limiteRescate = new Date(ahora.getTime() - diferidaHs * 3_600_000);
-    if (new Date(canje.created_at) < limiteRescate) {
+    // La decisión vive en `club-reglas.ts` y no acá (§12.10.3). Este archivo no
+    // se puede probar fuera de producción (§12.10.12), así que la rama del
+    // local sin señal —la que corre justo cuando nadie está mirando— habría
+    // quedado sin ejercitar para siempre. Movida allá, tiene 6 casos en vitest,
+    // incluido el que fija que la ventana se mide contra `created_at`.
+    const rescate = decidirRescate(canje, ahora, diferidaHs);
+    if (rescate.estado === "vencido") {
       return jsonResponse(
         {
           error: `Este código venció hace más de ${diferidaHs} h. El socio tiene que generar uno nuevo.`,
@@ -99,7 +133,7 @@ Deno.serve(async (req) => {
         409,
       );
     }
-    const esRescateTardio = new Date(canje.expira_en) < ahora;
+    const esRescateTardio = rescate.tardio;
 
     // ---- 4) Monto de la operación -------------------------------------------
     const montoCrudo = body?.monto_operacion;

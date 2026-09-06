@@ -340,3 +340,58 @@ export function calcularAhorro(
       return null;
   }
 }
+
+/* ============================================================================
+   §12.10.3 — la confirmación diferida, sacada del `index.ts` para poder probarla
+   ============================================================================
+   ESTA RAMA NUNCA CORRIÓ. §12.10.3 la declaró deuda el 2026-09-02 y seguía
+   igual: el rescate de un canje vencido está implementado desde la fase 2 y el
+   único canje real se confirmó en 53 segundos. Es la rama que corre cuando el
+   local se queda sin señal, o sea justo cuando nadie está mirando.
+
+   La decisión estaba escrita ADENTRO de `club-confirmar-canje/index.ts`, y por
+   §12.10.12 el runtime de un `index.ts` no se puede probar en esta máquina: la
+   única forma de ejercitarla era esperar a que un local real se quedara sin
+   señal. Movida acá, se prueba con `vitest` y sin desplegar nada.
+
+   Es el mismo remedio que §12.10.12 receta —«toda la lógica que decide algo
+   vive en club-reglas.ts»— aplicado a la última rama que se había quedado del
+   otro lado.
+
+   ⚠️ LO QUE ESTO **NO** PRUEBA, y conviene no confundir: que el HTTP, el JWT y
+   el UPDATE funcionen. Eso sigue sin poder probarse fuera de producción. Lo que
+   queda garantizado es que la DECISIÓN —rescatar, rechazar, o marcar el rescate
+   como tardío— es la correcta en cada momento de la ventana.
+
+   EL PUNTO FINO, que es lo que hace que valga la pena tenerlo aislado:
+   la ventana de rescate se mide contra `created_at` y NO contra `expira_en`.
+   Medirla contra `expira_en` daría TTL + ventana (2 h 5 min) en vez de 2 h, y
+   nadie lo notaría nunca, porque los dos números "andan".
+============================================================================ */
+
+export type EstadoRescate = "vigente" | "rescate_tardio" | "vencido";
+
+export interface Rescate {
+  estado: EstadoRescate;
+  /** true solo cuando el canje ya venció pero todavía se puede confirmar. */
+  tardio: boolean;
+  /** Minutos que faltan para que deje de poder rescatarse. Negativo si ya pasó. */
+  minutos_restantes: number;
+}
+
+export function decidirRescate(
+  canje: { created_at: string | Date; expira_en: string | Date },
+  ahora: Date,
+  diferidaHoras: number,
+): Rescate {
+  const creado = new Date(canje.created_at).getTime();
+  const expira = new Date(canje.expira_en).getTime();
+  const t = ahora.getTime();
+
+  const limite = creado + diferidaHoras * 3_600_000;
+  const minutos_restantes = Math.round((limite - t) / 60_000);
+
+  if (t > limite) return { estado: "vencido", tardio: false, minutos_restantes };
+  if (t > expira) return { estado: "rescate_tardio", tardio: true, minutos_restantes };
+  return { estado: "vigente", tardio: false, minutos_restantes };
+}

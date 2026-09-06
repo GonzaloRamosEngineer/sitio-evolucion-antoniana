@@ -185,7 +185,9 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   totales del período y cadena entre meses—: si alguna no cuadra, la pantalla **no deja
   importar**, porque sin eso un cambio de formato del banco se convierte en datos mal
   cargados en silencio.
-- **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
+- **Club de beneficios (ROADMAP §12) — CERRADO como módulo el 2026-09-06, fases 0 a 3 en producción**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`. **Ya no hay deuda de código**: §12.10 se cerró entero y la crónica se movió a `HISTORIAL.md` §12; lo que queda en el ROADMAP son las 5 invariantes (§12.12), dónde vive cada cosa (§12.13) y lo que falta, que es de negocio (§12.14). **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. La cuarta, `club-invitar-operador`, crea la cuenta del mostrador y manda el magic link (§12.10.4). Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/beneficios` (**la vidriera**: pública, indexable, con slug y OG — es la que está en el nav), `/club` (**el mostrador del socio**: canjear y ver los canjes propios; se llega desde el carnet, el dashboard y el CTA de un beneficio, NO desde el nav — mandar ahí a un visitante es ofrecerle algo que no puede usar), `/club/postular` (postulación pública de un comercio) y `/comercio` (mostrador del comercio, requiere sesión). **Las cuatro leen la misma tabla `club_beneficios`**: la división es por para quién, no por de dónde sale el dato — la pregunta que §12.10.14 dejó abierta dos jornadas.
+  ⚠️ **`club_canjes` NO se auto-confirma**: quien genera un canje no puede confirmarlo, salvo que `club_config.permitir_autoconfirmacion` esté en `true` (default `false`). Es el vector de inflación que §12.6 advierte para cuando existan los niveles.
+  ⚠️ **El reaper corre por `pg_cron` cada 15 minutos** (`20260906150000`) **y además** al arrancar `club-generar-canje`. Son dos redes, no una duplicada: la segunda garantiza que nadie quede sin un beneficio por un canje que no usó, y esa garantía no puede depender de infraestructura externa. Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
 - **Transparencia = dos páginas, un grupo de menú (2026-09-06)**: `/rendicion` (el
   movimiento del dinero) y `/legal-documents` (los instrumentos: estatuto, balances,
   actas). El item «Transparencia» del header es un grupo cuyo **padre lleva a
@@ -269,11 +271,13 @@ cambió el patrón.
 
 Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **451 tests en 36 archivos** (remedido el 2026-09-06 con `npm test`; más los del
+cuyo arreglo es react-router v7 —un major—. **459 tests en 36 archivos** (remedido el 2026-09-06 al cierre de §12 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
-se testea con vitest, y cada `index.ts` se prueba recién en producción. ESLint deja **50
+se testea con vitest (**41 casos**), y cada `index.ts` se prueba recién en producción.
+**Al 2026-09-06 no queda ninguna decisión del club fuera de ese archivo**: la última que
+faltaba —el rescate diferido de §12.10.3— se extrajo como `decidirRescate()`. ESLint deja **50
 warnings** de backlog: **la barra es 0 errores**.
 
 ⚠️ Este párrafo decía «2 vulnerabilidades, 265 tests, 53 warnings» y las tres cifras
@@ -284,13 +288,21 @@ mintiendo todo lo demás.** Remedirlo es un minuto:
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
 de la última jornada está en **§14.7** de `HISTORIAL.md`; los cierres anteriores, en §11.7 y
-§11.6. Entre todos suman **trece afirmaciones de este repo que resultaron falsas** y varias
-verificaciones que no verificaban nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda abierta del
-club vive toda junta en §12.10.**
+§11.6. Entre todos suman **catorce afirmaciones de este repo que resultaron falsas** — la
+decimocuarta es del 2026-09-06 y era de las peores: §12.10.11 declaró el cron del club
+«deuda consciente» porque «el plan Free de Supabase no lo trae», y **`pg_cron` estaba
+disponible y precargada**. Nadie miró la base; se escribió la limitación y se le creyó y varias
+verificaciones que no verificaban nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda del club se cerró el 2026-09-06**: lo que queda de §12 es de negocio
+(conseguir comercios de ticket bajo) y vive en §12.14.
 
-⚠️ **`tools/db.sh dump` produce un backup que NO restaura con `ON_ERROR_STOP=1`.** El
-cliente es `pg_dump` **17** y producción es **15**: el dump trae `SET transaction_timeout`,
-que 15 no conoce. Se saltea con `sed '/transaction_timeout/d'`. Ver `ROADMAP.md` §A.
+⚠️ **`tools/db.sh dump` produce un backup que NO restaura tal cual en PostgreSQL 15, y
+son TRES obstáculos, no uno.** El cliente es `pg_dump` **17** y producción es **15**:
+(1) el dump trae `SET transaction_timeout`, que 15 no conoce; (2) `psql` 17.6 emite además
+las meta-órdenes `restrict`/`unrestrict`, que 15 rechaza con `invalid command` **incluso
+sin `ON_ERROR_STOP`**; (3) trae su propio `CREATE SCHEMA public`. Los tres se saltean con
+un `sed` de tres expresiones + dropear `public` en el destino. **La receta completa y
+probada está en `ROADMAP.md` §A**, con el detalle de que el contenedor destino necesita el
+bootstrap de `pg15-bootstrap/` montado o muere a mitad de la inicialización.
 
 **Cuatro cosas que costaron trabajo real y conviene no volver a aprender:**
 - **Antes de escribir una migración, `git fetch` y conectate a la base y mirá.** El

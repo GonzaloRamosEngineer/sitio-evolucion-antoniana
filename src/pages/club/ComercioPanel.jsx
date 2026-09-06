@@ -16,14 +16,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
-  Camera, CheckCircle2, Loader2, Receipt, RotateCcw, Store, TriangleAlert, XCircle,
+  BarChart3, Camera, CheckCircle2, Loader2, Receipt, RotateCcw, ScanLine, Store,
+  TriangleAlert, Undo2, XCircle,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { confirmarCanje, getCanjesDelComercio, getMisComercios } from '@/api/clubApi';
+import ReporteComercio from '@/components/Club/ReporteComercio';
+import { anularCanje, confirmarCanje, getCanjesDelComercio, getMisComercios } from '@/api/clubApi';
 import { agruparCodigo, esCodigoValido, mensajeDeError, normalizarCodigo } from '@/lib/club';
 
 const hayEscaner = () => typeof window !== 'undefined' && 'BarcodeDetector' in window;
@@ -38,6 +40,16 @@ const ComercioPanel = () => {
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null); // { ok, mensaje, socio, beneficio }
   const [canjes, setCanjes] = useState([]);
+
+  // «Validar» es lo primero SIEMPRE: esta pantalla se abre con alguien
+  // esperando del otro lado del mostrador. El reporte es para después del
+  // turno, así que entra como segunda solapa y nunca como pantalla inicial.
+  const [vista, setVista] = useState('validar');
+
+  // Anulación (§12.10.6): `codigo` del canje que se está anulando, o null.
+  const [anulando, setAnulando] = useState(null);
+  const [motivo, setMotivo] = useState('');
+  const [anulaError, setAnulaError] = useState(null);
 
   const [escaneando, setEscaneando] = useState(false);
   const videoRef = useRef(null);
@@ -104,6 +116,44 @@ const ComercioPanel = () => {
       refrescarCanjes(comercio?.comercio_id);
     },
     [monto, comercio?.comercio_id, refrescarCanjes],
+  );
+
+  /* ---------------- Anular (§12.10.6) ---------------- */
+  //
+  // LA VENTANA NO SE VALIDA ACÁ, Y ES A PROPÓSITO. `anulacion_ventana_minutos`
+  // vive en `club_config` y la hace cumplir `club-anular-canje`. Duplicar el
+  // cálculo en el browser para esconder el botón crearía la misma trampa que
+  // §12.11 documenta —la regla viviendo dos veces— pero sin ninguna ventaja:
+  // el botón escondido no protege nada (la autoridad es la función igual) y el
+  // día que cambie el parámetro, la pantalla y la base dirían cosas distintas.
+  // Se ofrece siempre sobre un canje confirmado, y si la ventana pasó, el
+  // servidor contesta con la frase que además dice qué hacer.
+  const anular = useCallback(
+    async (canje) => {
+      const texto = motivo.trim();
+      if (texto.length < 3) {
+        setAnulaError('Escribí por qué se anula.');
+        return;
+      }
+      setEnviando(true);
+      setAnulaError(null);
+
+      const { data, error } = await anularCanje(canje.codigo, texto);
+      setEnviando(false);
+
+      if (error) {
+        setAnulaError(mensajeDeError(data, 'No se pudo anular.'));
+        return;
+      }
+      setAnulando(null);
+      setMotivo('');
+      setResultado({
+        ok: true,
+        mensaje: data?.ya_estaba ? 'Este canje ya estaba anulado.' : 'Canje anulado',
+      });
+      refrescarCanjes(comercio?.comercio_id);
+    },
+    [motivo, comercio?.comercio_id, refrescarCanjes],
   );
 
   /* ---------------- Escáner ---------------- */
@@ -212,6 +262,34 @@ const ComercioPanel = () => {
         </div>
       )}
 
+      {/* ---- Validar / Mis números ---- */}
+      <div className="mt-6 flex gap-2 border-b border-brand-dark/10">
+        {[
+          { clave: 'validar', etiqueta: 'Validar', icono: ScanLine },
+          { clave: 'reporte', etiqueta: 'Mis números', icono: BarChart3 },
+        ].map(({ clave, etiqueta, icono: Icono }) => (
+          <button
+            key={clave}
+            type="button"
+            onClick={() => setVista(clave)}
+            className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold transition ${
+              vista === clave
+                ? 'border-brand-dark text-brand-dark'
+                : 'border-transparent text-brand-dark/50 hover:text-brand-dark/80'
+            }`}
+          >
+            <Icono aria-hidden="true" className="h-4 w-4" />
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {vista === 'reporte' ? (
+        <div className="mt-8">
+          <ReporteComercio comercioId={comercio?.comercio_id} />
+        </div>
+      ) : (
+       <>
       {/* ---- Resultado, arriba de todo: es lo que se mira con gente esperando ---- */}
       {resultado && (
         <div
@@ -352,27 +430,92 @@ const ComercioPanel = () => {
         ) : (
           <ul className="divide-y divide-brand-dark/10">
             {canjes.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-brand-dark">
-                    {c.club_beneficios?.titulo}
-                  </p>
-                  <p className="text-xs text-brand-dark/60">
-                    <span className="font-mono">{agruparCodigo(c.codigo)}</span>
-                    {c.users?.name ? ` · ${c.users.name}` : ''}
-                  </p>
+              <li key={c.id} className="py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-brand-dark">
+                      {c.club_beneficios?.titulo}
+                    </p>
+                    <p className="text-xs text-brand-dark/60">
+                      <span className="font-mono">{agruparCodigo(c.codigo)}</span>
+                      {c.users?.name ? ` · ${c.users.name}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`text-xs font-semibold uppercase tracking-wide ${
+                        c.estado === 'confirmado'
+                          ? 'text-green-700'
+                          : c.estado === 'anulado'
+                            ? 'text-red-700'
+                            : 'text-brand-dark/50'
+                      }`}
+                    >
+                      {c.estado}
+                    </span>
+                    {/* Solo sobre confirmados: un pendiente no se anula, vence
+                        solo, y ese vencimiento es la métrica de adopción (§12.3). */}
+                    {c.estado === 'confirmado' && anulando !== c.codigo && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAnulando(c.codigo);
+                          setMotivo('');
+                          setAnulaError(null);
+                        }}
+                        className="flex items-center gap-1 text-xs text-brand-dark/60 underline hover:text-red-700"
+                      >
+                        <Undo2 aria-hidden="true" className="h-3 w-3" />
+                        Anular
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <span
-                  className={`shrink-0 text-xs font-semibold uppercase tracking-wide ${
-                    c.estado === 'confirmado'
-                      ? 'text-green-700'
-                      : c.estado === 'anulado'
-                        ? 'text-red-700'
-                        : 'text-brand-dark/50'
-                  }`}
-                >
-                  {c.estado}
-                </span>
+
+                {/* El motivo es obligatorio y lo exige también la Edge Function:
+                    una anulación sin motivo es indistinguible de un error de
+                    operación, y es justo lo que después hay que poder auditar. */}
+                {anulando === c.codigo && (
+                  <div className="mt-3 rounded-sm border border-red-600/30 bg-red-50 p-3">
+                    <Label htmlFor={`motivo-${c.id}`} className="text-brand-dark font-semibold">
+                      ¿Por qué se anula?
+                    </Label>
+                    <Input
+                      id={`motivo-${c.id}`}
+                      value={motivo}
+                      onChange={(e) => setMotivo(e.target.value)}
+                      placeholder="Se cayó la venta"
+                      className="mt-1 bg-white"
+                    />
+                    {anulaError && <p className="mt-2 text-xs text-red-800">{anulaError}</p>}
+                    <p className="mt-2 text-xs text-brand-dark/60">
+                      El canje no se borra: queda registrado como anulado, con el motivo y
+                      quién lo hizo.
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={enviando}
+                        onClick={() => anular(c)}
+                      >
+                        {enviando ? 'Anulando…' : 'Anular el canje'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setAnulando(null);
+                          setAnulaError(null);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -384,6 +527,8 @@ const ComercioPanel = () => {
           Los códigos que quedan en «pendiente» son los que el socio generó y nadie confirmó.
         </p>
       </section>
+      </>
+      )}
     </div>
   );
 };

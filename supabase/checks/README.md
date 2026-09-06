@@ -36,11 +36,20 @@ la base.
   pierde), porque una opción que no hace nada y una que hace de más se ven igual desde
   afuera. **No depende de ningún dato previo**: arma sus cuatro personas, sus destinos y
   sus actividades. Ver más abajo por qué eso importa.
-- **`club-check.sql`** — el club fase 2 (§12). `club_canjes` otorga **valor económico**:
+- **`club-check.sql`** — el club (§12), fases 2 y 3. `club_canjes` otorga **valor económico**:
   del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
   `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al
   lado de cada negativo, porque "nadie puede escribir" y "la tabla es inescribible y el
   módulo no anda" se ven idénticos desde afuera.
+  Desde el 2026-09-06 cubre además **`club_postulaciones`** —la única escritura abierta a
+  `anon` del módulo: que se pueda postular, que NO se pueda autoaprobar, y que nadie más
+  que la comisión pueda LEER las filas, que traen mail y teléfono— y **el reporte al
+  comercio**, donde lo que no puede fallar es que un comercio vea los números de otro:
+  sería decirle a la pizzería cuánto factura la de enfrente.
+  ⚠️ **Al armar el escenario hay que desactivar `trg_prevent_privilege_escalation` para
+  crear a la persona de la comisión.** El trigger pisa el cambio de rol **en silencio** —0
+  errores, 1 fila afectada, y la persona sigue siendo `'user'`— y el `FALLA` resultante
+  culpa a la policy en vez de al andamio.
 
 ## Por qué no usa `supabase start`
 
@@ -87,7 +96,8 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovaci
 # fallas y cero pruebas se ven idénticos si solo se mira una de las dos cifras.
 #
 # Referencia al 2026-09-05, sobre una base recién migrada:
-#   payer-email=8   reclamar=17   club=17   membresia=36   fondos=15
+#   payer-email=8   reclamar=17   club=28   membresia=36   fondos=15
+#   (club pasó de 17 a 28 el 2026-09-06, con el cierre de §12: postulaciones y reporte)
 #   rls=0  acceso=0  renovacion=0   <-- ver abajo, no es un error
 
 # 4. Limpiar

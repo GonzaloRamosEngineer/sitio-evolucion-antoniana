@@ -1,19 +1,32 @@
 // src/pages/club/ClubPage.jsx
 //
-// El catálogo del club con canje (ROADMAP §12 fase 2).
+// EL MOSTRADOR DEL SOCIO (ROADMAP §12 fase 2).
 //
-// ⚠️ POR QUÉ ESTA PÁGINA CONVIVE CON `/beneficios` Y NO LA REEMPLAZA.
-// `/beneficios` lee la tabla `benefits`, que es el catálogo viejo: un código de
-// texto fijo, igual para todo el mundo (12.1.a). Esta lee `club_beneficios`, que
-// es el catálogo con comercio, límites y canje trazable. §12.4 decidió deprecar
-// la primera migrando su contenido, NO romperla de entrada: es una página
-// pública de entrada y hoy tiene contenido vivo.
+// ⚠️ POR QUÉ ESTA PÁGINA CONVIVE CON `/beneficios`, RESUELTO EL 2026-09-06.
 //
-// Mientras las dos existan, la regla es simple: lo que se canjea vive acá.
+// El comentario que estaba acá decía que `/beneficios` era «el catálogo viejo,
+// con un código de texto fijo». Dejó de ser cierto el 2026-09-02, cuando la
+// unificación (§12.10.16) hizo que las DOS páginas leyeran `club_beneficios`.
+// §12.10.14 dejó la pregunta abierta —«o son dos vistas con trabajos distintos
+// y hay que decirlo, o una sobra»— y quedó abierta dos jornadas. Se decidió:
+//
+//   /beneficios  LA VIDRIERA. Pública e indexable, con slug propio y preview de
+//                OG. Es a donde llega alguien que todavía no aporta, y por eso
+//                es la que está en el nav. Su trabajo es convencer.
+//   /club        EL MOSTRADOR. Canjear, y ver los canjes propios. Su trabajo es
+//                que el socio use lo que ya pagó.
+//
+// De ahí sale que esta NO esté en el nav público: mandar a un visitante a una
+// pantalla de canje es ofrecerle algo que no puede usar. Se llega desde el
+// carnet, desde el dashboard y desde el CTA de un beneficio.
+//
+// La regla de §11.4 —«una pantalla nueva que habla de algo que otra ya
+// explicaba: preguntá de dónde saca el dato»— es lo que hizo falta acá: las dos
+// sacan el dato del mismo lugar, y lo que cambiaba era para quién.
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Lock, LogIn, Store, Ticket } from 'lucide-react';
+import { History, Lock, LogIn, Store, Ticket } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -24,8 +37,8 @@ import PantallaCanje from '@/components/Club/PantallaCanje';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiAcceso } from '@/hooks/useContentQueries';
 import { SIN_ACCESO } from '@/lib/acceso';
-import { etiquetaBeneficio } from '@/lib/club';
-import { getBeneficiosClub } from '@/api/clubApi';
+import { agruparCodigo, etiquetaBeneficio } from '@/lib/club';
+import { getBeneficiosClub, getMisCanjes } from '@/api/clubApi';
 
 const ClubPage = () => {
   const { user } = useAuth();
@@ -33,6 +46,7 @@ const ClubPage = () => {
   const [beneficios, setBeneficios] = useState(null);
   const [error, setError] = useState(null);
   const [elegido, setElegido] = useState(null);
+  const [misCanjes, setMisCanjes] = useState([]);
 
   React.useEffect(() => {
     let vivo = true;
@@ -46,6 +60,28 @@ const ClubPage = () => {
       vivo = false;
     };
   }, []);
+
+  // EL HISTORIAL PROPIO — `getMisCanjes()` existía desde la fase 2 y NO LA
+  // LLAMABA NADIE. Es la regla 5 del ROADMAP en su versión chica: escribir la
+  // función no es conectarla. Y su lugar natural es esta página, que es la del
+  // socio: el comercio ve los suyos en `/comercio` y la entidad todos en
+  // `/admin`, pero la persona no tenía dónde ver qué canjeó.
+  React.useEffect(() => {
+    if (!user) {
+      setMisCanjes([]);
+      return undefined;
+    }
+    let vivo = true;
+    (async () => {
+      const { data } = await getMisCanjes({ limite: 10 });
+      if (vivo) setMisCanjes(data ?? []);
+    })();
+    return () => {
+      vivo = false;
+    };
+    // Se recarga al cerrar la pantalla de canje: si acaba de generar uno, tiene
+    // que aparecer sin recargar la página.
+  }, [user, elegido]);
 
   const tieneAcceso = Boolean(acceso?.tiene_acceso);
   // Sin sesión NO se puede canjear NADA, ni siquiera un beneficio abierto: el
@@ -72,7 +108,12 @@ const ClubPage = () => {
         Beneficios para canjear
       </h1>
       <p className="mt-2 max-w-2xl text-brand-dark/70">
-        Mostrá el código en el mostrador y el comercio lo confirma en el momento.
+        Generá el código cuando ya estés en la caja y el comercio lo confirma en el momento.
+        {' '}
+        <Link to="/beneficios" className="font-semibold underline underline-offset-4">
+          Ver todos los beneficios
+        </Link>
+        .
       </p>
 
       {/* El aviso va antes del catálogo: enterarse de que no alcanza recién en
@@ -174,6 +215,46 @@ const ClubPage = () => {
             );
           })}
         </ul>
+      )}
+
+      {/* ---- Mis canjes ---- */}
+      {misCanjes.length > 0 && (
+        <section className="mt-16">
+          <h2 className="flex items-center gap-2 border-b border-brand-dark/10 pb-2 text-sm font-semibold uppercase tracking-[0.18em] text-brand-dark/70">
+            <History aria-hidden="true" className="h-4 w-4" />
+            Mis canjes
+          </h2>
+          <ul className="divide-y divide-brand-dark/10">
+            {misCanjes.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-brand-dark">
+                    {c.club_beneficios?.titulo}
+                  </p>
+                  <p className="text-xs text-brand-dark/60">
+                    {c.club_beneficios?.club_comercios?.nombre}
+                    {' · '}
+                    <span className="font-mono">{agruparCodigo(c.codigo)}</span>
+                  </p>
+                </div>
+                {/* Los estados se muestran tal cual, incluido 'expirado'. Un
+                    canje que venció sin usarse es información para la persona
+                    —«lo generaste y no lo usaste»— y no un error que esconder. */}
+                <span
+                  className={`shrink-0 text-xs font-semibold uppercase tracking-wide ${
+                    c.estado === 'confirmado'
+                      ? 'text-green-700'
+                      : c.estado === 'anulado'
+                        ? 'text-red-700'
+                        : 'text-brand-dark/50'
+                  }`}
+                >
+                  {c.estado}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <Dialog open={Boolean(elegido)} onOpenChange={(abierto) => !abierto && setElegido(null)}>

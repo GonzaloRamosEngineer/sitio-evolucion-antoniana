@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Search, Filter, Gift, Tag, Loader2, AlertTriangle, Lock, ShieldCheck, Clock } from 'lucide-react';
+import { Search, Filter, Gift, Tag, Loader2, AlertTriangle, Lock, ShieldCheck, Clock, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -226,6 +226,23 @@ const BenefitsPage = () => {
               ))}
             </div>
           )}
+
+          {/* §12.10.5 — por dónde pide entrar un comercio.
+              Va al final del catálogo y no arriba a propósito: quien lee esto
+              ya vio qué clase de beneficios hay, que es la única forma de saber
+              si el suyo encaja. Arriba competiría con lo que el visitante vino
+              a buscar. */}
+          <div className="mt-16 border-t border-brand-dark/10 pt-10 text-center">
+            <p className="text-brand-dark/70">
+              ¿Tenés un comercio y querés ofrecer un beneficio?
+            </p>
+            <Button asChild variant="outline" className="mt-4">
+              <Link to="/club/postular">
+                <Store aria-hidden="true" className="mr-2 h-4 w-4" />
+                Sumá tu comercio al club
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

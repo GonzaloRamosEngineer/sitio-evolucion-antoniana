@@ -4487,3 +4487,1006 @@ falla, se loguea y se sigue: cortar ahí sería negarle el canje a alguien que s
   falta para renovar el acuerdo al año siguiente.
 
 ---
+
+---
+
+## 12. El club de beneficios — la crónica (trasladada desde `ROADMAP.md` el 2026-09-06)
+
+**Por qué se movió.** El §12 del ROADMAP llegó a **927 líneas, el 33% del archivo**, y
+**13 de sus ítems ya estaban cerrados** — seguían ahí contando cómo se cerraron. Es
+exactamente lo que el 2026-08-16 obligó a partir este archivo en dos: un ROADMAP que
+acumula historia deja de leerse, y la parte que nadie relee es donde se pudren las
+afirmaciones. Lo que quedó en `ROADMAP.md` §12 es el contrato del módulo y lo que falta;
+todo el razonamiento está acá.
+
+**Qué contiene:** el relevamiento del 2026-08-30, los cuatro modelos de descuento y por
+qué solo el C es viable, el diseño del flujo y sus casos borde, el modelo de datos, los
+niveles de comercio, las reglas de portabilidad, las decisiones de negocio del
+2026-08-30, el ajuste de umbrales del 2026-09-02 (§12.11) y los 21 ítems de deuda de
+§12.10 con su razonamiento completo.
+
+### 12.A — Qué de todo esto sigue vigente
+
+Casi todo el análisis sigue siendo cierto; lo que cambió es el estado. Tres avisos para
+quien lea lo de abajo sin el contexto:
+
+1. **`benefits` está deprecada.** El catálogo se unificó el 2026-09-02: las dos páginas
+   leen `club_beneficios`. Las partes que hablan de «el catálogo viejo con código de
+   texto fijo» describen algo que ya no existe.
+2. **La deuda de §12.10 se cerró el 2026-09-06**, salvo lo que depende de gente. El
+   detalle de cada cierre está en §12.B.
+3. **La fase 1 «sin QR a propósito» y la limitación «el bloqueo es cosmético»** ya no
+   aplican: el código se emite por persona y de un solo uso desde la fase 2, y
+   `benefits` no publica nada.
+
+### 12.B — Cómo se cerró la deuda (2026-09-06)
+
+| Ítem | Cómo se cerró |
+|---|---|
+| **12.10.1** — la misma cuenta genera y confirma | Bloqueado en `club-confirmar-canje`, con `permitir_autoconfirmacion` en `club_config` para el modo «probar solo/a». Por defecto en `false` |
+| **12.10.3** — la confirmación diferida nunca se ejercitó | La **decisión** se extrajo a `decidirRescate()` en `club-reglas.ts` y tiene 6 casos en vitest. El runtime HTTP sigue sin poder probarse fuera de producción |
+| **12.10.4** — no hay invitación por magic link | Edge Function `club-invitar-operador` + el bloque «Invitar por email» en el ABM. Crea la cuenta, la ata al comercio y manda el link; sin Resend devuelve el link para pasarlo por WhatsApp |
+| **12.10.5** — no hay formulario público de postulación | `/club/postular` + tabla `club_postulaciones` + bandeja de entrada en el ABM, con el botón «Crear el comercio» que evita retipear |
+| **12.10.6** — la anulación no tiene UI | Botón por canje confirmado en `/comercio`, con motivo obligatorio |
+| **12.10.7** — el PIN por empleado | **No se hace.** Pasó a «lo que se decidió no hacer» |
+| **12.10.11** — el reaper depende de que alguien genere | Cron de `pg_cron` cada 15 minutos. **La premisa era falsa** (ver abajo) |
+| **12.10.12** — el runtime no se prueba localmente | Pasó a limitación declarada. Ya no queda ninguna decisión del club fuera de `club-reglas.ts` |
+| **12.10.14** — la pregunta abierta `/beneficios` vs `/club` | **Decidida:** vidriera pública vs mostrador del socio. A `/club` se llega desde el carnet, el dashboard y el CTA de un beneficio, no desde el nav |
+| **Fase 3** — el reporte al comercio | `club_reporte_comercio` + `_por_beneficio` + `_por_mes`, y la solapa «Mis números» en `/comercio` |
+
+⚠️ **Y la premisa número catorce que resultó falsa.** §12.10.11 declaró el cron «deuda
+consciente, no olvido» porque *«el plan Free de Supabase no lo trae»*. Verificado el
+2026-09-06 contra la base: **`pg_cron 1.6` está disponible Y precargada en
+`shared_preload_libraries`** en producción. Lo que el plan Free no trae es el programador
+de Edge Functions del panel; el cron de Postgres —el que hacía falta— estaba ahí desde
+siempre. **Nadie lo miró: se escribió la limitación y se le creyó dos jornadas.** Es la
+regla 1 del ROADMAP otra vez, y esta vez la premisa falsa era propia.
+
+⚠️ **Dos cosas que encontró el propio check al escribirlo**, y las dos valen más que el
+ítem que las destapó:
+
+1. **`trg_prevent_privilege_escalation` pisa el cambio de rol EN SILENCIO.** El
+   `UPDATE users SET role='comision_directiva'` del escenario «funcionaba» —0 errores,
+   1 fila afectada— y la persona seguía siendo `'user'`. El `FALLA` que salía culpaba a
+   la policy en vez de al andamio. `membresia-check.sql` ya lo documentaba; hubo que
+   pisarlo de nuevo para verlo.
+2. **El alfabeto del código no tiene 0/O ni 1/I/L**, así que un `'ZZB111'` de prueba
+   viola el CHECK, aborta la transacción y las **cinco** pruebas siguientes informan
+   «current transaction is aborted» — el modo de fallo que §11.4 marca como el más
+   engañoso, porque parece que fallaron ellas.
+
+⚠️ **Y una incompatibilidad de backup que este repo no tenía escrita.** `CLAUDE.md` avisa
+que el dump de `pg_dump` 17 no restaura en PG15 por `SET transaction_timeout`. **Son dos
+cosas, no una**: `pg_dump` 17.6 emite además las meta-órdenes `restrict` / `unrestrict`,
+que `psql` 15 rechaza con `invalid command`. La receta completa está en `ROADMAP.md` §A.
+
+Y el contenedor de restauración **necesita el bootstrap de `pg15-bootstrap/` montado**:
+sin él arranca, acepta conexiones, y **muere a mitad de la inicialización** — el modo de
+fallo que el README de `checks` advierte, visto en vivo.
+
+### 12.C — El texto completo, tal como vivió en el ROADMAP
+
+#### 12.0 — Qué es esto y cómo se relaciona con §10
+
+La §10 responde **quién tiene derecho** a un beneficio (aporte → acceso). Esta sección
+responde las otras dos preguntas, que quedaron fuera: **qué pasa en el mostrador** y
+**qué gana el comercio por estar**.
+
+Son módulos distintos y conviene que lo sigan siendo. §10 es del dominio de la entidad
+(socios, cuotas, donaciones). §12 es un módulo genérico que solo le pregunta a §10 una
+cosa: `tiene_acceso(user_id)`. Esa frontera es lo que lo hace portable a otro proyecto
+(ver 12.7), y es una decisión de diseño, no una casualidad.
+
+**La fase 1 de §10 es prerrequisito literal de todo lo de acá.** Sin `tiene_acceso()`,
+el club no puede distinguir un socio de un visitante y no hay nada que validar.
+
+---
+
+#### 12.1 — Estado actual → `HISTORIAL.md`
+
+El relevamiento del 2026-08-30 (12.1.a/b/c) está resuelto, en producción y demostrado con
+un canje real. Se movió con su numeración.
+#### 12.2 — Decisión de arquitectura
+
+#### La entidad protagonista es el canje, no el beneficio
+
+El beneficio es catálogo, casi contenido editorial. El **canje** es el hecho económico:
+quién, dónde, cuándo, cuánto. De ahí salen las tres cosas que sostienen un club en el
+tiempo: el socio ve que le sirve, el comercio ve que le trae gente, y la entidad tiene
+números para negociar la renovación.
+
+#### El token de canje ES el canje en estado pendiente
+
+No hace falta tabla de tokens, ni JWT firmados, ni store externo:
+
+```
+socio pulsa "usar beneficio"
+  → INSERT club_canjes (estado='pendiente', codigo='7K4M2P', expira_en=now()+5min)
+  → pantalla del socio: QR + código de 6 caracteres + contador
+
+comercio escanea o tipea el código
+  → UPDATE ... estado='confirmado', cajero_id, monto_operacion
+  → pantalla verde en los dos teléfonos
+```
+
+Una tabla, una máquina de estados, idempotencia natural (el código es único y de un solo
+uso) y, de regalo, quedan registrados los canjes **abandonados** — que son una métrica
+valiosa: muchos generados y pocos confirmados significa que ese comercio no está usando
+el sistema, y te enterás sin que nadie lo reporte.
+
+#### Por qué el modelo C y no otro
+
+Hay cuatro formas conocidas de aplicar un descuento. Solo una es viable acá:
+
+| Modelo | Quién aplica el descuento | Ejemplo | Viabilidad |
+|---|---|---|---|
+| **A. Integración con el POS del comercio** | El sistema del comercio | McDonald's, YPF | Solo con cadenas. Con comercios chicos y heterogéneos no existe |
+| **B. En el medio de pago** | El banco o la billetera | MODO, beneficios bancarios | Requiere ser emisor o acordar con uno. Fuera de alcance |
+| **C. Canje verificado por el club** | El comercio, confirmando en una web app | **Este** | Viable, y es lo que da trazabilidad |
+| **D. Credencial visual** | El comercio, a ojo | Club La Nación clásico | Fase 1. Cero fricción, cero datos |
+
+McDonald's y YPF resolvieron un problema **más fácil**: son closed-loop, el comercio son
+ellos mismos, controlan la caja y al empleado. Lo que sí conviene copiarles es el patrón
+del cupón: **personal, de un solo uso, con vencimiento, emitido a alguien identificado**
+— nunca un código genérico, que es justo lo que hay hoy (12.1.a).
+
+Los clubes que sí se parecen a este caso (Club La Nación, Clarín 365, Club Personal)
+nunca tuvieron trazabilidad con el comercio chico: credencial a ojo, y descuentos
+fuertes canalizados por medio de pago. Por eso no pueden demostrarle al comercio chico
+cuánta gente le mandaron, y por eso lo pierden. **El modelo C es lo que ellos no
+hicieron, y es la ventaja competitiva de esto.**
+
+#### La regla que hace que el sistema funcione
+
+> **El código es la llave del descuento, no un registro paralelo del descuento.**
+
+No debe existir la vía "mostrale el carnet al cajero y listo" en un comercio que ya está
+digitalizado. Si existe, el 100% del tráfico se va por ahí y no queda ningún dato.
+
+El motivo es de incentivos, no técnico: en YPF el playero pregunta por Serviclub porque
+**trabaja para YPF**. El cajero de la pizzería no trabaja para la fundación y no tiene
+ninguna razón para registrar nada. Si el descuento solo se otorga procesando el código,
+el que reclama en el momento es el cliente — y ese reclamo es el mecanismo de
+cumplimiento, gratis.
+
+---
+
+#### 12.3 — El flujo
+
+#### Alta del comercio (una sola vez)
+
+1. Se postula desde el formulario público (base: `ApplyPartnerPage.jsx`) o lo carga admin.
+2. Admin aprueba, carga sucursales y **redacta el beneficio junto al comercio**. Al
+   principio la redacción la controla la entidad: ahí se generan casi todos los
+   conflictos de mostrador ("¿incluye promos?", "¿aplica feriados?"). Después se le
+   abre la edición al comercio.
+3. Al dueño le llega un magic link a `/comercio`.
+4. **Se da de alta el dispositivo del local, no a cada empleado.** El cajero rota cada
+   pocos meses; crear una cuenta por empleado no va a ocurrir. El teléfono o tablet del
+   mostrador queda logueado con un device token largo. Si el comercio quiere saber qué
+   empleado validó cada canje, se agrega un PIN de 4 dígitos — opcional, casi ninguno
+   lo va a querer.
+
+#### El mostrador
+
+**Socio** (en el local):
+1. Abre el club; ve los beneficios ordenados por cercanía.
+2. Toca el beneficio → condiciones + botón **"Usar ahora"**.
+3. Advertencia antes de generar: *"Generalo recién cuando estés en la caja — vence en 5
+   minutos."* Sin esto, la mitad lo genera en el colectivo y llega con el código vencido.
+4. Pantalla de canje: QR grande, código de 6 caracteres, contador regresivo, su nombre
+   y el del comercio.
+
+**Cajero** (teléfono del local, `/comercio` siempre abierto en "Validar"):
+5. **Escanear** o **Ingresar código**.
+6. Ve nombre del socio + el beneficio en letra grande + botón **Confirmar**.
+7. Campo opcional "Monto de la operación" (de esto depende el reporte de 12.6).
+8. Confirma.
+
+**El cierre:** la pantalla del socio **cambia sola** a verde en ese instante (Supabase
+Realtime). El socio ve que quedó registrado y el cajero ve que el socio lo vio. Esa
+confirmación cruzada es lo que hace que el sistema se sienta real y no un trámite.
+
+#### Casos borde (resolver antes, no después)
+
+| Situación | Comportamiento |
+|---|---|
+| **Socio sin acceso vigente** | El botón "Usar ahora" **no existe**; en su lugar, link a renovar. Nunca dejarlo generar un código que va a fallar en la caja: pasar vergüenza en el mostrador es la forma más rápida de perder un socio |
+| **Local sin señal** (subsuelo, shopping) | El socio genera con su conexión; el comercio necesita señal para confirmar. **Confirmación diferida**: el cajero puede rescatar códigos de las últimas 2 h al recuperar conexión |
+| **Se anula la venta** | El cajero anula dentro de 30 min → estado `anulado`. **No se borra**: el rastro importa |
+| **El cajero se olvidó de confirmar** | El canje expira. Es una métrica de adopción del comercio, no un error |
+| **Comercio que no quiere panel** | Existe y va a existir. Se queda en modo credencial (modelo D) y sus canjes los carga admin a mano. No dejarlo fuera del catálogo por eso |
+
+---
+
+#### 12.4 — Modelo de datos
+
+Módulo aislado con prefijo `club_`. **No modifica ninguna tabla existente**; solo se
+cuelga de `users(id)` y de la función de elegibilidad.
+
+```sql
+club_comercios (
+  id uuid pk, partner_id uuid null references partners(id),
+  nombre, rubro, cuit, slug unique, logo_url, descripcion,
+  estado text check (estado in ('pendiente','activo','pausado','baja')),
+  created_at
+)
+
+club_sucursales (id, comercio_id, nombre, direccion, lat, lng, horarios jsonb, telefono)
+
+club_comercio_usuarios (comercio_id, user_id, rol check (rol in ('dueno','cajero')),
+                        primary key (comercio_id, user_id))
+
+club_beneficios (
+  id, comercio_id,
+  titulo, descripcion, terminos,
+  tipo check (tipo in ('porcentaje','monto_fijo','2x1','regalo')),
+  valor numeric,
+  requiere_acceso boolean not null default true,
+  limite_por_persona int, ventana check (ventana in ('dia','semana','mes','total')),
+  limite_total int, stock int,
+  vigencia_desde date, vigencia_hasta date,
+  dias_semana int[], hora_desde time, hora_hasta time,
+  estado, orden
+)
+
+club_canjes (                       -- el libro. También es el store de tokens.
+  id, beneficio_id, sucursal_id, user_id,
+  codigo text unique,               -- 6 chars, alfabeto sin ambiguos (sin 0/O, 1/I/L)
+  estado check (estado in ('pendiente','confirmado','expirado','anulado')),
+  expira_en timestamptz,
+  cajero_id uuid, confirmado_en timestamptz,
+  monto_operacion numeric, ahorro numeric,
+  anulado_en, anulado_por, motivo_anulacion,
+  created_at
+)
+
+club_config (clave text pk, valor jsonb)   -- todo parámetro variable vive acá (12.7)
+```
+
+**Por qué `club_comercios` y no extender `partners`:** hoy `partners` son sponsors
+institucionales y sus logos van a la Home (`tools/normalize-partner-logos.mjs`). Si se
+mezclan, la primera pizzería que entre al club aparece en la grilla de aliados de la
+Fundación. Son dos relaciones distintas con la entidad, aunque una empresa pueda ser las
+dos cosas — de ahí el `partner_id` opcional.
+
+`benefits` queda como está y se deprecia migrando su contenido a `club_beneficios`. No
+conviene romper las páginas públicas de entrada.
+
+---
+
+#### 12.5 — Dónde vive la lógica: cambio de patrón respecto del resto del repo
+
+Hoy **toda la lógica de datos corre en el browser con la anon key** y la seguridad son
+las RLS (ver `CLAUDE.md`, modelo de seguridad). **Para el club eso no alcanza.**
+`club_canjes` es la tabla que otorga valor económico: si el browser puede insertar ahí,
+cualquiera con las devtools abiertas se autogenera canjes confirmados, y del otro lado
+hay un comercio esperando que le paguen. Es la misma advertencia de 10.2 sobre
+`aportes`, pero con un tercero involucrado.
+
+**Regla: `club_canjes` es de solo lectura para todo el mundo. Se escribe únicamente
+desde Edge Functions con `service_role`.**
+
+| Edge Function | La invoca | Valida |
+|---|---|---|
+| `club-generar-canje` | socio (JWT) | elegibilidad vigente, beneficio activo, límites por persona/ventana, stock, día y horario |
+| `club-confirmar-canje` | cajero (JWT) | que el cajero pertenezca al comercio del beneficio, que el código no esté vencido ni usado |
+| `club-anular-canje` | cajero / admin | ventana de anulación, deja rastro |
+
+RLS de lectura: el socio ve los suyos, el comercio los de su comercio, admin y comisión
+todos. `anon` sin ningún permiso — **no repetir el patrón de GRANTs amplios de 10.1.g**.
+
+Para el lado comercio, replicar el patrón que ya funcionó con `is_board_member()`: una
+función `is_comercio_member(comercio_id)` `SECURITY DEFINER`. **No agregar un rol
+`'comercio'` al CHECK de `users.role`**: la pertenencia a `club_comercio_usuarios` *es*
+el rol, y así una persona puede ser dueña de dos comercios sin romper el modelo. El
+redirect post-login se deriva de tener fila en esa tabla.
+
+Los límites se validan en la Edge Function **y** tienen red de contención en la base
+(índice único parcial sobre `(user_id, beneficio_id, fecha)` para el caso "uno por
+día"). El doble clic en un celular lento es más frecuente que el atacante.
+
+---
+
+#### 12.6 — Niveles de comercio: el incentivo
+
+La contraprestación al comercio es **publicidad de la entidad**: costo marginal cero
+para la Fundación, valor real para el comercio. Es lo que responde la pregunta de por qué
+un comercio seguiría dando descuento el año que viene.
+
+#### La métrica no puede ser la cantidad de canjes
+
+Premiar el `count(*)` de canjes tiene tres defectos, y los tres son evitables:
+
+1. **Es inflable por el propio premiado.** Se le pone recompensa a un número que el
+   comercio puede fabricar (conocidos que se asocian y "canjean" sin descuento real).
+2. **Premia al grande por ser grande.** Una cadena de tres sucursales llega a 50 canjes
+   en diez días; la óptica del barrio no llega nunca. Termina recibiendo publicidad
+   gratis quien menos la necesita, mientras el chico —el que más fácil se va— nunca sube.
+3. **Mide atractivo, no generosidad.** Una hamburguesería al 10% tendrá más canjes que
+   una mueblería al 30%. El ranking premia vender barato y seguido.
+
+#### Cómo se corrige
+
+- **Métrica = ahorro generado a los socios** (`sum(ahorro)`), no cantidad de canjes.
+- **Tope por socio en el cálculo**: máximo 3 canjes del mismo socio por mes cuentan para
+  el nivel. Dos líneas en la vista; mata el inflado sin afectar a ningún comercio real.
+- **Ventana móvil de 12 meses**, no acumulado histórico: si es acumulado, el que fue
+  bueno en 2025 y se durmió es dorado para siempre y el nivel deja de significar algo.
+  Evaluación **trimestral**, para que nadie baje por un mes flojo.
+- **El nivel mezcla volumen con compromiso**: ahorro generado + meses activos sin cortar
+  + antigüedad en el club + calidad del descuento. Así la óptica que hace 18 meses da
+  25% sin fallar puede ser dorada aunque tenga una décima parte de los canjes que la
+  cadena.
+- **Los nombres importan**: nadie quiere un sticker que diga "somos el escalón de abajo".
+  Los niveles bajos **no se muestran en público**; solo se muestra el logro alcanzado.
+
+| Nivel | Qué recibe |
+|---|---|
+| **Comercio del club** (todos) | Ficha en el catálogo, mapa y buscador |
+| **Solidario** | Posteo dedicado en redes + mención en newsletter |
+| **Premium** | Destacado arriba del catálogo con badge + banner en Home + nota en Novedades |
+| **Dorado** | Todo lo anterior + presencia en eventos + logo en materiales + entrevista |
+
+**El premio que más vale no está en esa tabla: el reporte trimestral con sus propios
+números.** "El club te mandó 47 personas este trimestre, $1,2M de consumo, el 60% volvió
+una segunda vez." Es lo que el dueño le muestra a su contador para justificar seguir un
+año más, es subproducto directo de `club_canjes`, y no lo tiene ningún club chico.
+
+#### Los umbrales se fijan con datos, no antes
+
+Números como 5/10/50 canjes son inventados y van a estar mal: o todos son dorados el
+primer mes (y el nivel no vale nada) o nadie llega (y desmotiva). **Arrancar con un solo
+nivel** ("Comercio del club") y fijar los cortes después de 3 meses de operación, sobre
+percentiles reales.
+
+```sql
+club_niveles (id, nombre, orden, min_ahorro_12m, min_meses_activo, min_canjes_12m, ...)
+-- vista: nivel vigente por comercio, con el tope por socio ya aplicado
+club_comercio_nivel (comercio_id, nivel_id, ahorro_12m, canjes_12m, meses_activo, desde)
+```
+
+**El nivel se calcula, no se asigna a mano.** Asignado a mano, el primer comercio que se
+queje discute el criterio y no hay con qué responderle.
+
+Nota institucional: poner "Partner Dorado" en la Home de una fundación **es publicidad**.
+Viniendo de una entidad de bien público, el criterio tiene que ser objetivo y estar
+publicado en la página del club. Evita el conflicto antes de que exista.
+
+---
+
+#### 12.7 — Reglas de portabilidad (qué lo hace reutilizable)
+
+El objetivo es **copiar migraciones + Edge Functions a otro proyecto Supabase y que
+funcione**. No es un servicio multi-tenant compartido: con un solo dev y varios
+proyectos, un servicio central es punto único de falla y problema de versionado.
+Duplicar código es feo pero es libre. El costo aceptado es que un fix se aplica N veces.
+
+Para que esa copia sea posible, el módulo tiene que respetar:
+
+1. **Contrato único de elegibilidad.** El club **nunca sabe por qué** alguien es
+   elegible: solo llama a `public.tiene_acceso(uuid) → boolean`. Cada proyecto la
+   implementa a su manera (en un gimnasio: cuota del mes paga; en una cámara: socio
+   activo; en un proyecto sin socios: `select true`).
+2. **Prefijo `club_` en todo**, y ninguna tabla del club referencia tablas del proyecto
+   salvo `users(id)` y el `partner_id` opcional (que puede quedar NULL siempre).
+3. **Cero marca dentro del módulo**: ni nombres de la entidad, ni copy institucional, ni
+   colores en tablas, funciones o Edge Functions. Mismo criterio del ítem 3.4.
+4. **Todo parámetro variable en `club_config`**: duración del token, ventana de
+   anulación, si el monto de operación es obligatorio, umbrales de nivel. Ninguna
+   constante mágica en código (mismo criterio de 10.5).
+5. **Las Edge Functions no leen nada fuera del prefijo `club_`**, salvo `users` y la
+   función de elegibilidad.
+6. **UI contenida en `src/components/Club/` y `src/pages/club/`**, sin importar nada del
+   proyecto salvo `components/ui/` y `lib/`.
+
+✅ **Bloqueante previo (10.6 #1): resuelto el 2026-08-30.** `src/lib/supabase.js` ya no
+tiene fallback a las credenciales de producción — lanza al importarse — y
+`vite.config.js` aborta el build si faltan las env vars. Sin eso, un fork mal
+configurado habría emitido canjes contra la base de la Fundación **sin fallar**.
+
+---
+
+#### 12.8 — Orden de implementación
+
+| Fase | Qué | Deja algo usable? |
+|---|---|---|
+| **0** | ~~§10 fase 1: `aportes` + `tiene_acceso()`~~ + ~~bloqueante #1 de 10.6~~ **✅ HECHO 2026-08-30** (esquema y guarda de credenciales; falta aplicar en prod) | Prerrequisito literal: sin esto no hay a quién validarle nada |
+| **1** | ~~Carnet digital + `requiere_acceso` en beneficios + catálogo que muestra el estado de acceso~~ **✅ HECHO 2026-08-30** — `/carnet`, bloqueo en catálogo y detalle, `src/lib/acceso.js` + `accesoApi.js`. **Sin QR a propósito**: en esta fase el comercio *mira* el carnet, no lo escanea, así que un QR que nadie lee no aporta nada y suma una dependencia. Entra en la fase 2, que es donde se escanea. ⚠️ Ver la limitación de abajo | **Ya es un club funcionando**, sin pedirle nada al comercio (modelo D) |
+| **2** | ~~`club_comercios`/`club_sucursales`/`club_comercio_usuarios` + `club_canjes` + las 3 Edge Functions + panel `/comercio`~~ **✅ CERRADA — probada de punta a punta el 2026-09-02** (§11.7.12). Queda deuda menor, toda en §12.10 | Entra el comercio. Acá aparece la trazabilidad |
+| **2b** | **El ABM del club** — sección «Club de beneficios» en `/admin`: comercios, sucursales, beneficios y operadores del mostrador. ⚠️ **Este renglón no existía**: la fase 2 listaba «panel `/comercio`» y ese es el mostrador, no la administración. Ver §11.7.9 | Sin esto, cada comercio nuevo necesita un desarrollador — y §12.7 deja de cumplirse |
+| **3** | Reporte para el comercio + límites finos + anulación + sucursales en mapa | **Esto es lo que hace que el comercio renueve** |
+| **4** | `club_niveles` + cálculo + badges en catálogo (con umbrales sobre datos reales) | El incentivo de 12.6 |
+| **5** | Extracción a un segundo proyecto (12.7). Wallet passes (Apple/Google) solo si hace falta | Producto |
+
+⚠️ **Limitación conocida de la fase 1: el bloqueo es cosmético.** `benefits.codigo` sigue
+siendo una columna de lectura pública (12.1.a), así que ocultar el código en pantalla no
+impide que alguien lo lea consultando la API. **Esto no es un descuido y no se arregla
+con RLS**: proteger la columna con GRANTs a nivel columna rompería el panel admin (que
+usa el mismo rol `authenticated`), y partir el código a una tabla aparte es un refactor
+que la fase 2 tira a la basura igual. La protección real llega cuando el código deja de
+ser un texto fijo y pasa a emitirse por persona y de un solo uso (`club_canjes`). Hasta
+entonces: **no poner en `requiere_acceso` un beneficio cuyo código valga dinero de
+verdad.**
+
+**La fase 1 sin comercio digital es deliberada.** La mayoría de los clubes de beneficios
+mueren porque le exigen un panel al comercio desde el día uno; el comercio no lo usa,
+los canjes no se registran, y no hay números para renovar. Conviene entrar con la
+credencial y digitalizar comercio por comercio.
+
+---
+
+#### 12.9 — Decisiones de negocio (TOMADAS el 2026-08-30)
+
+1. **12.9.1 — ¿El comercio entra digitalizado desde el arranque?**
+   → **Se arranca con un comercio piloto: DigitalMatch** (descuento en landing pages y
+   sitios web). Es un comercio propio, así que la fase 2 se puede probar de punta a punta
+   sin depender de que un tercero adopte nada. Los demás entran por credencial (modelo D)
+   y se digitalizan de a uno.
+
+2. **12.9.2 — ¿Se captura el monto de la operación?**
+   → **Opcional.** Y la forma de conseguirlo no es exigirlo: es que el reporte trimestral
+   —"el club te mandó N personas, $X de consumo"— solo se pueda armar con ese dato. El
+   comercio termina pidiéndolo él para tener sus métricas y para calificar a los niveles
+   altos. Si se exige de entrada, el cajero lo completa con cualquier número.
+
+3. **12.9.3 — ¿Qué pasa con los beneficios de un comercio dado de baja?**
+   → **Los canjes no se borran nunca**: son el libro contable del club. La ficha del
+   comercio se archiva y sus beneficios pasan a inactivos.
+
+4. **12.9.4 — ¿El donante puntual entra al club?** → Sí, resuelto en 10.4.5.
+
+Queda una sola decisión abierta, y **a propósito**: los umbrales de los niveles de
+comercio (12.6). Se fijan con 3 meses de datos reales, no antes.
+
+---
+
+#### 12.11 — El umbral tenía que ser proporcional al valor (2026-09-02) ✅ APLICADO
+
+**Lo encontró una pregunta del dueño del proyecto, no una prueba.** Y es la tercera vez
+seguida que el hueco lo destapa pensar el negocio en voz alta y no ejecutar código.
+
+#### El problema, con los números reales
+
+La regla de acceso es **una sola para todo el sistema**: `cuota_referencia` = $5.000 dan un
+mes. El beneficio de DigitalMatch es 30% sobre desarrollo web, y una cotización va de
+$150.000 a $500.000. Y el límite es `1 / total`: **un canje por persona, en la vida.**
+
+| Cotización | 30% off | Aporte para acceder | Gana la persona | Recibe la Fundación | Pone el comercio |
+|---|---|---|---|---|---|
+| $150.000 | $45.000 | **$5.000** | $40.000 | $5.000 | $45.000 |
+| $300.000 | $90.000 | **$5.000** | $85.000 | $5.000 | $90.000 |
+| $500.000 | $150.000 | **$5.000** | $145.000 | $5.000 | $150.000 |
+
+> **La estrategia óptima del socio era aportar $5.000 una vez, canjear e irse.** Y como el
+> límite es de por vida, no le quedaba ninguna razón para volver a aportar. **El club
+> premiaba irse** — exactamente lo contrario de lo que §10.7 identificó como el motivo más
+> fuerte para sostener una entidad.
+
+Y volvía **casi teórico** al bloqueante de §10.17: cuando por fin hubiera un socio con
+acceso, iba a recibir lo que ya tenía cualquiera.
+
+#### Tres decisiones de negocio, tomadas
+
+**1. La cuota se mantiene en $5.000, simbólica.** Decisión del dueño del proyecto: el
+objetivo es **volumen de socios, no margen por socio** — una cuota de $25.000 no llegaría
+ni al 10% del alcance posible. Así que el beneficio caro **no se protege encareciendo la
+entrada**, que mataría el volumen: se protege **pidiendo tiempo**.
+
+**2. No se parte el descuento entre la persona y la Fundación.** Se evaluó que el comercio
+diera 10% a la persona y donara 20%. **El instinto es correcto** —el valor debería volver
+en parte a la entidad— pero el mecanismo convierte un **descuento** (el comercio resigna
+margen, no se mueve plata) en una **cobranza con rendición**: factura el total, tributa
+sobre el total y transfiere. La Fundación pasa a ser **acreedora de cada comercio**, con
+conciliación y pagos que perseguir, que es lo que mata a los clubes chicos. Y **obliga a
+reabrir §12.9.2**, que dejó el monto opcional justamente porque exigirlo hace que el cajero
+lo complete con cualquier número. La misma economía se consigue sin mover un peso.
+
+**3. Los dos caminos son O, no Y.** Se cumple con la antigüedad **o** con el aporte
+acumulado. Pedir los dos dejaría afuera al donante que pone una suma grande de una vez, que
+es **el que más aporta**.
+
+#### Qué se construyó
+
+| Pieza | Dónde |
+|---|---|
+| `antiguedad_minima_meses`, `aporte_minimo_acumulado`, `ahorro_maximo` | `20260902160000_club_requisitos_beneficio.sql` |
+| `elegibilidad_club(uuid)` / `mi_elegibilidad_club()` | idem — devuelven **hechos**, no decisiones |
+| `cumpleRequisitos()` y el tope en `calcularAhorro()` | `club-reglas.ts` — puro y testeable |
+| La exigencia | `club-generar-canje/index.ts` |
+| `faltaParaBeneficio()` y el estado `sin_requisitos` | `src/lib/club.js` — **UX, no frontera** |
+| Los 6 campos del ABM | `ComercioDetalle.jsx` + `clubAdminApi.js` |
+
+**`antiguedad_socio()` ya existía desde la fase 1 de §10 y no lo usaba nadie.** Se usa
+`meses_aportados` (acumulado) y **no `racha_meses`**: la racha castigaría un cobro fallido
+por tarjeta vencida, que es justo lo que §10.4.3 dice evitar.
+
+⚠️ **La regla vive dos veces y no se puede evitar**: el browser no puede importar del
+runtime de Deno. La del front es UX; **la autoridad es la Edge Function**, que vuelve a
+preguntar con `service_role`. La única defensa contra que divergan es que **las dos se
+prueben con la misma tabla de casos**, y así están escritas.
+
+#### Los números elegidos, y por qué son provisorios
+
+**6 meses de aporte O $30.000 acumulados, con el ahorro topado en $30.000.**
+
+| | Antes | Ahora |
+|---|---|---|
+| Aporta la persona | $5.000 | **$30.000** |
+| Ahorra en un trabajo de $150.000 | $45.000 | $30.000 |
+| Su resultado neto | **+$40.000** | **±$0** |
+| Recibe la Fundación | $5.000 | **$30.000** (6×) |
+| Pone el comercio | $45.000 | **$30.000** (un tercio) |
+
+**Por qué 6 y no 12:** doce meses serían $60.000 de aporte contra $30.000 de ahorro — el
+beneficio quedaría en pérdida explícita, y entonces no es un beneficio. Seis lo deja a la
+par, y la persona sostuvo la Fundación medio año en el camino.
+
+⚠️ **Son la mejor estimación posible, no un dato.** §12.6 ya fijó el criterio: los umbrales
+se fijan con datos reales. **Hoy hay 0 personas con acceso vigente, así que no hay datos.**
+Por eso viven en la base y se editan desde el panel sin desplegar nada (§11.4: lo que varía
+por entidad va en datos).
+
+#### Lo que queda pendiente de esto
+
+- [x] ~~**12.11.1 — Ejercitar el rechazo con una cuenta real.**~~ **✅ HECHO el 2026-09-05** — respuesta real abajo. Se probó que las funciones
+  arrancan y rechazan sin sesión (401, no 500), y la lógica tiene 35 tests. **Pero el camino
+  «tiene acceso y NO cumple los requisitos» nunca corrió contra la base**, y es la rama
+  nueva.
+
+  #### Cómo ejercitarlo, y por qué NO hay que tocar el umbral
+
+  La tentación es bajar el umbral desde el ABM (`/admin → Club de beneficios →
+  DigitalMatch Global → Requisitos para canjearlo`, que existe y está cableado). **No
+  hace falta y es peor**, por dos motivos medidos:
+
+  1. **DigitalMatch tiene `limite_por_persona = 1`, ventana `total`.** Si con el umbral
+     bajo se aprieta el botón, se consume el único canje de esa persona *para siempre*,
+     y es un descuento real de hasta $30.000.
+  2. **El rechazo ocurre ANTES de cualquier escritura** (paso 2 de `club-generar-canje`,
+     antes del insert). Así que llamar a la función con el umbral REAL no puede consumir
+     nada: no llega a escribir.
+
+  Entonces se llama a la función directamente, con la sesión ya iniciada en el sitio.
+  Comprobado el 2026-09-02: **el header `apikey` NO hace falta**, alcanza con
+  `Authorization`, así que el snippet no lleva ninguna clave adentro.
+
+  ```js
+  // consola del navegador, con sesión iniciada en evolucionantoniana.com
+  (async () => {
+    const k = Object.keys(localStorage).find(x => x.startsWith('sb-') && x.endsWith('-auth-token'));
+    if (!k) return console.error('Sin sesión.');
+    const tok = JSON.parse(localStorage[k]).access_token;
+    const r = await fetch('https://lbtyxnbyetsvngsxczkt.supabase.co/functions/v1/club-generar-canje', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ beneficio_id: 'dc100000-0000-4000-8000-000000000003' }),
+    });
+    console.log('HTTP', r.status, await r.json());
+  })();
+  ```
+
+  **Esperado** para un socio con 1 mes y $5.000: `HTTP 403` con
+  `codigo_error: "requisitos"`, `faltan_meses: 5`, `falta_monto: 25000` y el `error` con
+  la frase completa. Cualquier otra cosa —200, 500, o un 403 con otro código— es el
+  hallazgo.
+
+  ⚠️ **Controles**: sin sesión la misma llamada da `401 codigo_error: "sesion"` (probado),
+  que confirma que responde la función y no el gateway. Y `403 sin_acceso` sería un
+  resultado distinto: significaría que el problema es el aporte, no el umbral.
+
+  #### ✅ Corrido el 2026-09-05, con la cuenta del primer socio real
+
+  ```
+  HTTP 403 {
+    error: 'Este beneficio pide 6 meses de aporte o $30.000 en total. Vas por 1 mes
+            y $5.000, así que te faltan 5 meses o $25.000.',
+    codigo_error: 'requisitos', faltan_meses: 5, falta_monto: 25000
+  }
+  ```
+
+  **Los cuatro campos, exactos.** La rama nueva de §12.11 corrió contra la base por
+  primera vez y decidió bien. Nada se escribió: el `limite_por_persona = 1` del socio
+  sigue intacto, que es lo que hacía segura esta prueba.
+
+  ✅ **El caso real ya existe (2026-09-02).** Hay un socio con acceso vigente, **1 mes
+  aportado y $5.000 acumulados**, y DigitalMatch pide 6 meses o $30.000: cae exactamente en
+  la rama que nunca se ejercitó. Ya no hace falta esperar a nadie — y conviene hacerlo antes
+  de que ese socio acumule seis meses, porque después el caso se va hasta que aparezca otro.
+
+- [ ] **12.11.2 — El club necesita beneficios de ticket bajo y frecuencia alta.** Es el
+  problema de fondo y no lo arregla ninguna columna: **un beneficio de ticket alto y una
+  sola vez no es un beneficio de club de fidelidad.** Los clubes funcionan con lo contrario
+  —el café, la farmacia, la librería: $2.000 de ahorro veinte veces al año—, que construye
+  hábito y premia la permanencia sin que nadie diseñe nada. **DigitalMatch es una vidriera
+  excelente y un cimiento malo.** Sumar tres o cuatro comercios de consumo cotidiano vale
+  más que cualquier ajuste de umbral.
+
+- [ ] **12.11.3 — El tope cambia los números de §12.6.** `ahorro_maximo` alimenta el
+  `ahorro` de `club_canjes`, que es la métrica de nivel del comercio. Cuando se definan los
+  umbrales de la fase 4, hay que tener presente que un ahorro topado no es comparable con
+  uno sin tope.
+
+---
+
+#### 12.10 — Deuda del club: qué falta, ordenado por lo que duele (2026-09-02)
+
+La fase 2 está cerrada y probada (§11.7.12). Esto es lo que **no** está, en un solo lugar,
+para no volver a descubrir un hueco preguntando.
+
+> ⚠️ **12.10.13 a 12.10.15 se agregaron el 2026-09-02**, y no las encontró una prueba ni una
+> revisión de código: las encontró **abrir el sitio en un navegador y mirar las dos páginas
+> una al lado de la otra**. Los tres huecos son de *integración* — cada pieza funciona sola y
+> el conjunto no —, que es justo lo que ningún test unitario mira. Van con §11.7.10: «tiene el
+> texto» no es «se ve bien», y ahora también **«cada pieza anda» no es «el circuito anda»**.
+
+#### A. Integridad — lo que puede dar un resultado incorrecto
+
+- [ ] **12.10.1 — La misma cuenta puede generar y confirmar su propio canje.**
+  `club-confirmar-canje` verifica que quien confirma pertenezca al comercio, pero **no** que
+  sea distinto de quien generó. Hoy es útil (permite probar solo/a) y no hace daño: el
+  descuento sale del bolsillo del propio comercio. Pero es **el vector de inflación que
+  §12.6 advierte**, y cuando existan los niveles de la fase 4 —donde el número de canjes
+  define un premio— se convierte en un incentivo perverso. Son dos líneas en la Edge
+  Function. **Bloquearlo antes de construir la fase 4, no después.**
+
+- [x] ~~**12.10.2 — `benefits.codigo` sigue siendo de lectura pública.**~~ **✅ CERRADO,
+  y verificado contra producción el 2026-09-05 por las DOS puntas** —que es lo que este
+  repo pide, porque «no se ve» y «no existe» se parecen desde afuera:
+
+  | Comprobación | Resultado |
+  |---|---|
+  | La policy pública es `estado = 'activo'` | y la única fila de `benefits` está **`inactivo`**: no la alcanza |
+  | Los campos en sí | `codigo` y `codigo_descuento` están **en NULL** |
+
+  O sea que no hay código que filtrar aunque la policy fallara. La protección real la da
+  §12 fase 2: el código se emite por persona y de un solo uso desde una Edge Function.
+  Diagnóstico original:** Es la limitación
+  declarada de la fase 1 (12.8): ocultar el código en pantalla no impide leerlo por API. Se
+  cierra sola cuando el contenido de `benefits` migre a `club_beneficios`, porque ahí el
+  código es por persona y de un solo uso. Hasta entonces: **no poner en `requiere_acceso` un
+  beneficio de `benefits` cuyo código valga dinero.**
+
+- [ ] **12.10.3 — La confirmación diferida nunca se ejercitó.** El rescate de un canje
+  vencido dentro de la ventana (`confirmacion_diferida_horas`) está implementado y no se
+  probó: el único canje real se confirmó en 53 segundos. Es la rama que corre cuando el
+  local se queda sin señal, o sea justo cuando nadie está mirando.
+
+- [x] ~~**12.10.13 — 🔴 El código del beneficio real está publicado, y se filtra por TRES
+  campos.**~~ **✅ CERRADO el 2026-09-02, y estructuralmente** (§12.10.16). Verificado en
+  producción el 2026-09-05: `benefits` tiene **1 fila y está `inactivo`**, y el adaptador
+  `mapearABeneficio()` **no copia** `codigo` ni `codigo_descuento` — así que la fuga no es
+  «no se muestra», es **que no hay de dónde mostrarla**. El texto original queda abajo
+  porque explica los tres campos por los que se filtraba, que es lo que hay que no repetir.
+  Diagnóstico original:** Esto **agrava y corrige a 12.10.2**, que lo describía como «lectura pública por
+  API». Es peor: está **impreso en una página pública e indexable**. El mismo 30% de
+  DigitalMatch vive en los dos catálogos con reglas opuestas —`benefits` con
+  `requiere_acceso = false`, `club_beneficios` con `true`— y **el público anula al gateado:
+  hoy nadie necesita ser socio para tener el descuento.** Eso vuelve casi teórico al
+  bloqueante de §10.17: cuando por fin haya un socio con acceso, va a recibir lo que ya
+  tenía cualquier visitante.
+
+  **Y no es un campo, son tres** — este es el detalle que se escapa:
+
+  ```
+  codigo            = 'DMGlobal'
+  codigo_descuento  = 'Codigo Alternativo'   ← basura de carga, igual de visible
+  instrucciones     = '… Usá el código DMGlobal para aplicar el 30% OFF.'   ← el tercero
+  ```
+
+  **Blindar la columna `codigo` no alcanzaría**: el código también viaja dentro del texto
+  libre de `instrucciones`. Cualquier solución que mire solo la columna deja la fuga abierta.
+
+  ✅ **Lo que NO está roto, y conviene saberlo:** la puerta está bien construida.
+  `BenefitDetailPage.jsx:59-61` ya llama `useMiAcceso` y `beneficioBloqueado()`, y la
+  línea 268 solo renderiza el código con `{!bloqueado && …}`. **Es un problema de datos, no
+  de código**: con `requiere_acceso = false` la lógica pasa de largo.
+
+#### B. Operación — lo que hace falta para que entre un comercio que no sea propio
+
+- [ ] **12.10.4 — No hay invitación por magic link.** §12.3 la diseñó. Hoy: o el comercio se
+  registra solo en `/register` y alguien lo ata a mano desde el ABM, o admin le crea la
+  cuenta y le pasa la contraseña por fuera. Funciona, es artesanal, y no escala a diez
+  comercios.
+
+- [ ] **12.10.5 — No hay formulario público de postulación.** §12.3 lo imaginaba sobre la
+  base de `ApplyPartnerPage`. Hoy un comercio no tiene por dónde pedir entrar.
+
+- [ ] **12.10.6 — La anulación no tiene UI.** `club-anular-canje` está desplegada y
+  `clubApi.anularCanje()` existe; falta el botón en `/comercio`. §12.3 la pide para cuando se
+  cae una venta. Se dejó afuera por no agregar una acción destructiva sin poder ejercitarla,
+  y ahora que hay un canje confirmado real **ya se puede probar**.
+
+- [ ] **12.10.7 — El PIN por empleado.** §12.3 lo declara opcional y predice que «casi
+  ninguno lo va a querer». Anotado para no re-discutirlo: la decisión ya está tomada, es
+  *no lo hagas hasta que un comercio lo pida*.
+
+#### C. Contenido y catálogo
+
+- [x] ~~**12.10.8 — El catálogo está partido en dos.**~~ **✅ CERRADO el 2026-09-02.**
+  Verificado el 2026-09-05: `benefits` quedó con su única fila en `inactivo` y el nav
+  (`Header.jsx`) manda «Colaborá → Beneficios» a `/beneficios`, que ahora lee
+  `club_beneficios`. Diagnóstico original:** `/beneficios` lee `benefits` (viejo, 1
+  fila, código estático) y `/club` lee `club_beneficios` (nuevo, con canje). §12.4 decidió
+  deprecar el primero migrando su contenido, no romperlo. **Mientras las dos existan, la
+  regla es: lo que se canjea vive en `/club`.** Migrar la fila de DigitalMatch y retirar la
+  vieja cierra este punto y el 12.10.2 de una vez.
+
+- [x] ~~**12.10.14 — 🔴 `/club` es una página huérfana: no hay un solo enlace en el sitio.**~~
+  **✅ RESUELTO en lo que importaba, el 2026-09-02.** La queja concreta era que el nav
+  apuntaba al catálogo **viejo**; hoy apunta a `/beneficios`, que es el unificado.
+
+  ⚠️ **Pero queda una pregunta abierta que conviene no perder** (anotada el 2026-09-05):
+  después de unificar, `/beneficios` y `/club` leen **la misma tabla**, y `/club` sigue sin
+  ninguna entrada en el nav — solo se llega desde el CTA de un detalle. O son dos vistas con
+  trabajos distintos (vidriera / mostrador) y hay que decirlo en la interfaz, o una sobra.
+  **Es exactamente el patrón que ya costó dos veces** (§12.10.16 y §10.23): dos pantallas
+  que hablan de lo mismo sin que nadie decida cuál manda. Diagnóstico original:**
+  Grep sobre todo `src/`: fuera de su propia carpeta, la única mención de `/club` es la
+  definición de la ruta en `App.jsx`. No está en el `Header`, ni en `/beneficios`, ni en el
+  carnet. **Se llega solo tipeando la URL.** Y el nav sí ofrece «Colaborá → Beneficios», que
+  apunta al catálogo **viejo**:
+
+  > **El camino descubrible lleva al catálogo sin puerta. El que tiene puerta está escondido.**
+
+  Explica por qué la fase 2 se probó bien y nadie notó nada: el canje real se hizo entrando
+  por URL directa (§11.7.12). **Una página que funciona y no está enlazada se verifica igual
+  que una que anda** — es el mismo patrón de §11.7.13, el reaper que existía sin que nada lo
+  llamara, en la capa de navegación.
+
+- [x] ~~**12.10.15 — Unificar el catálogo necesita TRES columnas antes de poder migrar.**~~
+  **✅ APLICADO el 2026-09-02** (`20260902120000_club_beneficios_vidriera.sql`). Verificado
+  en producción el 2026-09-05: `slug`, `instrucciones` e `imagen_url` existen en
+  `club_beneficios`. Diagnóstico original:**
+  §12.4 decidió «deprecar el viejo migrando su contenido» y 12.10.8 lo hace sonar como mover
+  una fila. No lo es: `club_beneficios` todavía no puede recibir todo ese contenido.
+
+  ⚠️ **Este ítem dijo «CUATRO columnas» por un rato el 2026-09-02.** Son tres, y la
+  diferencia importa porque revela algo bueno: **el modelo nuevo está mejor normalizado que
+  el viejo.** Lo que en `benefits` eran columnas repetidas por beneficio, en el modelo nuevo
+  ya vive donde corresponde —en el comercio— y se llega por join.
+
+  | Campo que `/beneficios` renderiza | En el modelo nuevo | Qué hace falta |
+  |---|---|---|
+  | `slug` — la URL indexable | ❌ | **agregar a `club_beneficios`** |
+  | `instrucciones` — «¿Cómo acceder?» | ❌ | **agregar a `club_beneficios`** |
+  | `imagen_url` — imagen del beneficio | ❌ | **agregar**, nullable, con fallback al logo del comercio |
+  | `categoria` — el chip «TECNOLOGIA» | ✅ `club_comercios.rubro` = «Tecnología» | nada |
+  | logo, `sitio_web`, `contacto_email` | ✅ `partners` vía `club_comercios.partner_id` | nada — join anidado |
+  | título, descripción, términos, vigencia, % | ✅ | nada |
+
+  ⚠️ **Y un detalle de datos que se descubre acá:** `club_comercios.logo_url` está en **NULL**
+  para DigitalMatch. El logo tiene que salir de `partners.logo_url` por `partner_id`, así que
+  la consulta necesita un **embed anidado** y `logo_url` en el comercio queda como override
+  opcional. Si el join se escribe plano, la vidriera sale sin logo y nadie se entera hasta
+  mirarla.
+
+- [ ] 🟡 **12.10.9 — El club tiene UN socio.** Remedido contra producción el 2026-09-05:
+  **1 de 23 cuentas** tiene acceso vigente. Decía «0 de 23» y era cierto hasta que se cobró
+  la primera cuota real el 2026-09-02.
+
+  Lo que cambió no es cosmético: con ese socio se pudo **ejercitar el rechazo por
+  requisitos** (§12.11.1), que era la última rama del club sin correr contra la base. O sea
+  que el bloqueante técnico se levantó — **queda el de negocio**, que no se arregla con
+  código: hace falta gente aportando. Sigue siendo §10.17, no un problema del club.
+
+- [x] ~~**12.10.10 — Queda un beneficio de prueba en el catálogo.**~~ **✅ ARCHIVADO el
+  2026-09-02** por el paso 2 de 12.10.16. Verificado en el sitio vivo: «Prueba interna»
+  ya no aparece en `/club`. *Original:* «Prueba interna del sistema
+  de canje» se cargó para validar el circuito. **Archivarlo** (`estado = 'baja'`) desde
+  `/admin → Club de beneficios` cuando no se lo necesite: mientras esté activo lo ve
+  cualquier visitante.
+
+#### E. La unificación del catálogo — CONSTRUIDA el 2026-09-02, sin aplicar
+
+> Los tres ítems 12.10.13/14/15 tienen el código escrito y validado, y **no están
+> cerrados**: cierran cuando se aplique en producción, en este orden y no en otro.
+
+**Qué se construyó:**
+
+| Pieza | Dónde | Qué garantiza |
+|---|---|---|
+| Migración aditiva | `20260902120000_club_beneficios_vidriera.sql` | `slug`, `instrucciones`, `imagen_url` en `club_beneficios` |
+| Migración de datos | `supabase/data/unificar_catalogo_beneficios.sql` | El beneficio hereda la URL vieja; la fila vieja y el beneficio de prueba se archivan |
+| El adaptador | `src/lib/club.js` → `mapearABeneficio()` | **La fuga es imposible por estructura**: la forma que sale no tiene dónde poner un código |
+| El saneo | `src/lib/club.js` → `sanearInstrucciones()` | Corta la frase que menciona un código, que era la tercera vía |
+| El CTA por estado | `src/lib/club.js` → `accionVidriera()` | Visitante → asociarse · con sesión sin aporte → aportar · con acceso → canjear. Nunca un callejón |
+| La consulta | `clubApi.js` → `getBeneficiosVidriera()` | Embed **anidado** a `partners`, que es de donde sale el logo |
+
+- [x] ~~**12.10.16 — pasos 1 y 2**~~ **✅ APLICADOS a producción el 2026-09-02.**
+
+  1. ✅ `tools/db.sh apply .../20260902120000_club_beneficios_vidriera.sql` — 3 columnas
+     y 2 índices, verificados en la base.
+  2. ✅ `tools/db.sh sql < supabase/data/unificar_catalogo_beneficios.sql`
+
+  **Verificado en producción, con las dos puntas y desde el rol `anon`:** ve el beneficio
+  con logo, categoría y sitio (control positivo — si diera 0 filas, el negativo mentiría),
+  y `DMGlobal` no aparece en **ningún** campo legible. `benefits` no publica nada.
+
+  **Y verificado en el sitio vivo con Chrome headless** (§B): `DMGlobal` = 0 apariciones
+  en `/beneficios` y en `/club`. **La fuga de §12.10.13 está cerrada en producción.**
+  De paso quedó archivado el beneficio de prueba, que cierra **12.10.10**.
+
+  Antes de aplicar se tomó un **backup verificado por restauración** —no solo generado—:
+  `tools/db.sh dump` a `C:\Projects\_backups-antoniana\`, restaurado en un PG15 limpio,
+  y los **15 conteos de tabla coinciden exactamente** con producción. Más un rollback
+  quirúrgico fila por fila, al lado. Y el paso 2 se corrió **primero en seco**
+  (`COMMIT`→`ROLLBACK`) para leer los controles antes de confirmar; no dejó residuo.
+
+- [x] ~~**12.10.17 — el paso 3, desplegar el front**~~ **✅ HECHO el 2026-09-02.**
+
+  Verificado en el DOM de producción con Chrome headless: `/beneficios` muestra el
+  beneficio con su logo y la categoría «Tecnología», `/club` lo muestra sin el de prueba,
+  la **URL vieja sigue viva** (se conservó el slug a propósito) y `DMGlobal` da **0
+  apariciones** en las tres páginas. Los 8 links del nav cruzados contra `App.jsx`: todos
+  existen.
+
+- [x] ~~**12.10.18 — La pasada en ancho de teléfono.**~~ **✅ HECHA el 2026-09-02, y el
+  problema era el método.**
+
+  Durante horas el contenido salió «recortado a la derecha» a 390 px, en las páginas nuevas
+  **y también** en `/club` —arreglada para teléfono en su momento— y en la propia 404.
+  Que fallara en todas era la pista, y la conclusión honesta de entonces fue que el chequeo
+  no medía nada. **Era peor: medía algo falso.**
+
+  #### La medición que lo cerró
+
+  Una página de una línea que imprime `window.innerWidth`, capturada con el mismo comando:
+
+  ```
+  --window-size=200  ->  innerWidth=504
+  --window-size=290  ->  innerWidth=504
+  --window-size=390  ->  innerWidth=504   <-- lo que se venía usando
+  --window-size=504  ->  innerWidth=504
+  --window-size=600  ->  innerWidth=582
+  --window-size=800  ->  innerWidth=782
+  ```
+
+  **El viewport tiene un piso de 504 px** en esta máquina: por debajo, `--window-size` no
+  baja más. Así que la página se maquetaba a **504** y el screenshot guardaba los **390 de
+  la izquierda**, cortando contenido que estaba perfecto. Encima de 504 hay ~18 px de
+  diferencia por el marco.
+
+  ✅ **Recapturado a 504 —el piso real, con el viewport entero— el sitio se ve bien**: nada
+  recortado, el título en una línea, el texto envolviendo, el nav inferior con sus cuatro
+  ítems y el menú hamburguesa. Verificado sobre el build local servido con `vite preview`.
+
+  **Y 504 sí sirve para esto:** el breakpoint `sm` de Tailwind es 640 px, así que a 504 se
+  está ejercitando el layout móvil, no el de escritorio. Un teléfono real mide 360-430, así
+  que **no cubre lo que pueda romperse solo por debajo de 504** — para eso hace falta
+  emulación por CDP, no `--window-size`.
+
+  ⚠️ Sigue sin poder verse el estado «puede canjear» del CTA hasta que exista un socio con
+  aporte vigente (§12.10.9). Hoy se verifican «sin sesión» y «sin acceso».
+
+  **La lección, y es incómoda:** una verificación que falla siempre se lee como «el sistema
+  está mal» cuando lo más probable es que **el instrumento esté mal**. Van cuatro veces en
+  la jornada que el problema era el instrumento y no lo medido. La regla que queda:
+  **antes de creerle a una medición, medí el instrumento contra algo cuyo valor conozcas.**
+
+- [x] ~~**12.10.19 — Los dos bugs que el deploy hizo visibles, y la defensa que quedó.**~~
+  **✅ CERRADO.** Los dos arreglados, la defensa quedó en `rutas-cta.test.js`, y la
+  «vidriera vacía» que este ítem declaraba como regresión temporal se cerró con el deploy
+  del front — `/beneficios/:slug` se viene mirando en el navegador desde entonces.
+  Se conserva porque **las dos lecciones valen más que el ítem**: un test que afirma un
+  valor escrito a mano no puede detectar que ese valor está mal, y una pieza nueva no se
+  agrega a una pantalla sin leer qué ya renderiza. Diagnóstico original:**
+
+  Ninguno lo encontró un test: los encontró **mirar la pantalla desplegada**. Van dos
+  jornadas seguidas así (§12.10.13 salió de abrir el sitio en un navegador).
+
+  **a) `/colaborar` no existe — la ruta es `/collaborate`, en inglés.** El link no falla:
+  React Router cae en el catch-all y renderiza el 404, que mide **25.865 bytes** y tiene
+  `<nav>` y `<footer>`, contra los 45.702 de la página real. **Es el mismo tropiezo que ya
+  documentaba §11.4, con la misma ruta.** Y lo peor: **el test propio afirmaba
+  `toBe('/colaborar')`, así que estaba de acuerdo con el bug y pasaba en verde.** Un valor
+  escrito a mano no puede detectar que el valor está mal.
+
+  ✅ **La defensa quedó en `src/lib/rutas-cta.test.js`**: lee las rutas de `App.jsx` y las
+  cruza contra cada `href` que `accionVidriera` puede emitir, en sus ocho estados. Con
+  control positivo (que `App.jsx` se pudo leer y declara >10 rutas — sin eso, un archivo
+  movido haría pasar el test por vacuidad) y negativo. **Se hizo fallar antes de creerle.**
+
+  **b) El bloque nuevo duplicaba el panel que ya existía.** La página de detalle **ya**
+  tenía un panel «Reservado» que resolvía el estado bloqueado, y lo dice mejor: explica que
+  se accede con la cuota al día o con una donación desde el valor de una cuota. El bloque
+  nuevo salió al lado, con dos mensajes y dos botones para lo mismo.
+
+  Es irónico de la manera que conviene anotar: **`accionVidriera` existe justamente para
+  que no haya dos lugares decidiendo sobre el mismo beneficio (§12.10.13), y al construirla
+  se agregó un cuarto sin mirar qué había.** De ahí la regla: **una pieza nueva no se agrega
+  a una pantalla sin leer primero qué ya renderiza esa pantalla.**
+
+  Es la consecuencia prevista y documentada de hacer el paso 2 antes del 3: el front
+  desplegado todavía lee `benefits`, que ya no publica nada. La página **no está rota**
+  —`<nav>`, `<footer>` y 31 KB de DOM— pero no muestra ningún beneficio.
+
+  **Se eligió a propósito quedar en este estado y no en el anterior:** entre una vidriera
+  vacía y un código que vale dinero publicado para cualquiera, la vacía dura horas y no
+  le cuesta nada a nadie. Pero **es una regresión visible y hay que cerrarla, no
+  convivir con ella.**
+
+  Lo que falta después del deploy, y solo se puede ver ahí: **mirar `/beneficios` y
+  `/beneficios/:slug` en un navegador, en ancho de teléfono** (§11.7.10), y que el CTA
+  cambie con la sesión. ⚠️ Con 0 personas con acceso vigente (§12.10.9), el estado
+  «puede canjear» **sigue sin poder verse de verdad** hasta que exista un socio: lo que
+  se puede verificar hoy son los estados «sin sesión» y «sin acceso».
+
+  ⚠️ Y falta lo que no se puede validar sin producción: **mirar `/beneficios` y
+  `/beneficios/:slug` en un navegador, en ancho de teléfono** (§11.7.10), y comprobar
+  que el CTA cambia con la sesión. Con 0 personas con acceso vigente (§12.10.9), el
+  estado «puede canjear» **solo se puede ver de verdad cuando exista un socio**.
+
+**Lo que la validación en Docker encontró y este archivo no decía:**
+
+- ⚠️ **`benefits.estado` solo admite `'activo'|'inactivo'`**, mientras
+  `club_beneficios.estado` admite `'borrador'|'activo'|'pausado'|'baja'`. **Son dos
+  vocabularios distintos para lo mismo.** El script de datos decía `'baja'` y habría
+  abortado la transacción entera contra producción. No lo encontró leerlo: lo encontró
+  correrlo.
+- ✅ **Y se cerró una excepción que §11.7.8 daba por permanente.** Ese cierre decía que
+  `comision_docs_storage.sql` «siempre falla en PG15 pelado». Con
+  `supabase/checks/pg15-bootstrap/` **las 15 migraciones aplican desde cero en PG15, la
+  versión de producción**, convergen al reaplicarse, y los cinco checks dan salida
+  idéntica con y sin la migración nueva. Ya no queda ninguna excepción declarada.
+
+- [x] ~~**12.10.20 — El enlace aliado ↔ beneficio era de una sola dirección.**~~
+  **✅ ARREGLADO el 2026-09-02.** Lo encontró el dueño del proyecto mirando
+  `/partners/digitalmatchglobal`: el detalle del beneficio manda al perfil del aliado
+  («Ver perfil del aliado», dos veces), y **el perfil no volvía**.
+
+  ⚠️ **Y era peor que un enlace faltante.** Donde el aliado no tiene
+  `colaboracion_detalle`, la página decía *«Próximamente compartiremos más información
+  detallada sobre los beneficios de esta alianza»* — **y el beneficio ya estaba publicado
+  ese mismo día.** La página prometía como futuro algo que ya existía.
+
+  Es la **misma familia que 12.10.14** (el `/club` huérfano): piezas que funcionan y no
+  están conectadas. Un enlace que falta no rompe nada, no tira ningún error y **no lo
+  encuentra ningún test** — solo aparece navegando el sitio como lo navega una persona.
+  Van tres hallazgos así en la jornada, los tres de mirar pantallas.
+
+  Ahora el perfil lista los beneficios del aliado con su descuento y el candado de «para
+  socios», reusando `useBeneficiosVidriera` — misma consulta, misma caché y la misma
+  garantía estructural de que ahí tampoco puede aparecer un código.
+
+- [x] ~~**12.10.21 — Un nombre de una sola palabra larga desbordaba el título.**~~
+  **✅ ARREGLADO el 2026-09-02.** «DigitalMatchGlobal» son 18 caracteres sin espacios, y
+  en la columna angosta del perfil se pasaba del borde de la tarjeta.
+
+  **Por qué no se veía en ningún otro lado:** el texto de alrededor envuelve bien porque
+  tiene espacios. Solo rompe en un título, solo con un nombre largo y solo sin
+  `break-words`. Se agregó en los **tres** lugares donde el nombre entra a un título
+  grande: el perfil del aliado, el listado de `/partners` y el ABM del club.
+
+  Es de la familia de §11.7.10 —«tiene el texto» no es «se ve bien»— y el corolario que
+  deja es más específico: **cualquier dato cargado por una persona puede ser una palabra
+  larga, y un título sin `break-words` es una bomba de tiempo esperando ese dato.**
+
+#### D. Infraestructura del módulo
+
+- [ ] **12.10.11 — El reaper depende de que alguien genere un canje.** Desde §11.7.13,
+  `club-generar-canje` llama a `club_expirar_canjes()` y eso hace el sistema auto-reparable.
+  Pero si nadie genera, nada expira, y los canjes abandonados quedan en `'pendiente'`
+  ensuciando la métrica de adopción del comercio. Un cron diario lo resolvería bien; el plan
+  Free de Supabase no lo trae, así que **queda como deuda consciente, no como olvido**.
+
+- [ ] **12.10.12 — El runtime de las Edge Functions no se puede probar localmente.**
+  ⚠️ **Matizado el 2026-09-02:** sigue siendo cierto para el *runtime* de las funciones,
+  pero **ya no para el esquema**. `supabase/checks/pg15-bootstrap/` permite validar
+  migraciones, policies y triggers contra la **misma versión mayor y menor que
+  producción**, que era la mitad más peligrosa del problema.
+  `supabase start` falla en la máquina de trabajo (`supabase/checks/README.md`). Por eso toda
+  la lógica que decide algo vive en `club-reglas.ts`. Mientras siga así, **cada cambio en un
+  `index.ts` se prueba recién en producción.**
+
+#### Lo que NO es deuda, aunque lo parezca
+
+- **No hay rol `'comercio'` en `users`, y está bien.** La pertenencia a
+  `club_comercio_usuarios` *es* el permiso (§12.5). Permite que una persona opere dos
+  comercios, y el redirect post-login sale de `mis_comercios()`.
+- **No se puede borrar un comercio, y está bien.** Se archiva con `estado = 'baja'`; los
+  canjes no se borran nunca porque son el libro contable del club (12.9.3).
+- **`ahorro` en NULL para 2x1 y regalo no es un dato faltante**: es «no calculable», y un 0
+  mentiría en el reporte al comercio (§11.7.12).
+
+---

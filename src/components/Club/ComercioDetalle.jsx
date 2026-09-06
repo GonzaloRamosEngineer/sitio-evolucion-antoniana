@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Plus, MapPin, Ticket, Users, Trash2, Edit, Loader2, Search, Lock, Unlock, Info,
+  Copy, Mail,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { cn, palabraMasLarga } from '@/lib/utils';
-import { etiquetaBeneficio } from '@/lib/club';
+import { etiquetaBeneficio, mensajeDeError } from '@/lib/club';
+import { invitarOperador } from '@/api/clubApi';
 import {
   DIAS_SEMANA, ESTADOS_BENEFICIO, TIPOS_BENEFICIO, VENTANAS, ROLES_COMERCIO,
   listSucursales, createSucursal, updateSucursal, deleteSucursal,
@@ -160,6 +162,51 @@ const ComercioDetalle = ({ comercio }) => {
   };
 
   const necesitaValor = benForm.tipo === 'porcentaje' || benForm.tipo === 'monto_fijo';
+
+  /* ============ Invitación por magic link (§12.10.4) ============ */
+  const [invEmail, setInvEmail] = useState('');
+  const [invNombre, setInvNombre] = useState('');
+  const [invitando, setInvitando] = useState(false);
+  const [invLink, setInvLink] = useState(null);
+
+  const invitar = async () => {
+    const email = invEmail.trim();
+    if (!email) return;
+    setInvitando(true);
+    setInvLink(null);
+
+    const { data, error } = await invitarOperador({
+      comercioId: comercio.id,
+      email,
+      nombre: invNombre.trim() || null,
+      rol: rolNuevo,
+    });
+    setInvitando(false);
+
+    if (error) {
+      toast({
+        title: 'No se pudo invitar',
+        description: mensajeDeError(data, 'Probá de nuevo.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setInvEmail('');
+    setInvNombre('');
+    // SIEMPRE se muestra el link cuando la función lo devuelve, aunque el mail
+    // haya salido. Con comercios chicos el canal real es WhatsApp, y el mail
+    // que «salió» pero cayó en spam es indistinguible del que no salió.
+    if (data?.link) setInvLink(data.link);
+    toast({
+      title: data?.enviado ? 'Invitación enviada' : 'Cuenta habilitada',
+      description: data?.enviado
+        ? `Le llegó un mail a ${email} con el acceso al mostrador.`
+        : 'Pasale el link de abajo: ya puede entrar a validar canjes.',
+    });
+    // Recargar la lista: la persona ya quedó atada al comercio.
+    listOperadores(comercio.id).then(({ data: o }) => setOperadores(o ?? []));
+  };
 
   /* ============ Operadores ============ */
   const [opAbierto, setOpAbierto] = useState(false);
@@ -689,8 +736,8 @@ const ComercioDetalle = ({ comercio }) => {
           <DialogHeader>
             <DialogTitle>Agregar quien valida</DialogTitle>
             <DialogDescription>
-              Buscá una cuenta que ya exista en el sitio. Si la persona todavía no tiene,
-              creala primero en Usuarios.
+              Si ya tiene cuenta en el sitio, buscala abajo. Si no, invitala por email y la
+              cuenta se crea sola.
             </DialogDescription>
           </DialogHeader>
 
@@ -710,8 +757,77 @@ const ComercioDetalle = ({ comercio }) => {
               </p>
             </div>
 
+            {/* ---- Invitar por email (§12.10.4) ----
+                Va PRIMERO y la búsqueda queda abajo, y el orden es la decisión:
+                el caso normal de un comercio nuevo es que la persona del
+                mostrador NO tenga cuenta. Hasta ahora la pantalla solo ofrecía
+                buscar, así que el camino frecuente era el que no existía. */}
+            <div className="rounded-sm border border-brand-dark/15 bg-brand-light/40 p-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-brand-dark">
+                <Mail aria-hidden="true" className="h-4 w-4 text-brand-dark/50" />
+                Invitar por email
+              </p>
+              <div className="mt-2 space-y-2">
+                <Input
+                  type="email"
+                  value={invEmail}
+                  placeholder="mostrador@elcomercio.com"
+                  onChange={(e) => setInvEmail(e.target.value)}
+                />
+                <Input
+                  value={invNombre}
+                  placeholder="Nombre (opcional)"
+                  onChange={(e) => setInvNombre(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={invitando || !invEmail.trim()}
+                  onClick={invitar}
+                >
+                  {invitando ? (
+                    <>
+                      <Loader2 aria-hidden="true" className="mr-2 h-3 w-3 animate-spin" />
+                      Invitando…
+                    </>
+                  ) : (
+                    'Crear la cuenta y mandar el acceso'
+                  )}
+                </Button>
+              </div>
+
+              {invLink && (
+                <div className="mt-3 rounded-sm border border-brand-gold/40 bg-white p-2">
+                  <p className="text-xs text-brand-dark/70">
+                    Pasale este link. Es de un solo uso y vence en una hora.
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      readOnly
+                      value={invLink}
+                      className="min-w-0 flex-1 rounded-sm border border-brand-dark/15 p-1 font-mono text-[10px]"
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(invLink);
+                        toast({ title: 'Link copiado' });
+                      }}
+                    >
+                      <Copy aria-hidden="true" className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div>
-              <Label htmlFor="op-q" className="text-brand-dark font-semibold">Buscar cuenta</Label>
+              <Label htmlFor="op-q" className="text-brand-dark font-semibold">
+                O buscar una cuenta que ya existe
+              </Label>
               <div className="relative mt-1">
                 <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-dark/40" />
                 <Input

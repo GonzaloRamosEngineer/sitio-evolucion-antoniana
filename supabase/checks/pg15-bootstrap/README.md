@@ -58,3 +58,29 @@ constraints de GoTrue y `storage` no tiene lógica. Sirve para **las policies, e
 DDL y los triggers** —que es el 100% de lo que este repo versiona— y no para
 probar PostgREST ni la autenticación. Para eso siguen estando los
 `*.integration.test.js`, esperando que `supabase start` funcione.
+
+
+## ⚠️ `pg_cron` necesita arrancar el contenedor con un flag (2026-09-06)
+
+`20260906150000_club_cron_reaper.sql` hace `CREATE EXTENSION pg_cron`, y en un contenedor
+pelado eso falla de **dos** maneras distintas. Las dos son del entorno, no del esquema:
+
+| Falla | Por qué | Cómo se resuelve acá |
+|---|---|---|
+| `pg_cron can only be loaded via shared_preload_libraries` | La imagen arranca sin precargarla; **producción sí la trae precargada** (verificado en `shared_preload_libraries`) | Arrancar con `postgres -c shared_preload_libraries=pg_cron` |
+| `permission denied to create extension` | En esta imagen `postgres` **no es superusuario** — el superusuario es `supabase_admin`. En producción, en cambio, Supabase le permite a `postgres` crear las extensiones de su lista | Aplicar **esa** migración con `-U supabase_admin` |
+
+```bash
+docker run -d --name pgtest15 -e POSTGRES_PASSWORD=postgres -p 55433:5432 \n  -v "$(cygpath -m supabase/checks/pg15-bootstrap)":/docker-entrypoint-initdb.d/init-scripts \n  public.ecr.aws/supabase/postgres:15.8.1.094 postgres -c shared_preload_libraries=pg_cron
+
+# ... las demás migraciones como siempre, y esta con el otro rol:
+docker exec -i pgtest15 psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -q \n  < supabase/migrations/20260906150000_club_cron_reaper.sql
+```
+
+**Por qué la migración va en un archivo aparte y no junto a las otras tres cosas del
+cierre de §12**: así el error dice exactamente qué pasó, en vez de tumbar una transacción
+que traía además la tabla de postulaciones y las funciones de reporte.
+
+Verificado el 2026-09-06: reaplicar la migración **converge** —`cron.schedule` con un
+`jobname` que ya existe reemplaza el job en vez de duplicarlo— y queda **1 sola fila** en
+`cron.job`.
