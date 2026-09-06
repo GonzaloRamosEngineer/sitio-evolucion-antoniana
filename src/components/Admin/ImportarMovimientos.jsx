@@ -33,7 +33,9 @@ import { toast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { useDestinos } from '@/hooks/useContentQueries';
-import { parsearExtracto, resumirLote } from '@/lib/importarMovimientos';
+import {
+  parsearExtracto, resumirLote, verificarSaldoCorrido, verificarTotales,
+} from '@/lib/importarMovimientos';
 import { getReferenciasCargadas, importarLote } from '@/api/importarApi';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 
@@ -51,10 +53,10 @@ const ImportarMovimientos = () => {
 
   const analizar = async () => {
     setTrabajando(true);
-    const { filas, errores } = parsearExtracto(texto);
+    const { filas, errores, declarado } = parsearExtracto(texto);
 
     if (errores.length) {
-      setAnalisis({ filas: [], errores, yaCargadas: new Set() });
+      setAnalisis({ filas: [], errores, declarado: null, yaCargadas: new Set() });
       setTrabajando(false);
       return;
     }
@@ -76,6 +78,7 @@ const ImportarMovimientos = () => {
     setAnalisis({
       filas,
       errores: [],
+      declarado,
       yaCargadas: new Set((cargadas ?? []).map((c) => c.referencia_externa)),
     });
   };
@@ -96,6 +99,29 @@ const ImportarMovimientos = () => {
     () => (analisis ? resumirLote(analisis.filas, analisis.yaCargadas) : null),
     [analisis]
   );
+
+  /*
+    LAS VERIFICACIONES (§14.3). Salen de datos que el propio resumen de cuenta
+    trae —el saldo corrido de cada fila y los totales del encabezado—, así que no
+    dependen de que le creemos al parser.
+
+    Son lo que convierte un cambio de formato del banco en un aviso claro en vez
+    de en datos silenciosamente mal cargados. Sin ellas, esta pantalla sería un
+    acto de fe.
+  */
+  const verificaciones = useMemo(() => {
+    if (!analisis?.declarado) return null;
+    return {
+      saldo: verificarSaldoCorrido(analisis.filas, analisis.declarado.saldoInicial),
+      totales: verificarTotales(analisis.filas, analisis.declarado),
+    };
+  }, [analisis]);
+
+  // Con las verificaciones en rojo NO se importa: cargar un lote que no cuadra
+  // contra lo que declara el banco es meter un error que después hay que buscar
+  // movimiento por movimiento.
+  const cuadra =
+    !verificaciones || (verificaciones.saldo?.ok !== false && verificaciones.totales?.ok !== false);
 
   const importar = async () => {
     if (!destinoId) {
@@ -200,6 +226,43 @@ const ImportarMovimientos = () => {
         </div>
       )}
 
+      {verificaciones && (
+        <div
+          className={`mb-4 rounded-sm border p-4 text-sm ${
+            cuadra ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
+          }`}
+        >
+          <p className="font-bold text-brand-dark mb-2">
+            {cuadra
+              ? 'Lo extraído cuadra con lo que declara el resumen'
+              : 'Lo extraído NO cuadra con lo que declara el resumen'}
+          </p>
+
+          <ul className="space-y-1 text-brand-dark/75">
+            <li>
+              {verificaciones.saldo?.ok ? '✅' : '❌'} <strong>Saldo corrido:</strong>{' '}
+              {verificaciones.saldo?.ok
+                ? `${analisis.filas.length} movimientos, sin desvíos`
+                : `${verificaciones.saldo?.desvios.length} desvío(s) — hay un importe mal leído`}
+            </li>
+            <li>
+              {verificaciones.totales?.ok ? '✅' : '❌'} <strong>Totales del período:</strong>{' '}
+              entradas {pesos(verificaciones.totales?.entradas.extraido)} contra{' '}
+              {pesos(verificaciones.totales?.entradas.declarado)} declaradas · salidas{' '}
+              {pesos(verificaciones.totales?.salidas.extraido)} contra{' '}
+              {pesos(verificaciones.totales?.salidas.declarado)}
+            </li>
+          </ul>
+
+          {!cuadra && (
+            <p className="mt-2 text-red-800">
+              No se puede importar hasta que cuadre. Lo más probable: el texto pegado está
+              incompleto, o falta una parte del período.
+            </p>
+          )}
+        </div>
+      )}
+
       {resumen && analisis.filas.length > 0 && (
         <>
           <div className="rounded-sm border border-brand-dark/10 bg-white p-4 mb-4 flex flex-wrap gap-x-8 gap-y-2 text-sm tabular-nums">
@@ -276,7 +339,7 @@ const ImportarMovimientos = () => {
             <Button
               variant="action"
               onClick={importar}
-              disabled={!aImportar.length || !destinoId || trabajando}
+              disabled={!aImportar.length || !destinoId || trabajando || !cuadra}
             >
               {trabajando ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

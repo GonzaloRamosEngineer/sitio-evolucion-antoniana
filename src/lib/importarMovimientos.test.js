@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   aNumero, aFechaISO, clasificar, referenciaDe, parsearExtracto, resumirLote,
+  verificarSaldoCorrido, verificarTotales, verificarCadena,
 } from '@/lib/importarMovimientos';
 
 // Extracto real, recortado. El encabezado es el que trae MercadoPago.
@@ -162,5 +163,105 @@ describe('resumirLote', () => {
     const r = resumirLote(filas, yaCargadas);
     expect(r.duplicadas).toBe(2);
     expect(r.aportes + r.gastos).toBe(3);
+  });
+});
+
+
+// El CSV REAL de MercadoPago, tal cual sale de Reportes → Resumen de cuenta.
+// Comprobado contra el archivo del período 10/2024 el 2026-09-06.
+//
+// Dos cosas que no se podían adivinar y que la primera versión del parser no
+// manejaba:
+//   · **Los encabezados vienen en INGLÉS**, aunque el PDF del mismo resumen esté
+//     en castellano. No reconocía ni la descripción ni el id — y el id es el que
+//     da la idempotencia, así que se habría cargado todo sin referencia y
+//     reimportar habría duplicado.
+//   · **El archivo tiene DOS bloques**: los totales declarados arriba, una línea
+//     en blanco, y recién después los movimientos.
+const CSV_REAL = [
+  'INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE',
+  '1.698.607,63;244.795,30;-1.022.151,63;921.251,30',
+  '',
+  'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+  '01-10-2024;Liquidación de dinero ;88205823663;6.845,60;1.705.453,23',
+  '01-10-2024;Transferencia recibida HERRERA RAUL ANTONIO;89063933653;10.934,00;1.716.387,23',
+].join('\n');
+
+describe('el CSV real de MercadoPago', () => {
+  const r = parsearExtracto(CSV_REAL);
+
+  it('reconoce las cinco columnas pese a estar en inglés', () => {
+    expect(r.errores).toEqual([]);
+    expect(r.columnas).toEqual({ fecha: 0, descripcion: 1, id: 2, monto: 3, saldo: 4 });
+  });
+
+  it('🔒 saca el id, que es lo que da la idempotencia', () => {
+    // Sin esto todo entraría sin referencia y reimportar duplicaría.
+    expect(r.filas.every((f) => f.referencia)).toBe(true);
+    expect(r.filas[1].referencia).toBe('mp:89063933653:10934.00');
+  });
+
+  it('salta el bloque de totales y no lo confunde con un movimiento', () => {
+    expect(r.filas).toHaveLength(2);
+    expect(r.filas[0].descripcion).toMatch(/Liquidación/);
+  });
+
+  it('captura los totales declarados: son la suma de control', () => {
+    expect(r.declarado).toEqual({
+      saldoInicial: 1698607.63,
+      entradas: 244795.3,
+      salidas: -1022151.63,
+      saldoFinal: 921251.3,
+    });
+  });
+
+  it('clasifica y saca la contraparte de una transferencia recibida', () => {
+    expect(r.filas[1].categoria).toBe('Transferencias recibidas');
+    expect(r.filas[1].contraparte).toBe('HERRERA RAUL ANTONIO');
+  });
+});
+
+describe('las tres verificaciones (§14.3)', () => {
+  const { filas, declarado } = parsearExtracto(CSV_REAL);
+
+  it('nivel 1 — el saldo corrido cuadra con el declarado por el banco', () => {
+    const v = verificarSaldoCorrido(filas, declarado.saldoInicial);
+    expect(v.ok).toBe(true);
+    expect(v.desvios).toEqual([]);
+  });
+
+  it('🔒 nivel 1 atrapa un importe mal leído, que es el error peligroso', () => {
+    // `6.845,60` interpretado como `684,56`: un número plausible que nadie mira
+    // dos veces y que arrastra toda la rendición.
+    const rotas = filas.map((f, i) => (i === 0 ? { ...f, monto: 684.56 } : f));
+    const v = verificarSaldoCorrido(rotas, declarado.saldoInicial);
+    expect(v.ok).toBe(false);
+    expect(v.desvios).toHaveLength(1);
+  });
+
+  it('nivel 2 — lo extraído contra los totales del encabezado', () => {
+    // Con solo dos de los 27 movimientos, NO tiene que cuadrar. Que no cuadre es
+    // el resultado correcto: significa que el archivo está incompleto.
+    const v = verificarTotales(filas, declarado);
+    expect(v.ok).toBe(false);
+    expect(v.entradas.declarado).toBe(244795.3);
+  });
+
+  it('🔒 nivel 3 atrapa un mes que falta entre dos resúmenes', () => {
+    const v = verificarCadena([
+      { nombre: 'oct', declarado: { saldoInicial: 1698607.63, saldoFinal: 921251.3 } },
+      { nombre: 'dic', declarado: { saldoInicial: 500000, saldoFinal: 400000 } },
+    ]);
+    expect(v.ok).toBe(false);
+    expect(v.huecos[0].entre).toEqual(['oct', 'dic']);
+    expect(v.huecos[0].diferencia).toBeCloseTo(-421251.3, 2);
+  });
+
+  it('nivel 3 no se queja cuando la cadena cierra', () => {
+    const v = verificarCadena([
+      { nombre: 'oct', declarado: { saldoInicial: 1698607.63, saldoFinal: 921251.3 } },
+      { nombre: 'nov', declarado: { saldoInicial: 921251.3, saldoFinal: 800000 } },
+    ]);
+    expect(v.ok).toBe(true);
   });
 });

@@ -3257,6 +3257,72 @@ Cuando exista un documento, leerlo antes de describir lo que representa.
 
 ---
 
+### 14.2 — Los tres formatos, comparados de verdad (2026-09-06)
+
+§14.3 había quedado con una pregunta bloqueante —¿MercadoPago exporta CSV?— y una
+hipótesis. El dueño subió el mismo período en `.pdf`, `.csv` y `.xlsx`. **La
+pregunta se respondió y la hipótesis era falsa.**
+
+#### Lo que dijeron los archivos
+
+**El XLSX no aporta nada.** Sus celdas son `inlineStr` con los valores **como
+texto**, en el mismo formato argentino que el CSV: mismas 5 columnas, mismas 27
+filas, **0 diferencias**. Traería una librería de parseo a cambio de nada.
+
+**⚠️ Mi hipótesis sobre las comisiones era equivocada, y conviene que quede
+escrito.** Yo había sostenido que el CSV probablemente abriría bruto / comisión /
+neto, y que ahí estaría la categoría de gastos hormiga que el PDF esconde. **No es
+así:** la columna se llama literalmente `TRANSACTION_NET_AMOUNT` y no hay ninguna
+de comisión. La comisión de la pasarela **no es visible en el resumen de cuenta en
+ningún formato**; para rendirla hay que buscar otro reporte, que es trabajo
+distinto y sin explorar.
+
+**Lo bueno fue otra cosa: el CSV trae los totales declarados.** El archivo tiene
+dos bloques —`INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE` arriba, los
+movimientos abajo—, así que **las tres verificaciones de §14.3 salen del CSV solo**
+y el PDF no hace falta ni para el checksum. Contra el archivo real: 27 movimientos,
+**0 desvíos** en el saldo corrido, y entradas y salidas **al centavo**.
+
+**⚠️ Y los encabezados vienen en INGLÉS**, aunque el PDF del mismo resumen esté en
+castellano. Los patrones del parser eran solo castellanos y **no reconocían ni la
+descripción ni el id** — y el id es el que da la idempotencia. Habría cargado los
+27 movimientos **sin referencia**, y reimportar habría duplicado todo. Se descubrió
+corriendo el parser contra el archivo real en vez de suponer que andaba.
+
+#### La deuda del `referencia_externa`, saldada sin exponerla
+
+El saldo inicial se había cargado sin referencia porque **el ABM no tenía el
+campo** — yo había recomendado un valor que la pantalla no permitía ingresar.
+
+**No se arregló agregando un campo de texto.** `referencia_externa` es la clave de
+idempotencia: alguien podría escribir `mp:90165423466:-5626.66` copiando un id del
+extracto, sin mala intención, y **ese movimiento no se podría importar nunca más**
+— la base lo rechazaría como duplicado de una fila que no tiene nada que ver.
+
+En su lugar hay un tilde «es el saldo inicial de este destino» que la deriva del
+slug. Nunca puede chocar con una `mp:*`, y el UNIQUE garantiza gratis **un solo
+saldo inicial por destino**. Hay un test que fija que la referencia no puede tomar
+forma de importación aunque el formulario traiga basura.
+
+#### Un test que se rompió sin que el cambio lo tocara
+
+Agregar el tilde hizo fallar **dos tests de `AportesAdmin` que no tenían nada que
+ver**: el `Checkbox` de Radix usa `ResizeObserver` al montarse y jsdom no lo trae.
+El error sale en un stack de `react-dom` que **no menciona al componente
+culpable**. Se resolvió con un stub en `src/test/setup.js`, que es donde
+corresponde — cualquier componente de Radix que mida su contenido lo iba a
+necesitar tarde o temprano.
+
+#### La moraleja
+
+**Una pregunta bloqueante se responde con el archivo, no con una hipótesis.** §14.3
+quedó escrita con una suposición razonable sobre las comisiones y la suposición era
+falsa. El costo de haberla escrito igual fue cero porque estaba marcada como
+sospecha; el costo de haberla construido habría sido un reporte entero apuntando al
+lugar equivocado.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
