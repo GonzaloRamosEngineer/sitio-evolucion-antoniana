@@ -121,6 +121,22 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   (NULL = aplicar el descuento de la categoría; 0 = gratis para miembros). El número que se
   le muestra a una persona sale **siempre** de `mi_precio_actividad()`, nunca de una cuenta
   hecha en el front: es una cifra que alguien va a pagar.
+- **Fondos restringidos (ROADMAP §14)**: hay **dos categorías de ingreso**, no una. De
+  libre disponibilidad (cuota social) y **restringido** (subsidio, convenio, donación con
+  cargo, legado): llega completo, atado a un fin, y no se puede aplicar a otra cosa. Un
+  destino con `admite_puntual` y `admite_recurrente` en `false` es exactamente eso —
+  cerrado a aportes nuevos y **rendible igual**. ⚠️ No volver a poner un CHECK que lo
+  impida: se removió a propósito en `20260906120000`, con el motivo escrito.
+  **No mezclar un fondo restringido con la cuota social en un mismo destino**: mezclados,
+  el «disponible» deja de significar algo y la entidad no puede demostrar que respetó la
+  restricción.
+- **Comprobantes**: los adjuntan `aportes` **y** `gastos` — la rendición se apoya en las
+  dos columnas. El mecanismo vive en `src/lib/comprobantes.js` y **el orden de las
+  operaciones es lo único delicado**: al subir, archivo y después fila; al quitar, fila y
+  después archivo. Está escrito una vez a propósito. El archivo **nunca** es público (va
+  al bucket privado `comision-docs`); lo público es que existe, vía `tiene_comprobante` y
+  el conteo agregado de `reporte_destino()`. `tipo_comprobante` es genérico a propósito:
+  la letra A/B/C es normativa argentina y va en `comprobante_numero`.
 - **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.

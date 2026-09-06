@@ -16,6 +16,7 @@
 // hoy cierra de punta a punta, sin depender de ninguna pasarela.
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
+import { adjuntarComprobante, desadjuntarComprobante } from '@/lib/comprobantes';
 
 /** Cómo se muestra cada origen. Los `value` coinciden con el CHECK del esquema. */
 export const ORIGENES_APORTE = {
@@ -65,6 +66,10 @@ export const aPayloadAporte = (f) => ({
   nombre_aportante: f.nombre_aportante.trim() || null,
   email_aportante: f.email_aportante.trim() || null,
   notas: f.notas.trim() || null,
+  // Respaldo documental (20260906120000). Vacío -> null: no declarar el tipo es
+  // válido y es distinto de declarar 'otro'.
+  tipo_comprobante: f.tipo_comprobante || null,
+  comprobante_numero: (f.comprobante_numero || '').trim() || null,
   // Fijo, no viene del formulario: es lo único que la RLS deja insertar desde
   // el panel, y dejarlo elegir invitaría a marcar como `donacion` algo que la
   // pasarela nunca vio.
@@ -140,3 +145,37 @@ export const reimputarAporte = async (id, destinoId) =>
       .maybeSingle(),
     'reimputarAporte'
   );
+
+/* ============================
+   Respaldo documental del INGRESO (migración 20260906120000)
+   ============================
+   Hasta el 2026-09-06 solo los egresos podían documentarse. La rendición se
+   apoya en dos columnas y la de ingresos no se podía probar — y se vio crudo con
+   el fondo de convenio de la Fundación: $1.000.000 respaldado por documentación
+   certificada ante escribano, sin ningún lugar donde adjuntarla.
+
+   No es un caso raro: quien recibe un subsidio tiene que poder probar que lo
+   recibió, normalmente ante el mismo organismo que se lo dio.
+
+   ⚠️ EL ARCHIVO NUNCA ES PÚBLICO. Un convenio trae nombres, montos y firmas de
+   terceros que no dieron permiso para publicarse. Vive en el bucket privado de
+   la Comisión. Lo que sí es público es que EXISTE: `reporte_destino()` devuelve
+   `aportes_documentados` / `aportes_totales`, un conteo sin identidades. */
+
+const PREFIJO_APORTES = 'aportes';
+
+/** Adjunta el comprobante de un aporte. Mismo mecanismo que en gastos. */
+export const subirComprobanteAporte = async ({ aporteId, file }) =>
+  adjuntarComprobante({
+    prefijo: PREFIJO_APORTES,
+    id: aporteId,
+    file,
+    actualizar: (campos) => updateAporte(aporteId, campos),
+  });
+
+/** Quita el comprobante de un aporte. */
+export const quitarComprobanteAporte = async (aporte) =>
+  desadjuntarComprobante({
+    path: aporte.comprobante_path,
+    actualizar: (campos) => updateAporte(aporte.id, campos),
+  });

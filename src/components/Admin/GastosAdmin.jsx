@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
+import { TIPOS_COMPROBANTE, describirComprobante } from '@/lib/comprobantes';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { useGastos, useDestinos } from '@/hooks/useContentQueries';
@@ -55,6 +56,8 @@ const formVacio = () => ({
   monto: '',
   fecha: hoyISO(),
   categoria: '',
+  tipo_comprobante: '',
+  comprobante_numero: '',
   proveedor: '',
   notas: '',
   publicado: false,
@@ -66,6 +69,8 @@ const aFormulario = (g) => ({
   monto: g.monto ?? '',
   fecha: soloFecha(g.fecha),
   categoria: g.categoria ?? '',
+  tipo_comprobante: g.tipo_comprobante ?? '',
+  comprobante_numero: g.comprobante_numero ?? '',
   proveedor: g.proveedor ?? '',
   notas: g.notas ?? '',
   publicado: Boolean(g.publicado),
@@ -300,6 +305,9 @@ const GastosAdmin = () => {
                   <p className="text-xs text-gray-500 truncate">
                     {g.destino?.nombre ?? 'Destino eliminado'}
                     {g.categoria ? ` · ${g.categoria}` : ''}
+                    {(g.tipo_comprobante || g.tiene_comprobante)
+                      ? ` · ${describirComprobante(g)}`
+                      : ''}
                     {g.proveedor ? ` · ${g.proveedor}` : ''}
                   </p>
                 </div>
@@ -483,6 +491,50 @@ const GastosAdmin = () => {
                   onChange={(e) => setForm((f) => ({ ...f, proveedor: e.target.value }))}
                 />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="gasto-tipo-comp">Tipo de comprobante</Label>
+                  <Select
+                    value={form.tipo_comprobante || 'ninguno'}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, tipo_comprobante: v === 'ninguno' ? '' : v }))}
+                  >
+                    <SelectTrigger id="gasto-tipo-comp" className="mt-1">
+                      <SelectValue placeholder="Sin declarar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* «Sin declarar» es una opción de verdad y no un hueco: hay
+                          respaldos legítimos que no encajan en ninguna categoría, y
+                          obligar a elegir haría que se marque cualquiera. */}
+                      <SelectItem value="ninguno">Sin declarar</SelectItem>
+                      {TIPOS_COMPROBANTE.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-brand-dark/55">
+                    Decirlo juega a favor: «recibo» declarado es más creíble que un
+                    comprobante sin nombre.
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="gasto-num-comp">Número del comprobante</Label>
+                  <Input
+                    id="gasto-num-comp"
+                    className="mt-1"
+                    value={form.comprobante_numero}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, comprobante_numero: e.target.value }))}
+                    placeholder="Ej: A-0001-00000123"
+                  />
+                  <p className="mt-1 text-xs text-brand-dark/55">
+                    Acá va la letra, el punto de venta o el CAE: eso cambia por país y
+                    por eso es texto libre.
+                  </p>
+                </div>
+              </div>
+
             </div>
 
             <div>

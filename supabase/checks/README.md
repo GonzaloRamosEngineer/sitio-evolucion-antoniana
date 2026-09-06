@@ -20,6 +20,11 @@ la base.
   otorgaba **diez meses** de acceso porque se convertía con la regla proporcional de las
   donaciones. Trae el par que lo hace discriminar: R1 (una donación **sí** da 3 meses) al
   lado de R2 (una renovación del mismo monto da 1).
+- **`fondos-check.sql`** — fondos restringidos (`20260906120000`). Dos cosas distintas
+  que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
+  trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que
+  es la razón entera de la migración. Un check que solo probara «se puede crear con los
+  dos flags en false» no probaría lo segundo.
 - **`membresia-check.sql`** — lo que cierra §10: la figura institucional (`miembros`),
   el reclamo universal de huellas, el precio de actividades y el apadrinamiento. Tres de
   las cuatro piezas **otorgan algo** —condición, identidad o figurar sosteniendo un cupo—
@@ -66,6 +71,7 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/payer-em
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/reclamar-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/membresia-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/fondos-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
 
 # Leer el resultado: que no haya ninguna línea FALLA.
@@ -79,7 +85,7 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovaci
 # fallas y cero pruebas se ven idénticos si solo se mira una de las dos cifras.
 #
 # Referencia al 2026-09-05, sobre una base recién migrada:
-#   payer-email=8   reclamar=17   club=17   membresia=32
+#   payer-email=8   reclamar=17   club=17   membresia=36   fondos=10
 #   rls=0  acceso=0  renovacion=0   <-- ver abajo, no es un error
 
 # 4. Limpiar
