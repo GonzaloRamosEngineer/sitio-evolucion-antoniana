@@ -17,6 +17,15 @@
 //      anomalía. Y mostrarla es lo que empuja al comercio a cargar el monto,
 //      que era todo el mecanismo previsto.
 //
+//   1b) UN AHORRO QUE NO SE PUEDE CALCULAR NO SE MUESTRA COMO $0.
+//      Un beneficio 2x1 o de regalo tiene `ahorro` en NULL, y eso no es un dato
+//      faltante: es «no calculable». Decirle «$0 de ahorro» a un comercio que
+//      acaba de regalar un café es peor que no mostrar el número — es el único
+//      dato del panel que el comercio va a mirar para decidir si sigue.
+//      La primera versión de esta pantalla lo mostraba como $0, porque la
+//      función traía COALESCE(sum(ahorro), 0). Lo destapó correr el reporte
+//      contra los datos reales: el único canje de producción es de tipo regalo.
+//
 //   2) Los canjes sin confirmar se muestran arriba y no escondidos. §12.3 dice
 //      que no son un error sino la métrica de adopción del local. Un panel que
 //      solo muestra lo confirmado le oculta al comercio justo el número que le
@@ -126,6 +135,7 @@ const ReporteComercio = ({ comercioId }) => {
   const personas = resumen?.personas ?? 0;
   const recurrentes = resumen?.personas_recurrentes ?? 0;
   const conMonto = resumen?.canjes_con_monto ?? 0;
+  const conAhorro = resumen?.canjes_con_ahorro ?? 0;
   const sinConfirmar = (resumen?.canjes_pendientes ?? 0) + (resumen?.canjes_expirados ?? 0);
   const topeMes = Math.max(1, ...porMes.map((m) => m.confirmados ?? 0));
 
@@ -189,8 +199,15 @@ const ReporteComercio = ({ comercioId }) => {
             <Tarjeta
               icono={Wallet}
               titulo="Ahorro que diste"
-              valor={plata(resumen?.ahorro_total)}
-              detalle="lo que tus clientes se llevaron de descuento"
+              // `null` y `0` significan cosas distintas y se muestran distinto.
+              valor={conAhorro === 0 ? 'No calculable' : plata(resumen?.ahorro_total)}
+              detalle={
+                conAhorro === 0
+                  ? 'tus beneficios son 2x1 o regalo: el ahorro no tiene un número'
+                  : conAhorro < confirmados
+                    ? `sobre ${conAhorro} de ${confirmados} canjes; el resto no es calculable`
+                    : 'lo que tus clientes se llevaron de descuento'
+              }
             />
             <Tarjeta
               icono={Wallet}
@@ -229,7 +246,11 @@ const ReporteComercio = ({ comercioId }) => {
                   <p className="text-xs text-brand-dark/60">
                     {b.confirmados === 0
                       ? 'nadie lo usó en este período'
-                      : `${b.personas} persona${b.personas === 1 ? '' : 's'} · ${plata(b.ahorro_total)} de ahorro`}
+                      : `${b.personas} persona${b.personas === 1 ? '' : 's'} · ${
+                          b.canjes_con_ahorro === 0
+                            ? 'ahorro no calculable'
+                            : `${plata(b.ahorro_total)} de ahorro`
+                        }`}
                   </p>
                 </div>
                 <span className="shrink-0 text-lg font-display font-bold text-brand-dark">

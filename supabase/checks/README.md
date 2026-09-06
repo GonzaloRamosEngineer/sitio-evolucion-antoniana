@@ -96,8 +96,8 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovaci
 # fallas y cero pruebas se ven idénticos si solo se mira una de las dos cifras.
 #
 # Referencia al 2026-09-05, sobre una base recién migrada:
-#   payer-email=8   reclamar=17   club=28   membresia=36   fondos=15
-#   (club pasó de 17 a 28 el 2026-09-06, con el cierre de §12: postulaciones y reporte)
+#   payer-email=8   reclamar=17   club=30   membresia=36   fondos=15
+#   (club pasó de 17 a 30 el 2026-09-06: postulaciones, reporte, y el ahorro no calculable)
 #   rls=0  acceso=0  renovacion=0   <-- ver abajo, no es un error
 
 # 4. Limpiar

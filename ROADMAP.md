@@ -1982,7 +1982,7 @@ el mecanismo de cumplimiento, gratis.
 | Mostrador del comercio | `/comercio` → `pages/club/ComercioPanel.jsx` |
 | Postulación pública | `/club/postular` → `pages/club/PostularComercioPage.jsx` |
 | ABM | `/admin → Club de beneficios` → `components/Club/` |
-| Verificación | `supabase/checks/club-check.sql` — **28 assertions, 0 FALLA** |
+| Verificación | `supabase/checks/club-check.sql` — **30 assertions, 0 FALLA** |
 
 ⚠️ **La regla que vive dos veces y no se puede evitar**: los requisitos de un beneficio
 se evalúan en el browser (UX) y en la Edge Function (autoridad), porque el browser no
@@ -2045,10 +2045,41 @@ dos se prueben con la misma tabla de casos**, y así están escritas.
 | **PIN por empleado** (12.10.7) | §12.3 lo declaró opcional y predijo que «casi ninguno lo va a querer». La decisión es *no lo hagas hasta que un comercio lo pida* |
 | **Rol `'comercio'` en `users`** | La pertenencia a `club_comercio_usuarios` *es* el permiso. Permite operar dos comercios y no contamina el resto del sitio |
 | **Poder borrar un comercio** | Se archiva con `estado = 'baja'`. Los canjes no se borran nunca: son el libro contable del club |
-| **`ahorro` en NULL para 2x1 y regalo** | No es un dato faltante, es «no calculable». Un 0 mentiría en el reporte al comercio |
+| **`ahorro` en NULL para 2x1 y regalo** | No es un dato faltante, es «no calculable». Un 0 mentiría en el reporte al comercio — **y el reporte de la fase 3 lo hizo el 2026-09-06**, ver abajo |
 | **Partir el descuento entre la persona y la entidad** | Convierte un descuento en una cobranza con rendición: la entidad pasa a ser acreedora de cada comercio. Es lo que mata a los clubes chicos |
 | **Encarecer la cuota para proteger un beneficio caro** | El objetivo es volumen de socios, no margen por socio. Se protege **pidiendo tiempo** (antigüedad o aporte acumulado), no plata |
 | **Mapa embebido de sucursales** | Arrastraría una librería de mapas para un club con 1 comercio, y hoy su única sucursal es «Online». La dirección con link al mapa cubre el caso |
+
+### 12.17 — ⚠️ El bug que la regla escrita no evitó (2026-09-06)
+
+El reporte de la fase 3 salió con `COALESCE(sum(ahorro), 0)` en sus tres funciones,
+así que a un comercio cuyos beneficios son 2x1 o regalo le decía
+**«Ahorro que diste: $0»** después de haber regalado algo. Es exactamente lo que la
+tabla de §12.15 declara imposible, y esa línea ya existía cuando se escribió el bug.
+
+**Lo encontró correr el reporte contra los datos reales de producción** — no un test, no
+una revisión. Y el motivo de que ningún test lo viera es instructivo: las 28 assertions
+usaban beneficios de tipo `porcentaje`, que **siempre** tienen ahorro. El único canje real
+que existe es de tipo `regalo`, que no lo tiene. **El caso que rompía era justo el que
+ninguna prueba tocaba, y la prueba lo evitaba sin querer.**
+
+Arreglado en `20260906160000` y fijado con T25b/T25c, que sí usan un beneficio de regalo.
+La forma del arreglo es la que ya tenía el consumo: **el número viaja con su cobertura**
+(`canjes_con_ahorro`), y la pantalla decide si dice un monto, «no calculable» o «sobre N
+de M». Los dos NULL no son el mismo NULL:
+
+| | Qué significa | Cómo se trata |
+|---|---|---|
+| `ahorro` en NULL | **No calculable** — el beneficio no tiene un monto que ahorrar | No se coalesce. Se muestra «No calculable» |
+| `monto_operacion` en NULL | **Falta el dato** — nadie lo cargó al confirmar | Se coalesce a 0 y se muestra la cobertura |
+
+**La lección, y es incómoda:** tener la regla escrita, verificada y citada en el propio
+archivo **no impidió romperla**. Un `sum()` sobre una columna nullable *parece* que pide
+un COALESCE, y la mano lo escribe antes de que la cabeza recuerde por qué esa columna
+puede ser NULL. Lo que lo atrapó no fue leer mejor: fue **mirar el número que el sistema
+le iba a mostrar a una persona real**.
+
+---
 
 ### 12.16 — Las limitaciones que quedan declaradas
 

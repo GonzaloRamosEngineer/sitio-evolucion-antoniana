@@ -443,6 +443,63 @@ BEGIN
   END IF;
 END $$;
 
+\echo '--- T25b: 🔴 un ahorro NO CALCULABLE no puede reportarse como $0'
+-- ESTE CASO NO EXISTÍA Y POR ESO EL BUG ENTRÓ. Todas las pruebas de arriba usan
+-- beneficios de tipo 'porcentaje', que siempre tienen ahorro. El único canje
+-- real de producción es de tipo 'regalo', que NO lo tiene — y las funciones
+-- traían COALESCE(sum(ahorro), 0), o sea que le decían al comercio
+-- «Ahorro que diste: $0» después de que regaló algo.
+--
+-- Es lo que el ROADMAP declara imposible en «lo que NO es deuda»: un 0 mentiría
+-- en el reporte. La regla estaba escrita y verificada; el error entró igual.
+RESET ROLE;
+SET LOCAL ROLE service_role;
+INSERT INTO public.club_beneficios (id, comercio_id, titulo, tipo, estado)
+VALUES ('77777777-0000-0000-0000-000000000007','11111111-0000-0000-0000-000000000001',
+        'ZZ Un cafe de regalo', 'regalo', 'activo');
+INSERT INTO public.club_canjes
+  (beneficio_id, user_id, codigo, estado, expira_en, confirmado_en, cajero_id, monto_operacion, ahorro)
+VALUES ('77777777-0000-0000-0000-000000000007','a0000000-0000-0000-0000-0000000000a1',
+        'ZZR234','confirmado', now() + interval '5 minutes', now(),
+        'c0000000-0000-0000-0000-0000000000c1', 4500, NULL);  -- ahorro NULL: no calculable
+
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','c0000000-0000-0000-0000-0000000000c1', true);
+DO $$
+DECLARE r record;
+BEGIN
+  SELECT * INTO r FROM public.club_reporte_comercio_por_beneficio(
+    '11111111-0000-0000-0000-000000000001') AS x
+   WHERE x.titulo = 'ZZ Un cafe de regalo';
+
+  IF r.ahorro_total IS NULL AND r.canjes_con_ahorro = 0 AND r.confirmados = 1 THEN
+    RAISE NOTICE 'PASA · el ahorro no calculable viaja como NULL, no como 0, y con su cobertura';
+  ELSIF r.ahorro_total = 0 THEN
+    RAISE NOTICE 'FALLA · GRAVE: le dice al comercio que dio $0 de ahorro habiendo regalado algo';
+  ELSE
+    RAISE NOTICE 'FALLA · ahorro_total=% canjes_con_ahorro=% confirmados=%',
+                 r.ahorro_total, r.canjes_con_ahorro, r.confirmados;
+  END IF;
+END $$;
+
+\echo '--- T25c: y el consumo SÍ se reporta, porque un monto sin cargar es otra cosa'
+-- Los dos NULL no son el mismo NULL: «no hay ahorro que calcular» es una
+-- propiedad del beneficio; «nadie cargó el monto» es un dato que falta. El
+-- primero no se coalesce; el segundo sí.
+DO $$
+DECLARE r record;
+BEGIN
+  SELECT * INTO r FROM public.club_reporte_comercio_por_beneficio(
+    '11111111-0000-0000-0000-000000000001') AS x
+   WHERE x.titulo = 'ZZ Un cafe de regalo';
+  IF r.consumo = 4500 THEN
+    RAISE NOTICE 'PASA · el consumo declarado se reporta igual (4500)';
+  ELSE
+    RAISE NOTICE 'FALLA · el consumo dio % y tendria que ser 4500', r.consumo;
+  END IF;
+END $$;
+
 \echo '--- T25: 🔒 anon no puede ejecutar el reporte'
 RESET ROLE;
 SET LOCAL ROLE anon;
