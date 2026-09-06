@@ -575,10 +575,39 @@ const ImportarMovimientos = () => {
               )}
               Importar {aImportar.length} {aImportar.length === 1 ? 'movimiento' : 'movimientos'}
             </Button>
-            <span className="text-xs text-brand-dark/55 inline-flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Los gastos entran sin publicar: se revisan y se publican después.
-            </span>
+            {/*
+              ⚠️ UN BOTÓN DESHABILITADO TIENE QUE DECIR POR QUÉ.
+              Sin esto, el caso más común —el lote analizado y el destino todavía
+              sin elegir— se ve idéntico a "la pantalla no anda": todo tildado, la
+              verificación en verde y el botón apagado, sin nada que explique la
+              diferencia. El motivo va acá y no en un toast porque un toast hay que
+              provocarlo, y al botón deshabilitado no se le puede hacer click.
+            */}
+            {!destinoId && (
+              <span className="text-xs text-amber-700 inline-flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Elegí el destino del lote para poder importar. Recién ahí se destilda solo
+                lo anterior al inicio del destino.
+              </span>
+            )}
+            {destinoId && !cuadra && (
+              <span className="text-xs text-red-800 inline-flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                No se importa hasta que lo extraído cuadre con lo que declara el resumen.
+              </span>
+            )}
+            {destinoId && cuadra && !aImportar.length && (
+              <span className="text-xs text-amber-700 inline-flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                No queda ningún movimiento tildado.
+              </span>
+            )}
+            {destinoId && cuadra && aImportar.length > 0 && (
+              <span className="text-xs text-brand-dark/55 inline-flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Los gastos entran sin publicar: se revisan y se publican después.
+              </span>
+            )}
           </div>
         </>
       )}
