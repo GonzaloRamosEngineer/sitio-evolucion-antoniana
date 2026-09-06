@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Calendar, Heart, MailWarning, Gift, Handshake, Newspaper,
-  FileText, ShieldCheck, LayoutDashboard, ExternalLink, Target, BookOpen, Receipt, Ticket, IdCard,
+  FileText, ShieldCheck, LayoutDashboard, ExternalLink, Target, BookOpen, Receipt, Ticket, IdCard, FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,7 @@ import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
 import NewsAdmin from '@/components/Admin/NewsAdmin';
 import DestinosAdmin from '@/components/Admin/DestinosAdmin';
 import MiembrosAdmin from '@/components/Admin/MiembrosAdmin';
+import ImportarMovimientos from '@/components/Admin/ImportarMovimientos';
 // El club vive en su propia carpeta (ROADMAP 12.7 regla 6): esta linea es el
 // unico punto de integracion con el proyecto anfitrion.
 import ClubAdmin from '@/components/Club/ClubAdmin';
@@ -86,6 +87,7 @@ const AdminPanel = () => {
           { value: 'destinos', label: 'Destinos', icon: Target },
           { value: 'aportes', label: 'Libro de aportes', icon: BookOpen },
           { value: 'gastos', label: 'Gastos y rendición', icon: Receipt },
+          { value: 'importar', label: 'Importar movimientos', icon: FileSpreadsheet },
         ],
       },
       {
@@ -140,6 +142,8 @@ const AdminPanel = () => {
         return <DestinosAdmin />;
       case 'miembros':
         return <MiembrosAdmin />;
+      case 'importar':
+        return <ImportarMovimientos />;
       case 'aportes':
         return <AportesAdmin />;
       case 'gastos':

@@ -3130,6 +3130,113 @@ nada.
 
 ---
 
+### 14.1 — El extracto real corrigió el relato, y construyó el importador (2026-09-06)
+
+El dueño del proyecto subió dos documentos: el **resumen de cuenta de MercadoPago
+de octubre de 2024** y el **Acta de Finalización del Convenio** con firmas
+certificadas ante escribano. Cambiaron tres cosas.
+
+#### 1. Una descripción mía que los documentos desmintieron
+
+Yo había sembrado el destino diciendo que la institución deportiva «dejó
+$1.000.000» y que la Fundación «recibió un aporte único». **Los documentos dicen
+otra cosa.**
+
+La Fundación **administraba los ingresos del Centro Juventud Antoniana en sus
+propias cuentas** —cuotas sociales, polideportivo, indumentaria— desde 2021. Al
+rescindirse el convenio, el Acta dispuso un **resguardo de $1.000.000**: se
+devolvió el resto y se retuvo esa suma. **Nadie transfirió un millón.**
+
+Y se verifica al peso:
+
+| Evidencia | Dato |
+|---|---|
+| Acta: «la cuenta de MercadoPago dispone de $1.933.533,58» | Extracto **08-10**: saldo $1.933.533,58 |
+| Acta: «resguardo de $1.000.000» | **10-10**: transferencia a CJA −$937.776,27, impuesto −$5.626,66 → **$1.000.000,00 exacto** |
+| Acta: «saldar el descubierto Santander por $53.989,20» | **15-10**: transferencia −$53.989,20 |
+
+La transferencia se calculó para que, **después del impuesto**, quedara el millón
+redondo.
+
+**Por qué la corrección no es cosmética:** si la rendición dice «recibimos un
+aporte de $1.000.000», quien vaya al extracto **no va a encontrar ningún ingreso
+de $1.000.000** — y se vería mal justo ante quien la revisa en serio. El término
+correcto es el que usa el Acta: *resguardo de fondos*.
+
+La corrección tuvo que ir como `UPDATE` acotado a la firma del texto viejo, porque
+la semilla ya estaba aplicada y el `WHERE NOT EXISTS` no toca una fila existente
+(`CLAUDE.md`). Se probó en las dos direcciones: corrige el texto equivocado y **no
+pisa** una edición hecha a mano desde el ABM.
+
+#### 2. Una pregunta del dueño que era mejor que la respuesta
+
+Notó que además de los gastos que se deciden están «los famosos **gastos hormiga**:
+montos pequeños y gran cantidad, que en volumen terminan costando».
+
+Tenía razón, y el extracto trae el detalle que lo resuelve: **el impuesto comparte
+el id de operación con la transferencia que lo generó.**
+
+```
+10-10-2024  Transferencia enviada Centro Juventud Antoniana  90165423466  -937.776,27
+10-10-2024  Impuesto por extracción                          90165423466    -5.626,66
+```
+
+De ahí salieron dos decisiones:
+
+- **La clave de idempotencia lleva el monto**: `mp:<id>:<monto>`. Con solo el id,
+  el impuesto se rechazaría como duplicado y **no entraría nunca** — un gasto que
+  desaparece en silencio, peor que uno duplicado porque nadie lo busca. Se
+  comprobó saboteándolo: la clave sin monto hace fallar el caso.
+- **La rendición pública agrupa por categoría.** Los impuestos van a
+  «Comisiones e impuestos» y se muestran sumados en un renglón. Sin eso, cuarenta
+  líneas de $120 tapan el honorario de $53.989 que es lo que la gente quiere ver.
+  El detalle sigue estando: cerrado, no escondido.
+
+#### 3. El dato que volvió urgente a §14.2
+
+Tienen extractos **de octubre de 2024 hasta hoy: 23 meses**. Eso no se carga de a
+uno, y §14 ya había establecido que el diferencial no es la página de rendición
+sino que cargar los datos salga barato. Así que se construyó el importador el
+mismo día.
+
+Al ir a hacerlo apareció el hueco que faltaba: **`gastos` no tenía clave de
+idempotencia.** `aportes.referencia_externa` existía desde §10.11 por otro motivo
+—que un reintento del webhook no duplicara un cobro— y los gastos nunca la
+necesitaron porque se cargaban a mano, de a uno. Con una importación eso se da
+vuelta: reimportar un período solapado duplica todos los gastos y **nada avisa**.
+
+#### Dos errores míos que atraparon las pruebas
+
+⚠️ **`Number('')` es 0, no NaN.** Una celda de importe vacía se convertía en un
+gasto de $0 en silencio. Lo atrapó un test que yo mismo había escrito esperando
+`null` — el tipo de test que parece trivial hasta que corre.
+
+⚠️ **Usé `attempt` donde iba `listResult`.** `attempt` envuelve algo que *lanza*
+(una Edge Function, un `fetch`), y el cliente de Supabase no lanza: devuelve
+`{ data, error }`. Pasárselo habría dado `{ data: { data, error }, error: null }`
+— **un error de la base llegando como éxito**, con el contador de filas
+importadas siempre en 0. Se vio leyendo la firma del helper antes de confiar en
+ella.
+
+#### Lo que quedó
+
+`20260906130000_importar_movimientos.sql`, `src/lib/importarMovimientos.js` (puro,
+**19 tests** con los datos reales del extracto), `src/api/importarApi.js` y
+`/admin → Importar movimientos`.
+
+`fondos-check.sql` pasó de 10 a **15 assertions**, con dos sabotajes que
+confirmaron que las dos decisiones centrales son estructurales: sin el UNIQUE se
+duplica, y sin el monto en la clave el impuesto no entra.
+
+#### La moraleja
+
+**El documento del cliente corrige la descripción del sistema, no al revés.** Yo
+había escrito el relato del fondo con lo que entendí de una conversación, y sonaba
+razonable. El extracto y el acta dijeron otra cosa —y cuadraron entre sí al peso—.
+Cuando exista un documento, leerlo antes de describir lo que representa.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

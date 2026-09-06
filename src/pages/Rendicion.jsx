@@ -26,6 +26,35 @@ import { balanceDestino } from '@/api/gastosApi';
 import { entidad, tituloPagina } from '@/config/entidad';
 
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
+/**
+ * Agrupa los gastos por categoría, ordenando por monto descendente.
+ *
+ * Los sin categoría van juntos al final bajo "Otros gastos" y NO se esconden: un
+ * gasto sin clasificar sigue siendo plata que salió, y omitirlo haría que el
+ * total del grupo no sume el total del destino — que es la única forma de que
+ * esta pantalla pierda sentido.
+ *
+ * Orden por monto y no alfabético: quien entra a una rendición quiere ver
+ * primero dónde se fue la plata, no la primera letra del abecedario.
+ */
+const agruparPorCategoria = (gastos) => {
+  const porCategoria = new Map();
+  for (const g of gastos) {
+    const clave = g.categoria?.trim() || 'Otros gastos';
+    if (!porCategoria.has(clave)) porCategoria.set(clave, { categoria: clave, gastos: [], total: 0 });
+    const grupo = porCategoria.get(clave);
+    grupo.gastos.push(g);
+    grupo.total += Number(g.monto || 0);
+  }
+  return [...porCategoria.values()].sort((a, b) => {
+    // "Otros gastos" siempre último: es el cajón de lo no clasificado y encabezar
+    // con él daría la impresión de que nadie miró nada.
+    if (a.categoria === 'Otros gastos') return 1;
+    if (b.categoria === 'Otros gastos') return -1;
+    return b.total - a.total;
+  });
+};
+
 const soloFecha = (v) => (v ? String(v).slice(0, 10).split('-').reverse().join('/') : '—');
 
 const Rendicion = () => {
@@ -158,6 +187,19 @@ const Rendicion = () => {
                         </span>
                       </div>
 
+                      {/* DESDE CUÁNDO RINDE, y no es un adorno.
+                          Un destino puede tener movimientos anteriores a la fecha en
+                          que la entidad empezó a rendirlo — plata administrada de un
+                          tercero, un período que se digitalizó después—. Sin decirlo,
+                          quien compare el libro con el extracto completo va a
+                          encontrar movimientos que "faltan" y va a concluir lo peor.
+                          Decirlo cuesta un renglón. */}
+                      {d.fecha_inicio && (
+                        <p className="mt-3 text-xs text-gray-500">
+                          Esta rendición cubre desde el {soloFecha(d.fecha_inicio)}.
+                        </p>
+                      )}
+
                       {balance.porcentajeRendido !== null && (
                         <div className="mt-4">
                           <div
@@ -180,13 +222,45 @@ const Rendicion = () => {
                       )}
                     </div>
 
+                    {/* AGRUPADO POR CATEGORÍA — ROADMAP §14.
+                        Los movimientos de una cuenta traen "gastos hormiga": impuestos
+                        al débito, comisiones, cargos automáticos. Son chicos de a uno
+                        y pesados en volumen, y listarlos de a uno vuelve la rendición
+                        ilegible — cuarenta renglones de $120 tapan el honorario de
+                        $53.989 que es lo que la gente quiere ver.
+                        Agrupados, el total sigue siendo el mismo y cada categoría se
+                        abre si alguien quiere el detalle. Esconder no es una opción:
+                        el detalle está, cerrado por defecto. */}
                     {suyos.length === 0 ? (
                       <p className="p-6 md:p-8 text-sm text-gray-500">
                         Todavía no se publicaron gastos de este destino.
                       </p>
                     ) : (
-                      <ul className="divide-y divide-gray-100">
-                        {suyos.map((g) => (
+                      <div>
+                        {agruparPorCategoria(suyos).map((grupo) => (
+                          <details
+                            key={grupo.categoria}
+                            className="border-b border-gray-100 last:border-0"
+                            /* Un solo grupo no se agrupa: abrir un acordeón para ver
+                               una fila es fricción sin beneficio. */
+                            open={grupo.gastos.length === 1}
+                          >
+                            <summary className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4 md:px-8 cursor-pointer hover:bg-gray-50">
+                              <span className="min-w-0 flex-1 font-medium text-brand-dark">
+                                {grupo.categoria}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {grupo.gastos.length === 1
+                                  ? '1 movimiento'
+                                  : `${grupo.gastos.length} movimientos`}
+                              </span>
+                              <span className="font-bold text-brand-dark tabular-nums">
+                                {pesos(grupo.total)}
+                              </span>
+                            </summary>
+
+                            <ul className="divide-y divide-gray-100 bg-gray-50/60">
+                        {grupo.gastos.map((g) => (
                           <li key={g.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4 md:px-8">
                             <span className="text-xs text-gray-500 tabular-nums w-20 shrink-0">
                               {soloFecha(g.fecha)}
@@ -218,7 +292,10 @@ const Rendicion = () => {
                             </span>
                           </li>
                         ))}
-                      </ul>
+                            </ul>
+                          </details>
+                        ))}
+                      </div>
                     )}
                   </div>
                 );

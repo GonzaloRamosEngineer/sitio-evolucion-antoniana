@@ -156,6 +156,65 @@ EXCEPTION WHEN check_violation THEN
 END $t$;
 
 \echo ''
+\echo '=== IDEMPOTENCIA DE LA IMPORTACION (§14.2) ==='
+\echo '     Es lo unico que hace seguro pegar un extracto dos veces, y por eso'
+\echo '     tiene que probarse contra la base y no confiar en la pantalla.'
+
+\echo '--- T6: 🔒 dos gastos con la MISMA referencia no pueden coexistir'
+INSERT INTO public.gastos (destino_id, concepto, monto, fecha, referencia_externa, carga_origen)
+VALUES ('f1000000-0000-0000-0000-0000000000f1','ZZ Importado', 1000, current_date,
+        'mp:90165423466:-1000.00', 'importacion');
+DO $t$
+BEGIN
+  INSERT INTO public.gastos (destino_id, concepto, monto, fecha, referencia_externa, carga_origen)
+  VALUES ('f1000000-0000-0000-0000-0000000000f1','ZZ Importado otra vez', 1000, current_date,
+          'mp:90165423466:-1000.00', 'importacion');
+  RAISE WARNING 'FALLA · se cargo dos veces el mismo movimiento: reimportar duplicaria la rendicion';
+EXCEPTION WHEN unique_violation THEN
+  RAISE NOTICE 'PASA · rechazado por gastos_referencia_externa_key';
+END $t$;
+
+\echo '--- T6b: ✅ pero el IMPUESTO de esa misma operacion SI entra'
+\echo '     (comparte el id y cambia el monto: si la clave fuera solo el id, este'
+\echo '      gasto no entraria NUNCA y desapareceria en silencio)'
+DO $t$
+BEGIN
+  INSERT INTO public.gastos (destino_id, concepto, monto, fecha, referencia_externa, carga_origen)
+  VALUES ('f1000000-0000-0000-0000-0000000000f1','ZZ Impuesto de la misma operacion', 50,
+          current_date, 'mp:90165423466:-50.00', 'importacion');
+  RAISE NOTICE 'PASA · el impuesto entra pese a compartir el id de operacion';
+EXCEPTION WHEN unique_violation THEN
+  RAISE WARNING 'FALLA · la clave no distingue el impuesto de su transferencia';
+END $t$;
+
+\echo '--- T6c: ✅ y varios gastos MANUALES (referencia NULL) conviven'
+\echo '     (en Postgres los NULL no colisionan; si colisionaran, el ABM se romperia)'
+INSERT INTO public.gastos (destino_id, concepto, monto, fecha) VALUES
+  ('f1000000-0000-0000-0000-0000000000f1','ZZ Manual 1', 10, current_date),
+  ('f1000000-0000-0000-0000-0000000000f1','ZZ Manual 2', 20, current_date);
+SELECT CASE WHEN (SELECT count(*) FROM public.gastos
+                   WHERE concepto LIKE 'ZZ Manual%') = 2
+            THEN 'PASA · dos gastos manuales sin referencia conviven'
+            ELSE 'FALLA · el UNIQUE bloquea la carga manual' END;
+
+\echo '--- T7: ✅ referencias_ya_cargadas encuentra lo que existe y no inventa'
+SELECT CASE WHEN (SELECT count(*) FROM public.referencias_ya_cargadas(
+                    ARRAY['mp:90165423466:-1000.00','mp:no-existe:-1.00'])) = 1
+            THEN 'PASA · devuelve solo la que esta'
+            ELSE 'FALLA · el conteo previo a importar no es confiable' END;
+
+\echo '--- T7b: 🔒 y no la puede llamar cualquiera con sesion'
+SET LOCAL ROLE anon;
+DO $t$
+BEGIN
+  PERFORM public.referencias_ya_cargadas(ARRAY['x']);
+  RAISE WARNING 'FALLA · anon pudo preguntar si un id de operacion esta en el libro';
+EXCEPTION WHEN insufficient_privilege OR sqlstate '42501' THEN
+  RAISE NOTICE 'PASA · rechazado (42501)';
+END $t$;
+RESET ROLE;
+
+\echo ''
 \echo '--- T5: CONTROL — no se rompio el caso que ya andaba'
 SELECT CASE WHEN (SELECT count(*) FROM public.destinos
                    WHERE slug='zz-abierta' AND admite_puntual) = 1
