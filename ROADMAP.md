@@ -49,6 +49,13 @@ consulta legal; de infraestructura ya no queda nada bloqueando.
 de actividades y el esquema del apadrinamiento. Cuatro migraciones, validadas en
 PostgreSQL 15 y con `supabase/checks/membresia-check.sql` — **36 assertions, 0 FALLA**.
 
+✅ **§14 aplicado y desplegado el 2026-09-06**, verificado con el procedimiento de §B: el
+vocabulario de comprobantes vive en `useContentQueries-DEg2eiEb.js` (chunk compartido, no
+en el de la página — el punto 4 de §B otra vez) y el ABM en `AdminPanel-5V_ZHq6p.js`. Las
+dos puntas del fondo restringido, comprobadas en producción con Chrome headless:
+**no aparece en `/collaborate`** —está cerrado a aportes— **y sí aparece en `/rendicion`**,
+que es la razón entera de la migración.
+
 👉 **Y el 2026-09-06 apareció §14, que es lo más importante de estos dos días**: el
 diferencial de este producto no es el club de beneficios —mercado saturado— sino **poder
 rendir un fondo restringido, y que rendirlo salga barato**. Leer §14 antes de decidir qué
