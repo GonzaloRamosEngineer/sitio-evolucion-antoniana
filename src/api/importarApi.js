@@ -20,27 +20,41 @@
 import { supabase } from '@/lib/supabase';
 import { listResult } from '@/lib/dataResult';
 
-/**
- * De un lote de referencias, cuáles ya están en el libro.
- *
- * Una sola llamada y no una por fila: cuatrocientas consultas son cuatrocientos
- * viajes y una pantalla que parece colgada.
- */
-export const getReferenciasCargadas = async (referencias) => {
-  const refs = (referencias ?? []).filter(Boolean);
-  if (!refs.length) return { data: [], error: null };
-
-  return listResult(
-    await supabase.rpc('referencias_ya_cargadas', { p_refs: refs }),
-    'getReferenciasCargadas'
-  );
-};
-
 /** Trocea un array. Un `insert` de 400 filas en una sola request es frágil. */
 const enLotes = (items, tamano = 100) => {
   const lotes = [];
   for (let i = 0; i < items.length; i += tamano) lotes.push(items.slice(i, i + tamano));
   return lotes;
+};
+
+/**
+ * De un lote de referencias, cuáles ya están en el libro.
+ *
+ * Una llamada por tanda y no una por fila: cuatrocientas consultas son
+ * cuatrocientos viajes y una pantalla que parece colgada.
+ *
+ * Se trocea porque desde que se pueden elegir varios extractos a la vez (§14.3)
+ * esto ya no recibe un mes sino veintitrés: mandar miles de referencias en un
+ * solo `text[]` es justo el tamaño de request que empieza a fallar por motivos
+ * que no se ven desde acá.
+ */
+export const getReferenciasCargadas = async (referencias) => {
+  const refs = (referencias ?? []).filter(Boolean);
+  if (!refs.length) return { data: [], error: null };
+
+  const encontradas = [];
+  for (const lote of enLotes(refs, 500)) {
+    const { data, error } = listResult(
+      await supabase.rpc('referencias_ya_cargadas', { p_refs: lote }),
+      'getReferenciasCargadas'
+    );
+    // Si una tanda falla se corta: seguir daría una lista incompleta de "ya
+    // cargadas", y una lista incompleta hace que la previsualización PROMETA
+    // insertar lo que la base va a saltear. Mejor decir que no se pudo.
+    if (error) return { data: [], error };
+    encontradas.push(...data);
+  }
+  return { data: encontradas, error: null };
 };
 
 /**

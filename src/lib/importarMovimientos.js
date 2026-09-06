@@ -410,3 +410,114 @@ export const resumirLote = (filas, yaCargadas = new Set()) => {
     montoGastos: Math.abs(gastos.reduce((s, f) => s + f.monto, 0)),
   };
 };
+
+/* ============================
+   Varios archivos de una vez (§14.3)
+   ============================ */
+
+/** La fecha del primer movimiento que se entendió. Sirve para ordenar archivos. */
+const primeraFecha = (filas) => filas.find((f) => f.fecha)?.fecha ?? null;
+
+/**
+ * Junta varios extractos en un solo lote, ordenado cronológicamente.
+ *
+ * POR QUÉ ESTO NO ES "PARSEAR EN UN `for`". Hay 23 meses de extractos, y cargarlos
+ * de a uno es la misma trampa que cargar movimientos de a uno: se abandona a la
+ * mitad. Pero juntarlos trae **dos problemas que un archivo solo no tiene**, y
+ * los dos se resuelven acá:
+ *
+ *  1. **El orden.** La verificación de cadena (nivel 3) compara el saldo final de
+ *     un período contra el inicial del siguiente, así que sin ordenar da huecos
+ *     falsos. Se ordena por el primer movimiento, **no por el nombre del
+ *     archivo**: los de MercadoPago se llaman `account_statement-<uuid>.csv` y no
+ *     dicen nada del período.
+ *  2. **El mismo archivo elegido dos veces.** Con 23 archivos en un diálogo es
+ *     cuestión de tiempo. Se detecta por `referencia` repetida **entre archivos
+ *     distintos**: dos extractos son períodos disjuntos, así que un movimiento
+ *     que aparece en dos es siempre el mismo archivo cargado dos veces.
+ *     Repetida *dentro* de un archivo no se toca — ahí sí puede ser legítima.
+ *
+ * Los índices se renumeran de corrido: son la identidad de la fila en la
+ * previsualización, y por archivo se pisarían entre sí.
+ *
+ * @param {Array<{nombre: string, texto: string}>} archivos
+ */
+export const consolidarArchivos = (archivos, opciones = {}) => {
+  const resumenes = archivos.map(({ nombre, texto }) => {
+    const { filas, declarado, errores } = parsearExtracto(texto, opciones);
+    return { nombre, filas, declarado, errores, desde: primeraFecha(filas) };
+  });
+
+  resumenes.sort(
+    (a, b) =>
+      String(a.desde ?? '').localeCompare(String(b.desde ?? '')) ||
+      a.nombre.localeCompare(b.nombre)
+  );
+
+  const vistas = new Map(); // referencia -> archivo donde apareció primero
+  const filas = [];
+  resumenes.forEach((r) => {
+    r.filas = r.filas.map((f) => {
+      const fila = { ...f, indice: filas.length, archivo: r.nombre };
+      const antes = fila.referencia ? vistas.get(fila.referencia) : null;
+      if (antes && antes !== r.nombre) {
+        fila.problema = `Este movimiento ya viene en «${antes}»: los dos archivos se pisan.`;
+      } else if (fila.referencia && !antes) {
+        vistas.set(fila.referencia, r.nombre);
+      }
+      filas.push(fila);
+      return fila;
+    });
+  });
+
+  return {
+    resumenes,
+    filas,
+    // El nombre del archivo va adelante del error: con 23 archivos, "no se
+    // reconocieron las columnas" sin decir de cuál no se puede accionar.
+    errores: resumenes.flatMap((r) => r.errores.map((e) => `${r.nombre}: ${e}`)),
+  };
+};
+
+/**
+ * Los movimientos anteriores al inicio del destino.
+ *
+ * POR QUÉ IMPORTA. Un fondo restringido empieza un día concreto —el del convenio,
+ * el de la resolución del subsidio— y el extracto del mes **trae también lo de
+ * antes**. Al fondo del millón le entran así dos movimientos del 10/10/2024 que
+ * son de la etapa anterior: imputados al fondo, la rendición muestra gastos que
+ * ese fondo nunca hizo, que es exactamente lo que un fondo restringido tiene que
+ * poder desmentir.
+ *
+ * Devuelve los índices para que la pantalla los **destilde sola**. No los bloquea:
+ * la fecha de inicio puede estar mal cargada, y un dato de configuración no puede
+ * impedir cargar un movimiento que existió.
+ */
+export const anterioresA = (filas, fechaISO) => {
+  if (!fechaISO) return new Set();
+  // Las fechas ISO se comparan como texto: `2024-10-09` < `2024-10-10`.
+  return new Set(filas.filter((f) => f.fecha && f.fecha < fechaISO).map((f) => f.indice));
+};
+
+/**
+ * Los movimientos del día mismo en que arranca el destino.
+ *
+ * ⚠️ POR QUÉ ESTO EXISTE APARTE DE `anterioresA`, Y POR QUÉ NO DESTILDA SOLO.
+ *
+ * `fecha_inicio` es una fecha, no un instante, y **un fondo puede arrancar a
+ * mitad de un día**. Es el caso real del fondo del convenio: el 10/10/2024 la
+ * cuenta hizo la transferencia de cierre y pagó su impuesto, y **recién después**
+ * el saldo que quedó pasó a ser el fondo. Esos dos movimientos son de la etapa
+ * anterior y comparten fecha con el primer día del fondo, así que `fecha < inicio`
+ * no los alcanza — y encima son los peligrosos: el saldo inicial cargado ya está
+ * neto de ellos, así que importarlos los contaría dos veces.
+ *
+ * Se marcan y no se destildan porque **el signo es ambiguo**: un movimiento del
+ * día del inicio puede ser igual de bien el primero del fondo. Destildar de más
+ * hace desaparecer un gasto en silencio, que es el error que este módulo entero
+ * trata de no cometer; marcar obliga a mirar dos filas.
+ */
+export const delDiaDelInicio = (filas, fechaISO) => {
+  if (!fechaISO) return new Set();
+  return new Set(filas.filter((f) => f.fecha === fechaISO).map((f) => f.indice));
+};

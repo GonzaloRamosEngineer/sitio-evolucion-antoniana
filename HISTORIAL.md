@@ -3323,6 +3323,92 @@ lugar equivocado.
 
 ---
 
+### 14.3 — Subir los resúmenes, y el borde que la fecha no resuelve (2026-09-06)
+
+Los tres pendientes que §14.2 había dejado anotados, construidos de una vez: elegir
+archivos, verificar la cadena entre ellos y avisar de los movimientos anteriores al
+inicio del destino. Lo que sigue es lo que apareció al hacerlo, que no estaba en el
+diseño.
+
+#### 1. Juntar archivos trae dos problemas que un archivo solo no tiene
+
+**El orden.** La verificación de cadena compara el saldo final de un período contra
+el inicial del siguiente, así que sin ordenar da huecos falsos. Ordenar por nombre
+era lo obvio y **habría estado mal**: los de MercadoPago se llaman
+`account_statement-<uuid>.csv` y no dicen nada del período. Se ordena por el primer
+movimiento, y el test que lo fija usa nombres elegidos para que el orden alfabético
+dé el orden **contrario** — si alguna vez alguien lo cambia por `nombre`, falla.
+
+**El mismo archivo elegido dos veces**, que con 23 en un diálogo es cuestión de
+tiempo. Se detecta por `referencia` repetida entre archivos **distintos**: dos
+extractos son períodos disjuntos, así que un movimiento que aparece en los dos es
+siempre el mismo archivo cargado dos veces.
+
+⚠️ **Y la mitad que no se hizo importa igual que la que sí:** repetida *dentro* de
+un archivo **no** se marca. Ahí puede ser legítima, y marcarla dejaría afuera un
+gasto real. Hay un test para cada mitad, porque «detecta duplicados» y «detecta
+demasiados duplicados» se ven idénticos desde afuera.
+
+#### 2. La distinción que ordena las tres verificaciones
+
+Al llevar el nivel 3 a la pantalla apareció que **no puede comportarse como los
+otros dos**:
+
+- Niveles 1 y 2 fallan cuando lo que se leyó **está mal** → **bloquean**.
+- El nivel 3 falla cuando **falta un mes** → **avisa**. Importar octubre y diciembre
+  sin noviembre es *incompleto*, no *incorrecto*, y es exactamente lo que hace
+  alguien que va bajando los extractos de a uno.
+
+Bloquear ahí habría sido tratar «te falta un archivo» como «tus datos están mal», y
+la persona no tiene forma de distinguirlo desde el botón deshabilitado.
+
+Los niveles 1 y 2 pasaron a calcularse **por archivo**: cada extracto declara sus
+propios totales, y sumarlos todos juntos escondería justo el que no cuadra.
+
+#### 3. ⚠️ Lo que la fecha de inicio NO resuelve, y es el caso peligroso
+
+El corte por `destinos.fecha_inicio` funcionó y se midió contra el archivo real:
+**21 de los 27 movimientos de octubre 2024 son de la etapa previa** al fondo. Pero
+al correrlo apareció que **los dos que importaban no estaban entre esos 21**.
+
+`fecha_inicio` es una fecha, no un instante, y **un fondo puede arrancar a mitad de
+un día**. El del convenio es exactamente eso: el 10/10/2024 la cuenta hizo la
+transferencia de cierre y pagó su impuesto, y **recién después** el saldo que quedó
+pasó a ser el fondo. `fecha < inicio` no los alcanza — y **el saldo inicial de
+$1.000.000 ya está neto de los dos**, así que importarlos los contaría dos veces.
+
+O sea: la regla automática cubre 21 filas inofensivas y **no cubre las 2 peligrosas**.
+
+`delDiaDelInicio()` las **marca** y no las destilda, y la decisión es deliberada: un
+movimiento del día del inicio puede ser igual de bien el primero del fondo.
+Destildar de más hace desaparecer un gasto en silencio —el error que este módulo
+entero trata de no cometer—; marcar obliga a mirar dos filas.
+
+#### Una decisión de estado que se pagó sola
+
+El default de una fila dejó de ser siempre «sí», así que el set de `excluidas` no
+alcanzaba: cambiar de destino habría tenido que reescribirlo, **pisando lo que la
+persona destildó a mano**. Pasó a ser un mapa `indice -> entra` que es un *override*
+del default. El default se recalcula solo cuando cambia el destino y las decisiones
+manuales sobreviven.
+
+#### Una consecuencia de escala que no estaba prevista
+
+`getReferenciasCargadas` ya no recibe un mes sino veintitrés. Se trocea de a 500, y
+**si una tanda falla corta** en vez de seguir: una lista incompleta de «ya cargadas»
+hace que la previsualización *prometa* insertar lo que la base va a saltear — un
+contador que miente en la dirección tranquilizadora.
+
+#### La moraleja
+
+**Una regla automática que cubre lo inofensivo y no lo peligroso es peor que no
+tenerla**, porque la tranquiliza a la persona justo donde tenía que mirar. El corte
+por fecha destildó 21 filas correctas y dejó pasar las 2 que habrían roto la
+rendición. Lo que lo salvó no fue razonar el borde: fue **correr la regla contra el
+archivo real y mirar el número**.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
