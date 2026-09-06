@@ -58,8 +58,31 @@ export const validarAporte = (f) => {
   return errores;
 };
 
-/** Convierte el formulario a payload. Los vacíos van como null, nunca como ''. */
-export const aPayloadAporte = (f) => ({
+/**
+ * La referencia de un saldo inicial, derivada del destino.
+ *
+ * ⚠️ POR QUÉ ESTO NO ES UN CAMPO DE TEXTO EN EL FORMULARIO.
+ *
+ * `referencia_externa` es la clave de idempotencia de las importaciones. Si se
+ * dejara escribirla a mano, alguien podría poner `mp:90165423466:-5626.66` —por
+ * copiar un id del extracto, sin mala intención— y **ese movimiento no se podría
+ * importar nunca más**: la base lo rechazaría como duplicado de una fila que no
+ * tiene nada que ver. Un gasto que desaparece en silencio.
+ *
+ * Derivándola del destino, la referencia es siempre `saldo-inicial:<slug>` y
+ * **nunca puede chocar con una `mp:*`**. Y el UNIQUE de la columna garantiza
+ * gratis lo que el dominio ya pedía: **un solo saldo inicial por destino**.
+ */
+export const referenciaSaldoInicial = (slug) => `saldo-inicial:${slug}`;
+
+/**
+ * Convierte el formulario a payload. Los vacíos van como null, nunca como ''.
+ *
+ * `destinoSlug` llega aparte porque el formulario guarda el id y la referencia se
+ * arma con el slug — que es estable y legible, mientras que un uuid en una
+ * referencia no le dice nada a nadie que mire la fila.
+ */
+export const aPayloadAporte = (f, destinoSlug) => ({
   destino_id: f.destino_id,
   monto: Number(f.monto),
   fecha: f.fecha,
@@ -70,6 +93,12 @@ export const aPayloadAporte = (f) => ({
   // válido y es distinto de declarar 'otro'.
   tipo_comprobante: f.tipo_comprobante || null,
   comprobante_numero: (f.comprobante_numero || '').trim() || null,
+  // El saldo inicial: la fila que dice "acá había esto" cuando el libro arranca a
+  // mitad de la vida de una entidad. Sin ella, un destino que ya tenía plata
+  // arranca con solo egresos y el saldo se va en negativo.
+  referencia_externa:
+    f.es_saldo_inicial && destinoSlug ? referenciaSaldoInicial(destinoSlug) : null,
+  carga_origen: 'manual',
   // Fijo, no viene del formulario: es lo único que la RLS deja insertar desde
   // el panel, y dejarlo elegir invitaría a marcar como `donacion` algo que la
   // pasarela nunca vio.

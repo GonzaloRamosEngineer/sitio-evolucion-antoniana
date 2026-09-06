@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   validarAporte, aPayloadAporte, describirOrigen, hoyISO, ORIGENES_APORTE,
+  referenciaSaldoInicial,
 } from './aportesApi';
 
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
@@ -96,5 +97,51 @@ describe('describirOrigen', () => {
 describe('hoyISO', () => {
   it('devuelve el formato que espera un input date', () => {
     expect(hoyISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+
+// El saldo inicial (§14.3). Lo que fijan estos tests no es que el tilde funcione:
+// es que la referencia **no se pueda escribir a mano**. `referencia_externa` es la
+// clave de idempotencia de las importaciones, y una referencia `mp:*` puesta en un
+// aporte manual bloquearía para siempre la importación de ese movimiento real.
+describe('saldo inicial', () => {
+  const base = {
+    destino_id: 'd1', monto: '1000000', fecha: '2024-10-10',
+    nombre_aportante: 'Centro Juventud Antoniana', email_aportante: '', notas: '',
+  };
+
+  it('sin el tilde no pone ninguna referencia', () => {
+    expect(aPayloadAporte(base, 'fondo-convenio-2024').referencia_externa).toBeNull();
+  });
+
+  it('con el tilde la deriva del slug del destino', () => {
+    const p = aPayloadAporte({ ...base, es_saldo_inicial: true }, 'fondo-convenio-2024');
+    expect(p.referencia_externa).toBe('saldo-inicial:fondo-convenio-2024');
+  });
+
+  it('🔒 la referencia NUNCA puede tener la forma de una importación', () => {
+    // Aunque el formulario trajera basura: el valor sale del slug, no del form.
+    const p = aPayloadAporte(
+      { ...base, es_saldo_inicial: true, referencia_externa: 'mp:90165423466:-5626.66' },
+      'fondo-convenio-2024'
+    );
+    expect(p.referencia_externa).toBe('saldo-inicial:fondo-convenio-2024');
+    expect(p.referencia_externa.startsWith('mp:')).toBe(false);
+  });
+
+  it('sin destino conocido no inventa una referencia a medias', () => {
+    // Una referencia como `saldo-inicial:undefined` colisionaría entre destinos:
+    // el segundo saldo inicial sería rechazado por el UNIQUE sin motivo visible.
+    expect(aPayloadAporte({ ...base, es_saldo_inicial: true }, undefined).referencia_externa)
+      .toBeNull();
+  });
+
+  it('marca la carga como manual, para distinguirla de una importación', () => {
+    expect(aPayloadAporte(base, 'x').carga_origen).toBe('manual');
+  });
+
+  it('referenciaSaldoInicial arma el formato esperado', () => {
+    expect(referenciaSaldoInicial('institucional')).toBe('saldo-inicial:institucional');
   });
 });

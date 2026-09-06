@@ -146,6 +146,16 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   UNIQUE en `aportes` **y** en `gastos`. ⚠️ **El monto forma parte de la clave a propósito**:
   en MercadoPago el impuesto comparte el id de operación con su transferencia, y sin el monto
   el impuesto nunca entraría.
+- **El CSV de MercadoPago (ROADMAP §14.3)**, comprobado contra un archivo real el
+  2026-09-06: encabezados **en inglés** (`RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE`),
+  **dos bloques** —los totales del período arriba, los movimientos abajo— y números en
+  formato argentino. ⚠️ **El importe es NETO y la comisión de la pasarela no figura en
+  ningún formato** del resumen de cuenta; para verla hay que ir a otro reporte. El `.xlsx`
+  trae exactamente lo mismo que el `.csv` con los valores como texto: no aporta nada y
+  costaría una librería. **Y las tres verificaciones salen del CSV solo** — saldo corrido,
+  totales del período y cadena entre meses—: si alguna no cuadra, la pantalla **no deja
+  importar**, porque sin eso un cambio de formato del banco se convierte en datos mal
+  cargados en silencio.
 - **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.

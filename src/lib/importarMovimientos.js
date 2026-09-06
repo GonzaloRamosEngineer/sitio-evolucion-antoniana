@@ -170,13 +170,44 @@ const partir = (linea, sep) => {
   return campos.map((c) => c.trim());
 };
 
-/** Nombres de columna que se reconocen, por rol. */
+/**
+ * Nombres de columna que se reconocen, por rol.
+ *
+ * ⚠️ **Los del CSV real de MercadoPago están EN INGLÉS**, aunque el PDF del mismo
+ * resumen esté en castellano. Comprobado contra el archivo del período
+ * 10/2024 el 2026-09-06:
+ *
+ *     RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE
+ *
+ * La primera versión de estos patrones era solo castellana y **no reconocía ni
+ * la descripción ni el id** — que es justo el que da la idempotencia. El
+ * importador habría cargado todo sin referencia y reimportar habría duplicado.
+ */
 const COLUMNAS = {
   fecha: /^fecha|date/i,
-  descripcion: /^descripci|detalle|concepto|description/i,
-  id: /^id|operaci[oó]n|operation|referencia/i,
+  descripcion: /^descripci|detalle|concepto|description|transaction_type/i,
+  id: /^id\b|operaci[oó]n|operation|referencia|reference/i,
   monto: /^valor|monto|importe|amount/i,
   saldo: /^saldo|balance/i,
+};
+
+/**
+ * Encabezado del bloque de totales que MercadoPago pone ARRIBA del de movimientos:
+ *
+ *     INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE
+ *     1.698.607,63;244.795,30;-1.022.151,63;921.251,30
+ *
+ *     RELEASE_DATE;TRANSACTION_TYPE;...
+ *
+ * No es ruido a saltear: **son los totales declarados por el banco**, y compararlos
+ * contra la suma de lo que uno extrajo es una verificación gratis que no depende
+ * de que le creamos al parser (ROADMAP §14.3).
+ */
+const TOTALES = {
+  saldoInicial: /initial_balance|saldo.?inicial/i,
+  entradas: /^credits|entradas/i,
+  salidas: /^debits|salidas/i,
+  saldoFinal: /final_balance|saldo.?final/i,
 };
 
 /**
@@ -197,7 +228,28 @@ export const parsearExtracto = (texto, { fuente = 'mp' } = {}) => {
   if (!lineas.length) return { filas: [], columnas: {}, errores: ['No se pegó nada.'] };
 
   const sep = detectarSeparador(lineas);
-  const cabecera = partir(lineas[0], sep);
+
+  // ¿La primera línea es el bloque de totales? Si sí, se guarda y el bloque de
+  // movimientos empieza más abajo.
+  let declarado = null;
+  let desde = 0;
+  const primera = partir(lineas[0], sep);
+  if (primera.some((c) => TOTALES.saldoInicial.test(c))) {
+    const valores = partir(lineas[1] ?? '', sep);
+    declarado = {};
+    primera.forEach((nombre, i) => {
+      for (const [clave, patron] of Object.entries(TOTALES)) {
+        if (patron.test(nombre)) declarado[clave] = aNumero(valores[i]);
+      }
+    });
+    // El encabezado de movimientos es la siguiente línea que tenga una columna de
+    // fecha. Buscarlo así, y no asumir "línea 3", aguanta que MercadoPago agregue
+    // o saque una fila entre los dos bloques.
+    desde = lineas.findIndex((l, i) => i > 1 && partir(l, sep).some((c) => COLUMNAS.fecha.test(c)));
+    if (desde < 0) return { filas: [], columnas: {}, declarado, errores: ['No se encontró el bloque de movimientos.'] };
+  }
+
+  const cabecera = partir(lineas[desde], sep);
 
   const columnas = {};
   cabecera.forEach((nombre, i) => {
@@ -213,10 +265,10 @@ export const parsearExtracto = (texto, { fuente = 'mp' } = {}) => {
       `No se reconocieron las columnas: ${faltan.join(', ')}. ` +
         'La primera línea tiene que ser el encabezado del extracto.'
     );
-    return { filas: [], columnas, errores };
+    return { filas: [], columnas, declarado, errores };
   }
 
-  const filas = lineas.slice(1).map((linea, indice) => {
+  const filas = lineas.slice(desde + 1).map((linea, indice) => {
     const campos = partir(linea, sep);
     const monto = aNumero(campos[columnas.monto]);
     const fecha = aFechaISO(campos[columnas.fecha]);
@@ -250,6 +302,7 @@ export const parsearExtracto = (texto, { fuente = 'mp' } = {}) => {
       ...base,
       fecha,
       monto,
+      saldo: columnas.saldo !== undefined ? aNumero(campos[columnas.saldo]) : null,
       ...clasificar(descripcion),
       // El signo decide, y es lo único que decide: plata que entra es un aporte,
       // plata que sale es un gasto. No hay heurística que pueda mejorar eso.
@@ -258,7 +311,84 @@ export const parsearExtracto = (texto, { fuente = 'mp' } = {}) => {
     };
   });
 
-  return { filas, columnas, errores };
+  return { filas, columnas, declarado, errores };
+};
+
+/* ============================
+   Las verificaciones (§14.3)
+   ============================
+   Las tres salen de datos que el propio resumen trae. No dependen de que le
+   creamos al parser: son la forma de que un cambio de formato se convierta en un
+   aviso claro en vez de en datos silenciosamente mal cargados. */
+
+/**
+ * Nivel 1 — el saldo corrido.
+ *
+ * Cada fila trae el saldo que quedó después de ella. Recalcularlo y compararlo
+ * atrapa **el error más peligroso de todos**: un importe mal leído. Es peligroso
+ * porque es plausible — `937.776,27` interpretado como `937,78` es un número que
+ * nadie mira dos veces, y arrastra la rendición entera.
+ */
+export const verificarSaldoCorrido = (filas, saldoInicial) => {
+  if (saldoInicial == null) return null;
+  let saldo = saldoInicial;
+  const desvios = [];
+  for (const f of filas) {
+    if (f.problema || f.monto == null) continue;
+    saldo += f.monto;
+    if (f.saldo != null && Math.abs(saldo - f.saldo) > 0.01) {
+      desvios.push({ fila: f, calculado: saldo, declarado: f.saldo });
+      saldo = f.saldo; // se resincroniza para no arrastrar el desvío a todas las siguientes
+    }
+  }
+  return { ok: desvios.length === 0, desvios, saldoFinal: saldo };
+};
+
+/**
+ * Nivel 2 — los totales del encabezado.
+ *
+ * Atrapa una fila que se perdió o se duplicó al parsear: el saldo corrido puede
+ * cerrar y aun así faltar un movimiento si el archivo venía cortado.
+ */
+export const verificarTotales = (filas, declarado) => {
+  if (!declarado) return null;
+  const utiles = filas.filter((f) => !f.problema && f.monto != null);
+  const entradas = utiles.filter((f) => f.monto > 0).reduce((s, f) => s + f.monto, 0);
+  const salidas = utiles.filter((f) => f.monto < 0).reduce((s, f) => s + f.monto, 0);
+
+  const cerca = (a, b) => a == null || b == null || Math.abs(a - b) < 0.01;
+  return {
+    ok: cerca(entradas, declarado.entradas) && cerca(salidas, declarado.salidas),
+    entradas: { extraido: entradas, declarado: declarado.entradas },
+    salidas: { extraido: salidas, declarado: declarado.salidas },
+  };
+};
+
+/**
+ * Nivel 3 — la cadena entre resúmenes.
+ *
+ * El saldo final de un mes tiene que ser el inicial del siguiente. **Atrapa un mes
+ * que falta**, que con 23 archivos es el error probable — y el único que ninguna
+ * verificación dentro de un archivo puede ver.
+ *
+ * @param {Array<{nombre: string, declarado: object}>} resumenes en orden cronológico
+ */
+export const verificarCadena = (resumenes) => {
+  const huecos = [];
+  for (let i = 1; i < resumenes.length; i += 1) {
+    const previo = resumenes[i - 1]?.declarado;
+    const actual = resumenes[i]?.declarado;
+    if (!previo || !actual) continue;
+    if (Math.abs((previo.saldoFinal ?? 0) - (actual.saldoInicial ?? 0)) > 0.01) {
+      huecos.push({
+        entre: [resumenes[i - 1].nombre, resumenes[i].nombre],
+        cierra: previo.saldoFinal,
+        abre: actual.saldoInicial,
+        diferencia: (actual.saldoInicial ?? 0) - (previo.saldoFinal ?? 0),
+      });
+    }
+  }
+  return { ok: huecos.length === 0, huecos };
 };
 
 /** Resumen del lote, para decidir sin contar a mano. */

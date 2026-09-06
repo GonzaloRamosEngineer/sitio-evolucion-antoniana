@@ -1580,45 +1580,72 @@ comillas y reconoce los encabezados.
 ⚠️ **Lo operativo que sí cambia:** hay que **generar** 23 archivos a mano en el
 panel de MercadoPago antes de importarlos. Es tedioso pero se hace una vez.
 
-#### 🔴 Paso 1, y no es escribir código: comparar los tres formatos UNA vez
+#### ✅ Paso 1 HECHO el 2026-09-06: los tres formatos, comparados
 
-La idea es del dueño del proyecto y conviene hacerla antes que nada: **tomar un
-solo período y exportarlo en `.pdf`, `.xlsx` y `.csv`, y ver qué trae cada uno.**
+Se exportó el período 10/2024 en `.pdf`, `.csv` y `.xlsx` y se compararon. **Las
+conclusiones cambian el plan y conviene no volver a discutirlas:**
 
-⚠️ **Pero el objetivo NO es confirmar que coinciden. Es descubrir en qué NO
-coinciden, porque ahí está el valor.** Hay una sospecha concreta y es importante:
+**1. El XLSX no aporta nada.** Sus celdas son `inlineStr` con **los valores como
+texto**, en el mismo formato argentino que el CSV: mismas 5 columnas, mismas 27
+filas, **0 diferencias**. Traería una librería de parseo a cambio de nada.
+**El CSV gana.**
 
-**El PDF muestra los montos NETOS.** En el resumen de octubre de 2024 aparece
-`Liquidación de dinero … $ 3.451,60`. Eso es lo que **entró a la cuenta** — la
-comisión que MercadoPago ya se descontó **no figura en ninguna parte del PDF**.
+**2. ⚠️ NO hay bruto / comisión / neto. La hipótesis era equivocada.** Se sospechó
+que el CSV abriría la comisión de la pasarela, que en el PDF es invisible. No lo
+hace: la columna se llama literalmente **`TRANSACTION_NET_AMOUNT`**, y no hay
+ninguna de comisión ni de bruto.
 
-Si el CSV o el XLSX abren bruto / comisión / neto —que es lo habitual en los
-reportes de actividad—, entonces **hay una categoría entera de «gastos hormiga»
-que solo se ve ahí**: la comisión de la pasarela. Para una rendición es la
-diferencia entre decir
+> **La comisión de MercadoPago no es visible en el resumen de cuenta, en ningún
+> formato.** Si algún día se la quiere rendir, hay que buscar **otro reporte**
+> —Liberaciones o Ventas—, que es un trabajo distinto y todavía sin explorar.
 
-> «entró $3.451,60»
+**3. ✅ El CSV trae los totales declarados**, y ahí está la mejor noticia: el
+archivo tiene **dos bloques**.
 
-y poder decir
+```
+INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE
+1.698.607,63;244.795,30;-1.022.151,63;921.251,30
 
-> «se cobró $4.000, la pasarela se llevó $548,40, entró $3.451,60».
+RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE
+01-10-2024;Liquidación de dinero ;88205823663;6.845,60;1.705.453,23
+```
 
-Es exactamente la preocupación que originó todo esto, y el PDF no la puede
-responder.
+O sea que **las tres verificaciones salen del CSV solo** — el PDF no hace falta
+ni siquiera para el checksum:
 
-**Qué anotar de ese período, en una tabla, para decidir con evidencia:**
+| Nivel | Sale de | Verificado con el archivo real |
+|---|---|---|
+| 1 · saldo corrido | `PARTIAL_BALANCE` | ✅ 27 movimientos, **0 desvíos** |
+| 2 · totales del período | el bloque de arriba | ✅ entradas y salidas **cuadran al centavo** |
+| 3 · cadena entre meses | `FINAL_BALANCE` vs `INITIAL_BALANCE` del siguiente | listo para usar, falta un segundo archivo |
 
-| A comparar | Por qué importa |
-|---|---|
-| Cantidad de filas en cada formato | Si el CSV trae más, trae movimientos que el PDF agrupa u oculta |
-| ¿Aparecen bruto / comisión / neto por separado? | Es la pregunta que decide si se ven las comisiones |
-| ¿El CSV trae los totales del encabezado (`Saldo inicial`, `Entradas`, `Salidas`, `Saldo final`)? | Son la **suma de control** de los tres niveles de arriba. Si el CSV no los trae, quizá convenga **usar el CSV para los datos y el PDF solo para el checksum** |
-| ¿Hay columna de saldo corrido? | Habilita el nivel 1 de verificación |
-| ¿Los id de operación son los mismos entre formatos? | De eso depende que `referencia_externa` sea estable, y con ella la idempotencia entera |
-| Suma de entradas y de salidas en cada formato | Si no dan igual entre sí, uno de los dos esconde algo |
+**4. ⚠️ Los encabezados del CSV vienen en INGLÉS**, aunque el PDF del mismo
+resumen esté en castellano. La primera versión del parser era solo castellana y
+**no reconocía ni la descripción ni el id** — y el id es el que da la
+idempotencia, así que habría cargado los 27 movimientos **sin referencia** y
+reimportar habría duplicado todo. Ya está corregido, con test.
 
-**El resultado de este paso es una decisión escrita**, no código: qué formato es
-la fuente, y si hace falta el PDF además para verificar.
+#### Lo que se construyó con esa evidencia, el mismo día
+
+- **`parsearExtracto` lee el CSV real**: los dos bloques, los encabezados en
+  inglés, y devuelve `declarado` con los cuatro totales. Verificado contra el
+  archivo: **27 filas, 0 problemas, 27 con referencia**.
+- **`verificarSaldoCorrido`**, **`verificarTotales`** y **`verificarCadena`**, las
+  tres puras y testeadas — incluido el caso que motivó todo: un importe leído como
+  `684,56` en vez de `6.845,60` hace saltar el nivel 1.
+- **La pantalla no deja importar si no cuadra.** El botón se deshabilita y explica
+  qué no da. Es la regla de §14.3 aplicada: sin eso, esto sería un acto de fe.
+
+#### Lo que queda de §14.3
+
+- 🟡 **Subir archivos en vez de pegar.** Es un `FileReader` sobre `.csv`, sin
+  dependencias — el parseo ya funciona. Con 23 archivos, arrastrarlos es la
+  diferencia entre hacerlo y abandonar.
+- 🟡 **La verificación de cadena en la pantalla.** La función existe y está
+  testeada; falta que la UI acepte varios archivos y los ordene por período para
+  poder decir «entre noviembre y enero falta un mes».
+- 🟡 **Avisar de los movimientos anteriores a `destinos.fecha_inicio`.** Sigue sin
+  resolverse y sigue siendo un agujero real.
 
 #### Lo que hay que decidir después
 
@@ -1633,20 +1660,28 @@ la fuente, y si hace falta el PDF además para verificar.
    dónde ponerlo (`tipo_comprobante = extracto`, bucket privado). Guardarlo hace
    auditable la importación; no guardarlo deja el «de dónde salió esto» en el aire.
 
-#### ⚠️ Deuda chica que apareció al cargar el saldo inicial (2026-09-06)
+#### ✅ Saldada: el saldo inicial ya se puede marcar (2026-09-06)
 
-**El ABM de aportes no tiene campo para `referencia_externa`.** El saldo inicial
-del fondo se cargó sin ella porque no hay dónde escribirla — se recomendó un
-valor que la pantalla no permite ingresar.
+El ABM de aportes no tenía campo para `referencia_externa`, así que el saldo
+inicial del fondo se cargó sin ella — se había recomendado un valor que la
+pantalla no permitía ingresar.
 
-En NULL no choca con nada, así que no urge. Pero exponerla como texto libre
-**sería un error**: alguien podría escribir `mp:90165423466:-5626.66` y bloquear
-para siempre la importación de ese movimiento.
+**No se resolvió agregando un campo de texto, y el motivo importa:**
+`referencia_externa` es la clave de idempotencia de las importaciones. Dejarla
+escribir a mano habría permitido poner `mp:90165423466:-5626.66` —por copiar un
+id del extracto, sin mala intención— y **ese movimiento no se podría importar
+nunca más**: la base lo rechazaría como duplicado de una fila que no tiene nada
+que ver. Un gasto que desaparece en silencio.
 
-**La forma correcta es no exponerla:** un tilde *«es el saldo inicial de este
-destino»* que la derive sola (`saldo-inicial:<slug>`). Encierra un concepto
-contable real —un libro que arranca a mitad de la vida de una entidad necesita
-una fila que diga «acá había esto»— y no deja escribir referencias arbitrarias.
+En su lugar hay un tilde **«es el saldo inicial de este destino»** que la deriva:
+`saldo-inicial:<slug>`. Nunca puede chocar con una `mp:*`, y el UNIQUE de la
+columna garantiza gratis lo que el dominio ya pedía: **un solo saldo inicial por
+destino**. Hay un test que fija que la referencia no puede tomar forma de
+importación aunque el formulario traiga basura.
+
+**Y el concepto que encierra generaliza:** un libro que arranca a mitad de la vida
+de una entidad necesita una fila que diga «acá había esto». Cualquier cliente que
+empiece a usar esto con plata ya en la cuenta la va a necesitar.
 
 #### Lo que ya está hecho y se reusa
 

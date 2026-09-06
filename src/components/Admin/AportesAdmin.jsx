@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,7 @@ const formVacio = () => ({
   notas: '',
   tipo_comprobante: '',
   comprobante_numero: '',
+  es_saldo_inicial: false,
 });
 
 const aFormulario = (a) => ({
@@ -83,6 +85,7 @@ const aFormulario = (a) => ({
   notas: a.notas ?? '',
   tipo_comprobante: a.tipo_comprobante ?? '',
   comprobante_numero: a.comprobante_numero ?? '',
+  es_saldo_inicial: String(a.referencia_externa ?? '').startsWith('saldo-inicial:'),
 });
 
 const AportesAdmin = () => {
@@ -181,7 +184,11 @@ const AportesAdmin = () => {
     if (Object.keys(encontrados).length > 0) return;
 
     setGuardando(true);
-    const payload = aPayloadAporte(form);
+    // El slug del destino elegido: con él se deriva la referencia del saldo
+    // inicial. Se busca acá y no dentro de `aPayloadAporte` para que esa función
+    // siga siendo pura y testeable sin la lista de destinos.
+    const destinoSlug = destinos.find((d) => d.id === form.destino_id)?.slug;
+    const payload = aPayloadAporte(form, destinoSlug);
     // La capa de datos NO lanza: se mira `error`, no se envuelve en try/catch.
     const { error: fallo } = editando
       ? await updateAporte(editando.id, payload)
@@ -299,6 +306,11 @@ const AportesAdmin = () => {
               >
                 <span className="text-xs text-gray-500 tabular-nums w-24 shrink-0">
                   {soloFecha(a.fecha)}
+                  {String(a.referencia_externa ?? '').startsWith('saldo-inicial:') && (
+                    <span className="ml-2 rounded-full bg-brand-gold/20 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-brand-dark">
+                      Saldo inicial
+                    </span>
+                  )}
                   {(a.tipo_comprobante || a.tiene_comprobante)
                     ? ` · ${describirComprobante(a)}`
                     : ''}
@@ -508,6 +520,33 @@ const AportesAdmin = () => {
                       setForm((f) => ({ ...f, comprobante_numero: e.target.value }))}
                     placeholder="Ej: escritura N° 123"
                   />
+                </div>
+              </div>
+
+              {/* EL SALDO INICIAL — la fila que dice "acá había esto".
+                  Va acá y no como un campo de texto de `referencia_externa` a
+                  propósito: esa columna es la clave de idempotencia de las
+                  importaciones, y dejarla escribir a mano permitiría poner una
+                  referencia `mp:*` que bloquee para siempre la importación de un
+                  movimiento real. Derivada del destino, nunca puede chocar. */}
+              <div className="mb-4 flex items-start gap-3 rounded-sm border border-brand-dark/15 bg-brand-sand p-3">
+                <Checkbox
+                  id="aporte-saldo-inicial"
+                  checked={form.es_saldo_inicial}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({ ...f, es_saldo_inicial: v === true }))}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="aporte-saldo-inicial" className="cursor-pointer">
+                    Es el saldo inicial de este destino
+                  </Label>
+                  <p className="mt-1 text-xs text-brand-dark/60 leading-relaxed">
+                    Marcalo si esta fila representa la plata que ya había cuando el destino
+                    empezó a rendirse, y no un aporte nuevo. Sin ella, un destino que ya
+                    tenía fondos arranca con solo egresos y el saldo queda en negativo.
+                    Solo puede haber uno por destino.
+                  </p>
                 </div>
               </div>
 
