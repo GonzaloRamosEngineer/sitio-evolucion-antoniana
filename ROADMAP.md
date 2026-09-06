@@ -99,6 +99,10 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
    `saldo-inicial:fondo-convenio-2024``, que a propósito **no** empieza con `mp:` para que
    el importador nunca pueda chocar con ella. Comprobante: el acta, Foja E 00405399.
    **b)** los 23 meses de extractos, con el importador.
+   ✅ **Hecho el 2026-09-06:** el saldo inicial está cargado ($1.000.000, 10/10/2024,
+   escritura Foja E 00405399). ⚠️ **Falta adjuntarle el PDF del acta** —el comprobante
+   figura declarado pero sin archivo— y quedó **sin `referencia_externa`** porque el ABM
+   no tiene ese campo (ver §14.3).
    ⚠️ **Al importar octubre de 2024, destildar las dos filas del 10/10** —la transferencia
    de $937.776,27 al club y su impuesto de $5.626,66—: son **anteriores** a que el fondo
    existiera. El millón ya está neto de las dos, y cargarlas sería contarlas dos veces.
@@ -1562,32 +1566,87 @@ verificación no son un extra: **son lo que convierte un cambio de layout en un
 aviso claro en vez de en datos silenciosamente mal cargados.** Sin ellos, esto no
 se debería construir.
 
-⚠️ **Y una pregunta previa que puede ahorrar el trabajo entero:** ¿MercadoPago
-deja exportar la actividad en **CSV o Excel**? Si sí, ese es el camino: el
-parseo es trivial y no hay dependencia nueva. **Averiguar eso antes de escribir
-una línea de pdf.js.** El PDF es el formato más difícil de los que puede haber, y
-se elegiría solo si es el único que la entidad tiene a mano.
+✅ **RESPONDIDO EL 2026-09-06, y cambia el plan: MercadoPago SÍ exporta.** En
+*Reportes → Resumen de cuenta*, cada período ofrece **`.pdf`, `.xlsx` y `.csv`**.
+El PDF viene pre-generado («Abrir») y los otros dos se generan a pedido
+(«Generar»).
 
-**Costo de la dependencia:** `pdfjs-dist` pesa alrededor de 1 MB. El chunk
-principal de este sitio hoy son ~174 KB, así que **no puede entrar al bundle
-general**: va con `import()` dinámico dentro de la pantalla de importación, que
-es de admin y la usa una persona cada tanto. Si termina en el bundle público,
-el sitio se vuelve seis veces más pesado para alguien que solo quiere leer una
-noticia.
+**Entonces no se parsea PDF.** `pdfjs-dist` queda descartado y con él su ~1 MB de
+dependencia —contra los ~174 KB del chunk principal de este sitio— y todo el
+riesgo de que un cambio de layout rompa la extracción. Leer un CSV es trivial y
+`src/lib/importarMovimientos.js` **ya lo hace**: parte por separador, respeta
+comillas y reconoce los encabezados.
 
-#### Lo que hay que decidir antes de empezar
+⚠️ **Lo operativo que sí cambia:** hay que **generar** 23 archivos a mano en el
+panel de MercadoPago antes de importarlos. Es tedioso pero se hace una vez.
 
-1. **¿CSV/Excel o PDF?** Ver arriba. Cambia todo el trabajo.
-2. **¿Un destino por archivo o por movimiento?** Hoy el lote entero va a un
+#### 🔴 Paso 1, y no es escribir código: comparar los tres formatos UNA vez
+
+La idea es del dueño del proyecto y conviene hacerla antes que nada: **tomar un
+solo período y exportarlo en `.pdf`, `.xlsx` y `.csv`, y ver qué trae cada uno.**
+
+⚠️ **Pero el objetivo NO es confirmar que coinciden. Es descubrir en qué NO
+coinciden, porque ahí está el valor.** Hay una sospecha concreta y es importante:
+
+**El PDF muestra los montos NETOS.** En el resumen de octubre de 2024 aparece
+`Liquidación de dinero … $ 3.451,60`. Eso es lo que **entró a la cuenta** — la
+comisión que MercadoPago ya se descontó **no figura en ninguna parte del PDF**.
+
+Si el CSV o el XLSX abren bruto / comisión / neto —que es lo habitual en los
+reportes de actividad—, entonces **hay una categoría entera de «gastos hormiga»
+que solo se ve ahí**: la comisión de la pasarela. Para una rendición es la
+diferencia entre decir
+
+> «entró $3.451,60»
+
+y poder decir
+
+> «se cobró $4.000, la pasarela se llevó $548,40, entró $3.451,60».
+
+Es exactamente la preocupación que originó todo esto, y el PDF no la puede
+responder.
+
+**Qué anotar de ese período, en una tabla, para decidir con evidencia:**
+
+| A comparar | Por qué importa |
+|---|---|
+| Cantidad de filas en cada formato | Si el CSV trae más, trae movimientos que el PDF agrupa u oculta |
+| ¿Aparecen bruto / comisión / neto por separado? | Es la pregunta que decide si se ven las comisiones |
+| ¿El CSV trae los totales del encabezado (`Saldo inicial`, `Entradas`, `Salidas`, `Saldo final`)? | Son la **suma de control** de los tres niveles de arriba. Si el CSV no los trae, quizá convenga **usar el CSV para los datos y el PDF solo para el checksum** |
+| ¿Hay columna de saldo corrido? | Habilita el nivel 1 de verificación |
+| ¿Los id de operación son los mismos entre formatos? | De eso depende que `referencia_externa` sea estable, y con ella la idempotencia entera |
+| Suma de entradas y de salidas en cada formato | Si no dan igual entre sí, uno de los dos esconde algo |
+
+**El resultado de este paso es una decisión escrita**, no código: qué formato es
+la fuente, y si hace falta el PDF además para verificar.
+
+#### Lo que hay que decidir después
+
+1. **¿Un destino por archivo o por movimiento?** Hoy el lote entero va a un
    destino. Para 23 meses de una cuenta institucional probablemente alcance, pero
    conviene confirmarlo antes que reimputar cientos de filas después (§10.11).
-3. **¿Qué hacer con los movimientos anteriores a `destinos.fecha_inicio`?**
+2. **¿Qué hacer con los movimientos anteriores a `destinos.fecha_inicio`?**
    ⚠️ **Hoy nada lo impide y es un agujero real**: pegar un resumen de septiembre
    de 2024 cargaría movimientos previos a que el fondo existiera. Como mínimo,
    avisar; probablemente, destildarlos por defecto.
-4. **¿Se guarda el archivo?** Un resumen de cuenta es respaldo documental y ya hay
+3. **¿Se guarda el archivo?** Un resumen de cuenta es respaldo documental y ya hay
    dónde ponerlo (`tipo_comprobante = extracto`, bucket privado). Guardarlo hace
    auditable la importación; no guardarlo deja el «de dónde salió esto» en el aire.
+
+#### ⚠️ Deuda chica que apareció al cargar el saldo inicial (2026-09-06)
+
+**El ABM de aportes no tiene campo para `referencia_externa`.** El saldo inicial
+del fondo se cargó sin ella porque no hay dónde escribirla — se recomendó un
+valor que la pantalla no permite ingresar.
+
+En NULL no choca con nada, así que no urge. Pero exponerla como texto libre
+**sería un error**: alguien podría escribir `mp:90165423466:-5626.66` y bloquear
+para siempre la importación de ese movimiento.
+
+**La forma correcta es no exponerla:** un tilde *«es el saldo inicial de este
+destino»* que la derive sola (`saldo-inicial:<slug>`). Encierra un concepto
+contable real —un libro que arranca a mitad de la vida de una entidad necesita
+una fila que diga «acá había esto»— y no deja escribir referencias arbitrarias.
 
 #### Lo que ya está hecho y se reusa
 
