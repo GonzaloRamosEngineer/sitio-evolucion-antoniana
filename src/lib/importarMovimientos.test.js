@@ -13,7 +13,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   aNumero, aFechaISO, clasificar, referenciaDe, parsearExtracto, resumirLote,
-  verificarSaldoCorrido, verificarTotales, verificarCadena, consolidarArchivos, anterioresA, delDiaDelInicio,
+  verificarSaldoCorrido, verificarTotales, verificarCadena, consolidarArchivos,
+  anterioresA, delDiaDelInicio, conceptoGenerico,
 } from '@/lib/importarMovimientos';
 
 // Extracto real, recortado. El encabezado es el que trae MercadoPago.
@@ -388,5 +389,35 @@ describe('delDiaDelInicio — el borde que la fecha sola no resuelve', () => {
 
   it('no marca nada sin fecha de inicio', () => {
     expect(delDiaDelInicio(filas, null).size).toBe(0);
+  });
+});
+
+describe('conceptoGenerico — lo que no pueda ser público no se escribe en un gasto', () => {
+  it('🔒 saca el nombre de la contraparte, que es lo que se publicaría', () => {
+    expect(conceptoGenerico('Transferencia enviada Maria Alejandra Torrado', 'Maria Alejandra Torrado'))
+      .toBe('Transferencia enviada');
+  });
+
+  it('deja intacto lo que no tiene contraparte', () => {
+    expect(conceptoGenerico('Impuesto por extracción', null)).toBe('Impuesto por extracción');
+    expect(conceptoGenerico('Débito por deuda Facturas vencidas de Mercado Libre', null))
+      .toBe('Débito por deuda Facturas vencidas de Mercado Libre');
+  });
+
+  it('no devuelve vacío: `gastos.concepto` es NOT NULL y una fila sin texto no se lee', () => {
+    expect(conceptoGenerico('Juan Perez', 'Juan Perez')).toBe('Juan Perez');
+  });
+
+  it('🔒 la fila parseada trae el concepto ya sin nombre', () => {
+    const { filas } = parsearExtracto(
+      [
+        'Fecha\tDescripción\tID\tValor\tSaldo',
+        '14-10-2024\tTransferencia enviada Maria Alejandra Torrado\t333\t$ -20.000,00\t$ 5.000,00',
+      ].join('\n')
+    );
+    expect(filas[0].concepto).toBe('Transferencia enviada');
+    // La contraparte sigue disponible para la previsualización y para `aportes`,
+    // que NO tiene lectura pública. Lo que cambia es qué va a `gastos`.
+    expect(filas[0].contraparte).toBe('Maria Alejandra Torrado');
   });
 });

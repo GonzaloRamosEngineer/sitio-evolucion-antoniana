@@ -103,9 +103,21 @@ export const importarLote = async ({ filas, destinoId }) => {
       // guardarlo negativo haría que la suma de la rendición se reste sola.
       monto: Math.abs(f.monto),
       fecha: f.fecha,
-      concepto: f.descripcion || 'Movimiento sin descripción',
+      // ⚠️ EL CONCEPTO GENÉRICO, NO LA DESCRIPCIÓN LITERAL DEL BANCO.
+      // `gastos` publica la fila ENTERA cuando se publica, y la migración
+      // `20260816150000` dejó la regla escrita: *lo que no pueda ser público NO
+      // se escribe en un gasto*. La descripción del extracto trae el nombre de
+      // la contraparte —«Transferencia enviada Maria Alejandra Torrado»—, así
+      // que meterla acá dejaba el nombre de un particular a un click de ser
+      // público, y repetido en `proveedor`.
+      concepto: f.concepto || f.descripcion || 'Movimiento sin descripción',
       categoria: f.categoria || null,
-      proveedor: f.contraparte || null,
+      // `proveedor` también es público, así que NO se completa solo con la
+      // contraparte del extracto: en una cuenta bancaria eso es, la mayoría de
+      // las veces, el nombre de una persona. Queda para que alguien escriba a
+      // mano el proveedor que la entidad SÍ quiere nombrar (un comercio, un
+      // estudio), como parte de la revisión previa a publicar.
+      proveedor: null,
       referencia_externa: f.referencia,
       carga_origen: 'importacion',
       // ⚠️ `publicado: false`. Un extracto entra al libro pero NO se publica

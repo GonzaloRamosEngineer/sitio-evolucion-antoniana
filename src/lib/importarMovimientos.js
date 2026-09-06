@@ -101,6 +101,37 @@ const contraparte = (descripcion) =>
     .replace(/^.*?transferencia (enviada|recibida)\s*/i, '')
     .trim() || null;
 
+/**
+ * La descripción del banco SIN el nombre de la contraparte.
+ *
+ * ⚠️ POR QUÉ ESTO NO ES COSMÉTICA. `gastos` tiene lectura pública de las filas
+ * publicadas, y publicar un gasto **lo publica entero** — concepto, categoría,
+ * proveedor y notas. La migración `20260816150000` dejó la regla escrita:
+ *
+ *     lo que no pueda ser público NO se escribe en un gasto.
+ *
+ * El importador la estaba violando: metía la descripción literal del extracto
+ * como `concepto` y la contraparte como `proveedor`, así que «Transferencia
+ * enviada Maria Alejandra Torrado» quedaba a un click de ser público, con el
+ * nombre repetido en los dos campos. Con 23 meses de extractos eso son cientos
+ * de filas, y basta que alguien publique una sin leerla.
+ *
+ * El nombre no se pierde: `referencia_externa` (`mp:<id>:<monto>`) apunta a la
+ * línea exacta del extracto, que es el respaldo documental de todos modos.
+ *
+ * `aportes` es otra historia y por eso ahí sí se guarda el nombre: **no tiene
+ * policy de lectura pública**, solo el propio aportante y la comisión.
+ */
+export const conceptoGenerico = (descripcion, contraparte) => {
+  const d = String(descripcion ?? '').trim();
+  if (!contraparte) return d;
+  const sin = d.endsWith(contraparte) ? d.slice(0, -contraparte.length).trim() : d;
+  // Si sacar el nombre deja la cadena vacía, se devuelve la original: un concepto
+  // en blanco es peor que uno con nombre, porque la fila deja de ser legible y
+  // `concepto` es NOT NULL.
+  return sin || d;
+};
+
 export const clasificar = (descripcion) => {
   for (const regla of REGLAS) {
     if (regla.patron.test(descripcion ?? '')) {
@@ -287,23 +318,29 @@ export const parsearExtracto = (texto, { fuente = 'mp' } = {}) => {
       // Sin id no hay clave de idempotencia, y sin clave reimportar duplica. Se
       // deja entrar igual, marcado: a veces el extracto no la trae y cargarlo a
       // mano después es peor. Pero la persona tiene que saberlo.
+      const clase = clasificar(descripcion);
       return {
         ...base,
         fecha,
         monto,
-        ...clasificar(descripcion),
+        ...clase,
+        concepto: conceptoGenerico(descripcion, clase.contraparte),
         tipo: monto > 0 ? 'aporte' : 'gasto',
         referencia: null,
         aviso: 'Sin id de operación: si reimportás este período, esta fila se va a duplicar.',
       };
     }
 
+    const clase = clasificar(descripcion);
     return {
       ...base,
       fecha,
       monto,
       saldo: columnas.saldo !== undefined ? aNumero(campos[columnas.saldo]) : null,
-      ...clasificar(descripcion),
+      ...clase,
+      // Sin el nombre de la contraparte: es lo que va a `gastos.concepto`, que es
+      // público en cuanto alguien publica la fila. Ver `conceptoGenerico`.
+      concepto: conceptoGenerico(descripcion, clase.contraparte),
       // El signo decide, y es lo único que decide: plata que entra es un aporte,
       // plata que sale es un gasto. No hay heurística que pueda mejorar eso.
       tipo: monto > 0 ? 'aporte' : 'gasto',

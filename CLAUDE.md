@@ -162,6 +162,14 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   totales, **por archivo**) fallan cuando lo leído *está mal* y **bloquean**; el nivel 3
   (cadena entre resúmenes) falla cuando *falta un mes* y **solo avisa** — importar octubre y
   diciembre sin noviembre es incompleto, no incorrecto.
+  ⚠️ **El importador NO escribe nombres en `gastos`.** `gastos` publica la fila **entera**
+  al publicarse, y la migración `20260816150000` fijó la regla: *lo que no pueda ser
+  público no se escribe en un gasto*. La descripción del extracto trae la contraparte
+  («Transferencia enviada Fulano»), así que va `conceptoGenerico()` —la descripción sin el
+  nombre— y `proveedor` queda **null** para que alguien escriba a mano el proveedor que la
+  entidad sí quiere nombrar. El nombre no se pierde: `referencia_externa` apunta a la línea
+  exacta del extracto. ⚠️ En `aportes` sí se guarda, y es correcto: **esa tabla no tiene
+  policy de lectura pública**, solo el propio aportante y la comisión.
   ⚠️ **`destinos.fecha_inicio` destilda lo anterior pero NO alcanza el borde.** Un fondo
   puede arrancar a mitad de un día: los movimientos de ese día se **marcan** con
   `delDiaDelInicio()` y no se destildan, porque pueden ser igual de bien los primeros del
@@ -249,7 +257,7 @@ cambió el patrón.
 
 Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **441 tests en 35 archivos** (remedido el 2026-09-06 con `npm test`; más los del
+cuyo arreglo es react-router v7 —un major—. **445 tests en 35 archivos** (remedido el 2026-09-06 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
