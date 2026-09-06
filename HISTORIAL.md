@@ -3409,6 +3409,73 @@ archivo real y mirar el número**.
 
 ---
 
+### 14.4 — El mismo pozo, dos veces: `loading` desmontaba la aplicación (2026-09-06)
+
+Reporte del dueño: «cada vez que cambio de pestaña o de programa y vuelvo, **se me
+recarga**». Pasaba en todo el sitio, no en una pantalla.
+
+#### Lo que se descartó, con evidencia y no por descarte
+
+| Sospechoso | Por qué no era |
+|---|---|
+| TanStack Query | `refetchOnWindowFocus: false` en `queryClient.js`, sin overrides en ningún hook |
+| Código propio | No hay un solo `visibilitychange`, `focus` ni `location.reload` en `src/`. Sin service worker |
+| Supabase disparando en cada foco | ⚠️ **Se creyó al principio y es FALSO en auth-js 2.74**: el `SIGNED_IN` al volver a la pestaña vive en la rama `__isUserNotAvailableProxy`, que requiere `userStorage` y este proyecto no lo configura |
+
+#### El bug que sí estaba
+
+`ProtectedRoute` devuelve un spinner **en lugar de** `children` mientras `loading` es
+true. O sea que cada vez que el `AuthProvider` lo ponía en true, **la pantalla
+protegida entera se desmontaba y se volvía a montar**: formulario a medio llenar,
+lote de movimientos analizado, scroll. Desde afuera es indistinguible de una recarga
+de página, y por eso no se diagnostica mirando la pantalla.
+
+Y lo hacía con **cualquier** evento de `onAuthStateChange`, incluidos los que no
+cambian la identidad de nadie: `INITIAL_SESSION` (que además llega duplicado, porque
+`syncSession` lo dispara a mano además de Supabase) y `TOKEN_REFRESHED`.
+
+⚠️ **ES LA SEGUNDA VEZ QUE ESTE ARCHIVO PISA EL MISMO POZO, Y HABÍA UNA NOTA
+ESCRITA.** Ya se había quitado un listener propio de `visibilitychange`
+«porque desmontaba las páginas protegidas y hacía perder formularios a medio
+completar». **Se quitó el disparador y se dejó el mecanismo**, así que el síntoma
+volvió por otra puerta y más espaciado. La guarda nueva es por id de usuario: un
+evento que no cambia quién está logueado no toca `loading` ni relee el perfil.
+
+**La lección, que generaliza:** cuando se arregla un síntoma sacando *quién lo
+dispara*, hay que preguntarse qué más puede disparar el mismo mecanismo. Una nota
+que explica el daño y no lo cierra es una trampa: la próxima persona la lee, ve que
+«ya se resolvió» y no mira el mecanismo.
+
+#### ⚠️ Y el control negativo salvó el test
+
+Con el arreglo revertido, **3 de los 4 tests nuevos seguían en verde.** Con el perfil
+resolviendo en el mismo microtask, React agrupa el `loading` true→false y **el
+desmontaje nunca llega a renderizarse**. En el navegador hay un viaje de red en el
+medio, así que sí ocurre. El mock ahora demora un tick, y con eso 2 de 4 fallan como
+corresponde.
+
+Es exactamente la regla de §B —«una verificación tiene que poder fallar»— y esta vez
+el costo de no correrla habría sido **un test que fija lo contrario de lo que dice
+fijar**, dando permiso para reintroducir el bug una tercera vez.
+
+Segundo hallazgo del mismo control: `useToast` devuelve una `toast` **estable** (es
+función de módulo), pero el mock la creaba nueva por render. Eso hacía que el efecto
+se resuscribiera y llamara a `syncSession()` en cada render — el test estaba midiendo
+su propio mock.
+
+#### Lo que quedó sin confirmar
+
+`TOKEN_REFRESHED` sale solo cuando faltan menos de **90s** para que venza el access
+token (`EXPIRY_MARGIN_MS` = 3 × 30s en auth-js 2.74), o sea **una vez por hora**. El
+reporte era «todo el tiempo», así que **el arreglo puede no explicar del todo el
+síntoma reportado**. Lo que sí quedó probado con la consola del dueño es que **no era
+una recarga real**: los listeners sobrevivieron a dos ciclos de ocultar/mostrar y
+nunca se disparó `beforeunload`, o sea que el contexto de la página nunca se destruyó
+(descarta el Ahorro de memoria de Chrome). **La confirmación pendiente es volver a la
+pestaña después de más de una hora**, que es cuando el evento culpable existe.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en

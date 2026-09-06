@@ -91,7 +91,17 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   - Una query con `enabled: false` **queda en `isPending`**. Si calculás un `loading` solo con `isPending`, la pantalla se cuelga en el spinner cuando la query está deshabilitada a propósito (p. ej. Dashboard sin sesión). Combinalo con la condición del `enabled`: `Boolean(userId) && query.isPending`.
   - Para un detalle que se llega desde un listado ya migrado, resolvelo con un `select` sobre el listado cacheado en vez de una query nueva (ver `PartnerDetailPage`): la navegación queda instantánea. Query propia solo si el detalle se puede abrir directo desde un link (ver `useNewsItem`), y anidá la clave bajo la del listado para que una invalidación alcance a los dos.
   - Un componente que use estos hooks necesita `QueryClientProvider` en sus tests (ver `PartnersAdmin.test.jsx`): cliente nuevo por caso y `retry: false`.
-- **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
+- **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`.
+  ⚠️ **`loading` DESMONTA LA APLICACIÓN: solo puede moverse cuando cambia QUIÉN está
+  logueado.** `ProtectedRoute` devuelve un spinner *en lugar de* `children` mientras es
+  true, así que ponerlo en true tira abajo la pantalla protegida entera — formulario a
+  medio llenar, lote de movimientos analizado, scroll — y desde afuera se ve idéntico a
+  una recarga de página. `onAuthStateChange` emite eventos que **no** cambian la
+  identidad (`INITIAL_SESSION`, que además llega duplicado, y `TOKEN_REFRESHED`), y hasta
+  el 2026-09-06 todos ellos lo movían. **Este archivo pisó el mismo pozo dos veces**: la
+  primera se quitó un listener de `visibilitychange` —el disparador— y se dejó el
+  mecanismo. La guarda por id de usuario y `src/hooks/useAuth.test.jsx` lo cierran; ver
+  `HISTORIAL.md` §14.4. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
 - **Acceso del socio (aporte → acceso, ROADMAP §10)**: la regla es *dos maneras de aportar (cuota o donación), una sola consecuencia (acceso a beneficios)*. Vive **en SQL**: `aportes` es el libro (escritura solo `service_role`, alimentado por los triggers de `memberships`/`donations`), y `tiene_acceso()` / `mi_acceso()` / `mi_antiguedad()` son la única fuente de la regla. Desde el front se consulta por RPC con `src/api/accesoApi.js` + `useMiAcceso()`; las reglas de presentación (bloqueo, estados, formato) están en `src/lib/acceso.js` y **no se duplican en las páginas**. `/carnet` es la credencial del socio. ⚠️ El bloqueo de un beneficio es **UX, no seguridad**: `benefits.codigo` sigue siendo público (ver la limitación en ROADMAP §12.8).
 - **Condición institucional (ROADMAP §10.1.a) — NO es el acceso**: `miembros` +
   `categorias_miembro` + `reglas_membresia`. Son **dos preguntas distintas** y el sistema
@@ -239,7 +249,7 @@ cambió el patrón.
 
 Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **434 tests en 33 archivos** (remedido el 2026-09-06 con `npm test`; más los del
+cuyo arreglo es react-router v7 —un major—. **438 tests en 34 archivos** (remedido el 2026-09-06 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí

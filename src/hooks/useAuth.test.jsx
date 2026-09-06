@@ -101,8 +101,11 @@ beforeEach(() => {
 describe('AuthProvider — `loading` solo se mueve si cambia la identidad', () => {
   it('🔒 TOKEN_REFRESHED no desmonta la pantalla protegida', async () => {
     montar();
-    await waitFor(() => expect(screen.getByText('pantalla protegida')).toBeInTheDocument());
-    expect(montajes).toBe(1);
+    // Se espera POR EL CONTADOR y no por el texto: el texto aparece al commitear
+    // el render y `montajes` se incrementa recién en el efecto, así que bajo carga
+    // `waitFor` del texto puede resolver con el contador todavía en 0. Pasó al
+    // correr la suite completa.
+    await waitFor(() => expect(montajes).toBe(1));
 
     // Supabase lo emite solo cuando falta menos de 90s para que venza el access
     // token (EXPIRY_MARGIN_MS), o sea una vez por hora. Basta una para perder un
