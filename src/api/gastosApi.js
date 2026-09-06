@@ -21,11 +21,14 @@
 //     `tiene_comprobante`, para que la ausencia sea visible en vez de invisible.
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult, attempt } from '@/lib/dataResult';
+import {
+  BUCKET_COMPROBANTES, adjuntarComprobante, desadjuntarComprobante,
+} from '@/lib/comprobantes';
 
 // Se reusa el bucket de la Comisión en vez de crear uno nuevo: sus cuatro
 // policies ya restringen todo a la comisión, así que el comprobante queda
 // protegido sin escribir una policy de storage más.
-const BUCKET = 'comision-docs';
+const BUCKET = BUCKET_COMPROBANTES;
 const PREFIJO = 'gastos';
 
 /** Fecha de hoy en `YYYY-MM-DD`, que es lo que espera un `<input type="date">`. */
@@ -58,6 +61,10 @@ export const aPayloadGasto = (f) => ({
   monto: Number(f.monto),
   fecha: f.fecha,
   categoria: f.categoria.trim() || null,
+  // Declarar QUÉ clase de comprobante es (20260906120000). Vacío -> null:
+  // no declararlo es válido y distinto de declarar 'otro'.
+  tipo_comprobante: f.tipo_comprobante || null,
+  comprobante_numero: (f.comprobante_numero || '').trim() || null,
   proveedor: f.proveedor.trim() || null,
   notas: f.notas.trim() || null,
   publicado: Boolean(f.publicado),
@@ -121,60 +128,28 @@ export const setPublicado = async (id, publicado) =>
 /* ============================
    Comprobante
    ============================ */
-const nombreSeguro = (name) => (name || 'archivo').replace(/[^\w.-]+/g, '_');
-
 /**
- * Adjunta el comprobante: sube el archivo y recién después lo registra.
+ * Adjunta el comprobante de un gasto.
  *
- * Si el UPDATE falla, se borra el archivo recién subido. Sin esa limpieza el
- * bucket junta archivos huérfanos que nadie sabe a qué gasto pertenecían — el
- * mismo cuidado que ya tiene `uploadVersion` en documentsApi.
+ * El mecanismo —y sobre todo el ORDEN de las operaciones, que es lo único
+ * delicado— vive en `src/lib/comprobantes.js` desde que los INGRESOS también
+ * pueden llevar comprobante (20260906120000). Acá queda solo lo que es propio
+ * de un gasto: en qué tabla se guarda.
  */
-export const subirComprobante = async ({ gastoId, file }) => {
-  const path = `${PREFIJO}/${gastoId}/${crypto.randomUUID()}-${nombreSeguro(file.name)}`;
-
-  const { error: errSubida } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type || undefined, upsert: false });
-  if (errSubida) return { data: null, error: errSubida };
-
-  const resultado = await updateGasto(gastoId, {
-    comprobante_path: path,
-    comprobante_nombre: file.name,
-    comprobante_mime: file.type || null,
-    comprobante_size: file.size,
+export const subirComprobante = async ({ gastoId, file }) =>
+  adjuntarComprobante({
+    prefijo: PREFIJO,
+    id: gastoId,
+    file,
+    actualizar: (campos) => updateGasto(gastoId, campos),
   });
 
-  if (resultado.error) {
-    await supabase.storage.from(BUCKET).remove([path]);
-    return resultado;
-  }
-
-  return resultado;
-};
-
-/**
- * Quita el comprobante de un gasto.
- *
- * Primero se desvincula en la base y DESPUÉS se borra el archivo. El orden
- * importa: al revés, si el UPDATE fallara quedaría una fila apuntando a un
- * archivo que ya no existe, que es peor que un archivo huérfano — la fila rota
- * se ve como un comprobante que existe hasta que alguien lo intenta abrir.
- */
-export const quitarComprobante = async (gasto) => {
-  const resultado = await updateGasto(gasto.id, {
-    comprobante_path: null,
-    comprobante_nombre: null,
-    comprobante_mime: null,
-    comprobante_size: null,
+/** Quita el comprobante de un gasto. Ver la nota de arriba. */
+export const quitarComprobante = async (gasto) =>
+  desadjuntarComprobante({
+    path: gasto.comprobante_path,
+    actualizar: (campos) => updateGasto(gasto.id, campos),
   });
-  if (resultado.error) return resultado;
-
-  if (gasto.comprobante_path) {
-    await supabase.storage.from(BUCKET).remove([gasto.comprobante_path]);
-  }
-  return resultado;
-};
 
 /** URL firmada temporal (10 min) del comprobante. Solo funciona para la comisión. */
 export const urlComprobante = async (filePath, opts) =>

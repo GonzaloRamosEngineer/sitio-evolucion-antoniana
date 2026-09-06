@@ -33,7 +33,7 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-05, §10 cerrado)
+## 🚦 Por dónde arrancar (actualizado 2026-09-06, con la tesis de §14)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
@@ -48,6 +48,11 @@ consulta legal; de infraestructura ya no queda nada bloqueando.
 (`miembros`, con el comportamiento en datos), el reclamo universal de huellas, el precio
 de actividades y el esquema del apadrinamiento. Cuatro migraciones, validadas en
 PostgreSQL 15 y con `supabase/checks/membresia-check.sql` — **36 assertions, 0 FALLA**.
+
+👉 **Y el 2026-09-06 apareció §14, que es lo más importante de estos dos días**: el
+diferencial de este producto no es el club de beneficios —mercado saturado— sino **poder
+rendir un fondo restringido, y que rendirlo salga barato**. Leer §14 antes de decidir qué
+construir. Lo que la habilita ya está aplicado (`20260906120000`).
 
 ✅ **APLICADAS EN PRODUCCIÓN el 2026-09-05**, y **el front desplegado y verificado**:
 los cuatro símbolos nuevos (`mi_membresia`, `reclamar_huellas`, `huellas_sin_cuenta`,
@@ -72,41 +77,48 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
 
 **Lo primero, en orden:**
 
-1. 🔴 **Publicar las campañas que están en borrador.** Decidido el 2026-09-05 como lo
-   primero después de aplicar. **Es contenido, no código**, y enciende el circuito
-   `aporte → destino → gasto → rendición` que está construido, probado y sin estrenar:
-   de $12.241 aportados, **$12.141 fueron al destino institucional** — no porque la gente
-   lo eligiera, sino porque es el único publicado. Hay **8 campañas en borrador** y la
-   única activa con meta lleva $100 de $410.000. Según §10.7 este circuito es lo que
-   ningún competidor tiene; hoy no lo ve nadie.
-   ⚠️ **Regla de §10.8, y sigue en pie:** no publicar una campaña sin poder rendirla
-   después. `Collaborate.jsx:348` ya promete «recibís comprobante oficial».
+1. 🔴 **Cargar el fondo del convenio y sus gastos.** ⚠️ **Esto reemplaza a «publicar las
+   campañas», que era lo que decía acá el 2026-09-05 y estaba mal ordenado**: al ir a
+   mirar apareció que `/rendicion` dice en público «Rendido $0 · **0%** de lo recaudado ya
+   tiene rendición publicada». Publicar 8 campañas encima de eso multiplica por nueve una
+   promesa vacía — justo lo que §10.8 prohíbe.
+   El destino ya está creado (`fondo-convenio-2024`) y el ABM acepta comprobante en los
+   ingresos desde §14. Falta la carga, que es de la Fundación:
+   **a)** el aporte de $1.000.000 con la certificación notarial adjunta;
+   **b)** los gastos, que salen del extracto de MercadoPago con fecha y concepto.
+   ⚠️ **Usar el id del movimiento como `referencia_externa`**: las donaciones que el
+   webhook ya cargó están en ese mismo extracto, y sin eso entran dos veces.
 
-2. 🔴 **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Ticket bajo y
+2. 🟡 **Recién después, publicar las campañas en borrador.** Son 8, **ninguna tiene
+   imagen ni meta** (verificado el 2026-09-05), así que además de activarlas hay que
+   completarlas. De $12.241 aportados, $12.141 fueron al institucional — no porque la
+   gente lo eligiera, sino porque es el único publicado.
+
+3. 🔴 **Sumar dos o tres comercios de consumo cotidiano** (§12.11.2). Ticket bajo y
    frecuencia alta construyen el hábito que un descuento de una sola vez no puede
    construir: hoy el club tiene **un** beneficio, de ticket alto y canjeable una sola vez
    por persona.
 
-3. 🟡 **Las 156 personas de Educación — la decisión está tomada a medias.** El 2026-09-05
+4. 🟡 **Las 156 personas de Educación — la decisión está tomada a medias.** El 2026-09-05
    se decidió **mostrárselas a la comisión y no contactarlas desde el sistema**: el bloque
    ya está en `/admin → Padrón` y dice «156 sin cuenta de 160». Lo que falta es que la
    entidad decida si les escribe, y con qué. **No es una decisión técnica**, y tiene una
    arista de consentimiento: dieron su email en un formulario de preinscripción a un
    programa educativo, entre el 2026-02-13 y el 2026-03-22.
 
-4. 🟡 **El segundo socio.** 1 persona con acceso vigente de 23 cuentas. El circuito
+5. 🟡 **El segundo socio.** 1 persona con acceso vigente de 23 cuentas. El circuito
    funciona entero; falta gente adentro, y eso no se arregla con código.
 
-5. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
+6. **Rotar la contraseña de la base.** Único pendiente de seguridad. Vive en **un solo
    archivo**: `.env.db`. ⚠️ Ese archivo dijo cuatro veces que también estaba en
    `~/.config/antoniana/db.url` — **no existe**. Rotar **no toca producción**: el webhook
    usa `SUPABASE_SERVICE_ROLE_KEY` y el sitio la anon key, así que el único consumidor es
    `tools/db.sh`.
 
-6. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
+7. **`npm audit fix`** (sin `--force`) — 5 minutos, cierra 3 de los 4 avisos, incluido el
    único `high`. Después, en rama propia, **`react-router-dom` → `7.18.3`**.
 
-7. **Deuda menor, toda junta:** la del club en §12.10 (lo más barato con más valor sigue
+8. **Deuda menor, toda junta:** la del club en §12.10 (lo más barato con más valor sigue
    siendo la **UI de anulación**, 12.10.6), el apadrinamiento público en **§13** (bloqueado
    por legal, no por código) y **7 assertions muertas en `rls-check.sql`** — ver abajo.
 
@@ -175,7 +187,9 @@ Lo que queda:
 
 | | Qué | Dónde |
 |---|---|---|
-| **Contenido** | 8 campañas en borrador. El circuito de rendición existe y no lo ve nadie | «Por dónde arrancar» |
+| **Carga de datos** | El fondo del convenio y sus gastos. Sin eso la rendición dice 0% | «Por dónde arrancar» |
+| **Producto** | **La tesis: rendir fondos restringidos, e importar desde extracto** | §14 abajo |
+| **Contenido** | 8 campañas en borrador, ninguna con meta ni imagen | «Por dónde arrancar» |
 | **Deuda** | 2 ítems técnicos + deuda menor. Nada bloquea nada | §A abajo |
 | **Bloqueado por legal** | El apadrinamiento de cara al público. El esquema está; falta saber qué se puede publicar | §13 abajo |
 | **Producto** | El club de beneficios: comercios de consumo cotidiano | §12 abajo |
@@ -1310,6 +1324,120 @@ sucesivas de «lo siguiente, en orden», cada una superada por la siguiente y ni
 borrada. §11.3 todavía encabezaba con `MP_WEBHOOK_SECRET`, que está hecho desde el
 2026-08-31. **Tres listas de prioridades que se contradicen son peor que ninguna.** La
 única lista viva es «Por dónde arrancar».
+## 14. Dónde está el diferencial (2026-09-06)
+
+> **Qué es esto y por qué está en el ROADMAP y no en el HISTORIAL:** no es una
+> crónica, es la tesis que ordena lo que falta. Apareció trabajando —no en una
+> sesión de estrategia— y cambia qué conviene construir después. La crónica de
+> cómo apareció está en `HISTORIAL.md` §14.0.
+
+### La tesis, en una línea
+
+**Lo que ningún competidor tiene no es el club de beneficios: es poder rendir un
+fondo restringido, y que rendirlo salga barato.**
+
+### Por qué el club no alcanza
+
+§10.7 ya lo había concluido y conviene no olvidarlo: acceso-por-descuentos es
+**exactamente lo que ya hacen CuotaQ, SIGCLU, DigitalClub y PortalSocios**, que
+llevan años en eso y compiten por precio. Están construidos alrededor de la
+**cobranza** —recordatorios, morosidad, débito automático—, que es una palanca de
+extracción y está saturada.
+
+Construir solo eso es llegar último a una pelea ya perdida.
+
+### Lo que apareció el 2026-09-06, y no es un caso de la Fundación
+
+Modelando el fondo del convenio quedó a la vista que `destinos` sabía expresar
+**una sola de las dos categorías de ingreso** que tiene cualquier entidad sin
+fines de lucro:
+
+| | Qué es | El modelo lo sabía expresar |
+|---|---|---|
+| **Libre disponibilidad** | Cuota social, donación suelta. Se aplica a lo que la entidad necesite | ✅ desde §10.9 |
+| **Restringido** | Subsidio estatal, convenio, donación con cargo, legado, beca de una empresa. **Llega completo y atado a un fin** | ❌ hasta el 2026-09-06 |
+
+En contabilidad de organizaciones sociales esa separación es un concepto central,
+no una particularidad argentina ni de esta fundación. El caso que la destapó
+—$1.000.000 dejados al cerrarse un convenio, con destino estipulado y certificación
+notarial— es el caso típico, no el raro.
+
+**Y es la categoría que crea la obligación.** Nadie te exige rendir la cuota
+social. Quien te dio un subsidio **sí** te va a pedir la rendición, con fecha. Un
+producto que la produce resuelve un problema de cumplimiento, no de marketing —y
+eso es lo que no se compite por precio.
+
+### ⚠️ La advertencia que vale más que la tesis
+
+**El diferencial no es la página de rendición. Es que cargar los datos salga tan
+barato que efectivamente se haga.**
+
+La evidencia está en esta misma base. La fase 2 —gastos, comprobante y
+`/rendicion` pública— está construida, probada y desplegada **desde el
+2026-08-16**. Al 2026-09-06 tiene **cero gastos cargados**, y la página dice en
+público «**0% de lo recaudado ya tiene rendición publicada**». No falló el código:
+nadie se sentó a cargar.
+
+Si en la Fundación —donde el dueño del proyecto es quien escribe el sistema—
+pasaron tres semanas sin un solo gasto, en un cliente donde la tesorera tiene otras
+cuarenta cosas no va a pasar nunca. **Y una rendición vacía es peor que no
+tenerla**: la promesa queda publicada y sin cumplir, que es justo lo que §10.8
+advirtió que no había que hacer.
+
+---
+
+### 14.1 — 🟡 Comprometido no es disponible
+
+`/rendicion` calcula `saldo = recaudado − rendido` y lo titula **«Disponible»**.
+Para el fondo del convenio eso es engañoso en la dirección peor: los ~$180.000 que
+quedan **están afectados al trámite de Personería Jurídica**, y publicarlos como
+disponibles invita a leer «tienen plata guardada, no hace falta aportar».
+
+Es la distinción contable estándar entre **comprometido** y **pagado**:
+
+```
+disponible = recaudado − pagado − comprometido
+```
+
+**Cómo se implementaría:** un gasto con `estado ∈ ('previsto','pagado')` en vez de
+existir solo cuando ya se pagó. `previsto` resta del disponible sin figurar como
+rendido.
+
+**Por qué no se hizo ahora:** en el caso que lo motivó **no se sabe cuánto cuesta**
+el trámite, así que no hay número que cargar. Mientras tanto se dice con palabras,
+en la descripción del destino. Cuando aparezca el primer caso con monto conocido,
+construirlo.
+
+⚠️ **Y no inventar el estado antes de tener el caso.** Es la lección de §10.1.d:
+se construyó `precio_socio` sobre 12 actividades gratuitas y hoy no mueve nada.
+
+### 14.2 — 🔴 Importación desde extracto — es la que decide
+
+**El ítem con más valor de todo lo que queda, y con diferencia.**
+
+Pegar un extracto de la pasarela o del banco y que salga la rendición. Es la
+diferencia entre una funcionalidad que **se usa** y una que **se demuestra**.
+
+Lo que lo hace viable ya está construido sin que fuera el objetivo:
+
+- **`aportes.referencia_externa` es UNIQUE** (§10.11, para que un reintento del
+  webhook no duplicara un cobro). Usando el id del movimiento como referencia,
+  **una importación repetida no duplica nada**: la base rechaza el duplicado sola,
+  sin que nadie tenga que acordarse.
+- `origen = 'manual'` ya contempla plata que no vino de una pasarela.
+- `gastos` ya tiene fecha, concepto, proveedor y comprobante.
+
+⚠️ **La trampa a no pisar, y es concreta:** los aportes que el webhook ya escribió
+—las donaciones y las cuotas cobradas— **están en el extracto también**. Importar
+sin `referencia_externa` los carga dos veces y la rendición queda mal para siempre.
+
+**Lo realista:** parte del trabajo va a seguir siendo humano. Un movimiento que
+dice «Transferencia a CBU …» no tiene concepto, y alguien va a tener que
+escribirlo. El objetivo no es cero trabajo: es que cargar tres meses de
+movimientos deje de ser una tarde y pase a ser un rato.
+
+---
+
 ## 13. Apadrinamiento de cara al público — bloqueado por legal, no por código
 
 > Se sacó de §10.8 el 2026-09-05 **para que §10 pudiera cerrarse sin esconder un

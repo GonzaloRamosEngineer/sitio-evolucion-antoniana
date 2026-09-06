@@ -3024,6 +3024,112 @@ aplicado a la red de seguridad en lugar de a las pruebas.
 
 ---
 
+### 14.0 — Cómo apareció la tesis del producto (2026-09-06)
+
+No salió de una sesión de estrategia. Salió de una pregunta operativa sobre qué
+cargar primero, y de que el dueño del proyecto contara una historia que el modelo
+no sabía representar.
+
+#### La cadena, porque el orden importa
+
+**1. Una recomendación mía que los datos desmintieron.** Al cerrar §10 dejé como
+próximo paso «publicar las 8 campañas en borrador». Al ir a mirar apareció que
+`/rendicion` dice en público **«Rendido $0 · 0% de lo recaudado ya tiene rendición
+publicada»**: cero gastos cargados. Publicar 8 campañas habría multiplicado por
+nueve una promesa cuya respuesta es $0 — exactamente lo que §10.8 advirtió que no
+había que hacer. **El prerequisito no era publicar: era cargar un gasto.**
+
+**2. La pregunta del dueño que destrabó todo.** «*¿No puedo poner algo que voy a
+gastar sin antes tener algo recaudado?*» La respuesta era que `gastos` no es un
+presupuesto sino un libro de egresos —registra lo que ya pasó— pero la pregunta
+que venía atrás era mejor: qué hacer con los gastos históricos, y si un **recibo**
+de escribano vale lo mismo que una factura.
+
+**3. La historia que rompió el modelo.** Entre 2022 y 2024 la Fundación trabajó
+casi en exclusiva con una institución deportiva. Al cerrarse el convenio, esa
+institución dejó **$1.000.000 con destino estipulado**: dejar cubierto el
+ordenamiento contable y legal. Hoy quedan ~$180.000. Todo respaldado con
+documentación certificada ante escribano, firmada por autoridades de las dos
+instituciones, y todo en MercadoPago.
+
+Eso resolvió de golpe el problema del punto 1: **no había que reconstruir años de
+ingresos, había que cargar un aporte.** Y de paso hizo que el libro y el saldo real
+de la cuenta puedan coincidir, que es lo más creíble que una rendición puede
+mostrar y lo más difícil de fingir.
+
+**4. Y expuso que el modelo sabía expresar una sola de las dos categorías de
+ingreso.** Plata de libre disponibilidad —la cuota social— y plata restringida
+—subsidio, convenio, donación con cargo, legado—. `destinos` cubría bien la
+primera. La segunda no entraba: un destino con `admite_puntual` y
+`admite_recurrente` en `false` estaba **prohibido por un CHECK**, y sacarlo del
+checkout obligaba a ponerlo en `estado = 'cerrado'`, donde la policy de `gastos`
+deja de publicarlo. **Se podía elegir entre no ofrecerlo o poder rendirlo, y hacen
+falta las dos.**
+
+#### Tres cosas que se corrigieron sobre la marcha
+
+⚠️ **Un argumento mío que era falso.** Sostuve que leer el saldo de MercadoPago no
+servía porque «el millón entró por transferencia bancaria y ese saldo no lo
+refleja». **Eso lo asumí, y era mentira**: está todo en MercadoPago. La conclusión
+—no cablear la página pública al saldo— se sostuvo igual, pero por tres razones en
+vez de cinco, y la más fuerte no era esa: **el endpoint de balance está deprecado**
+y el reporte «Dinero disponible» se dio de baja en marzo de 2022. Se verificó
+contra la documentación de MercadoPago en vez de contestar de memoria.
+
+⚠️ **Una "mejora" que era un riesgo.** Al extraer el mecanismo de comprobantes a
+`src/lib/comprobantes.js` reescribí `nombreSeguro` para quitar acentos con un rango
+de diacríticos combinantes. Quedaban **caracteres crudos dentro de una expresión
+regular**, a cambio de nada: `\w` ya los descarta. Se volvió al que venía
+funcionando desde agosto. No reescribir lo que anda para que se vea mejor.
+
+⚠️ **Un bloque JSX metido dentro de un ternario.** El botón de adjuntar quedó en la
+rama `else` de un ternario, que admite una sola expresión. `npm run build` lo
+atajó. Es el recordatorio de que el gate existe por algo.
+
+#### Qué quedó construido
+
+`20260906120000_fondos_restringidos.sql`:
+
+- **Se relajó `destinos_admite_algo_chk`.** Su comentario original decía que un
+  destino que no admite ninguna forma de aporte «es un error de carga, no una
+  configuración válida». Era cierto para los tres casos que existían entonces; un
+  fondo de convenio lo desmiente. La restricción se removió **con el motivo
+  escrito al lado**, no en silencio.
+- **Comprobante en `aportes`.** La rendición se apoya en dos columnas y hasta ese
+  día **la de ingresos no se podía documentar** — se veía crudo con un millón
+  respaldado por escritura y sin dónde adjuntarla. Mismo bucket privado y mismo
+  patrón que `gastos`: cero policies de storage nuevas.
+- **`tipo_comprobante` + `comprobante_numero` en las dos tablas.** Sin declarar el
+  tipo, todo es «un comprobante» y se asume que todo son facturas; cuando alguien
+  descubre que aquel gasto tenía un recibo simple, **lo que se rompe no es el
+  recibo: es haberlo dejado implícito**. Los valores son genéricos a propósito —
+  la letra A/B/C es normativa argentina y va en `comprobante_numero`.
+- **`reporte_destino()` devuelve `aportes_documentados` / `aportes_totales` y
+  `abierto_a_aportes`.** El público puede ver que el ingreso está respaldado sin
+  que se publique el convenio ni quién lo firmó.
+
+`fondos-check.sql`: 10 assertions, saboteado dos veces —reponiendo el CHECK viejo y
+abriendo `aportes` a `anon`— y las dos veces gritó.
+
+#### La tesis, que es lo que quedó de todo esto
+
+Está en `ROADMAP.md` §14. En corto: **el diferencial no es el club de beneficios
+sino rendir un fondo restringido, y sobre todo que rendirlo salga barato.**
+
+La evidencia de la segunda mitad es incómoda y propia: la maquinaria de rendición
+está desplegada desde el 2026-08-16 y **al 2026-09-06 tiene cero gastos cargados**.
+No falló el código. Si acá pasaron tres semanas sin que nadie cargara nada, en un
+cliente donde la tesorera tiene otras cuarenta cosas no va a pasar nunca.
+
+De ahí que §14.2 —importar desde el extracto— sea el ítem con más valor de todo lo
+que queda. Y de ahí también que se haya **decidido NO construir** §14.1
+(comprometido vs disponible): en el caso que lo motiva no se sabe cuánto cuesta el
+trámite, así que no hay número que cargar. Construirlo ahora sería repetir lo de
+§10.1.d, donde se hizo `precio_socio` sobre 12 actividades gratuitas y hoy no mueve
+nada.
+
+---
+
 ## 11. Cierre de la jornada del 2026-08-16
 
 Un solo día de trabajo, de una auditoría a un circuito de aportes completo y verificado en
