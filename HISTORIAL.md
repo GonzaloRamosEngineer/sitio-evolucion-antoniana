@@ -3228,6 +3228,26 @@ ella.
 confirmaron que las dos decisiones centrales son estructurales: sin el UNIQUE se
 duplica, y sin el monto en la clave el impuesto no entra.
 
+#### Una corrección posterior, el mismo día
+
+⚠️ **Yo había listado el impuesto de $5.626,66 como gasto del fondo. No lo es.**
+Ese impuesto y la transferencia de $937.776,27 son **anteriores** a que el fondo
+existiera: el resguardo se define como lo que queda **después** de los dos, y por
+eso el saldo cae en $1.000.000,00 exacto. Cargarlos como gasto del fondo sería
+contarlos dos veces y dejar la rendición corta por ese monto.
+
+Los gastos del fondo en octubre son cuatro y suman **$78.748,70**, y el saldo
+cierra al peso contra el extracto: `1.000.000 − 78.748,70 = 921.251,30`.
+
+Se descubrió al rehacer la aritmética con la calculadora en vez de repetir lo
+escrito el día anterior. **Una cuenta que ya se hizo una vez no está verificada:
+está recordada.**
+
+Y quedó aclarado que Torrado y Moncorvo son **dos escribanos distintos con dos
+certificaciones distintas** —no un desajuste entre concepto y comprobante, como
+yo había sospechado—. Como no hubo movimientos en efectivo, cada erogación tiene
+su fila en el extracto y el libro puede cuadrar contra él al peso.
+
 #### La moraleja
 
 **El documento del cliente corrige la descripción del sistema, no al revés.** Yo

@@ -93,9 +93,17 @@ décima y undécima vez que pasa en este repo. Están corregidas donde vivían:
    **desde §14.2 hay importador**: `/admin → Importar movimientos`, se pega el extracto y
    se confirma. Reimportar no duplica.
    Falta, y es de la Fundación:
-   **a)** el aporte de $1.000.000 con la certificación notarial adjunta (a mano: no es un
-   movimiento del extracto, es el resguardo que quedó al liquidar);
+   **a)** el **saldo inicial** de $1.000.000 a mano — no es un aporte ni un movimiento del
+   extracto: es lo que había en la cuenta el 10/10/2024, y sin esa fila el libro arranca
+   con solo egresos y el saldo se va en negativo. Va con `referencia_externa =
+   `saldo-inicial:fondo-convenio-2024``, que a propósito **no** empieza con `mp:` para que
+   el importador nunca pueda chocar con ella. Comprobante: el acta, Foja E 00405399.
    **b)** los 23 meses de extractos, con el importador.
+   ⚠️ **Al importar octubre de 2024, destildar las dos filas del 10/10** —la transferencia
+   de $937.776,27 al club y su impuesto de $5.626,66—: son **anteriores** a que el fondo
+   existiera. El millón ya está neto de las dos, y cargarlas sería contarlas dos veces.
+   Verificado: `1.000.000 − 4.639,50 − 20.000 − 120 − 53.989,20 = 921.251,30`, que es el
+   saldo del extracto al 31/10.
    ⚠️ **Los gastos entran SIN publicar**, a propósito: la descripción de un movimiento
    puede traer el nombre de un particular. Revisar y publicar es un paso aparte.
 
@@ -1475,6 +1483,8 @@ el filtro y el insert hay una ventana y el segundo click cae justo ahí.
 
 #### Lo que quedó pendiente de esto
 
+- 🟡 **Subir los archivos en vez de pegarlos** → **§14.3**, diseñado y sin construir.
+  Con 23 meses de resúmenes, copiar y pegar tiene techo.
 - 🟡 **Un extracto que mezcla destinos** hay que importarlo por partes: el lote
   entero se imputa a un destino. Reimputar después existe (§10.11) pero es más
   trabajo que separar antes.
@@ -1482,6 +1492,113 @@ el filtro y el insert hay una ventana y el segundo click cae justo ahí.
   MercadoPago.** Están como dato (`REGLAS` en `src/lib/importarMovimientos.js`),
   así que sumar otro banco es agregar filas — pero todavía nadie lo probó con
   otro.
+
+---
+
+### 14.3 — 🟡 Subir los resúmenes en vez de pegarlos (diseñado, sin construir)
+
+> **Estado: analizado y listo para arrancar en otra sesión.** No se construyó
+> para no empezarlo a medias; lo que sigue es el diseño completo, con la decisión
+> que lo hace confiable y las que quedan por tomar.
+
+§14.2 dejó funcionando el importador **de copiar y pegar**. Sirve, y tiene un
+techo: son **23 meses de resúmenes**. Copiar y pegar veintitrés veces, cada una
+con su selección a mano, es la clase de tarea que se abandona en el mes cuatro.
+
+Lo que falta: **arrastrar los PDF, que el sistema los lea, y ver un resumen que
+permita confirmar de un vistazo que los números dan.**
+
+#### ⚠️ La idea que hace confiable a esto, y sale del propio documento
+
+Un resumen de MercadoPago **trae sus propios totales en el encabezado**:
+
+```
+Saldo inicial: $ 1.698.607,63
+Entradas:      $   244.795,30
+Salidas:       $ -1.022.151,63
+Saldo final:   $   921.251,30
+```
+
+Eso es una **suma de control gratis**, y habilita tres niveles de verificación
+que no dependen de que le creamos al parser:
+
+| Nivel | Qué compara | Qué error atrapa |
+|---|---|---|
+| **1. Por movimiento** | La columna `Saldo` de cada fila contra `saldo anterior ± valor` | Un importe mal leído. Es el error más peligroso porque es plausible: `937.776,27` leído como `937,78` |
+| **2. Por resumen** | La suma de lo extraído contra `Entradas` / `Salidas` del encabezado | Una fila que se perdió o se duplicó en el parseo |
+| **3. Entre resúmenes** | `Saldo final` del mes N contra `Saldo inicial` del mes N+1 | **Un mes que falta.** Con 23 archivos, este es el error probable |
+
+**La regla que se sigue de esto: si los tres niveles no cierran, el importador NO
+ofrece importar.** Avisa qué no cuadra y por cuánto. Es la diferencia entre una
+herramienta en la que se confía y una que hay que auditar a mano cada vez — y
+auditar a mano es justo lo que esto vino a evitar.
+
+Es además el «resultante económico para chequear visualmente que coinciden los
+resultados» que pidió el dueño del proyecto: la pantalla puede mostrar, por
+resumen, *declarado vs. extraído* y un ✅ por cada nivel.
+
+#### Qué mostrar antes de importar
+
+- **Por archivo:** período, cantidad de movimientos, entradas, salidas, y los tres
+  chequeos.
+- **La cadena completa:** los meses en orden, con los huecos marcados. Un mes
+  faltante se ve como un salto de saldo.
+- **Agrupado por categoría**, reusando `clasificar()` de §14.2 — para ver de una
+  cuánto se fue en comisiones e impuestos frente a los gastos que se decidieron.
+- **El total del período contra el saldo actual de la cuenta.** Si dan igual, el
+  libro quedó reconciliado y eso es lo más creíble que una rendición puede
+  mostrar.
+
+#### Lo técnico, con su riesgo
+
+**Parsear el PDF en el navegador** con `pdfjs-dist`: devuelve los textos con sus
+coordenadas y las filas se arman agrupando por `y` y separando por `x`. Es la
+librería de Mozilla, madura y sin servidor de por medio — importante, porque **un
+resumen de cuenta no debería salir de la máquina de quien lo sube**.
+
+⚠️ **El riesgo real es el layout, no el parseo.** Si MercadoPago cambia el
+formato, el extractor deja de encontrar las columnas. Por eso los tres niveles de
+verificación no son un extra: **son lo que convierte un cambio de layout en un
+aviso claro en vez de en datos silenciosamente mal cargados.** Sin ellos, esto no
+se debería construir.
+
+⚠️ **Y una pregunta previa que puede ahorrar el trabajo entero:** ¿MercadoPago
+deja exportar la actividad en **CSV o Excel**? Si sí, ese es el camino: el
+parseo es trivial y no hay dependencia nueva. **Averiguar eso antes de escribir
+una línea de pdf.js.** El PDF es el formato más difícil de los que puede haber, y
+se elegiría solo si es el único que la entidad tiene a mano.
+
+**Costo de la dependencia:** `pdfjs-dist` pesa alrededor de 1 MB. El chunk
+principal de este sitio hoy son ~174 KB, así que **no puede entrar al bundle
+general**: va con `import()` dinámico dentro de la pantalla de importación, que
+es de admin y la usa una persona cada tanto. Si termina en el bundle público,
+el sitio se vuelve seis veces más pesado para alguien que solo quiere leer una
+noticia.
+
+#### Lo que hay que decidir antes de empezar
+
+1. **¿CSV/Excel o PDF?** Ver arriba. Cambia todo el trabajo.
+2. **¿Un destino por archivo o por movimiento?** Hoy el lote entero va a un
+   destino. Para 23 meses de una cuenta institucional probablemente alcance, pero
+   conviene confirmarlo antes que reimputar cientos de filas después (§10.11).
+3. **¿Qué hacer con los movimientos anteriores a `destinos.fecha_inicio`?**
+   ⚠️ **Hoy nada lo impide y es un agujero real**: pegar un resumen de septiembre
+   de 2024 cargaría movimientos previos a que el fondo existiera. Como mínimo,
+   avisar; probablemente, destildarlos por defecto.
+4. **¿Se guarda el archivo?** Un resumen de cuenta es respaldo documental y ya hay
+   dónde ponerlo (`tipo_comprobante = extracto`, bucket privado). Guardarlo hace
+   auditable la importación; no guardarlo deja el «de dónde salió esto» en el aire.
+
+#### Lo que ya está hecho y se reusa
+
+- `clasificar()`, `aNumero()`, `aFechaISO()` y `referenciaDe()` en
+  `src/lib/importarMovimientos.js` — puros y con 19 tests sobre datos reales.
+- La idempotencia entera: `referencia_externa` UNIQUE en las dos tablas y
+  `referencias_ya_cargadas()`.
+- La pantalla de previsualización, que solo cambiaría de fuente de datos.
+
+**Lo único genuinamente nuevo es la extracción y los tres niveles de
+verificación.** El resto ya funciona.
 
 ---
 
