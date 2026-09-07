@@ -239,6 +239,25 @@ La autorización del frontend (`ProtectedRoute`, `isAdmin`) es **solo UX, no una
 
 Cada página define su meta con `<Helmet>` (title + description; `canonical` en públicas, `<meta name="robots" content="noindex">` en privadas/auth). **No** volver a poner un `<meta robots>` estático en `index.html` (entra en conflicto con Helmet).
 
+### Previews de compartir (WhatsApp, Facebook, X, LinkedIn…)
+
+`<Helmet>` corre **en el navegador** y los scrapers de las redes **no ejecutan JavaScript**: leen el HTML crudo. Por eso el OG de la preview NO puede salir de Helmet y se sirve aparte, desde funciones en `api/share/`, a las que `vercel.json` manda solo a los bots mediante **rewrites condicionales por `User-Agent`**. El humano recibe la SPA normal y la URL `/api/share/` nunca se expone.
+
+Hay dos familias, y la diferencia es de dónde sale el texto:
+
+- **Páginas de detalle** (`/novedades/:slug`, `/beneficios/:slug`, `/partners/:slug`, `/activities/:id`, más las rutas de compatibilidad por `id`/`uuid`): el OG sale de la base. Una función por recurso en `api/share/<recurso>/`.
+- **Páginas estáticas** (`/rendicion`, `/beneficios`, `/club`, `/about`, …): el OG sale de la tabla `PAGINAS` en **`api/share/pagina.js`**, una sola función parametrizada por `?p=<ruta>`.
+- **La home y todo lo que no se comparte** (auth, `/dashboard`, `/carnet`, `/comercio`, `/comision`, `/admin/*`, `/agradecimiento`, `/confirm-attendance`): caen al OG institucional de `index.html`, a propósito — compartir un link privado no debe contar qué hay detrás.
+
+**Al agregar una ruta pública nueva**: agregarla a `PAGINAS` **y** su rewrite en `vercel.json`. `api/share/pagina.test.js` cruza `src/App.jsx` ↔ `PAGINAS` ↔ `vercel.json` y falla si una ruta queda sin clasificar, así que no hace falta acordarse: `npm test` lo dice. Si la ruta no debe tener preview, va a `RUTAS_SIN_PREVIEW` en ese test, con el motivo.
+
+**Las imágenes de las tarjetas** viven en `public/img/og/` y las genera `node tools/generate-og-images.mjs` (Chrome headless sobre un HTML maquetado; el título lo toma de `PAGINAS`, así que la imagen no puede decir algo distinto del `og:title`). Las 11 secciones que se comparten tienen tarjeta propia con su nombre impreso; las utilitarias y legales caen a `/img/og-image-1200x630.png`, que es el logo sobre blanco. `IMAGEN_POR_DEFECTO` y cada `imagen:` tienen que existir en `public/` y medir 1200x630 — un `og:image` que da 404 muestra una tarjeta **sin foto**, peor que la genérica; el test lo verifica.
+
+Dos trampas que ya costaron caro:
+
+- **Los buscadores no van en la lista de bots.** El HTML del stub lleva `canonical` y, en las funciones de detalle, `noindex`: mandar ahí a Googlebot le servía una página no indexable en lugar de la SPA. Se quitaron `Googlebot` y `bingbot` de todos los rewrites (el test lo verifica). Los buscadores renderizan JS y leen los `<Helmet>`.
+- **WhatsApp cachea la preview por URL.** Si ya compartiste un link, seguís viendo la tarjeta vieja aunque el deploy esté bien. Para re-testear: variar la URL, o usar <https://developers.facebook.com/tools/debug/> y forzar el scrape.
+
 ## Convenciones de trabajo
 
 - **Branch / deploy**: el historial commitea directo a `master` y el push dispara deploy en Vercel. Confirmar antes de pushear.
