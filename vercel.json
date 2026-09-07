@@ -31,7 +31,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/partners/:slug"
+      "destination": "/api/share/partners/slug?slug=:slug"
     },
     {
       "source": "/activities/:id",
@@ -253,6 +253,10 @@
     {
       "source": "/api/share/activities/(.*)",
       "destination": "/api/share/activities/slug?slug=$1"
+    },
+    {
+      "source": "/api/share/partners/(.*)",
+      "destination": "/api/share/partners/slug?slug=$1"
     },
     {
       "source": "/api/(.*)",

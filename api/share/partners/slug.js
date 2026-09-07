@@ -1,10 +1,21 @@
-// api/share/benefits/slug.js
-// Share endpoint para previews (WhatsApp/Facebook/LinkedIn/etc.):
-// - Lo invocan SOLO los bots de redes sociales vía rewrite condicional por
-//   User-Agent en vercel.json: /beneficios/<slug> -> /api/share/benefits/slug?slug=<slug>
-// - También responde al path explícito /api/share/benefits/<slug> (backward compat).
-// - Devuelve HTML con Open Graph dinámico y redirige a humanos a /beneficios/:slug
-// Mismo patrón que api/share/news/slug.js (mantener en sincronía).
+// api/share/partners/slug.js
+// -----------------------------------------------------------------------------
+// OG dinámico de un partner. Reemplaza a `api/share/partners/[slug].js`.
+//
+// ⚠️ POR QUÉ SE REESCRIBIÓ. La versión anterior era una **edge function con
+// nombre de ruta dinámica** (`[slug].js`), la única de `api/share/` con esa
+// forma. En producción NO resolvía: el pedido a /api/share/partners/<slug>
+// caía al rewrite general `/api/(.*)` —el proxy al webhook de onrender— y el
+// scraper recibía el `Cannot GET /api/share/partners/<slug>` de Express. O sea
+// que compartir un partner por WhatsApp no mostraba una tarjeta genérica:
+// no mostraba NINGUNA. Se detectó el 2026-09-07 pidiendo en producción un slug
+// real sacado de la base.
+//
+// Ahora sigue exactamente el patrón de news/benefits/activities: función Node,
+// el slug entra por `?slug=` vía rewrite, y no depende de que Vercel registre
+// una ruta dinámica dentro de `api/`. Es el patrón que está probado en
+// producción tres veces; ser el único distinto era el problema.
+// -----------------------------------------------------------------------------
 
 const isUuid = (v = "") =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -26,13 +37,11 @@ const stripToOneLine = (s = "") =>
     .trim();
 
 function guessMimeFromUrl(u = "") {
-  try {
-    const lower = String(u.split("?")[0] || "").toLowerCase();
-    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-    if (lower.endsWith(".png")) return "image/png";
-    if (lower.endsWith(".webp")) return "image/webp";
-    if (lower.endsWith(".gif")) return "image/gif";
-  } catch { /* url mal formada: sin content-type */ }
+  const lower = String(u.split("?")[0] || "").toLowerCase();
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
   return null;
 }
 
@@ -56,36 +65,25 @@ export default async function handler(req, res) {
     }
 
     const host = req.headers["x-forwarded-host"] || req.headers.host;
-    const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim() || "https";
+    const proto =
+      String(req.headers["x-forwarded-proto"] || "https")
+        .split(",")[0]
+        .trim() || "https";
 
     const filter = isUuid(slug)
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    // ⚠️ LA TABLA ES `club_beneficios`, NO `benefits`.
-    //
-    // Esta función nació apuntando a `benefits`, que quedó VACÍA cuando el club
-    // (ROADMAP §12) pasó a ser la fuente de la vidriera. El síntoma no era una
-    // preview fea: era un 404 al scraper, o sea que compartir un beneficio por
-    // WhatsApp no mostraba NINGUNA tarjeta. Se detectó el 2026-09-07, pidiendo
-    // en producción un slug real sacado de la base.
-    //
-    // `select=*` y no columnas explícitas, por el criterio del resto de
-    // `api/share/`: una columna que se renombre no debe tumbar la preview. La
-    // columna del descuento tampoco existe acá —el valor se compone de `tipo` y
-    // `valor`— así que el título es el del beneficio, igual que el `<Helmet>` de
-    // `BenefitDetailPage`.
-    //
-    // Las RLS ya filtran a los beneficios activos de comercios activos (§12.5):
-    // uno despublicado da 404, que es lo correcto.
-    const apiUrl = `${SUPABASE_URL}/rest/v1/club_beneficios?select=*&${filter}`;
+    // `select=*` por el criterio del resto de `api/share/`: que una columna
+    // nueva o renombrada no tumbe la preview.
+    const apiUrl = `${SUPABASE_URL}/rest/v1/partners?select=*&${filter}&limit=1`;
 
     const r = await fetch(apiUrl, {
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Accept: "application/json"
-      }
+        Accept: "application/json",
+      },
     });
 
     if (!r.ok) {
@@ -102,20 +100,31 @@ export default async function handler(req, res) {
 
     const slugOrId = item.slug || item.id;
 
-    // URL humana real (SPA) — es también la que se comparte y la canónica.
-    const humanUrl = `${proto}://${host}/beneficios/${encodeURIComponent(slugOrId)}`;
+    // URL humana real (SPA): es la que se comparte y la canónica. El bot llega
+    // acá por el rewrite condicional de vercel.json, así que el OG apunta a la
+    // URL limpia y nunca a /api/share/.
+    const humanUrl = `${proto}://${host}/partners/${encodeURIComponent(slugOrId)}`;
 
-    // Imagen absoluta. El fallback es la tarjeta de la SECCIÓN beneficios, que
-    // al menos dice "Beneficios": `og-default.png` es el logo pelado sobre
-    // blanco y no cuenta nada de lo que se está compartiendo.
-    let image = item.imagen_url || "/img/og/beneficios-1200x630.png";
+    // El logo del partner es la mejor imagen disponible; si no tiene, la tarjeta
+    // de la SECCIÓN partners, que al menos nombra de qué se trata.
+    let image = item.logo_url || "/img/og/partners-1200x630.png";
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith("/") ? "" : "/"}${image}`;
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const title = escapeHtml(item.titulo || "Beneficio");
-    const desc = escapeHtml(stripToOneLine(item.descripcion).slice(0, 180));
+    // Mismo texto que el `<Helmet>` de `PartnerDetailPage`.
+    const title = escapeHtml(
+      item.nombre
+        ? `${item.nombre} – Fundación Evolución Antoniana`
+        : "Marca aliada – Fundación Evolución Antoniana"
+    );
+    const desc = escapeHtml(
+      stripToOneLine(item.descripcion || "Conocé nuestras marcas aliadas y sus beneficios.").slice(
+        0,
+        180
+      )
+    );
 
     const extraImageType = imageMime
       ? `<meta property="og:image:type" content="${imageMime}"/>`
@@ -147,7 +156,6 @@ export default async function handler(req, res) {
   <meta name="twitter:image" content="${image}" />
 
   <link rel="canonical" href="${humanUrl}" />
-  <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
@@ -165,7 +173,6 @@ export default async function handler(req, res) {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Robots-Tag", "noindex, nofollow");
     res.setHeader("Vary", "User-Agent");
 
     if (method === "HEAD") {
@@ -179,7 +186,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Length", String(buf.byteLength));
     res.end(buf);
   } catch (err) {
-    console.error("Error en api/share/benefits/slug.js:", err);
+    console.error("Error en api/share/partners/slug.js:", err);
     res.status(500).send("Internal error");
   }
 }
