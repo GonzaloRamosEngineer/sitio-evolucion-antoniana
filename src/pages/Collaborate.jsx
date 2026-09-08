@@ -23,6 +23,7 @@ import { destinoEfectivo } from '@/api/destinosApi';
 import { emailParaCheckout } from '@/lib/aportante';
 
 const Collaborate = () => {
+  const [selectedOption, setSelectedOption] = useState('donation');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contactModalCollaborationType, setContactModalCollaborationType] = useState('');
   const { user } = useAuth();
@@ -170,7 +171,7 @@ const Collaborate = () => {
     <p className="text-sm text-gray-600 mb-4 leading-relaxed">
       Tu donación hace posible experiencias que amplían la formación de los chicos, dentro y fuera de la cancha.
     </p>
-    <ul className="space-y-2 mb-6">
+    <details className="mb-3"><summary className="cursor-pointer text-sm font-semibold text-brand-primary py-2">Cómo ayuda tu donación</summary><ul className="space-y-2 mt-2">
       <li className="flex items-start text-sm text-gray-600">
         <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
         Instancias de evaluación y orientación para el desarrollo personal y deportivo
@@ -183,7 +184,7 @@ const Collaborate = () => {
         <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
         Encuentros con referentes que inspiran y amplían la mirada de los chicos
       </li>
-    </ul>
+    </ul></details>
   </>
 ),
 
@@ -198,11 +199,15 @@ const Collaborate = () => {
 
           <div>
             <Label htmlFor="donation-amount" className="text-brand-dark font-semibold">Monto a donar (ARS)</Label>
-            <div className="relative mt-1">
+            <div className="grid grid-cols-3 gap-2 my-3">
+              {['5000', '10000', '25000'].map(amount => <button key={amount} type="button" aria-pressed={donationAmount === amount} onClick={() => setDonationAmount(amount)} className={`min-h-[44px] rounded-lg border text-sm font-semibold ${donationAmount === amount ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-200 text-brand-dark bg-white'}`}>${Number(amount).toLocaleString('es-AR')}</button>)}
+            </div><div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                 <Input
                 id="donation-amount"
                 type="number"
+                inputMode="decimal"
+                min="1"
                 placeholder="Ej: 5000"
                 value={donationAmount}
                 onChange={(e) => setDonationAmount(e.target.value)}
@@ -215,7 +220,7 @@ const Collaborate = () => {
             onClick={handleOneTimeDonation}
             size="lg"
             variant="action"
-            disabled={isProcessingDonation}
+            disabled={isProcessingDonation || isProcessingSubscription}
             className="w-full h-12 rounded-xl"
           >
             {isProcessingDonation ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Heart className="mr-2 h-5 w-5" />}
@@ -269,7 +274,7 @@ const Collaborate = () => {
           <Button
             onClick={handleSubscription}
             size="lg"
-            disabled={isProcessingSubscription}
+            disabled={isProcessingSubscription || isProcessingDonation}
             className="w-full font-bold h-12 text-white bg-brand-primary hover:bg-brand-dark shadow-md hover:shadow-lg transition-all rounded-xl"
           >
             {isProcessingSubscription ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <HandshakeIcon className="mr-2 h-5 w-5" />}
@@ -333,25 +338,24 @@ const Collaborate = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16"
           >
             <div className="mb-6">
               <Eyebrow light>Colaboración</Eyebrow>
             </div>
-            <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            <h1 className="font-poppins font-bold text-3xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
               Sumá tu ayuda, multiplicá oportunidades
             </h1>
-            <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
-              Cada aporte cuenta. Con una donación puntual o mensual, ayudás a crear
-              experiencias formativas y becas que multiplican oportunidades para los chicos.
+            <p className="max-w-[36rem] text-base sm:text-lg leading-relaxed text-white/75">
+              Ayudá a crear experiencias educativas y becas deportivas. Elegí un aporte único o mensual.
             </p>
           </motion.div>
         </section>
 
         {/* --- OPCIONES DE COLABORACIÓN --- */}
-        <section className="py-16 md:py-20 px-4">
-          <div className="container mx-auto max-w-7xl">
-            <div className="mb-10">
+        <section className="py-8 md:py-12 px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-6">
               <div className="mb-4">
                 <Eyebrow>Formas de colaborar</Eyebrow>
               </div>
@@ -359,17 +363,18 @@ const Collaborate = () => {
                 Elegí cómo sumarte
               </h2>
             </div>
-            {/* Arriba de las tres tarjetas y no dentro de cada una: aplica a
-                las dos formas de aportar, y repetirlo seria pedir el mismo dato
-                dos veces. */}
-            <AvisoSesion
-              user={user}
-              email={emailAportante}
-              onEmailChange={setEmailAportante}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {collaborationOptions.map((option, index) => (
+            <div className="grid grid-cols-3 gap-2 mb-5" role="group" aria-label="Forma de colaborar">
+              {collaborationOptions.map(option => (
+                <button key={option.id} type="button" aria-pressed={selectedOption === option.id}
+                  onClick={() => setSelectedOption(option.id)}
+                  className={`min-h-[72px] rounded-xl border px-2 py-3 text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-colors ${selectedOption === option.id ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-dark border-gray-200 hover:bg-gray-50'}`}>
+                  <option.icon className="h-5 w-5" aria-hidden="true" />
+                  {option.id === 'donation' ? 'Una vez' : option.id === 'subscription' ? 'Cada mes' : 'Voluntariado'}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+              {collaborationOptions.filter(option => option.id === selectedOption).map((option, index) => (
                 <motion.div
                   key={option.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -379,8 +384,8 @@ const Collaborate = () => {
                   className="h-full"
                 >
                   <Card className="h-full w-full flex flex-col bg-white rounded-3xl border border-transparent hover:border-brand-primary/10 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group">
-                    <CardHeader className="p-8 pb-4">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${option.iconBg} transition-transform group-hover:scale-110 duration-300`}>
+                    <CardHeader className="p-5 sm:p-8 pb-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${option.iconBg} transition-transform group-hover:scale-110 duration-300`}>
                         <option.icon className="w-8 h-8" />
                       </div>
                       <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">
@@ -391,11 +396,13 @@ const Collaborate = () => {
                       </p>
                     </CardHeader>
 
-                    <CardContent className="p-8 pt-2 flex-grow flex flex-col">
-                      <div className="text-gray-600 mb-8 leading-relaxed">
+                    <CardContent className="p-5 sm:p-8 pt-2 flex-grow flex flex-col">
+                      <div className="text-gray-600 mb-5 leading-relaxed">
                         {option.description}
                       </div>
+                      {option.id !== 'volunteer' && <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />}
                       {option.content}
+                      {option.id !== 'volunteer' && <p className="mt-3 text-center text-sm text-gray-600 flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" />Pago seguro en Mercado Pago{option.id === 'subscription' ? ' · Cobro mensual' : ' · Por única vez'}</p>}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -405,9 +412,9 @@ const Collaborate = () => {
         </section>
 
         {/* --- MERCADO LIBRE SOLIDARIO / TRUST --- */}
-        <section className="py-16 bg-white mb-12">
+        <section className="py-8 md:py-12 bg-white mb-6">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto bg-brand-sand rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 border border-gray-100">
+            <div className="max-w-5xl mx-auto bg-brand-sand rounded-2xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-6 border border-gray-100">
                 
                 <div className="md:w-1/2 text-center md:text-left">
                     <div className="inline-flex items-center gap-2 mb-4">

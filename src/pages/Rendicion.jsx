@@ -25,12 +25,14 @@ import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
 import { balanceDestino } from '@/api/gastosApi';
 import { entidad, tituloPagina } from '@/config/entidad';
 
-const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
+const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const soloFecha = (v) => (v ? String(v).slice(0, 10).split('-').reverse().join('/') : '—');
 
 const Rendicion = () => {
-  const { data: destinos = [], isPending: cargandoDestinos } = useDestinosActivos();
-  const { data: gastos = [] } = useGastos();
+  const destinosQuery = useDestinosActivos();
+  const gastosQuery = useGastos();
+  const { data: destinos = [], isPending: cargandoDestinos } = destinosQuery;
+  const { data: gastos = [] } = gastosQuery;
 
   // Agrupar acá y no por consulta: son pocas filas y una sola consulta se cachea
   // mejor que N. Si algún día son muchas, esto se vuelve una consulta por destino.
@@ -67,65 +69,62 @@ const Rendicion = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
+            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16"
           >
             <div className="mb-6"><Eyebrow light>Transparencia</Eyebrow></div>
-            <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
+            <h1 className="font-poppins font-bold text-3xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
               En qué se usó tu aporte
             </h1>
-            <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
-              Cada peso que entra tiene un destino, y cada gasto que sale de ese destino se
-              publica acá con su fecha, su monto y su respaldo.
+            <p className="max-w-[36rem] text-base sm:text-lg leading-relaxed text-white/75">
+              Consultá cuánto se recaudó, en qué se usó y qué respaldo tiene cada gasto publicado.
             </p>
           </motion.div>
         </section>
 
-        <section className="py-16 md:py-20 px-4">
-          <div className="container mx-auto max-w-5xl space-y-10">
+        <section className="py-8 md:py-12 px-4">
+          <div className="mx-auto max-w-5xl space-y-6 md:space-y-8">
 
-            {/* --- Totales --- */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl border border-gray-100 bg-white p-6">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Recaudado</p>
-                <p className="text-3xl font-black font-poppins text-brand-dark tabular-nums">
-                  {pesos(totales.recaudado)}
-                </p>
-              </div>
-              <div className="rounded-3xl border border-gray-100 bg-white p-6">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Rendido</p>
-                <p className="text-3xl font-black font-poppins text-brand-primary tabular-nums">
-                  {pesos(totales.rendido)}
-                </p>
-              </div>
-              <div className="rounded-3xl border border-gray-100 bg-white p-6">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Disponible</p>
-                <p className="text-3xl font-black font-poppins text-brand-dark tabular-nums">
-                  {pesos(totales.saldo)}
-                </p>
-              </div>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-brand-dark">Resumen de los destinos activos</h2>
+              <p className="text-sm text-gray-600">Todos los montos en pesos argentinos (ARS)</p>
             </div>
-
-            {/* La honestidad sobre el propio número: "rendido" no es "gastado".
-                Decirlo evita que el saldo se lea como plata parada. */}
-            <p className="flex items-start gap-2 rounded-2xl bg-white/60 p-4 text-sm text-gray-600">
-              <Info className="w-4 h-4 shrink-0 mt-0.5 text-brand-primary" />
-              <span>
-                <strong className="text-brand-dark">Rendido</strong> es lo que ya está publicado
-                con su detalle. Un gasto reciente puede estar todavía en revisión y aparecer más
-                adelante, así que <strong className="text-brand-dark">disponible</strong> no es
-                necesariamente plata sin usar.
-              </span>
-            </p>
+            {destinosQuery.isError ? (
+              <div role="alert" className="rounded-2xl border border-amber-200 bg-white p-5">
+                <p className="font-semibold text-brand-dark">No pudimos cargar la rendición</p>
+                <p className="mt-1 text-sm text-gray-600">Volvé a intentar para consultar los importes y sus destinos.</p>
+                <Button variant="outline" className="mt-3 min-h-[44px]" onClick={() => destinosQuery.refetch()}>Volver a intentar</Button>
+              </div>
+            ) : cargandoDestinos ? (
+              <div role="status" className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-600">Cargando resumen de aportes…</div>
+            ) : (
+              <dl className="grid sm:grid-cols-3 gap-3">
+                {[
+                  ['Recaudado', totales.recaudado, 'Aportes recibidos'],
+                  ['Rendido', totales.rendido, 'Gastos con detalle publicado'],
+                  ['Saldo por rendir', totales.saldo, 'Recaudado menos rendido'],
+                ].map(([label, amount, help]) => <div key={label} className={`min-w-0 rounded-2xl border p-5 ${label === 'Recaudado' ? 'bg-brand-primary border-brand-primary text-white' : 'bg-white border-gray-200 text-brand-dark'}`}>
+                  <dt className="text-sm font-semibold">{label}</dt>
+                  <dd className="mt-2 text-2xl sm:text-3xl font-bold font-poppins tabular-nums break-words">{pesos(amount)}</dd>
+                  <p className={`mt-2 text-sm ${label === 'Recaudado' ? 'text-white/80' : 'text-gray-600'}`}>{help}</p>
+                </div>)}
+              </dl>
+            )}
+            <div className="flex items-start gap-3 rounded-xl border border-brand-primary/10 bg-brand-primary/5 p-4 text-sm text-gray-600">
+              <Info aria-hidden="true" className="w-5 h-5 shrink-0 mt-0.5 text-brand-primary" />
+              <p><strong className="text-brand-dark">Cómo leer el saldo.</strong> Es la diferencia entre lo recaudado y los gastos publicados. Puede incluir gastos todavía en revisión; no representa necesariamente dinero sin usar.</p>
+            </div>
+            {!destinosQuery.isError && !cargandoDestinos && destinos.length > 0 && <div className="pt-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-brand-dark">En qué se usaron los aportes</h2>
+              <p className="mt-1 text-sm text-gray-600">Balance y gastos publicados de cada destino.</p>
+            </div>}
 
             {/* --- Por destino --- */}
-            {cargandoDestinos ? (
-              <p className="text-gray-500">Cargando…</p>
-            ) : destinos.length === 0 ? (
-              <div className="rounded-3xl border border-gray-100 bg-white p-10 text-center">
+            {cargandoDestinos || destinosQuery.isError ? null : destinos.length === 0 ? (
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
                 <ScrollText className="w-10 h-10 text-brand-primary mx-auto mb-3" />
-                <p className="font-semibold text-brand-dark">Todavía no hay nada que rendir</p>
+                <p className="font-semibold text-brand-dark">Todavía no hay destinos activos</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Cuando haya campañas abiertas, su detalle aparece acá.
+                  Cuando se publique un destino activo, vas a poder consultar su balance acá.
                 </p>
               </div>
             ) : (
@@ -134,29 +133,27 @@ const Rendicion = () => {
                 const suyos = gastosPorDestino.get(d.id) ?? [];
 
                 return (
-                  <div key={d.id} className="rounded-3xl border border-gray-100 bg-white overflow-hidden">
-                    <div className="p-6 md:p-8 border-b border-gray-100">
-                      <h2 className="font-poppins font-bold text-2xl text-brand-dark">{d.nombre}</h2>
-                      {d.descripcion && (
-                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">{d.descripcion}</p>
-                      )}
+                  <div key={d.id} className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
+                    <div className="p-5 sm:p-6 border-b border-gray-100">
+                      <h3 className="font-poppins font-bold text-xl sm:text-2xl text-brand-dark break-words">{d.nombre}</h3>
+                      {d.descripcion && (d.descripcion.length > 240 ? (
+                        <details className="mt-2 text-sm text-gray-600">
+                          <summary className="min-h-[44px] py-3 cursor-pointer font-semibold text-brand-primary">Sobre este destino</summary>
+                          <p className="leading-relaxed pb-2">{d.descripcion}</p>
+                        </details>
+                      ) : <p className="mt-2 text-sm text-gray-600 leading-relaxed">{d.descripcion}</p>)}
 
-                      <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm tabular-nums">
-                        <span className="text-gray-600">
-                          Recaudado <strong className="text-brand-dark">{pesos(balance.recaudado)}</strong>
-                          {/* La meta solo si existe: el destino institucional no
-                              tiene, y "de $0" se leería como un error. */}
-                          {d.meta_monto ? (
-                            <span className="text-gray-500"> de {pesos(d.meta_monto)}</span>
-                          ) : null}
-                        </span>
-                        <span className="text-gray-600">
-                          Rendido <strong className="text-brand-primary">{pesos(balance.rendido)}</strong>
-                        </span>
-                        <span className="text-gray-600">
-                          Disponible <strong className="text-brand-dark">{pesos(balance.saldo)}</strong>
-                        </span>
-                      </div>
+                      <dl className="mt-5 grid sm:grid-cols-3 gap-3 rounded-xl bg-brand-sand p-4 text-sm tabular-nums">
+                        {[
+                          ['Recaudado', balance.recaudado],
+                          ['Rendido', balance.rendido],
+                          ['Saldo por rendir', balance.saldo],
+                        ].map(([label, amount]) => <div key={label} className="min-w-0 flex justify-between gap-3 sm:block">
+                          <dt className="text-gray-600">{label}</dt>
+                          <dd className="font-bold text-brand-dark break-words sm:mt-1">{pesos(amount)}</dd>
+                        </div>)}
+                      </dl>
+                      {Number(d.meta_monto) > 0 && <p className="mt-3 text-sm text-gray-600">Meta de recaudación: <strong className="text-brand-dark">{pesos(d.meta_monto)}</strong></p>}
 
                       {balance.porcentajeRendido !== null && (
                         <div className="mt-4">
@@ -169,69 +166,55 @@ const Rendicion = () => {
                             aria-label={`Porcentaje rendido de ${d.nombre}`}
                           >
                             <div
-                              className="h-full rounded-full bg-brand-gold"
+                              className="h-full rounded-full bg-brand-primary"
                               style={{ width: `${balance.porcentajeRendido}%` }}
                             />
                           </div>
-                          <p className="mt-1.5 text-xs text-gray-500">
+                          <p className="mt-1.5 text-sm text-gray-600">
                             {balance.porcentajeRendido}% de lo recaudado ya tiene rendición publicada
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {suyos.length === 0 ? (
-                      <p className="p-6 md:p-8 text-sm text-gray-500">
-                        Todavía no se publicaron gastos de este destino.
-                      </p>
+                    {gastosQuery.isPending ? <p role="status" className="p-5 sm:p-6 text-sm text-gray-600">Cargando gastos publicados…</p> : gastosQuery.isError ? (
+                      <div role="alert" className="p-5 sm:p-6 text-sm text-gray-600"><p>No pudimos cargar el detalle de los gastos.</p><Button variant="outline" className="mt-3 min-h-[44px]" onClick={() => gastosQuery.refetch()}>Reintentar gastos</Button></div>
+                    ) : suyos.length === 0 ? (
+                      <p className="p-5 sm:p-6 text-sm text-gray-600">Todavía no se publicaron gastos de este destino.</p>
                     ) : (
-                      <ul className="divide-y divide-gray-100">
-                        {suyos.map((g) => (
-                          <li key={g.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4 md:px-8">
-                            <span className="text-xs text-gray-500 tabular-nums w-20 shrink-0">
-                              {soloFecha(g.fecha)}
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="text-brand-dark font-medium truncate">{g.concepto}</p>
-                              {(g.categoria || g.proveedor) && (
-                                <p className="text-xs text-gray-500 truncate">
-                                  {[g.categoria, g.proveedor].filter(Boolean).join(' · ')}
-                                </p>
-                              )}
+                      <details>
+                        <summary className="cursor-pointer p-5 sm:p-6 font-semibold text-brand-primary min-h-[56px]">Ver gastos publicados ({suyos.length})</summary>
+                        <ul className="divide-y divide-gray-100 border-t border-gray-100">
+                          {suyos.map(g => <li key={g.id} className="p-5 sm:p-6">
+                            <div className="flex flex-col min-[400px]:flex-row min-[400px]:justify-between gap-2 sm:gap-4">
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-600 tabular-nums">{soloFecha(g.fecha)}</p>
+                                <p className="mt-1 font-semibold text-brand-dark break-words">{g.concepto}</p>
+                                {(g.categoria || g.proveedor) && <p className="mt-1 text-sm text-gray-600 break-words">{[g.categoria, g.proveedor].filter(Boolean).join(' · ')}</p>}
+                              </div>
+                              <p className="font-bold text-lg text-brand-dark tabular-nums break-words min-[400px]:text-right">{pesos(g.monto)}</p>
                             </div>
-
-                            {/* La ausencia de comprobante se muestra, no se esconde:
-                                es lo que hace creíble a los que sí lo tienen. */}
-                            {g.tiene_comprobante ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-green-700 shrink-0">
-                                <FileCheck2 className="w-3.5 h-3.5" /> Con comprobante
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-amber-700 shrink-0">
-                                <FileX2 className="w-3.5 h-3.5" /> Sin comprobante
-                              </span>
-                            )}
-
-                            <span className="font-bold text-brand-dark tabular-nums shrink-0">
-                              {pesos(g.monto)}
+                            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 mt-3 text-xs font-semibold ${g.tiene_comprobante ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-800'}`}>
+                              {g.tiene_comprobante ? <FileCheck2 aria-hidden="true" className="w-4 h-4" /> : <FileX2 aria-hidden="true" className="w-4 h-4" />}
+                              {g.tiene_comprobante ? 'Con comprobante' : 'Sin comprobante'}
                             </span>
-                          </li>
-                        ))}
-                      </ul>
+                          </li>)}
+                        </ul>
+                      </details>
                     )}
                   </div>
                 );
               })
             )}
 
-            <div className="rounded-3xl bg-white border border-gray-100 p-6 md:p-8">
+            <div className="rounded-2xl bg-white border border-gray-200 p-5 sm:p-6">
+              <h2 className="text-xl font-bold text-brand-dark mb-3">¿Querés consultar un comprobante?</h2>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Los comprobantes de cada gasto quedan archivados y a disposición de quien los
                 pida. No se publican porque suelen incluir datos personales de terceros
                 —CUIT, domicilio, firma— que no nos corresponde difundir.
               </p>
-              <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-3" asChild>
+              <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto mt-3 whitespace-normal text-left" asChild>
                 <Link to="/contact">Pedir el detalle de un gasto →</Link>
               </Button>
             </div>

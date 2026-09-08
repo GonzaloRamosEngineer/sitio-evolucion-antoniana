@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { CalendarDays, User, Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { entidad } from '@/config/entidad';
 
 const BottomNavBar = () => {
   const { isAuthenticated } = useAuth();
@@ -21,9 +20,9 @@ const BottomNavBar = () => {
     },
     {
       name: 'Donar',
-      href: entidad.pagos.mercadoPagoDonacion,
+      href: '/collaborate',
       icon: Heart,
-      isExternal: true,
+      isExternal: false,
       color: 'text-brand-action'
     },
     {
@@ -46,9 +45,9 @@ const BottomNavBar = () => {
     <motion.div
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-lg border-t border-gray-100 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] z-50 pb-safe"
+      className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4.5rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-lg border-t border-gray-100 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] z-50 pb-[env(safe-area-inset-bottom)]"
     >
-      <nav className="h-full max-w-md mx-auto">
+      <nav aria-label="Navegación principal mobile" className="h-full max-w-md mx-auto">
         <ul className="flex justify-around items-center h-full px-4">
           {navItems.map((item) => {
             const IconComponent = item.icon;
@@ -68,7 +67,7 @@ const BottomNavBar = () => {
                 <IconComponent
                   className={cn(
                     'w-6 h-6 transition-all duration-300',
-                    linkIsActive ? 'text-brand-primary' : 'text-gray-400',
+                    linkIsActive ? 'text-brand-primary' : 'text-gray-600',
                     item.isExternal && item.name === 'WhatsApp' && 'group-hover:text-green-500',
                     item.isExternal && item.name === 'Donar' && 'text-brand-action'
                   )}
@@ -77,7 +76,7 @@ const BottomNavBar = () => {
                 <span
                   className={cn(
                     'text-[10px] font-bold uppercase tracking-tighter mt-1 transition-colors',
-                    linkIsActive ? 'text-brand-primary' : 'text-gray-400'
+                    linkIsActive ? 'text-brand-primary' : 'text-gray-600'
                   )}
                 >
                   {item.name}
@@ -88,11 +87,11 @@ const BottomNavBar = () => {
             return (
               <li key={item.name} className="flex-1 group">
                 {item.isExternal ? (
-                  <a href={item.href} target="_blank" rel="noreferrer" className="flex w-full h-full items-center justify-center">
+                  <a href={item.href} target="_blank" rel="noreferrer" className="flex w-full min-h-[48px] h-full items-center justify-center">
                     {content}
                   </a>
                 ) : (
-                  <Link to={item.href} className="flex w-full h-full items-center justify-center">
+                  <Link aria-current={linkIsActive ? 'page' : undefined} to={item.href} className="flex w-full min-h-[48px] h-full items-center justify-center">
                     {content}
                   </Link>
                 )}

@@ -54,7 +54,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
 
   if (user) {
     return (
-      <div className="mb-8 rounded-sm border border-brand-primary/25 bg-white px-5 py-4">
+      <div className="mb-5 rounded-xl border border-brand-primary/25 bg-white px-5 py-4">
         <div className="flex items-start gap-3">
           <UserCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-primary" />
           <div className="flex-1">
@@ -76,7 +76,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
               <button
                 type="button"
                 onClick={() => setOtroEmail(true)}
-                className="mt-2 text-xs font-semibold text-brand-primary underline underline-offset-4"
+                className="mt-2 min-h-[44px] text-sm font-semibold text-brand-primary underline underline-offset-4"
               >
                 Pagar con otro email
               </button>
@@ -108,7 +108,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
                   placeholder="otro@email.com"
                   value={email}
                   onChange={(e) => onEmailChange(e.target.value)}
-                  className="mt-2 h-11 max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
+                  className="mt-2 h-11 text-base max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
                 />
                 {emailEscrito && !emailSirve && (
                   <p className="mt-2 text-sm text-red-600">
@@ -124,7 +124,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
   }
 
   return (
-    <div className="mb-8 rounded-sm border border-brand-gold/50 bg-brand-gold/10 px-5 py-5 sm:px-6 sm:py-6">
+    <div className="mb-5 rounded-xl border border-brand-gold/50 bg-brand-gold/10 px-5 py-4 sm:px-6">
       <div className="flex items-start gap-3">
         <IdCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-dark" />
         <div className="flex-1">
@@ -132,10 +132,8 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
             ¿Tenés cuenta? Iniciá sesión antes de aportar
           </h3>
           <p className="mt-2 max-w-[46rem] text-sm leading-relaxed text-brand-dark/70">
-            Aportar con la sesión iniciada es lo que hace que el aporte quede a tu nombre:
-            suma para tu antigüedad y te habilita los beneficios del club. Si aportás sin
-            sesión, el aporte entra igual —y se agradece igual— pero no hay forma de saber
-            que fue tuyo.
+            Tu aporte queda a tu nombre y suma para acceder a los beneficios del club.
+            También podés aportar sin cuenta.
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -153,13 +151,12 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
             </Link>
           </div>
 
-          <div className="mt-6 border-t border-brand-dark/10 pt-5">
+          <div className="mt-4 border-t border-brand-dark/10 pt-5">
             <Label htmlFor="email-aportante" className="font-semibold text-brand-dark">
               ¿Preferís aportar sin cuenta? Dejanos tu email
             </Label>
             <p className="mt-1 text-sm leading-relaxed text-brand-dark/60">
-              Es opcional. Sirve para que puedas vincular este aporte más adelante, si
-              alguna vez creás tu cuenta con ese mismo email.
+              Es opcional. Te permite vincular el aporte cuando crees una cuenta con ese email.
             </p>
             <Input
               id="email-aportante"
@@ -169,7 +166,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
               placeholder="tu@email.com"
               value={email}
               onChange={(e) => onEmailChange(e.target.value)}
-              className="mt-2 h-11 max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
+              className="mt-2 h-11 text-base max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
             />
             {/* Avisa, no bloquea: el botón de donar sigue habilitado y el aporte
                 entra igual, solo que sin este dato. */}

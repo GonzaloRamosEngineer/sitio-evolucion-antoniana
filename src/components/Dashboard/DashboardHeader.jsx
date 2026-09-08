@@ -76,25 +76,25 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
   };
 
   return (
-    <div className="w-full mb-10">
+    <div className="w-full mb-6">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[2.5rem] bg-brand-dark shadow-2xl border border-white/5"
+        className="relative overflow-hidden rounded-2xl bg-brand-dark shadow-sm border border-white/5"
       >
         {/* Capas de diseño de fondo (Efecto Lujo) */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/20 via-transparent to-brand-gold/10" />
         <div className="absolute -top-24 -right-24 w-80 h-80 bg-brand-primary/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-brand-gold/5 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="relative z-10 p-6 md:p-10">
-          <div className="flex flex-col lg:flex-row items-center gap-10">
+        <div className="relative z-10 p-5 md:p-8">
+          <div className="flex flex-col lg:flex-row items-center gap-5">
             
             {/* FOTO DE PERFIL / AVATAR CON AURA */}
             <div className="relative group">
               <div className={`absolute -inset-1.5 rounded-full opacity-70 blur-md transition duration-1000 ${esSocio ? 'bg-brand-gold animate-pulse' : 'bg-blue-400'}`} />
               
-              <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white/10 shadow-2xl relative z-10">
+              <Avatar className="h-16 w-16 md:h-24 md:w-24 border-4 border-white/10 shadow-sm relative z-10">
                 <AvatarImage src={user?.avatar_url || '/img/default-avatar.png'} className="object-cover" />
                 <AvatarFallback className="bg-brand-sand text-brand-primary text-4xl font-bold">
                   {getInitials(user?.name)}
@@ -109,10 +109,10 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
             </div>
 
             {/* INFORMACIÓN DEL CARNET */}
-            <div className="flex-1 text-center lg:text-left space-y-6">
+            <div className="min-w-0 w-full flex-1 text-center lg:text-left space-y-4">
               <div>
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-3">
-                  <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase font-poppins">
+                  <h2 className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase font-poppins">
                     {user?.name || user?.email?.split('@')[0] || 'Usuario'}
                   </h2>
                   {/*
@@ -134,18 +134,18 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                   </Badge>
                 </div>
                 
-                <div className="flex items-center justify-center lg:justify-start gap-2 text-brand-sand/80 font-mono text-sm tracking-wider">
+                <div className="flex items-center justify-center lg:justify-start gap-2 text-brand-sand/80 text-sm break-all">
                    <Mail className="w-4 h-4" /> {user?.email}
                 </div>
               </div>
 
               {/* GRILLA DE DATOS DEL SOCIO */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-6 border-y border-white/5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-white/5">
                 <div className="space-y-1">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
+                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
                     <Fingerprint className="w-3 h-3" /> Documento
                   </p>
-                  <p className="text-white font-bold text-lg">{user?.dni || '---'}</p>
+                  <p className="text-white font-semibold text-sm">{user?.dni || '---'}</p>
                 </div>
                 
                 {/*
@@ -154,10 +154,10 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                   de `aportes.origen` y el mismo que muestra el carnet.
                 */}
                 <div className="space-y-1">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
+                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
                     <ShieldCheck className="w-3 h-3" /> Origen del aporte
                   </p>
-                  <p className="text-brand-gold font-bold text-lg tracking-tight">
+                  <p className="text-brand-gold font-semibold text-sm tracking-tight">
                     {nombreOrigen(acceso?.origen) ?? '---'}
                   </p>
                 </div>
@@ -168,19 +168,19 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                   nota: hay 23 cuentas y 6 aportes.
                 */}
                 <div className="space-y-1">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
+                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
                     <Calendar className="w-3 h-3" /> Aportando desde
                   </p>
-                  <p className="text-white font-bold text-lg">
+                  <p className="text-white font-semibold text-sm">
                     {formatearFecha(antiguedad?.socio_desde) ?? '---'}
                   </p>
                 </div>
 
-                <div className="col-span-2 md:col-span-1 space-y-1">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
                     <Clock className="w-3 h-3" /> Tiempo aportado
                   </p>
-                  <p className="text-white font-bold text-lg">
+                  <p className="text-white font-semibold text-sm">
                     {antiguedad?.socio_desde ? formatearMeses(antiguedad.meses_aportados) : '---'}
                   </p>
                 </div>
@@ -192,7 +192,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               <EditProfileModal user={user} onUpdateSuccess={onUpdateSuccess}>
                 <Button 
                   variant="outline" 
-                  className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-2xl h-14 px-8 font-bold transition-all backdrop-blur-md"
+                  className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-2xl h-12 px-5 font-bold transition-all backdrop-blur-md"
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
                   Editar Perfil
@@ -211,7 +211,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               */}
               {esSocio ? (
                 <Button
-                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-14 px-8 shadow-xl shadow-brand-primary/20 transition-all border-none"
+                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-12 px-5 shadow-xl shadow-brand-primary/20 transition-all border-none"
                   asChild
                 >
                   <Link to="/carnet">
@@ -230,7 +230,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                 </div>
               ) : (
                 <Button
-                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-14 px-8 shadow-xl shadow-brand-primary/20 transition-all border-none"
+                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-12 px-5 shadow-xl shadow-brand-primary/20 transition-all border-none"
                   asChild
                 >
                   <Link to="/collaborate">
