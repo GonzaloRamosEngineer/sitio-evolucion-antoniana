@@ -29,6 +29,7 @@ const Collaborate = lazy(() => import("@/pages/Collaborate"));
 const CarnetPage = lazy(() => import("@/pages/CarnetPage"));
 const ClubPage = lazy(() => import("@/pages/club/ClubPage"));
 const ComercioPanel = lazy(() => import("@/pages/club/ComercioPanel"));
+const PostularComercioPage = lazy(() => import("@/pages/club/PostularComercioPage"));
 const Rendicion = lazy(() => import("@/pages/Rendicion"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -147,10 +148,27 @@ const PageRoutes = () => {
           }
         />
 
-        {/* Club fase 2 (ROADMAP §12). El catálogo es público a propósito: quien
-            todavía no aportó tiene que poder ver qué se está perdiendo. Lo que
-            exige sesión es generar el canje, y eso lo valida la Edge Function. */}
+        {/* §12: `/beneficios` y `/club` leen la MISMA tabla y hacen trabajos
+            distintos, decidido el 2026-09-06 (§12.10.14 lo dejó abierto):
+
+              /beneficios  la VIDRIERA. Pública, indexable, con slug propio y
+                           previews de OG. Es a donde llega quien todavía no
+                           aporta, y por eso está en el nav.
+              /club        el MOSTRADOR del socio: canjear y ver los canjes
+                           propios. Se llega desde el carnet, desde el
+                           dashboard y desde el CTA de un beneficio, no desde
+                           el nav público — mandar ahí a un visitante sería
+                           ofrecerle una pantalla que no puede usar.
+
+            Sigue siendo pública y no protegida a propósito: entrar por la URL
+            y ver qué hay adentro no hace daño, y lo que exige sesión —generar
+            el canje— lo valida la Edge Function. */}
         <Route path="/club" element={<ClubPage />} />
+
+        {/* §12.10.5 — por dónde pide entrar un comercio. Pública y sin sesión:
+            un comercio que quiere sumarse no tiene por qué crearse una cuenta
+            en el sitio para avisarlo. */}
+        <Route path="/club/postular" element={<PostularComercioPage />} />
 
         {/* El mostrador. `ProtectedRoute` solo garantiza que haya sesión; QUIÉN
             puede validar lo resuelve `mis_comercios()` en la base, y las Edge

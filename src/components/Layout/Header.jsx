@@ -29,14 +29,29 @@ import { motion, AnimatePresence } from "framer-motion";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // desktop: control de submenús + timers para hover-intent
-  const [openNos, setOpenNos] = useState(false);
-  const [openColab, setOpenColab] = useState(false);
-  const nosTimer = useRef(null);
-  const colabTimer = useRef(null);
+  /*
+    Submenús abiertos, POR CLAVE y no una variable por grupo.
 
-  // mobile: acordeones para submenús
-  const [openMob, setOpenMob] = useState({ nosotros: false, colabora: false });
+    Antes había `openNos`/`openColab` y el desktop elegía con
+    `item.key === "nosotros" ? openNos : openColab`. Eso funciona con exactamente
+    dos grupos y se rompe callado con el tercero: **cualquier grupo que no sea
+    "nosotros" comparte el estado de "colabora"**, así que abrir uno abre el
+    otro. Apareció al sumar «Transparencia».
+
+    Un mapa por clave hace que agregar un grupo sea una fila más en `navigation`,
+    que es como ya funcionaba el acordeón de mobile.
+  */
+  const [openDesk, setOpenDesk] = useState({});
+  const timers = useRef({});
+  const timerFor = (key) => {
+    if (!timers.current[key]) timers.current[key] = { current: null };
+    return timers.current[key];
+  };
+  const setOpenFor = (key) => (v) => setOpenDesk((s) => ({ ...s, [key]: v }));
+
+  // mobile: acordeones para submenús. `{}` y no las claves enumeradas: una clave
+  // ausente ya es "cerrado", y así no hay lista que actualizar al sumar grupos.
+  const [openMob, setOpenMob] = useState({});
 
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
@@ -58,7 +73,23 @@ const Header = () => {
       key: "colabora",
       subitems: [{ name: "Beneficios", href: "/beneficios" }],
     },
-    { name: "Transparencia", href: "/legal-documents" },
+    {
+      // ⚠️ El padre lleva a `/rendicion`, NO a `/legal-documents`, y el orden es
+      // la decisión.
+      //
+      // «Transparencia» apuntaba solo a la documentación institucional, así que
+      // la rendición de cuentas —lo único que muestra plata entrando y saliendo—
+      // no estaba en el menú principal: se llegaba desde el pie o desde
+      // «Colaborá». Es exactamente al revés de lo que la gente busca cuando
+      // hace clic en «Transparencia», y de dónde está el valor del producto
+      // (ROADMAP §14: el diferencial es poder rendir, no tener los papeles).
+      //
+      // Los papeles siguen a un clic, y las dos páginas se enlazan entre sí.
+      name: "Transparencia",
+      href: "/rendicion",
+      key: "transparencia",
+      subitems: [{ name: "Documentación oficial", href: "/legal-documents" }],
+    },
   ];
 
   // Activo para enlaces simples
@@ -75,6 +106,11 @@ const Header = () => {
     }
     if (item.key === "colabora") {
       return ["/collaborate", "/beneficios"].some((p) =>
+        location.pathname.startsWith(p)
+      );
+    }
+    if (item.key === "transparencia") {
+      return ["/rendicion", "/legal-documents"].some((p) =>
         location.pathname.startsWith(p)
       );
     }
@@ -116,18 +152,14 @@ const Header = () => {
 
   // 🔒 Ajuste: cerrar menús en cambio de ruta
   React.useEffect(() => {
-    setOpenNos(false);
-    setOpenColab(false);
+    setOpenDesk({});
     setIsMenuOpen(false);
-    setOpenMob({ nosotros: false, colabora: false });
+    setOpenMob({});
   }, [location.pathname]);
 
   // 🔒 Ajuste: cerrar en scroll / click fuera / cambio de orientación
   React.useEffect(() => {
-    const close = () => {
-      setOpenNos(false);
-      setOpenColab(false);
-    };
+    const close = () => setOpenDesk({});
     const onDocClick = (e) => {
       if (!e.target.closest?.("header")) close();
     };
@@ -203,10 +235,7 @@ const Header = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)]"
-      onMouseLeave={() => {
-        setOpenNos(false);
-        setOpenColab(false);
-      }}
+      onMouseLeave={() => setOpenDesk({})}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
@@ -241,9 +270,9 @@ const Header = () => {
                 <DesktopSubmenu
                   key={item.name}
                   item={item}
-                  open={item.key === "nosotros" ? openNos : openColab}
-                  setOpen={item.key === "nosotros" ? setOpenNos : setOpenColab}
-                  timerRef={item.key === "nosotros" ? nosTimer : colabTimer}
+                  open={Boolean(openDesk[item.key])}
+                  setOpen={setOpenFor(item.key)}
+                  timerRef={timerFor(item.key)}
                 />
               ) : (
                 <Link
@@ -493,10 +522,7 @@ const Header = () => {
                                 className="block px-8 py-3 text-sm text-gray-600 hover:text-brand-action hover:bg-gray-50 border-l-4 border-transparent hover:border-brand-action transition-all"
                                 onClick={() => {
                                   setIsMenuOpen(false);
-                                  setOpenMob({
-                                    nosotros: false,
-                                    colabora: false,
-                                  });
+                                  setOpenMob({});
                                 }}
                               >
                                 {sub.name}

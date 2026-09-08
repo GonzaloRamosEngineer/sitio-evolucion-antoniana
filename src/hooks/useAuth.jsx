@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { queryClient } from '@/lib/queryClient';
@@ -75,24 +75,62 @@ export const AuthProvider = ({ children }) => {
     // setLoading(false) se maneja en handleAuthStateChange
   }, [toast]); 
   
-  const handleAuthStateChange = useCallback(async (event, session) => {
-    setLoading(true); 
-    const authUser = session?.user || null;
+  /*
+    ⚠️ `loading` DESMONTA LA APLICACIÓN, ASÍ QUE SOLO PUEDE MOVERSE CUANDO CAMBIA
+    QUIÉN ESTÁ LOGUEADO.
 
+    `ProtectedRoute` devuelve un spinner EN LUGAR de `children` mientras
+    `loading` es true. O sea que cada vez que este provider lo pone en true, la
+    pantalla protegida entera **se desmonta y se vuelve a montar**: se pierde el
+    formulario a medio llenar, el lote de movimientos ya analizado, el scroll,
+    todo. Desde afuera se ve exactamente como una recarga de página.
+
+    Antes esto pasaba con CUALQUIER evento de auth, y `onAuthStateChange` emite
+    varios que no cambian la identidad de nadie: `INITIAL_SESSION` (que además
+    llega duplicado, porque `syncSession` lo dispara a mano) y `TOKEN_REFRESHED`
+    (una vez por hora, cuando falta menos de 90s para que venza el access token —
+    ver `EXPIRY_MARGIN_MS` en auth-js).
+
+    Es la segunda vez que este archivo pisa el mismo pozo: ya se había quitado un
+    listener propio de `visibilitychange` **por este mismo daño** (ver la nota más
+    abajo). Se quitó el disparador y se dejó el mecanismo, así que el síntoma
+    volvió por otra puerta.
+
+    La regla, entonces: **un evento que no cambia el id del usuario no toca
+    `loading` ni relee el perfil.**
+  */
+  const idActual = useRef(null);
+  const yaResolvio = useRef(false);
+
+  const handleAuthStateChange = useCallback(async (event, session) => {
+    const authUser = session?.user || null;
+    const mismaIdentidad = yaResolvio.current && authUser?.id === idActual.current;
+
+    if (mismaIdentidad) {
+      // `USER_UPDATED` sí cambió el perfil, pero la persona ya está adentro: se
+      // relee sin tocar `loading`, para no desmontar lo que esté haciendo.
+      if (event === 'USER_UPDATED') await fetchUserProfile(authUser);
+      return;
+    }
+
+    setLoading(true);
     if (authUser) {
-      await fetchUserProfile(authUser); 
+      await fetchUserProfile(authUser);
     } else {
       setUser(null);
     }
-    setLoading(false); 
+    idActual.current = authUser?.id ?? null;
+    yaResolvio.current = true;
+    setLoading(false);
   }, [fetchUserProfile]);
 
   const refreshUser = useCallback(async () => {
-    setLoading(true); 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession(); 
+    // Sin `setLoading(true)`: quien pide refrescar el perfil no está pidiendo que
+    // se le borre la pantalla. Va como `USER_UPDATED` justamente para forzar la
+    // relectura aunque sea la misma persona, que es lo que se está pidiendo.
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
       logger.error("Error refreshing session in refreshUser:", sessionError.message);
-      // setUser(null) y setLoading(false) serán manejados por handleAuthStateChange
       await handleAuthStateChange('REFRESH_ERROR', null); // Asegura que el estado se actualice
       toast({
         title: "Error de Sesión",
@@ -101,7 +139,7 @@ export const AuthProvider = ({ children }) => {
       });
       return;
     }
-    await handleAuthStateChange('MANUAL_REFRESH', session);
+    await handleAuthStateChange('USER_UPDATED', session);
   }, [handleAuthStateChange, toast]);
 
   useEffect(() => {
@@ -132,6 +170,12 @@ export const AuthProvider = ({ children }) => {
   // desmontaba las páginas protegidas y hacía perder formularios a medio completar
   // (alta de noticias/partners). Supabase ya renueva el token por su cuenta
   // (autoRefreshToken) y notifica vía onAuthStateChange, así que era redundante.
+  //
+  // ⚠️ Y ESO ARREGLÓ EL DISPARADOR, NO EL MECANISMO. `onAuthStateChange` emite
+  // eventos que no cambian la identidad de nadie, y hasta el 2026-09-06 cada uno
+  // de ellos volvía a poner `loading` en true — o sea que el mismo desmontaje
+  // seguía pasando, solo que por otra puerta y más espaciado. La guarda por id de
+  // arriba es la que cierra el mecanismo; `src/hooks/useAuth.test.jsx` la fija.
 
   const login = async (email, password) => {
     try {

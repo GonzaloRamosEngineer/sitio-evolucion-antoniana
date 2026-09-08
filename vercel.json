@@ -1,23 +1,291 @@
 {
   "rewrites": [
-    { "source": "/novedades/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/news/slug?slug=:slug" },
-    { "source": "/beneficios/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/benefits/slug?slug=:slug" },
-    { "source": "/partners/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/partners/:slug" },
-    { "source": "/activities/:slug", "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview|Googlebot|bingbot).*" }], "destination": "/api/share/activities/slug?slug=:slug" },
-
-    { "source": "/api/share/news/(.*)", "destination": "/api/share/news/slug?slug=$1" },
-    { "source": "/api/share/benefits/(.*)", "destination": "/api/share/benefits/slug?slug=$1" },
-    { "source": "/api/share/activities/(.*)", "destination": "/api/share/activities/slug?slug=$1" },
-
-    { "source": "/api/(.*)", "destination": "https://mp-supabase-webhook.onrender.com/api/$1" },
-
-    { "source": "/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "/img/(.*)", "destination": "/img/$1" },
-    { "source": "/favicon.ico", "destination": "/favicon.ico" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/novedades/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/news/slug?slug=:slug"
+    },
+    {
+      "source": "/beneficios/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/benefits/slug?slug=:slug"
+    },
+    {
+      "source": "/partners/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/partners/slug?slug=:slug"
+    },
+    {
+      "source": "/activities/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/activities/slug?slug=:id"
+    },
+    {
+      "source": "/novedades/id/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/news/slug?slug=:id"
+    },
+    {
+      "source": "/novedades/uuid/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/news/slug?slug=:id"
+    },
+    {
+      "source": "/beneficios/id/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/benefits/slug?slug=:id"
+    },
+    {
+      "source": "/about",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=about"
+    },
+    {
+      "source": "/activities",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=activities"
+    },
+    {
+      "source": "/collaborate",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=collaborate"
+    },
+    {
+      "source": "/rendicion",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=rendicion"
+    },
+    {
+      "source": "/contact",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=contact"
+    },
+    {
+      "source": "/novedades",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=novedades"
+    },
+    {
+      "source": "/beneficios",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=beneficios"
+    },
+    {
+      "source": "/partners",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=partners"
+    },
+    {
+      "source": "/postular-partner",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=postular-partner"
+    },
+    {
+      "source": "/club",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=club"
+    },
+    {
+      "source": "/club/postular",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=club/postular"
+    },
+    {
+      "source": "/preinscripcion",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=preinscripcion"
+    },
+    {
+      "source": "/legal-documents",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=legal-documents"
+    },
+    {
+      "source": "/privacy",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=privacy"
+    },
+    {
+      "source": "/terms",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
+        }
+      ],
+      "destination": "/api/share/pagina?p=terms"
+    },
+    {
+      "source": "/api/share/news/(.*)",
+      "destination": "/api/share/news/slug?slug=$1"
+    },
+    {
+      "source": "/api/share/benefits/(.*)",
+      "destination": "/api/share/benefits/slug?slug=$1"
+    },
+    {
+      "source": "/api/share/activities/(.*)",
+      "destination": "/api/share/activities/slug?slug=$1"
+    },
+    {
+      "source": "/api/share/partners/(.*)",
+      "destination": "/api/share/partners/slug?slug=$1"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://mp-supabase-webhook.onrender.com/api/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/img/(.*)",
+      "destination": "/img/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -27,8 +295,14 @@
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
         },
-        { "key": "Accept-Ranges", "value": "none" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
@@ -38,8 +312,14 @@
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
         },
-        { "key": "Accept-Ranges", "value": "none" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
@@ -49,8 +329,14 @@
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
         },
-        { "key": "Accept-Ranges", "value": "none" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
@@ -60,8 +346,31 @@
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
         },
-        { "key": "Accept-Ranges", "value": "none" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/api/share/pagina",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
+        },
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
@@ -71,8 +380,14 @@
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0, no-transform"
         },
-        { "key": "Accept-Ranges", "value": "none" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     }
   ]

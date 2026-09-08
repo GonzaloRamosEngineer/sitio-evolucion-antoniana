@@ -189,6 +189,55 @@ describe('GastosAdmin', () => {
     expect(payload.monto).toBe(25000);
   });
 
+  /*
+    LA ESTRUCTURA DEL FORMULARIO.
+
+    Esta pantalla está detrás de sesión, así que el chequeo con Chrome headless de
+    §B **no verifica ni una línea** de ella: `ProtectedRoute` redirige antes de que
+    el componente se monte. Montarla en un test es lo único que queda, y alcanza
+    para lo que se rompe de verdad.
+
+    Lo que se rompió acá fue anidado: el bloque del comprobante vivía DENTRO de la
+    grilla de dos columnas de categoría/proveedor, o sea que era su tercer item.
+    Quedaba en la mitad izquierda de la segunda fila y, al partirse a su vez en dos
+    columnas, cada campo ocupaba un cuarto del ancho del modal con la mitad derecha
+    vacía. Ni el build ni el lint ni los tests de comportamiento lo ven: el
+    formulario funciona perfecto, se ve mal.
+  */
+  it('🔒 todos los campos son hijos directos de la grilla del formulario', async () => {
+    getGastos.mockResolvedValue({ data: [gasto()], error: null });
+    render(<GastosAdmin />);
+    fireEvent.click(await screen.findByRole('button', { name: /corregir/i }));
+    await screen.findByLabelText(/categoría/i);
+
+    const formulario = document.querySelector('form');
+    expect(formulario.className).toMatch(/grid/);
+
+    // Una sola grilla y sin anidar: con esto, el ancho de cada campo lo decide su
+    // `col-span` y no la posición que le tocó dentro de otra grilla.
+    for (const id of [
+      'gasto-destino', 'gasto-fecha', 'gasto-concepto', 'gasto-monto',
+      'gasto-categoria', 'gasto-proveedor', 'gasto-tipo-comp', 'gasto-num-comp',
+      'gasto-notas',
+    ]) {
+      const campo = document.getElementById(id);
+      expect(campo, `falta el campo ${id}`).not.toBeNull();
+      expect(campo.closest('div').parentElement, `${id} no cuelga del form`).toBe(formulario);
+    }
+  });
+
+  // Lo que el dueño pidió el 2026-09-06 y resultó ser una regla del proyecto:
+  // publicar un gasto publica la fila entera, así que los campos que la persona
+  // escribe tienen que decir en pantalla que son públicos.
+  it('🔒 concepto y proveedor avisan que se publican', async () => {
+    getGastos.mockResolvedValue({ data: [gasto()], error: null });
+    render(<GastosAdmin />);
+    fireEvent.click(await screen.findByRole('button', { name: /corregir/i }));
+
+    expect(await screen.findByText(/se lee en la rendición pública/i)).toBeInTheDocument();
+    expect(screen.getByText(/no una persona/i)).toBeInTheDocument();
+  });
+
   it('un error de carga se muestra como mensaje, no como objeto', async () => {
     getGastos.mockResolvedValue({ data: [], error: new Error('RLS lo rechazo') });
     render(<GastosAdmin />);

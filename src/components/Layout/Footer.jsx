@@ -55,7 +55,12 @@ const Footer = () => {
       links: [
         { name: 'Política de Privacidad', href: '/privacy' },
         { name: 'Términos de Uso', href: '/terms' },
-        { name: 'Transparencia', href: '/legal-documents' },
+        // ⚠️ Decía «Transparencia» y apuntaba acá, mientras «Rendición de cuentas»
+        // —arriba, en Navegación— apuntaba a otra página. Dos nombres distintos
+        // para las dos mitades de lo mismo, y el nombre del paraguas puesto sobre
+        // una sola. El paraguas ahora es el menú superior; acá va lo que la
+        // página realmente es.
+        { name: 'Documentación oficial', href: '/legal-documents' },
       ],
     },
   ];

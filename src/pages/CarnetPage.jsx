@@ -288,8 +288,8 @@ const CarnetPage = () => {
 
             <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
               <h2 className="text-lg font-bold text-brand-dark">Cómo usar tu carnet</h2>
-              <p className="mt-2 text-sm text-gray-600 leading-relaxed">Consultá las condiciones del beneficio y mostrale esta pantalla al comercio adherido. El estado de acceso figura en tu credencial.</p>
-              <Button asChild className="mt-4 min-h-[48px] w-full sm:w-auto rounded-xl"><Link to="/beneficios">Ver beneficios<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">Entrá al club, elegí un beneficio y seguí las indicaciones para generar tu código de canje. Tu credencial muestra el estado de tu acceso.</p>
+              <Button asChild className="mt-4 min-h-[48px] w-full sm:w-auto rounded-xl"><Link to="/club">Canjear un beneficio<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
             </div>
           </motion.div>
         )}

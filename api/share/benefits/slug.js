@@ -62,7 +62,23 @@ export default async function handler(req, res) {
       ? `id=eq.${encodeURIComponent(slug)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
 
-    const apiUrl = `${SUPABASE_URL}/rest/v1/benefits?select=id,titulo,descripcion,imagen_url,descuento,slug&${filter}`;
+    // ⚠️ LA TABLA ES `club_beneficios`, NO `benefits`.
+    //
+    // Esta función nació apuntando a `benefits`, que quedó VACÍA cuando el club
+    // (ROADMAP §12) pasó a ser la fuente de la vidriera. El síntoma no era una
+    // preview fea: era un 404 al scraper, o sea que compartir un beneficio por
+    // WhatsApp no mostraba NINGUNA tarjeta. Se detectó el 2026-09-07, pidiendo
+    // en producción un slug real sacado de la base.
+    //
+    // `select=*` y no columnas explícitas, por el criterio del resto de
+    // `api/share/`: una columna que se renombre no debe tumbar la preview. La
+    // columna del descuento tampoco existe acá —el valor se compone de `tipo` y
+    // `valor`— así que el título es el del beneficio, igual que el `<Helmet>` de
+    // `BenefitDetailPage`.
+    //
+    // Las RLS ya filtran a los beneficios activos de comercios activos (§12.5):
+    // uno despublicado da 404, que es lo correcto.
+    const apiUrl = `${SUPABASE_URL}/rest/v1/club_beneficios?select=*&${filter}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -89,17 +105,16 @@ export default async function handler(req, res) {
     // URL humana real (SPA) — es también la que se comparte y la canónica.
     const humanUrl = `${proto}://${host}/beneficios/${encodeURIComponent(slugOrId)}`;
 
-    // Imagen absoluta con fallback
-    let image = item.imagen_url || "/og-default.png";
+    // Imagen absoluta. El fallback es la tarjeta de la SECCIÓN beneficios, que
+    // al menos dice "Beneficios": `og-default.png` es el logo pelado sobre
+    // blanco y no cuenta nada de lo que se está compartiendo.
+    let image = item.imagen_url || "/img/og/beneficios-1200x630.png";
     if (!/^https?:\/\//i.test(image)) {
       image = `${proto}://${host}${image.startsWith("/") ? "" : "/"}${image}`;
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const rawTitle = item.titulo || "Beneficio";
-    const title = escapeHtml(
-      item.descuento ? `${rawTitle} — ${item.descuento}` : rawTitle
-    );
+    const title = escapeHtml(item.titulo || "Beneficio");
     const desc = escapeHtml(stripToOneLine(item.descripcion).slice(0, 180));
 
     const extraImageType = imageMime

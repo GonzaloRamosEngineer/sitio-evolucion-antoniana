@@ -6,6 +6,7 @@ import {
   calcularAhorro,
   inicioVentanaUTC,
   cumpleRequisitos,
+  decidirRescate,
   type Beneficio,
 } from './club-reglas.ts';
 
@@ -301,5 +302,64 @@ describe('calcularAhorro con tope (§12.11)', () => {
     // Un 0 mentiria en el reporte al comercio (§11.7.12).
     expect(calcularAhorro({ tipo: '2x1', valor: null, ahorro_maximo: 30000 }, 100000)).toBeNull();
     expect(calcularAhorro({ tipo: 'regalo', valor: null, ahorro_maximo: 30000 }, 100000)).toBeNull();
+  });
+});
+
+/* ==========================================================================
+   §12.10.3 — la confirmación diferida, la rama que nunca corrió.
+   ==========================================================================
+   El único canje real se confirmó en 53 segundos, así que todo lo que pasa
+   después del minuto 5 estaba sin ejercitar. Estos casos recorren la ventana
+   entera: adentro del TTL, apenas vencido, casi al límite del rescate, y
+   pasado el límite.
+========================================================================== */
+describe('decidirRescate — el local sin señal (§12.10.3)', () => {
+  // Un canje generado a las 10:00 con TTL de 5 minutos.
+  const creado = new Date('2026-09-06T10:00:00Z');
+  const expira = new Date('2026-09-06T10:05:00Z');
+  const canje = { created_at: creado.toISOString(), expira_en: expira.toISOString() };
+  const en = (min: number) => new Date(creado.getTime() + min * 60_000);
+
+  it('dentro del TTL es un canje normal, no un rescate', () => {
+    const r = decidirRescate(canje, en(3), 2);
+    expect(r.estado).toBe('vigente');
+    expect(r.tardio).toBe(false);
+  });
+
+  it('pasado el TTL todavía se confirma, y queda marcado como tardío', () => {
+    // Es la razón de existir de la ventana: el cajero recuperó señal.
+    const r = decidirRescate(canje, en(30), 2);
+    expect(r.estado).toBe('rescate_tardio');
+    expect(r.tardio).toBe(true);
+  });
+
+  it('el último minuto de la ventana todavía entra', () => {
+    const r = decidirRescate(canje, en(119), 2);
+    expect(r.estado).toBe('rescate_tardio');
+    expect(r.minutos_restantes).toBe(1);
+  });
+
+  it('pasada la ventana ya no se rescata', () => {
+    const r = decidirRescate(canje, en(121), 2);
+    expect(r.estado).toBe('vencido');
+    expect(r.tardio).toBe(false);
+    expect(r.minutos_restantes).toBeLessThan(0);
+  });
+
+  it('⚠️ la ventana se mide contra created_at, NO contra expira_en', () => {
+    // ESTE ES EL CASO QUE JUSTIFICA EL ARCHIVO. Medida contra `expira_en`, la
+    // ventana duraría TTL + 2 h = 2 h 5 min, y a los 122 minutos este canje
+    // seguiría siendo rescatable. Las dos versiones "andan"; solo esta es la
+    // que dice §12.3. Sin este caso, un refactor las intercambia sin que nada
+    // se ponga rojo.
+    expect(decidirRescate(canje, en(122), 2).estado).toBe('vencido');
+    expect(decidirRescate(canje, en(124), 2).estado).toBe('vencido');
+  });
+
+  it('la ventana sale de la config: con 0 horas no hay rescate posible', () => {
+    // `confirmacion_diferida_horas = 0` es cómo un proyecto que copie el módulo
+    // apaga la función entera (§12.7 regla 4), y tiene que apagarla de verdad.
+    const r = decidirRescate(canje, en(6), 0);
+    expect(r.estado).toBe('vencido');
   });
 });

@@ -16,6 +16,7 @@
 // hoy cierra de punta a punta, sin depender de ninguna pasarela.
 import { supabase } from '@/lib/supabase';
 import { listResult, rowResult } from '@/lib/dataResult';
+import { adjuntarComprobante, desadjuntarComprobante } from '@/lib/comprobantes';
 
 /** Cómo se muestra cada origen. Los `value` coinciden con el CHECK del esquema. */
 export const ORIGENES_APORTE = {
@@ -57,14 +58,47 @@ export const validarAporte = (f) => {
   return errores;
 };
 
-/** Convierte el formulario a payload. Los vacíos van como null, nunca como ''. */
-export const aPayloadAporte = (f) => ({
+/**
+ * La referencia de un saldo inicial, derivada del destino.
+ *
+ * ⚠️ POR QUÉ ESTO NO ES UN CAMPO DE TEXTO EN EL FORMULARIO.
+ *
+ * `referencia_externa` es la clave de idempotencia de las importaciones. Si se
+ * dejara escribirla a mano, alguien podría poner `mp:90165423466:-5626.66` —por
+ * copiar un id del extracto, sin mala intención— y **ese movimiento no se podría
+ * importar nunca más**: la base lo rechazaría como duplicado de una fila que no
+ * tiene nada que ver. Un gasto que desaparece en silencio.
+ *
+ * Derivándola del destino, la referencia es siempre `saldo-inicial:<slug>` y
+ * **nunca puede chocar con una `mp:*`**. Y el UNIQUE de la columna garantiza
+ * gratis lo que el dominio ya pedía: **un solo saldo inicial por destino**.
+ */
+export const referenciaSaldoInicial = (slug) => `saldo-inicial:${slug}`;
+
+/**
+ * Convierte el formulario a payload. Los vacíos van como null, nunca como ''.
+ *
+ * `destinoSlug` llega aparte porque el formulario guarda el id y la referencia se
+ * arma con el slug — que es estable y legible, mientras que un uuid en una
+ * referencia no le dice nada a nadie que mire la fila.
+ */
+export const aPayloadAporte = (f, destinoSlug) => ({
   destino_id: f.destino_id,
   monto: Number(f.monto),
   fecha: f.fecha,
   nombre_aportante: f.nombre_aportante.trim() || null,
   email_aportante: f.email_aportante.trim() || null,
   notas: f.notas.trim() || null,
+  // Respaldo documental (20260906120000). Vacío -> null: no declarar el tipo es
+  // válido y es distinto de declarar 'otro'.
+  tipo_comprobante: f.tipo_comprobante || null,
+  comprobante_numero: (f.comprobante_numero || '').trim() || null,
+  // El saldo inicial: la fila que dice "acá había esto" cuando el libro arranca a
+  // mitad de la vida de una entidad. Sin ella, un destino que ya tenía plata
+  // arranca con solo egresos y el saldo se va en negativo.
+  referencia_externa:
+    f.es_saldo_inicial && destinoSlug ? referenciaSaldoInicial(destinoSlug) : null,
+  carga_origen: 'manual',
   // Fijo, no viene del formulario: es lo único que la RLS deja insertar desde
   // el panel, y dejarlo elegir invitaría a marcar como `donacion` algo que la
   // pasarela nunca vio.
@@ -140,3 +174,37 @@ export const reimputarAporte = async (id, destinoId) =>
       .maybeSingle(),
     'reimputarAporte'
   );
+
+/* ============================
+   Respaldo documental del INGRESO (migración 20260906120000)
+   ============================
+   Hasta el 2026-09-06 solo los egresos podían documentarse. La rendición se
+   apoya en dos columnas y la de ingresos no se podía probar — y se vio crudo con
+   el fondo de convenio de la Fundación: $1.000.000 respaldado por documentación
+   certificada ante escribano, sin ningún lugar donde adjuntarla.
+
+   No es un caso raro: quien recibe un subsidio tiene que poder probar que lo
+   recibió, normalmente ante el mismo organismo que se lo dio.
+
+   ⚠️ EL ARCHIVO NUNCA ES PÚBLICO. Un convenio trae nombres, montos y firmas de
+   terceros que no dieron permiso para publicarse. Vive en el bucket privado de
+   la Comisión. Lo que sí es público es que EXISTE: `reporte_destino()` devuelve
+   `aportes_documentados` / `aportes_totales`, un conteo sin identidades. */
+
+const PREFIJO_APORTES = 'aportes';
+
+/** Adjunta el comprobante de un aporte. Mismo mecanismo que en gastos. */
+export const subirComprobanteAporte = async ({ aporteId, file }) =>
+  adjuntarComprobante({
+    prefijo: PREFIJO_APORTES,
+    id: aporteId,
+    file,
+    actualizar: (campos) => updateAporte(aporteId, campos),
+  });
+
+/** Quita el comprobante de un aporte. */
+export const quitarComprobanteAporte = async (aporte) =>
+  desadjuntarComprobante({
+    path: aporte.comprobante_path,
+    actualizar: (campos) => updateAporte(aporte.id, campos),
+  });

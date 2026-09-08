@@ -340,3 +340,52 @@ export const listPartnersAprobados = async () =>
     await supabase.from('partners').select('id, nombre, logo_url').eq('estado', 'aprobado').order('nombre'),
     'listPartnersAprobados',
   );
+
+/* ============================
+   Postulaciones (§12.10.5)
+   ============================ */
+
+export const ESTADOS_POSTULACION = [
+  { valor: 'nueva', etiqueta: 'Nueva' },
+  { valor: 'en_conversacion', etiqueta: 'En conversación' },
+  { valor: 'aprobada', etiqueta: 'Aprobada' },
+  { valor: 'rechazada', etiqueta: 'Rechazada' },
+];
+
+/**
+ * La bandeja de entrada del club. Solo la ve la comisión: la policy no le da
+ * SELECT ni a `anon` ni al resto de los usuarios, porque cada fila trae mail y
+ * teléfono de una persona.
+ */
+export const listPostulaciones = async () =>
+  listResult(
+    await supabase
+      .from('club_postulaciones')
+      .select('*')
+      .order('created_at', { ascending: false }),
+    'listPostulaciones',
+  );
+
+/**
+ * Mover una postulación de estado, con notas.
+ *
+ * `revisada_en`/`revisada_por` se escriben acá y no con un trigger a propósito:
+ * el trigger no sabe distinguir «alguien la miró» de «alguien le corrigió una
+ * coma». Lo que interesa registrar es la revisión, y eso es este llamado.
+ */
+export const revisarPostulacion = async (id, { estado, notas = null, comercioId = null }) =>
+  rowResult(
+    await supabase
+      .from('club_postulaciones')
+      .update({
+        estado,
+        notas,
+        ...(comercioId ? { comercio_id: comercioId } : {}),
+        revisada_en: new Date().toISOString(),
+        revisada_por: (await supabase.auth.getUser()).data?.user?.id ?? null,
+      })
+      .eq('id', id)
+      .select()
+      .single(),
+    'revisarPostulacion',
+  );

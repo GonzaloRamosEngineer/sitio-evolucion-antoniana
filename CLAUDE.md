@@ -28,7 +28,7 @@ npm run test:watch  # Vitest en watch
 
 - **Node 22** (ver `.nvmrc` = 22.12.0 y `engines`). Vercel buildea con la misma versión.
 - **ESLint** (`eslint.config.js`, flat) + **Vitest** (`vitest.config.js`) configurados en la
-  Sesión G. `npm run lint` es un gate que falla solo en errores; hoy quedan ~61 warnings
+  Sesión G. `npm run lint` es un gate que falla solo en errores; hoy quedan **50** warnings
   de backlog (imports sin usar, exhaustive-deps) para limpiar en las Sesiones D/E.
 
 ### Supabase (esquema y funciones, en `supabase/`)
@@ -91,7 +91,17 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   - Una query con `enabled: false` **queda en `isPending`**. Si calculás un `loading` solo con `isPending`, la pantalla se cuelga en el spinner cuando la query está deshabilitada a propósito (p. ej. Dashboard sin sesión). Combinalo con la condición del `enabled`: `Boolean(userId) && query.isPending`.
   - Para un detalle que se llega desde un listado ya migrado, resolvelo con un `select` sobre el listado cacheado en vez de una query nueva (ver `PartnerDetailPage`): la navegación queda instantánea. Query propia solo si el detalle se puede abrir directo desde un link (ver `useNewsItem`), y anidá la clave bajo la del listado para que una invalidación alcance a los dos.
   - Un componente que use estos hooks necesita `QueryClientProvider` en sus tests (ver `PartnersAdmin.test.jsx`): cliente nuevo por caso y `retry: false`.
-- **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
+- **Auth**: `src/hooks/useAuth.jsx` (`AuthProvider` + `useAuth`) expone `user`, `isAuthenticated`, `isAdmin`, `role`, `isBoardMember`.
+  ⚠️ **`loading` DESMONTA LA APLICACIÓN: solo puede moverse cuando cambia QUIÉN está
+  logueado.** `ProtectedRoute` devuelve un spinner *en lugar de* `children` mientras es
+  true, así que ponerlo en true tira abajo la pantalla protegida entera — formulario a
+  medio llenar, lote de movimientos analizado, scroll — y desde afuera se ve idéntico a
+  una recarga de página. `onAuthStateChange` emite eventos que **no** cambian la
+  identidad (`INITIAL_SESSION`, que además llega duplicado, y `TOKEN_REFRESHED`), y hasta
+  el 2026-09-06 todos ellos lo movían. **Este archivo pisó el mismo pozo dos veces**: la
+  primera se quitó un listener de `visibilitychange` —el disparador— y se dejó el
+  mecanismo. La guarda por id de usuario y `src/hooks/useAuth.test.jsx` lo cierran; ver
+  `HISTORIAL.md` §14.4. El perfil/rol sale de la tabla `users`. `src/components/Auth/ProtectedRoute.jsx` soporta `requireAdmin` y `allowedRoles={[...]}`. Tras login, `LoginPage` redirige según rol a su portal (admin→`/admin`, comisión→`/comision`, educación→`/admin/education`, resto→`/dashboard`).
 - **Acceso del socio (aporte → acceso, ROADMAP §10)**: la regla es *dos maneras de aportar (cuota o donación), una sola consecuencia (acceso a beneficios)*. Vive **en SQL**: `aportes` es el libro (escritura solo `service_role`, alimentado por los triggers de `memberships`/`donations`), y `tiene_acceso()` / `mi_acceso()` / `mi_antiguedad()` son la única fuente de la regla. Desde el front se consulta por RPC con `src/api/accesoApi.js` + `useMiAcceso()`; las reglas de presentación (bloqueo, estados, formato) están en `src/lib/acceso.js` y **no se duplican en las páginas**. `/carnet` es la credencial del socio. ⚠️ El bloqueo de un beneficio es **UX, no seguridad**: `benefits.codigo` sigue siendo público (ver la limitación en ROADMAP §12.8).
 - **Condición institucional (ROADMAP §10.1.a) — NO es el acceso**: `miembros` +
   `categorias_miembro` + `reglas_membresia`. Son **dos preguntas distintas** y el sistema
@@ -121,7 +131,75 @@ Migrados hasta ahora: `Header`, `Footer`, `BottomNavBar`, `resource-state`. **Fa
   (NULL = aplicar el descuento de la categoría; 0 = gratis para miembros). El número que se
   le muestra a una persona sale **siempre** de `mi_precio_actividad()`, nunca de una cuenta
   hecha en el front: es una cifra que alguien va a pagar.
-- **Club de beneficios, fase 2 (ROADMAP §12) — EN PRODUCCIÓN y probado de punta a punta el 2026-09-02**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`; la deuda abierta, en §12.10. **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/club` (catálogo con canje, pública) y `/comercio` (mostrador, requiere sesión). Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
+- **Fondos restringidos (ROADMAP §14)**: hay **dos categorías de ingreso**, no una. De
+  libre disponibilidad (cuota social) y **restringido** (subsidio, convenio, donación con
+  cargo, legado): llega completo, atado a un fin, y no se puede aplicar a otra cosa. Un
+  destino con `admite_puntual` y `admite_recurrente` en `false` es exactamente eso —
+  cerrado a aportes nuevos y **rendible igual**. ⚠️ No volver a poner un CHECK que lo
+  impida: se removió a propósito en `20260906120000`, con el motivo escrito.
+  **No mezclar un fondo restringido con la cuota social en un mismo destino**: mezclados,
+  el «disponible» deja de significar algo y la entidad no puede demostrar que respetó la
+  restricción.
+- **Comprobantes**: los adjuntan `aportes` **y** `gastos` — la rendición se apoya en las
+  dos columnas. El mecanismo vive en `src/lib/comprobantes.js` y **el orden de las
+  operaciones es lo único delicado**: al subir, archivo y después fila; al quitar, fila y
+  después archivo. Está escrito una vez a propósito. El archivo **nunca** es público (va
+  al bucket privado `comision-docs`); lo público es que existe, vía `tiene_comprobante` y
+  el conteo agregado de `reporte_destino()`. `tipo_comprobante` es genérico a propósito:
+  la letra A/B/C es normativa argentina y va en `comprobante_numero`.
+- **Importar movimientos (ROADMAP §14.2/§14.3)**: `/admin → Importar movimientos` convierte
+  los extractos de la cuenta en filas del libro. Se eligen **varios `.csv` de una vez** y
+  `consolidarArchivos()` los ordena **por el primer movimiento, no por el nombre** (los de
+  MercadoPago se llaman `account_statement-<uuid>.csv`). La lógica que **decide** es pura y está testeada en
+  `src/lib/importarMovimientos.js`; el componente solo muestra y confirma. Tres invariantes
+  que no se tocan: **propone y no ejecuta** (nada se escribe sin confirmación), **nada entra
+  publicado** (un movimiento puede traer el nombre de un particular en la descripción) y
+  **reimportar no duplica**. Lo último se sostiene en `referencia_externa` = `<fuente>:<id>:<monto>`,
+  UNIQUE en `aportes` **y** en `gastos`. ⚠️ **El monto forma parte de la clave a propósito**:
+  en MercadoPago el impuesto comparte el id de operación con su transferencia, y sin el monto
+  el impuesto nunca entraría.
+  ⚠️ **Lo que no cuadra no se importa; lo incompleto sí.** Los niveles 1 y 2 (saldo corrido y
+  totales, **por archivo**) fallan cuando lo leído *está mal* y **bloquean**; el nivel 3
+  (cadena entre resúmenes) falla cuando *falta un mes* y **solo avisa** — importar octubre y
+  diciembre sin noviembre es incompleto, no incorrecto.
+  ⚠️ **El importador NO escribe nombres en `gastos`.** `gastos` publica la fila **entera**
+  al publicarse, y la migración `20260816150000` fijó la regla: *lo que no pueda ser
+  público no se escribe en un gasto*. La descripción del extracto trae la contraparte
+  («Transferencia enviada Fulano»), así que va `conceptoGenerico()` —la descripción sin el
+  nombre— y `proveedor` queda **null** para que alguien escriba a mano el proveedor que la
+  entidad sí quiere nombrar. El nombre no se pierde: `referencia_externa` apunta a la línea
+  exacta del extracto. ⚠️ En `aportes` sí se guarda, y es correcto: **esa tabla no tiene
+  policy de lectura pública**, solo el propio aportante y la comisión.
+  ⚠️ **`destinos.fecha_inicio` destilda lo anterior pero NO alcanza el borde.** Un fondo
+  puede arrancar a mitad de un día: los movimientos de ese día se **marcan** con
+  `delDiaDelInicio()` y no se destildan, porque pueden ser igual de bien los primeros del
+  fondo. Es el caso del fondo del convenio, y es el peligroso — el saldo inicial ya está neto
+  de ellos, así que importarlos los cuenta dos veces.
+- **El CSV de MercadoPago (ROADMAP §14.3)**, comprobado contra un archivo real el
+  2026-09-06: encabezados **en inglés** (`RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE`),
+  **dos bloques** —los totales del período arriba, los movimientos abajo— y números en
+  formato argentino. ⚠️ **El importe es NETO y la comisión de la pasarela no figura en
+  ningún formato** del resumen de cuenta; para verla hay que ir a otro reporte. El `.xlsx`
+  trae exactamente lo mismo que el `.csv` con los valores como texto: no aporta nada y
+  costaría una librería. **Y las tres verificaciones salen del CSV solo** — saldo corrido,
+  totales del período y cadena entre meses—: si alguna no cuadra, la pantalla **no deja
+  importar**, porque sin eso un cambio de formato del banco se convierte en datos mal
+  cargados en silencio.
+- **Club de beneficios (ROADMAP §12) — CERRADO como módulo el 2026-09-06, fases 0 a 3 en producción**: el módulo del canje. Su ABM vive en `/admin → Club de beneficios`. **Ya no hay deuda de código**: §12.10 se cerró entero y la crónica se movió a `HISTORIAL.md` §12; lo que queda en el ROADMAP son las 5 invariantes (§12.12), dónde vive cada cosa (§12.13) y lo que falta, que es de negocio (§12.14). **Rompe el patrón del resto del repo a propósito**: `club_canjes` otorga valor económico (del otro lado hay un comercio esperando cobrar), así que **no tiene policy de INSERT/UPDATE/DELETE** y se escribe únicamente desde tres Edge Functions con `service_role` — `club-generar-canje`, `club-confirmar-canje`, `club-anular-canje`. La cuarta, `club-invitar-operador`, crea la cuenta del mostrador y manda el magic link (§12.10.4). Si alguna vez alguien "arregla" `src/api/clubApi.js` agregando un insert directo con la anon key, el club deja de tener sentido. Las lecturas sí van directas, filtradas por RLS. La pertenencia al comercio **no es un rol de `users`**: es tener fila en `club_comercio_usuarios`, y la responde `is_comercio_member()` / `mis_comercios()`. Rutas: `/beneficios` (**la vidriera**: pública, indexable, con slug y OG — es la que está en el nav), `/club` (**el mostrador del socio**: canjear y ver los canjes propios; se llega desde el carnet, el dashboard y el CTA de un beneficio, NO desde el nav — mandar ahí a un visitante es ofrecerle algo que no puede usar), `/club/postular` (postulación pública de un comercio) y `/comercio` (mostrador del comercio, requiere sesión). **Las cuatro leen la misma tabla `club_beneficios`**: la división es por para quién, no por de dónde sale el dato — la pregunta que §12.10.14 dejó abierta dos jornadas.
+  ⚠️ **`club_canjes` NO se auto-confirma**: quien genera un canje no puede confirmarlo, salvo que `club_config.permitir_autoconfirmacion` esté en `true` (default `false`). Es el vector de inflación que §12.6 advierte para cuando existan los niveles.
+  ⚠️ **El reaper corre por `pg_cron` cada 15 minutos** (`20260906150000`) **y además** al arrancar `club-generar-canje`. Son dos redes, no una duplicada: la segunda garantiza que nadie quede sin un beneficio por un canje que no usó, y esa garantía no puede depender de infraestructura externa. Toda la lógica que **decide** algo vive en `supabase/functions/_shared/club-reglas.ts` (puro, testeable con vitest) y las reglas de presentación en `src/lib/club.js`; el `index.ts` de cada función es pegamento HTTP y no se puede probar localmente.
+- **Transparencia = dos páginas, un grupo de menú (2026-09-06)**: `/rendicion` (el
+  movimiento del dinero) y `/legal-documents` (los instrumentos: estatuto, balances,
+  actas). El item «Transparencia» del header es un grupo cuyo **padre lleva a
+  `/rendicion`** y cuyo subitem lleva a los documentos, y cada página enlaza a la otra.
+  ⚠️ Antes «Transparencia» apuntaba solo a los papeles: la rendición —lo único que
+  muestra plata entrando y saliendo, y el diferencial del producto según §14— no estaba
+  en el menú principal. **Todo esto es público sin sesión, y es deliberado**: la
+  protección no es quién mira sino qué se escribe (ver la regla de `gastos`); un muro de
+  registro no protegería nada y rompería el único uso que la rendición tiene.
+  ⚠️ Los submenús del header se guardan en **un mapa por `key`**, no en una variable por
+  grupo: el ternario de dos ramas que había hacía que todo grupo distinto de `nosotros`
+  compartiera el estado de `colabora`. `src/components/Layout/Header.test.jsx` lo fija.
 - **Portales por rol**: además del Panel General admin (`/admin`, `src/pages/AdminPanel.jsx`, rediseñado con sidebar) y el de educación (`/admin/education`), está el **portal de Comisión Directiva** (`/comision`, `src/pages/CommissionPortal.jsx`, rol `comision_directiva`) con dos módulos en `src/components/Comision/`: gestor de **proyectos/tareas** (kanban; tablas `projects`/`tasks`, `src/api/projectsApi.js`) y gestor de **documentación versionada** (tablas `documents`/`document_versions` + Storage privado; `src/api/documentsApi.js`).
 - **Primitivas admin compartidas** en `src/components/Admin/shared/` (`SectionHeader`, `SearchBar`, `ListSkeleton`, `EmptyState`, `useSearch`) y `src/components/Comision/FilterChips.jsx` (chips de filtro): reutilizarlas en secciones de listado/CRUD nuevas para mantener consistencia. El portal de comisión es **mobile-first**: el tablero de tareas usa un segmentado por estado en mobile y kanban de 3 columnas en desktop.
 
@@ -161,6 +239,25 @@ La autorización del frontend (`ProtectedRoute`, `isAdmin`) es **solo UX, no una
 
 Cada página define su meta con `<Helmet>` (title + description; `canonical` en públicas, `<meta name="robots" content="noindex">` en privadas/auth). **No** volver a poner un `<meta robots>` estático en `index.html` (entra en conflicto con Helmet).
 
+### Previews de compartir (WhatsApp, Facebook, X, LinkedIn…)
+
+`<Helmet>` corre **en el navegador** y los scrapers de las redes **no ejecutan JavaScript**: leen el HTML crudo. Por eso el OG de la preview NO puede salir de Helmet y se sirve aparte, desde funciones en `api/share/`, a las que `vercel.json` manda solo a los bots mediante **rewrites condicionales por `User-Agent`**. El humano recibe la SPA normal y la URL `/api/share/` nunca se expone.
+
+Hay dos familias, y la diferencia es de dónde sale el texto:
+
+- **Páginas de detalle** (`/novedades/:slug`, `/beneficios/:slug`, `/partners/:slug`, `/activities/:id`, más las rutas de compatibilidad por `id`/`uuid`): el OG sale de la base. Una función por recurso en `api/share/<recurso>/`.
+- **Páginas estáticas** (`/rendicion`, `/beneficios`, `/club`, `/about`, …): el OG sale de la tabla `PAGINAS` en **`api/share/pagina.js`**, una sola función parametrizada por `?p=<ruta>`.
+- **La home y todo lo que no se comparte** (auth, `/dashboard`, `/carnet`, `/comercio`, `/comision`, `/admin/*`, `/agradecimiento`, `/confirm-attendance`): caen al OG institucional de `index.html`, a propósito — compartir un link privado no debe contar qué hay detrás.
+
+**Al agregar una ruta pública nueva**: agregarla a `PAGINAS` **y** su rewrite en `vercel.json`. `api/share/pagina.test.js` cruza `src/App.jsx` ↔ `PAGINAS` ↔ `vercel.json` y falla si una ruta queda sin clasificar, así que no hace falta acordarse: `npm test` lo dice. Si la ruta no debe tener preview, va a `RUTAS_SIN_PREVIEW` en ese test, con el motivo.
+
+**Las imágenes de las tarjetas** viven en `public/img/og/` y las genera `node tools/generate-og-images.mjs` (Chrome headless sobre un HTML maquetado; el título lo toma de `PAGINAS`, así que la imagen no puede decir algo distinto del `og:title`). Las 11 secciones que se comparten tienen tarjeta propia con su nombre impreso; las utilitarias y legales caen a `/img/og-image-1200x630.png`, que es el logo sobre blanco. `IMAGEN_POR_DEFECTO` y cada `imagen:` tienen que existir en `public/` y medir 1200x630 — un `og:image` que da 404 muestra una tarjeta **sin foto**, peor que la genérica; el test lo verifica.
+
+Dos trampas que ya costaron caro:
+
+- **Los buscadores no van en la lista de bots.** El HTML del stub lleva `canonical` y, en las funciones de detalle, `noindex`: mandar ahí a Googlebot le servía una página no indexable en lugar de la SPA. Se quitaron `Googlebot` y `bingbot` de todos los rewrites (el test lo verifica). Los buscadores renderizan JS y leen los `<Helmet>`.
+- **WhatsApp cachea la preview por URL.** Si ya compartiste un link, seguís viendo la tarjeta vieja aunque el deploy esté bien. Para re-testear: variar la URL, o usar <https://developers.facebook.com/tools/debug/> y forzar el scrape.
+
 ## Convenciones de trabajo
 
 - **Branch / deploy**: el historial commitea directo a `master` y el push dispara deploy en Vercel. Confirmar antes de pushear.
@@ -185,19 +282,21 @@ nadie lo notara):
   razonamiento**. Consultá acá antes de deshacer algo que parezca raro: seguido hay un
   motivo documentado.
 
-**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **122 archivos** de código
-(remedido el 2026-09-05 al cerrar §10, con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`;
-decía 102 antes de la jornada). Mové ítems entre archivos si hace falta, pero no los
+**La numeración de ítems (`4.1`, `6.2`, …) es estable** y la citan **136 archivos** de código
+(remedido al cierre del 2026-09-06 con `grep -rlE '§|ROADMAP' src/ supabase/ api/ tools/`;
+decía 133 a mitad de esa jornada, 122 al cerrar §10 y 102 antes.) Mové ítems entre archivos si hace falta, pero no los
 renumeres. ⚠️ **Al remedir, citá el comando**: sin él no se sabe si el número creció o
 cambió el patrón.
 
-Estado al **2026-09-05** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
+Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
 1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **387 tests en 32 archivos** (más los del
+cuyo arreglo es react-router v7 —un major—. **459 tests en 36 archivos** (remedido el 2026-09-06 al cierre de §12 con `npm test`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
-se testea con vitest, y cada `index.ts` se prueba recién en producción. ESLint deja **50
+se testea con vitest (**41 casos**), y cada `index.ts` se prueba recién en producción.
+**Al 2026-09-06 no queda ninguna decisión del club fuera de ese archivo**: la última que
+faltaba —el rescate diferido de §12.10.3— se extrajo como `decidirRescate()`. ESLint deja **50
 warnings** de backlog: **la barra es 0 errores**.
 
 ⚠️ Este párrafo decía «2 vulnerabilidades, 265 tests, 53 warnings» y las tres cifras
@@ -207,14 +306,22 @@ mintiendo todo lo demás.** Remedirlo es un minuto:
 
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
-de la última jornada está en **§11.7** (la anterior, en §11.6). Entre las dos suman **nueve
-afirmaciones de este repo que resultaron falsas** y tres verificaciones que no verificaban
-nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda abierta del
-club vive toda junta en §12.10.**
+de la última jornada está en **§14.7** de `HISTORIAL.md`; los cierres anteriores, en §11.7 y
+§11.6. Entre todos suman **catorce afirmaciones de este repo que resultaron falsas** — la
+decimocuarta es del 2026-09-06 y era de las peores: §12.10.11 declaró el cron del club
+«deuda consciente» porque «el plan Free de Supabase no lo trae», y **`pg_cron` estaba
+disponible y precargada**. Nadie miró la base; se escribió la limitación y se le creyó y varias
+verificaciones que no verificaban nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda del club se cerró el 2026-09-06**: lo que queda de §12 es de negocio
+(conseguir comercios de ticket bajo) y vive en §12.14.
 
-⚠️ **`tools/db.sh dump` produce un backup que NO restaura con `ON_ERROR_STOP=1`.** El
-cliente es `pg_dump` **17** y producción es **15**: el dump trae `SET transaction_timeout`,
-que 15 no conoce. Se saltea con `sed '/transaction_timeout/d'`. Ver `ROADMAP.md` §A.
+⚠️ **`tools/db.sh dump` produce un backup que NO restaura tal cual en PostgreSQL 15, y
+son TRES obstáculos, no uno.** El cliente es `pg_dump` **17** y producción es **15**:
+(1) el dump trae `SET transaction_timeout`, que 15 no conoce; (2) `psql` 17.6 emite además
+las meta-órdenes `restrict`/`unrestrict`, que 15 rechaza con `invalid command` **incluso
+sin `ON_ERROR_STOP`**; (3) trae su propio `CREATE SCHEMA public`. Los tres se saltean con
+un `sed` de tres expresiones + dropear `public` en el destino. **La receta completa y
+probada está en `ROADMAP.md` §A**, con el detalle de que el contenedor destino necesita el
+bootstrap de `pg15-bootstrap/` montado o muere a mitad de la inicialización.
 
 **Cuatro cosas que costaron trabajo real y conviene no volver a aprender:**
 - **Antes de escribir una migración, `git fetch` y conectate a la base y mirá.** El

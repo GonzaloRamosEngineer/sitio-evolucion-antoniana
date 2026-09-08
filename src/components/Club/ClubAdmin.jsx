@@ -15,7 +15,7 @@
 // borrarlo dejaría al club y al comercio con números distintos. Se archiva con
 // estado «De baja» (12.9.3).
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Store, Edit, Loader2, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Plus, Store, Edit, Loader2, ArrowLeft, ShieldAlert, Inbox } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +33,7 @@ import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 import ComercioDetalle from '@/components/Club/ComercioDetalle';
+import PostulacionesAdmin from '@/components/Club/PostulacionesAdmin';
 import {
   ESTADOS_COMERCIO, listComercios, createComercio, updateComercio,
   listPartnersAprobados, validarComercio, slugify,
@@ -164,6 +165,20 @@ const ClubAdmin = () => {
           </Button>
         }
       />
+
+      {/* ---------------- Postulaciones (§12.10.5) ----------------
+          Van ARRIBA del listado y no en una solapa aparte: una postulación sin
+          contestar es lo único de esta pantalla que tiene a una persona
+          esperando del otro lado. Un comercio ya cargado puede esperar. */}
+      <details className="mb-6 rounded-sm border border-brand-dark/10">
+        <summary className="flex cursor-pointer items-center gap-2 p-4 font-semibold text-brand-dark">
+          <Inbox aria-hidden="true" className="h-4 w-4 text-brand-dark/50" />
+          Solicitudes para entrar al club
+        </summary>
+        <div className="border-t border-brand-dark/10 p-4">
+          <PostulacionesAdmin onComercioCreado={cargar} />
+        </div>
+      </details>
 
       <SearchBar value={query} onChange={setQuery} placeholder="Buscar por nombre, rubro o slug…" />
 

@@ -26,6 +26,35 @@ import { balanceDestino } from '@/api/gastosApi';
 import { entidad, tituloPagina } from '@/config/entidad';
 
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/**
+ * Agrupa los gastos por categoría, ordenando por monto descendente.
+ *
+ * Los sin categoría van juntos al final bajo "Otros gastos" y NO se esconden: un
+ * gasto sin clasificar sigue siendo plata que salió, y omitirlo haría que el
+ * total del grupo no sume el total del destino — que es la única forma de que
+ * esta pantalla pierda sentido.
+ *
+ * Orden por monto y no alfabético: quien entra a una rendición quiere ver
+ * primero dónde se fue la plata, no la primera letra del abecedario.
+ */
+const agruparPorCategoria = (gastos) => {
+  const porCategoria = new Map();
+  for (const g of gastos) {
+    const clave = g.categoria?.trim() || 'Otros gastos';
+    if (!porCategoria.has(clave)) porCategoria.set(clave, { categoria: clave, gastos: [], total: 0 });
+    const grupo = porCategoria.get(clave);
+    grupo.gastos.push(g);
+    grupo.total += Number(g.monto || 0);
+  }
+  return [...porCategoria.values()].sort((a, b) => {
+    // "Otros gastos" siempre último: es el cajón de lo no clasificado y encabezar
+    // con él daría la impresión de que nadie miró nada.
+    if (a.categoria === 'Otros gastos') return 1;
+    if (b.categoria === 'Otros gastos') return -1;
+    return b.total - a.total;
+  });
+};
+
 const soloFecha = (v) => (v ? String(v).slice(0, 10).split('-').reverse().join('/') : '—');
 
 const Rendicion = () => {
@@ -155,6 +184,19 @@ const Rendicion = () => {
                       </dl>
                       {Number(d.meta_monto) > 0 && <p className="mt-3 text-sm text-gray-600">Meta de recaudación: <strong className="text-brand-dark">{pesos(d.meta_monto)}</strong></p>}
 
+                      {/* DESDE CUÁNDO RINDE, y no es un adorno.
+                          Un destino puede tener movimientos anteriores a la fecha en
+                          que la entidad empezó a rendirlo — plata administrada de un
+                          tercero, un período que se digitalizó después—. Sin decirlo,
+                          quien compare el libro con el extracto completo va a
+                          encontrar movimientos que "faltan" y va a concluir lo peor.
+                          Decirlo cuesta un renglón. */}
+                      {d.fecha_inicio && (
+                        <p className="mt-3 text-xs text-gray-500">
+                          Esta rendición cubre desde el {soloFecha(d.fecha_inicio)}.
+                        </p>
+                      )}
+
                       {balance.porcentajeRendido !== null && (
                         <div className="mt-4">
                           <div
@@ -182,10 +224,15 @@ const Rendicion = () => {
                     ) : suyos.length === 0 ? (
                       <p className="p-5 sm:p-6 text-sm text-gray-600">Todavía no se publicaron gastos de este destino.</p>
                     ) : (
-                      <details>
-                        <summary className="cursor-pointer p-5 sm:p-6 font-semibold text-brand-primary min-h-[56px]">Ver gastos publicados ({suyos.length})</summary>
-                        <ul className="divide-y divide-gray-100 border-t border-gray-100">
-                          {suyos.map(g => <li key={g.id} className="p-5 sm:p-6">
+                      <div>
+                        <p className="px-5 sm:px-6 pt-4 text-sm text-gray-600">Gastos publicados por categoría</p>
+                        {agruparPorCategoria(suyos).map(grupo => <details key={grupo.categoria} open={grupo.gastos.length === 1} className="border-b border-gray-100 last:border-0">
+                          <summary className="cursor-pointer p-5 sm:p-6 text-brand-primary min-h-[56px]">
+                            <span className="font-semibold break-words">{grupo.categoria}</span>
+                            <span className="flex flex-wrap justify-between gap-2 mt-2 text-sm text-gray-600"><span>{grupo.gastos.length} {grupo.gastos.length === 1 ? 'movimiento' : 'movimientos'}</span><strong className="text-brand-dark tabular-nums">{pesos(grupo.total)}</strong></span>
+                          </summary>
+                        <ul className="divide-y divide-gray-100 border-t border-gray-100 bg-gray-50/50">
+                          {grupo.gastos.map(g => <li key={g.id} className="p-5 sm:p-6">
                             <div className="flex flex-col min-[400px]:flex-row min-[400px]:justify-between gap-2 sm:gap-4">
                               <div className="min-w-0">
                                 <p className="text-sm text-gray-600 tabular-nums">{soloFecha(g.fecha)}</p>
@@ -200,7 +247,8 @@ const Rendicion = () => {
                             </span>
                           </li>)}
                         </ul>
-                      </details>
+                        </details>)}
+                      </div>
                     )}
                   </div>
                 );
@@ -216,6 +264,20 @@ const Rendicion = () => {
               </p>
               <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto mt-3 whitespace-normal text-left" asChild>
                 <Link to="/contact">Pedir el detalle de un gasto →</Link>
+              </Button>
+            </div>
+
+            {/* La otra mitad de la transparencia. Las dos páginas se enlazan
+                entre sí a propósito: quien viene a ver la plata suele querer
+                después el papel que la respalda, y al revés. */}
+            <div className="rounded-2xl bg-white border border-gray-100 p-5 sm:p-6">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Esta página muestra <strong>el movimiento del dinero</strong>. Los
+                instrumentos que lo respaldan —estatuto, balances, actas y convenios—
+                se publican aparte.
+              </p>
+              <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto mt-3" asChild>
+                <Link to="/legal-documents">Ver la documentación oficial →</Link>
               </Button>
             </div>
 

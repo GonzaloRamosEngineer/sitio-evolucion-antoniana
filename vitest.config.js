@@ -42,6 +42,12 @@ export default defineConfig({
     include: [
       'src/**/*.{test,spec}.{js,jsx}',
       'supabase/functions/**/*.{test,spec}.{ts,js}',
+      // Las funciones de `api/share/` (OG para WhatsApp) son JS plano sin
+      // dependencias del runtime de Vercel: se importan y se ejercitan con un
+      // req/res falso. El test de `pagina.js` además cruza las rutas de
+      // App.jsx contra vercel.json, que es lo único que evita que una ruta
+      // nueva se quede sin preview sin que nadie se entere.
+      'api/**/*.{test,spec}.js',
     ],
     // Los `*.integration.test.js` necesitan la Supabase local de Docker; corren
     // aparte con `npm run test:integration` (ver vitest.integration.config.js).

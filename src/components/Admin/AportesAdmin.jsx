@@ -23,23 +23,29 @@
 //     cierra de punta a punta, sin depender de ninguna pasarela.
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, BookOpen, Edit, Loader2, AlertTriangle, Wallet, Target } from 'lucide-react';
+import {
+  Plus, BookOpen, Edit, Loader2, AlertTriangle, Wallet, Target, Paperclip, X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
+import { TIPOS_COMPROBANTE, describirComprobante } from '@/lib/comprobantes';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { useAportes, useDestinos } from '@/hooks/useContentQueries';
 import {
   createAporteManual, updateAporte, reimputarAporte,
   validarAporte, aPayloadAporte, describirOrigen, hoyISO,
+  subirComprobanteAporte,
+  quitarComprobanteAporte,
 } from '@/api/aportesApi';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
@@ -65,6 +71,9 @@ const formVacio = () => ({
   nombre_aportante: '',
   email_aportante: '',
   notas: '',
+  tipo_comprobante: '',
+  comprobante_numero: '',
+  es_saldo_inicial: false,
 });
 
 const aFormulario = (a) => ({
@@ -74,6 +83,9 @@ const aFormulario = (a) => ({
   nombre_aportante: a.nombre_aportante ?? '',
   email_aportante: a.email_aportante ?? '',
   notas: a.notas ?? '',
+  tipo_comprobante: a.tipo_comprobante ?? '',
+  comprobante_numero: a.comprobante_numero ?? '',
+  es_saldo_inicial: String(a.referencia_externa ?? '').startsWith('saldo-inicial:'),
 });
 
 const AportesAdmin = () => {
@@ -116,6 +128,41 @@ const AportesAdmin = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.destinos });
   };
 
+  /*
+    El respaldo documental de un INGRESO (migración 20260906120000).
+
+    ⚠️ El archivo NUNCA se publica. Un convenio o la resolución de un subsidio
+    traen nombres, montos y firmas de terceros que no dieron permiso. Vive en el
+    bucket privado de la Comisión; lo público es que EXISTE, vía el conteo
+    agregado de `reporte_destino()`.
+  */
+  const [ocupadoId, setOcupadoId] = useState(null);
+
+  const adjuntar = async (a, file) => {
+    if (!file) return;
+    setOcupadoId(a.id);
+    const { error: fallo } = await subirComprobanteAporte({ aporteId: a.id, file });
+    setOcupadoId(null);
+    if (fallo) {
+      toast({ title: 'No se pudo adjuntar', description: fallo.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Comprobante adjuntado' });
+    invalidar();
+  };
+
+  const quitar = async (a) => {
+    setOcupadoId(a.id);
+    const { error: fallo } = await quitarComprobanteAporte(a);
+    setOcupadoId(null);
+    if (fallo) {
+      toast({ title: 'No se pudo quitar', description: fallo.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Comprobante quitado' });
+    invalidar();
+  };
+
   const abrirNuevo = () => {
     setEditando(null);
     setForm(formVacio());
@@ -137,7 +184,11 @@ const AportesAdmin = () => {
     if (Object.keys(encontrados).length > 0) return;
 
     setGuardando(true);
-    const payload = aPayloadAporte(form);
+    // El slug del destino elegido: con él se deriva la referencia del saldo
+    // inicial. Se busca acá y no dentro de `aPayloadAporte` para que esa función
+    // siga siendo pura y testeable sin la lista de destinos.
+    const destinoSlug = destinos.find((d) => d.id === form.destino_id)?.slug;
+    const payload = aPayloadAporte(form, destinoSlug);
     // La capa de datos NO lanza: se mira `error`, no se envuelve en try/catch.
     const { error: fallo } = editando
       ? await updateAporte(editando.id, payload)
@@ -255,6 +306,14 @@ const AportesAdmin = () => {
               >
                 <span className="text-xs text-gray-500 tabular-nums w-24 shrink-0">
                   {soloFecha(a.fecha)}
+                  {String(a.referencia_externa ?? '').startsWith('saldo-inicial:') && (
+                    <span className="ml-2 rounded-full bg-brand-gold/20 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-brand-dark">
+                      Saldo inicial
+                    </span>
+                  )}
+                  {(a.tipo_comprobante || a.tiene_comprobante)
+                    ? ` · ${describirComprobante(a)}`
+                    : ''}
                 </span>
 
                 <div className="min-w-0 flex-1">
@@ -290,6 +349,42 @@ const AportesAdmin = () => {
                     <Target className="w-3.5 h-3.5 mr-1.5" /> Cambiar destino
                   </Button>
                 )}
+
+                {/* El respaldo documental del ingreso (20260906120000).
+                    Va en la fila y no en el formulario porque el archivo se sube
+                    contra un aporte que YA existe: sin id no hay carpeta donde
+                    ponerlo. Y va FUERA del ternario de arriba —se adjunta igual
+                    sea manual o de pasarela— porque un ingreso de cualquier
+                    origen puede tener respaldo documental. */}
+                {a.tiene_comprobante ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => quitar(a)}
+                    disabled={ocupadoId === a.id}
+                  >
+                    <X className="w-3.5 h-3.5 mr-1.5" /> Quitar comprobante
+                  </Button>
+                ) : (
+                  <label>
+                    <span className="inline-flex h-9 cursor-pointer items-center rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-medium text-amber-800 hover:bg-amber-100">
+                      <Paperclip className="w-3.5 h-3.5 mr-1.5" /> Adjuntar comprobante
+                    </span>
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept=".pdf,image/*"
+                      onChange={(e) => {
+                        adjuntar(a, e.target.files?.[0]);
+                        // Se limpia para que volver a elegir el MISMO archivo
+                        // vuelva a disparar onChange.
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
+
+                {ocupadoId === a.id && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
               </motion.div>
             );
           })}
@@ -393,6 +488,68 @@ const AportesAdmin = () => {
             </div>
 
             <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="aporte-tipo-comp">Tipo de comprobante</Label>
+                  <Select
+                    value={form.tipo_comprobante || 'ninguno'}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, tipo_comprobante: v === 'ninguno' ? '' : v }))}
+                  >
+                    <SelectTrigger id="aporte-tipo-comp" className="mt-1">
+                      <SelectValue placeholder="Sin declarar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* «Sin declarar» es una opción de verdad: hay ingresos
+                          legítimos sin respaldo formal, y obligar a elegir haría
+                          que se marque cualquiera con tal de guardar. */}
+                      <SelectItem value="ninguno">Sin declarar</SelectItem>
+                      {TIPOS_COMPROBANTE.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="aporte-num-comp">Número del comprobante</Label>
+                  <Input
+                    id="aporte-num-comp"
+                    className="mt-1"
+                    value={form.comprobante_numero}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, comprobante_numero: e.target.value }))}
+                    placeholder="Ej: escritura N° 123"
+                  />
+                </div>
+              </div>
+
+              {/* EL SALDO INICIAL — la fila que dice "acá había esto".
+                  Va acá y no como un campo de texto de `referencia_externa` a
+                  propósito: esa columna es la clave de idempotencia de las
+                  importaciones, y dejarla escribir a mano permitiría poner una
+                  referencia `mp:*` que bloquee para siempre la importación de un
+                  movimiento real. Derivada del destino, nunca puede chocar. */}
+              <div className="mb-4 flex items-start gap-3 rounded-sm border border-brand-dark/15 bg-brand-sand p-3">
+                <Checkbox
+                  id="aporte-saldo-inicial"
+                  checked={form.es_saldo_inicial}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({ ...f, es_saldo_inicial: v === true }))}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="aporte-saldo-inicial" className="cursor-pointer">
+                    Es el saldo inicial de este destino
+                  </Label>
+                  <p className="mt-1 text-xs text-brand-dark/60 leading-relaxed">
+                    Marcalo si esta fila representa la plata que ya había cuando el destino
+                    empezó a rendirse, y no un aporte nuevo. Sin ella, un destino que ya
+                    tenía fondos arranca con solo egresos y el saldo queda en negativo.
+                    Solo puede haber uno por destino.
+                  </p>
+                </div>
+              </div>
+
               <Label htmlFor="aporte-notas">Nota</Label>
               <Textarea
                 id="aporte-notas"

@@ -40,7 +40,6 @@ describe('Rendición pública', () => {
     const concepto = 'Materiales educativos para el taller de acompañamiento deportivo';
     useGastos.mockReturnValue({ data: [{ id: 'g1', destino_id: '1', concepto, monto: 200, fecha: '2026-09-08', tiene_comprobante: false }], isPending: false });
     show();
-    fireEvent.click(screen.getByText('Ver gastos publicados (1)'));
     expect(screen.getByText(concepto)).toBeVisible();
     expect(screen.getByText('Sin comprobante')).toBeVisible();
     expect(screen.getAllByText('$800,00')).toHaveLength(2);
