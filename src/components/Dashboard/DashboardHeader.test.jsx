@@ -72,6 +72,29 @@ beforeEach(() => {
 
 describe('DashboardHeader', () => {
   // ------------------------------------------------------------------
+  // La foto de perfil. `lib/avatar.test.js` cubre la REGLA; acá va lo
+  // que solo se ve montando: que el avatar sea accionable cuando hay
+  // algo que ampliar y un adorno cuando no.
+  // ------------------------------------------------------------------
+  it('con dibujo asignado la foto se puede abrir en grande', () => {
+    render({ user: { ...USUARIO, gender: 'femenino' } });
+    const boton = screen.getByRole('button', { name: /Ver mi foto de perfil/i });
+    fireEvent.click(boton);
+    // El diálogo trae la imagen con alt DESCRIPTIVO: acá la foto es el
+    // contenido, no un adorno al lado de un nombre.
+    expect(screen.getByRole('img', { name: /Foto de perfil de Gonzalo Ramos/i })).toBeInTheDocument();
+  });
+
+  it('🔒 sin género declarado muestra las iniciales y NO ofrece ampliarlas', () => {
+    // El default era el dibujo del varón para todo el mundo. Ahora quien no
+    // lo declaró ve «GR», y un clic que abre «GR» más grande sería una
+    // promesa vacía.
+    render({ user: { ...USUARIO, gender: 'otro' } });
+    expect(screen.getByText('GR')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ver mi foto/i })).toBeNull();
+  });
+
+  // ------------------------------------------------------------------
   // Cargando y falla. No son adornos: sin estos dos casos, `tiene_acceso:
   // false` por ausencia de respuesta se leía como «no es socio» y la
   // pantalla le ofrecía pagar de nuevo a alguien que ya paga.

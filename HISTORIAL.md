@@ -7006,3 +7006,44 @@ la declaración.
 ⚠️ **Queda una decisión sin tomar**: la aclaración de las facturas no volvió. Hoy el único
 rastro de que se pueden pedir es el link «Pedir el detalle de un gasto →». Explicar una
 ausencia y ofrecer un formulario no son lo mismo.
+
+## §10.23.d — El panel le mostraba un varón a todo el mundo (2026-09-09)
+
+`DashboardHeader` pintaba `user?.avatar_url || '/img/default-avatar.png'`, y esa segunda
+mitad es la ilustración de **un varón** con la camiseta de la Fundación. La primera mitad
+nunca corre: **`users` no tiene columna `avatar_url`**. Está en dos componentes, en ninguna
+migración y en ningún `select` — es resto del scaffold de Hostinger, y `user.avatar_url`
+viene `undefined` siempre. O sea que el default no era un default: era la única respuesta,
+y el panel le mostraba un varón a todas las socias.
+
+Pasó desapercibido por el motivo más común: **el dueño del proyecto es varón y con él la
+pantalla acertaba.**
+
+⚠️ **El arreglo no era «agregar la femenina».** Con un par `femenino → mujer` y
+`todo lo demás → varón`, el default seguía siendo varón, y `users.gender` es optativo: el
+selector del modal ofrece «Otro / Prefiero no decir» y el campo puede estar vacío. La regla
+vive ahora en `src/lib/avatar.js` y devuelve `null` para todo lo que no sea masculino o
+femenino; `null` significa **caer a las iniciales**, que es la única opción que no afirma un
+dato que la persona no dio. `avatar.test.js` recorre los seis valores que no deben elegir
+dibujo, porque ese es el caso que se rompe cuando alguien «completa» esta tabla.
+
+No hizo falta migración: `users.gender` ya existía —se puebla desde `raw_user_meta_data` en
+el alta— y `useAuth`/`userApi` ya lo traían en el `select`. Estaba escrito y sin consumidor,
+que es el patrón de §10.27 (`entidad.vocabulario`) otra vez.
+
+**La foto se puede abrir en grande**, y solo cuando hay algo que ampliar: con iniciales el
+avatar no es accionable, porque un clic que abre «GR» más grande es una promesa vacía —la
+familia del CTA que miente de §10.23.b—. Va como `<button>` con `aria-label`, así se llega
+con Tab; en el visor el `alt` sí es descriptivo, porque ahí la foto es el contenido y no un
+adorno al lado de un nombre.
+
+**El asset**: `public/img/default-avatar-femenino.png`, 512×512 como su par, 105 KB (el
+masculino pesa 141). Generado con el camino que documenta `tools/optimize-images.mjs`
+—`npm i -D sharp`, generar, `npm un -D sharp`— así que `package.json` y el lock quedaron sin
+tocar. Verificado el recorte en círculo a 64 y 80 px: los dos encuadran igual.
+
+⚠️ **Lo que esto NO es: no hay foto real de nadie.** Sin columna ni bucket, esto elige entre
+dos dibujos y las iniciales. `avatarDe()` ya prioriza `avatar_url` para que el día que se
+pueda subir una foto no haya que acordarse, pero hoy esa rama está muerta y su test lo dice.
+
+Validación: 550 tests en 43 archivos (7 nuevos), lint 0 errores / 39 warnings, build correcto.

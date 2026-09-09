@@ -5,8 +5,10 @@ import { Edit3, ShieldCheck, Star, Mail, Fingerprint, Calendar, Clock, IdCard } 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import EditProfileModal from './EditProfileModal';
 import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
+import { avatarDe } from '@/lib/avatar';
 import {
   SIN_ACCESO, etiquetaEstado, claseEstado, nombreOrigen, formatearMeses, formatearFecha,
 } from '@/lib/acceso';
@@ -75,6 +77,12 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
 
   const { data: antiguedad } = useMiAntiguedad(user?.id);
 
+  /*
+    `null` = no hay foto ni dibujo que corresponda → van las iniciales. El
+    porqué de que «otro / prefiero no decir» caiga acá está en `lib/avatar.js`.
+  */
+  const foto = avatarDe(user);
+
   const esSocio = Boolean(acceso?.tiene_acceso);
 
   /*
@@ -139,14 +147,52 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
       <div className="p-5 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-4">
-            <Avatar className="h-16 w-16 shrink-0 border border-gray-200 lg:h-20 lg:w-20">
-              {/* `alt=""`: el nombre está al lado en texto, y un lector de
-                  pantalla que lea las dos cosas lo dice dos veces. */}
-              <AvatarImage src={user?.avatar_url || '/img/default-avatar.png'} alt="" className="object-cover" />
-              <AvatarFallback className="bg-brand-sand text-xl font-bold text-brand-primary">
-                {getInitials(user?.name)}
-              </AvatarFallback>
-            </Avatar>
+            {/*
+              La foto se puede abrir en grande. Va como <button> y no como un
+              <div> con onClick: se llega con Tab, se activa con Enter y el
+              lector de pantalla anuncia que es accionable.
+
+              Y solo es accionable SI HAY FOTO. Con las iniciales no hay nada
+              que ampliar, así que ahí el avatar es un adorno y ofrecer un
+              clic que abre un cuadro con «GR» más grande sería una promesa
+              vacía — la misma familia que el CTA que miente de §10.23.b.
+            */}
+            {foto ? (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Ver mi foto de perfil en grande"
+                    className="shrink-0 rounded-full ring-offset-2 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  >
+                    <Avatar className="h-16 w-16 border border-gray-200 lg:h-20 lg:w-20">
+                      {/* `alt=""`: el nombre está al lado en texto, y un lector
+                          de pantalla que lea las dos cosas lo dice dos veces.
+                          Lo que hace falta anunciar es el botón, y eso ya lo
+                          dice su `aria-label`. */}
+                      <AvatarImage src={foto} alt="" className="object-cover" />
+                      <AvatarFallback className="bg-brand-sand text-xl font-bold text-brand-primary">
+                        {getInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[min(90vw,26rem)] overflow-hidden rounded-2xl border-none bg-white p-0">
+                  <DialogTitle className="sr-only">Mi foto de perfil</DialogTitle>
+                  <img
+                    src={foto}
+                    alt={`Foto de perfil de ${user?.name || 'la persona asociada'}`}
+                    className="block h-auto w-full bg-brand-sand object-contain"
+                  />
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Avatar className="h-16 w-16 shrink-0 border border-gray-200 lg:h-20 lg:w-20">
+                <AvatarFallback className="bg-brand-sand text-xl font-bold text-brand-primary">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+            )}
 
             <div className="min-w-0">
               <h2 className="break-words font-poppins text-xl font-bold leading-tight tracking-tight text-brand-dark sm:text-2xl">
