@@ -68,22 +68,25 @@ describe('Rendición pública — cómo se muestra el respaldo', () => {
   it('🔒 un comprobante DECLARADO no se muestra como «sin comprobante»', () => {
     conGasto({ tiene_comprobante: false, tipo_comprobante: 'extracto', comprobante_numero: '90165423466' });
     show();
-    expect(screen.getByText(/Extracto de cuenta N° 90165423466/)).toBeVisible();
+    expect(screen.getByText(/Extracto de cuenta #90165423466/)).toBeVisible();
     expect(screen.queryByText('Sin comprobante')).not.toBeInTheDocument();
   });
 
-  it('🔒 y dice que el archivo falta, en vez de dar a entender que está', () => {
-    // Es la mitad que hace honesta a la otra: declarar no es adjuntar.
-    conGasto({ tiene_comprobante: false, tipo_comprobante: 'recibo', comprobante_numero: '0001' });
+  it('🔒 declara el LÍMITE de lo publicado, en vez de exagerar el respaldo', () => {
+    // Los estados contables publicados llegan al ejercicio 2024 y esta página
+    // muestra movimientos de 2026. Decir «todo está auditado» sería más lindo y
+    // falso, y una rendición que exagera su respaldo pierde lo que vino a
+    // construir. El aviso va en la página, no en una nota al pie.
+    conGasto({ tiene_comprobante: false, tipo_comprobante: 'extracto', comprobante_numero: '1' });
     show();
-    expect(screen.getByText(/declarado, sin archivo adjunto/)).toBeVisible();
+    expect(screen.getByText(/todavía no están en un balance publicado/i)).toBeVisible();
+    expect(screen.getByText(/Mercado Libre Solidario/)).toBeVisible();
   });
 
   it('con archivo adjunto no arrastra la aclaración', () => {
     conGasto({ tiene_comprobante: true, tipo_comprobante: 'factura', comprobante_numero: 'A-0001' });
     show();
-    expect(screen.getByText(/Factura N° A-0001/)).toBeVisible();
-    expect(screen.queryByText(/sin archivo adjunto/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Factura #A-0001/)).toBeVisible();
   });
 
   it('sin nada declarado ni adjunto sigue diciendo que no hay respaldo', () => {

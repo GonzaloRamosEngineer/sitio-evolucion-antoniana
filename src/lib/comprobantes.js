@@ -125,6 +125,37 @@ export const describirTipoComprobante = (tipo) =>
  * haberlo dejado implícito. Decir «Recibo N° 0001» es más creíble que no decir
  * nada, no menos.
  */
+/**
+ * El estado del respaldo de una fila, para poder mostrarlo con distinto peso.
+ *
+ * ⚠️ POR QUÉ TRES ESTADOS Y NO DOS, Y POR QUÉ EL DEL MEDIO NO ES UN HUECO.
+ *
+ * `tiene_comprobante` es una columna generada: dice si hay ARCHIVO. Mirando sólo
+ * eso, un gasto importado del extracto —que trae el id de la operación bancaria,
+ * verificable contra el resumen de cuenta— se mostraba igual que uno sin ningún
+ * respaldo. Eso subvalúa un dato duro y, en una rendición, subvaluar el propio
+ * respaldo es tan malo como exagerarlo.
+ *
+ *   · `archivo`   -> hay comprobante adjunto. El máximo.
+ *   · `declarado` -> hay tipo y número, sin archivo. Verificable, no publicado.
+ *   · `ninguno`   -> nada. Se marca, no se esconde.
+ *
+ * El número va con `#` y no con «N°» a propósito: es un id de operación, no un
+ * número de factura, y `#` es como lo escribe la pasarela.
+ */
+export const respaldoDe = (fila) => {
+  const numero = fila?.comprobante_numero ? `#${String(fila.comprobante_numero).trim()}` : '';
+  const tipo = describirTipoComprobante(fila?.tipo_comprobante);
+
+  if (fila?.tiene_comprobante) {
+    return { estado: 'archivo', etiqueta: [tipo ?? 'Comprobante', numero].filter(Boolean).join(' ') };
+  }
+  if (fila?.tipo_comprobante) {
+    return { estado: 'declarado', etiqueta: [tipo, numero].filter(Boolean).join(' ') };
+  }
+  return { estado: 'ninguno', etiqueta: 'Sin comprobante' };
+};
+
 export const describirComprobante = (fila) => {
   if (!fila?.tiene_comprobante && !fila?.tipo_comprobante) return 'Sin comprobante';
   const tipo = describirTipoComprobante(fila.tipo_comprobante) ?? 'Comprobante';

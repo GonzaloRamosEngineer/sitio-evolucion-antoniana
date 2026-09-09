@@ -18,12 +18,12 @@ import React, { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ScrollText, FileCheck2, FileX2, Info } from 'lucide-react';
+import { ScrollText, FileX2, CheckCircle2, Info, ShieldCheck } from 'lucide-react';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Button } from '@/components/ui/button';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
 import { balanceDestino } from '@/api/gastosApi';
-import { describirComprobante } from '@/lib/comprobantes';
+import { respaldoDe } from '@/lib/comprobantes';
 import { entidad, tituloPagina } from '@/config/entidad';
 import { pesos } from '@/lib/utils';
 
@@ -267,10 +267,27 @@ const Rendicion = () => {
                                 aparecía como si no tuviera nada, y eso subvalúa un
                                 respaldo verificable. Decir cuál de los tres es más
                                 creíble que un binario que no distingue. */}
-                            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 mt-3 text-xs font-semibold ${g.tiene_comprobante ? 'bg-green-50 text-green-800' : (g.tipo_comprobante ? 'bg-brand-primary/10 text-brand-primary' : 'bg-amber-50 text-amber-800')}`}>
-                              {(g.tiene_comprobante || g.tipo_comprobante) ? <FileCheck2 aria-hidden="true" className="w-4 h-4" /> : <FileX2 aria-hidden="true" className="w-4 h-4" />}
-                              {describirComprobante(g)}
-                            </span>
+                            {/* ⚠️ TRES ESTADOS, NO DOS, Y EL DEL MEDIO NO ES UN HUECO.
+                                Esto miraba sólo `tiene_comprobante`, que es una columna
+                                generada y dice si hay ARCHIVO. Un gasto importado del
+                                extracto —con el id de la operación bancaria, verificable
+                                contra el resumen de cuenta— se mostraba igual que uno sin
+                                ningún respaldo. Subvaluar el propio respaldo es tan malo
+                                como exagerarlo. */}
+                            {(() => {
+                              const r = respaldoDe(g);
+                              const estilo = r.estado === 'ninguno'
+                                ? 'bg-amber-50 text-amber-800'
+                                : 'bg-green-50 text-green-800';
+                              return (
+                                <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 mt-3 text-xs font-semibold tabular-nums ${estilo}`}>
+                                  {r.estado === 'ninguno'
+                                    ? <FileX2 aria-hidden="true" className="w-4 h-4" />
+                                    : <CheckCircle2 aria-hidden="true" className="w-4 h-4" />}
+                                  {r.etiqueta}
+                                </span>
+                              );
+                            })()}
                           </li>)}
                         </ul>
                         </details>)}
@@ -281,16 +298,72 @@ const Rendicion = () => {
               })
             )}
 
+            {/*
+              CÓMO SE VERIFICA ESTO, EN TRES NIVELES.
+
+              La pregunta que sigue a una rendición no es «cuánto» sino «cómo sé
+              que es cierto». Contestarla con «pedinos el comprobante» pone el
+              trabajo del lado de quien pregunta y, sobre todo, deja afuera lo más
+              fuerte que esta entidad tiene: que un tercero ya revisó los papeles.
+
+              ⚠️ EL LÍMITE VA DICHO, y no es un detalle. Los estados contables
+              publicados llegan al ejercicio 2024; los movimientos de esta página
+              llegan a 2026. Escribir «todo está auditado» sería más lindo y
+              falso, y una rendición que exagera su propio respaldo pierde
+              exactamente lo que vino a construir.
+            */}
             <div className="rounded-2xl bg-white border border-gray-200 p-5 sm:p-6">
-              <h2 className="text-xl font-bold text-brand-dark mb-3">¿Querés consultar un comprobante?</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Los comprobantes de cada gasto quedan archivados y a disposición de quien los
-                pida. No se publican porque suelen incluir datos personales de terceros
-                —CUIT, domicilio, firma— que no nos corresponde difundir.
+              <div className="flex items-start gap-3">
+                <ShieldCheck aria-hidden="true" className="w-6 h-6 shrink-0 text-brand-primary mt-0.5" />
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-brand-dark">
+                    ¿Cómo se verifica lo que dice esta página?
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                    De tres maneras distintas, y ninguna depende de que nos creas.
+                  </p>
+                </div>
+              </div>
+
+              <ol className="mt-5 space-y-4 text-sm text-gray-600 leading-relaxed">
+                <li>
+                  <strong className="text-brand-dark">Cada gasto lleva su número de operación.</strong>{' '}
+                  El <span className="tabular-nums">#</span> que ves en cada movimiento es el
+                  identificador que le asigna la pasarela de pagos: se corresponde, uno a uno, con
+                  una línea del resumen de la cuenta. No es un número que escribimos nosotros.
+                </li>
+                <li>
+                  <strong className="text-brand-dark">Los estados contables están auditados y publicados.</strong>{' '}
+                  Los ejercicios 2022, 2023 y 2024 están en la documentación oficial, con informe
+                  de contador. Ahí están los conceptos y las facturas agregadas por rubro.{' '}
+                  <span className="text-gray-500">
+                    Los movimientos de 2025 y 2026 que se ven acá van a integrar los ejercicios
+                    correspondientes; todavía no están en un balance publicado.
+                  </span>
+                </li>
+                <li>
+                  <strong className="text-brand-dark">Un tercero ya revisó la documentación.</strong>{' '}
+                  Para ser parte de <strong className="text-brand-dark">Mercado Libre Solidario</strong>{' '}
+                  hubo que presentar la documentación obligatoria del programa —estatuto,
+                  personería, estados contables y respaldo de los gastos— y pasar su revisión. No
+                  es un sello que nos dimos nosotros.
+                </li>
+              </ol>
+
+              <p className="mt-5 text-sm text-gray-600 leading-relaxed">
+                Las facturas no se publican una por una porque traen datos personales de
+                terceros —CUIT, domicilio, firma— que no nos corresponde difundir. Están en la
+                contabilidad y a disposición de quien las pida.
               </p>
-              <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto mt-3 whitespace-normal text-left" asChild>
-                <Link to="/contact">Pedir el detalle de un gasto →</Link>
-              </Button>
+
+              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto whitespace-normal text-left" asChild>
+                  <Link to="/legal-documents">Ver los estados contables →</Link>
+                </Button>
+                <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto whitespace-normal text-left" asChild>
+                  <Link to="/contact">Pedir el detalle de un gasto →</Link>
+                </Button>
+              </div>
             </div>
 
             {/* La otra mitad de la transparencia. Las dos páginas se enlazan
