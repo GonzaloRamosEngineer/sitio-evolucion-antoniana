@@ -26,9 +26,13 @@ vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
 const useMiAcceso = vi.fn();
 const useMiAntiguedad = vi.fn();
+// `useAvatarUrl` firma la URL de la foto contra un bucket privado; acá no hay
+// storage, así que por defecto devuelve «sin foto» y la cabecera cae al dibujo.
+const useAvatarUrl = vi.fn();
 vi.mock('@/hooks/useContentQueries', () => ({
   useMiAcceso: (...a) => useMiAcceso(...a),
   useMiAntiguedad: (...a) => useMiAntiguedad(...a),
+  useAvatarUrl: (...a) => useAvatarUrl(...a),
 }));
 
 // El modal de edición abre un diálogo con su propio estado; acá estorba.
@@ -66,6 +70,8 @@ const acceso = (over = {}) => ({
 beforeEach(() => {
   useMiAcceso.mockReset();
   useMiAntiguedad.mockReset();
+  useAvatarUrl.mockReset();
+  useAvatarUrl.mockReturnValue({ data: null });
   useMiAcceso.mockReturnValue(acceso());
   useMiAntiguedad.mockReturnValue({ data: null });
 });
@@ -83,6 +89,25 @@ describe('DashboardHeader', () => {
     // El diálogo trae la imagen con alt DESCRIPTIVO: acá la foto es el
     // contenido, no un adorno al lado de un nombre.
     expect(screen.getByRole('img', { name: /Foto de perfil de Gonzalo Ramos/i })).toBeInTheDocument();
+  });
+
+  it('la foto propia le gana al dibujo del género', () => {
+    // El bucket es privado: lo que llega es una URL firmada, no la ruta.
+    useAvatarUrl.mockReturnValue({ data: 'https://sb/avatares/u-1/avatar.webp?token=abc' });
+    render({ user: { ...USUARIO, gender: 'masculino', avatar_path: 'u-1/avatar.webp' } });
+    fireEvent.click(screen.getByRole('button', { name: /Ver mi foto de perfil/i }));
+    const img = screen.getByRole('img', { name: /Foto de perfil de Gonzalo Ramos/i });
+    expect(img.getAttribute('src')).toContain('token=abc');
+  });
+
+  it('mientras se firma la URL muestra el dibujo, no un hueco', () => {
+    // Firmar es una ida al servidor. Acá el dibujo NO es una afirmación falsa
+    // como lo era en el acceso: es un reemplazo de medio segundo.
+    useAvatarUrl.mockReturnValue({ data: null, isPending: true });
+    render({ user: { ...USUARIO, gender: 'femenino', avatar_path: 'u-1/avatar.webp' } });
+    fireEvent.click(screen.getByRole('button', { name: /Ver mi foto de perfil/i }));
+    expect(screen.getByRole('img', { name: /Foto de perfil/i }).getAttribute('src'))
+      .toBe('/img/default-avatar-femenino.png');
   });
 
   it('🔒 sin género declarado muestra las iniciales y NO ofrece ampliarlas', () => {

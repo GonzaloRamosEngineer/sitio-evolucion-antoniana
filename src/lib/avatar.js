@@ -19,11 +19,15 @@
  * el selector del modal escribe exactamente estos tres valores; el tercero,
  * `'otro'`, es el que hace falta respetar.
  *
- * ⚠️ Y ojo con lo que ESTO NO ES: no hay foto real de nadie. `users` **no tiene
- * columna `avatar_url`** —`user.avatar_url` es resto del scaffold de Hostinger
- * y siempre viene `undefined`—, así que hoy esto elige entre dos dibujos y las
- * iniciales. El día que se pueda subir una foto, la foto gana y esta función
- * sigue siendo el fallback, no la regla principal.
+ * ESTO ES EL FALLBACK, no la regla principal: desde §10.23.e la persona puede
+ * subir su propia foto y esa gana siempre. La foto vive en un bucket PRIVADO,
+ * así que no es una URL guardada en la fila sino una ruta (`users.avatar_path`)
+ * que se firma al leer y vence — por eso `avatarDe()` recibe la URL ya firmada
+ * en vez de sacarla del `user`: quien la resuelve es `useAvatarUrl`.
+ *
+ * ⚠️ `user.avatar_url` NO existe y nunca existió: era resto del scaffold de
+ * Hostinger, y leerla es lo que hacía que el dibujo del varón fuera la única
+ * respuesta posible. Si aparece en un componente nuevo, está mal.
  */
 const POR_GENERO = Object.freeze({
   masculino: '/img/default-avatar.png',
@@ -40,5 +44,10 @@ export const avatarPorDefecto = (genero) =>
 /**
  * La foto que se muestra: la propia si existe, y si no el dibujo que
  * corresponda. `null` = iniciales.
+ *
+ * @param {object|null} user
+ * @param {string|null} [urlFoto]  La URL firmada de `users.avatar_path`, tal
+ *   como la devuelve `useAvatarUrl`. Se pasa desde afuera porque firmarla es
+ *   asíncrono y esta función es pura.
  */
-export const avatarDe = (user) => user?.avatar_url || avatarPorDefecto(user?.gender);
+export const avatarDe = (user, urlFoto = null) => urlFoto || avatarPorDefecto(user?.gender);

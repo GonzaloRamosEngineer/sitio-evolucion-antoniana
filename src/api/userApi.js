@@ -7,7 +7,7 @@ export const updateUserProfile = async (userId, profileData) => {
     .from('users')
     .update(profileData)
     .eq('id', userId)
-    .select('id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender')
+    .select('id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender, avatar_path')
     .single();
 
   return { data, error };

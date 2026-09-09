@@ -36,6 +36,25 @@ la base.
   pierde), porque una opción que no hace nada y una que hace de más se ven igual desde
   afuera. **No depende de ningún dato previo**: arma sus cuatro personas, sus destinos y
   sus actividades. Ver más abajo por qué eso importa.
+- **`avatar-check.sql`** — la foto de perfil del socio (`20260909020000`). El bucket
+  `avatares` es privado y **toda su seguridad se apoya en una sola comparación**: la
+  primera carpeta de la ruta contra `auth.uid()`. Un error de una línea ahí deja las caras
+  de los socios al alcance de cualquier sesión autenticada, así que prueba las dos puntas
+  con Ana y Beto: que cada uno vea, pise y borre **su** foto, y que no pueda ni leer ni
+  pisar ni borrar la del otro. Incluye el par que descubre el olvido más probable: **sin
+  la policy de UPDATE la primera foto entra y la segunda falla**, porque un `upsert` sobre
+  un objeto que ya existe es un UPDATE y no un INSERT.
+  ⚠️ **Se corre distinto de los demás** —`-U supabase_admin`, con el árbol copiado dentro
+  del contenedor y con `-f`— y el archivo explica los dos motivos en su encabezado. En
+  resumen: en esa imagen `postgres` no es superusuario y el schema `storage` es de
+  `supabase_admin`, y el check hace `\i` de la migración de verdad en lugar de repetir las
+  policies, porque una copia probaría la copia.
+  ⚠️ **Monta un doble de `storage`** (buckets, objects y `foldername()`), ya que en un
+  Postgres pelado ese schema lo crea storage-api y no existe: sin el doble la migración se
+  saltea su bloque entero con un RAISE NOTICE y las policies quedan sin probar, que es
+  justo lo que no se puede dejar sin probar. Lo que el doble **no** puede confirmar es que
+  el bucket real quede privado en el proyecto; eso se mira una vez con
+  `select id, public from storage.buckets where id='avatares'`.
 - **`club-check.sql`** — el club (§12), fases 2 y 3. `club_canjes` otorga **valor económico**:
   del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
   `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al
@@ -84,6 +103,11 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-che
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/membresia-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/fondos-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
+
+# 3b. El de la foto de perfil va aparte: necesita el schema `storage` (que en un
+#     Postgres pelado no existe) y por lo tanto otro usuario y el arbol adentro.
+docker cp supabase pgtest:/tmp/
+docker exec -i pgtest psql -U supabase_admin -d postgres -q -f /tmp/supabase/checks/avatar-check.sql
 
 # Leer el resultado: que no haya ninguna línea FALLA.
 #   ... | grep -E 'FALLA|^ERROR'      -> sin salida = todo bien

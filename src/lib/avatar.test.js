@@ -25,9 +25,15 @@ describe('avatarPorDefecto', () => {
 
 describe('avatarDe', () => {
   it('la foto propia le gana al dibujo', () => {
-    // ⚠️ Hoy `users` no tiene `avatar_url` y esto nunca se cumple; está escrito
-    // para que el día que se pueda subir una foto no haya que acordarse.
-    expect(avatarDe({ avatar_url: 'https://x/f.jpg', gender: 'masculino' })).toBe('https://x/f.jpg');
+    // La URL viene firmada desde `useAvatarUrl`: el bucket es privado.
+    expect(avatarDe({ gender: 'masculino' }, 'https://x/f.webp?token=a')).toBe('https://x/f.webp?token=a');
+    expect(avatarDe({ gender: 'otro' }, 'https://x/f.webp?token=a')).toBe('https://x/f.webp?token=a');
+  });
+
+  it('🔒 NO usa `avatar_url` de la fila: esa columna no existe', () => {
+    // Leerla es lo que hacía que el dibujo del varón fuera la única respuesta.
+    expect(avatarDe({ avatar_url: 'https://viejo/f.jpg', gender: 'femenino' }))
+      .toBe('/img/default-avatar-femenino.png');
   });
 
   it('sin foto usa el dibujo del género, y sin género devuelve null', () => {

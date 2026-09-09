@@ -7047,3 +7047,79 @@ dos dibujos y las iniciales. `avatarDe()` ya prioriza `avatar_url` para que el d
 pueda subir una foto no haya que acordarse, pero hoy esa rama está muerta y su test lo dice.
 
 Validación: 550 tests en 43 archivos (7 nuevos), lint 0 errores / 39 warnings, build correcto.
+
+## §10.23.e — Subir y recortar la foto de perfil (2026-09-09)
+
+Se pidió «que detecte el rostro y saque la foto sola». **No se hizo, y la decisión está
+en `ROADMAP.md` §10.23.e con su cuenta**: el `FaceDetector` del navegador es en la práctica
+solo Chrome detrás de un flag, así que centrar la cara automáticamente obliga a embarcar un
+modelo de 1 a 3 MB en un panel al que, de 72 socias, entraron 6. El recortador con zoom y
+arrastre da el mismo resultado, deja que la persona elija su encuadre en vez de
+adivinárselo, y **el bundle creció 0,13 kB** (179,31 → 179,44 kB).
+
+**Lo que decide vive aparte de lo que dibuja**: `src/lib/recorte.js` es pura, sin DOM, con
+14 casos. El que importa es el que fija que el rectángulo fuente **nunca** se sale del
+bitmap: un `drawImage` con la fuente afuera no falla —el canvas rellena con transparente— y
+eso es una franja gris al costado de la cara de alguien, descubierta después de subirla.
+El otro que importa es `reencuadrar()`: sin mantener el centro del visor, mover el zoom
+hace que la cara se escape a una esquina en cada paso del deslizador.
+
+**El orden de las operaciones** en `src/api/avatarApi.js` es el que `comprobantes.js` ya
+tenía escrito, repetido acá porque el dueño del dato es otro: al subir, archivo y después
+fila (si la fila falla se borra el archivo); al quitar, fila y después archivo. La segunda
+es la que importa: al revés quedaría una fila prometiendo una foto borrada, que se ve bien
+hasta que el navegador pide la imagen.
+
+**El bucket es privado** y por eso la fila guarda una RUTA, no una URL: `users.avatar_path`,
+firmada al leer con `useAvatarUrl` y con vencimiento a 10 minutos. ⚠️ El `staleTime` del
+hook (8 min) **tiene que quedar por debajo** de ese vencimiento: si la caché considera
+fresca una URL más tiempo del que vive, la foto se rompe sin que nada falle y se arregla
+recargando — el peor síntoma posible, porque no deja rastro.
+
+⚠️ **Y hubo que agregar `avatar_path` a los `select` de `users`**, que son listas fijas en
+`useAuth.jsx` y `userApi.js`. Sin eso la columna existe, se escribe, y la fila que vuelve
+de guardar el perfil no la trae: la foto desaparecería al editar cualquier otro dato. Es
+§10.27 otra vez —lo declarado sin consumidor— en su versión más silenciosa.
+
+### El check que faltaba, y por qué el primero no probaba nada
+
+La migración se aplicó limpia desde cero en Postgres pelado… **y se salteó su propio bloque
+de storage**, porque en un Postgres pelado el schema `storage` lo crea storage-api y no
+existe. O sea que las cuatro policies —donde vive TODA la seguridad de esto, en una sola
+comparación de la primera carpeta de la ruta contra `auth.uid()`— quedaban sin probar. Es
+exactamente el «una verificación tiene que poder fallar» del final de `CLAUDE.md`: la
+migración decía OK y no había verificado la mitad que importa.
+
+`supabase/checks/avatar-check.sql` monta un doble de `storage` (buckets, objects y
+`foldername()`), **hace `\i` de la migración de verdad** en lugar de repetir las policies
+—una copia probaría la copia— y prueba las dos puntas con Ana y Beto. Los nueve casos dan
+OK. El par que descubre el olvido más probable es A4/A5: **sin la policy de UPDATE la
+primera foto entra y la segunda falla**, porque un `upsert` sobre un objeto que ya existe
+es un UPDATE y no un INSERT.
+
+Tres cosas que costaron un rato y quedan anotadas:
+
+- **`-U supabase_admin`, no `-U postgres`.** En esa imagen `postgres` no es superusuario y
+  el schema `storage` es de `supabase_admin`: crear los dobles da «permission denied».
+- **El fixture no inserta en `public.users`.** El trigger `handle_new_user` ya la crea y
+  toma `name` y `created_at` de `auth.users`; sin esos dos metadatos el trigger inserta
+  NULL y revienta contra el NOT NULL — y el fallo parece de la policy en vez del andamio,
+  la misma trampa que el README ya avisa para el rol de la comisión.
+- **La limpieza va al principio Y al final.** La primera corrida abortó a mitad, su
+  limpieza final no corrió, y la siguiente arrancó con las filas viejas: A5 dio **FALLA
+  contando dos fotos de Ana en lugar de una**. Un check que solo limpia al final se
+  envenena a sí mismo, y el falso negativo aparece en la corrida en la que uno ya está
+  buscando otra cosa.
+- **El cartel de cierre no dice la palabra que se busca con grep.** Decía «no tiene que
+  haber ninguna linea FALLA», y el `grep -E 'FALLA|^ERROR'` del README —que espera sin
+  salida cuando todo está bien— se enganchaba con el cartel: alarma falsa en cada corrida.
+
+⚠️ **Falta aplicarla en producción.** Hasta entonces `users.avatar_path` no existe y la
+pantalla cae al dibujo por género, que es el comportamiento correcto mientras tanto. Los
+tres pasos para cerrarlo —incluido confirmar en la base que el bucket quedó **privado**,
+que es lo único que el Postgres pelado no puede verificar— están en `ROADMAP.md` §10.23.e.
+
+Validación: 574 tests en 45 archivos (14 nuevos), lint 0 errores / 39 warnings, build
+correcto, las 24 migraciones aplicadas desde cero en Docker (la de `pg_cron` falla por
+falta de superusuario, que es la limitación conocida del entorno y es anterior a esto), y
+los 9 casos de `avatar-check.sql` en OK, repetibles en corridas consecutivas.

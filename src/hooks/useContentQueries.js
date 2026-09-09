@@ -11,6 +11,7 @@ import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@
 import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations, getMiPrecioActividad } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
+import { urlAvatar } from '@/api/avatarApi';
 import {
   getMiAcceso,
   getMiAntiguedad,
@@ -98,6 +99,28 @@ export const useAllPartners = ({ select, ...options } = {}) =>
  * (`Boolean(userId) && isPending`), o la pantalla se cuelga para el visitante
  * sin sesión, que es el caso más común de esta página.
  */
+/**
+ * La URL firmada de la foto de perfil (§10.23.e).
+ *
+ * ⚠️ `staleTime` TIENE que quedar por debajo de `SEGUNDOS_URL_FIRMADA` (600 s).
+ * La URL vence sola: si la caché la considera fresca más tiempo del que vive,
+ * la foto se rompe sin que nada falle —el `<img>` queda con un src caducado— y
+ * se arregla recargando, que es el peor síntoma posible porque no deja rastro.
+ * 8 minutos deja 2 de colchón.
+ *
+ * `enabled` mira la ruta y no el usuario: sin `avatar_path` no hay nada que
+ * firmar. Y como toda query deshabilitada se queda en `isPending` para
+ * siempre, el consumidor combina con `Boolean(path)` igual que en `useMiAcceso`.
+ */
+export const useAvatarUrl = (path, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.avatar(path),
+    queryFn: () => unwrap(urlAvatar(path)),
+    enabled: Boolean(path),
+    staleTime: 8 * 60 * 1000,
+    ...options,
+  });
+
 export const useMiAcceso = (userId, options = {}) =>
   useQuery({
     queryKey: queryKeys.acceso(userId),

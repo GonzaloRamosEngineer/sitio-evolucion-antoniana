@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AvatarUpload from './AvatarUpload';
 import { 
   Select, 
   SelectContent, 
@@ -22,8 +23,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { updateUserProfile } from '@/api/userApi';
 import { 
   Loader2, Edit3, Save, User, 
-  Fingerprint, Phone, Calendar, UserCircle2, ShieldCheck 
-} from 'lucide-react';
+  Fingerprint, Phone, Calendar, UserCircle2, ShieldCheck, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
@@ -126,6 +126,19 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
         </DialogHeader>
 
         <div className="p-8 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          {/*
+            La foto va PRIMERO y fuera del formulario, a propósito: se guarda
+            sola (sube el archivo y actualiza la fila en el mismo paso), así que
+            meterla adentro del <form> haría que «Guardar cambios» pareciera
+            necesario para que la foto quede — y no lo es. Ver §10.23.e.
+          */}
+          <div className="space-y-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <Camera size={12} /> Mi foto
+            </Label>
+            <AvatarUpload user={user} onUpdateSuccess={onUpdateSuccess} />
+          </div>
+
           <div className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
             <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck size={12} /> Cuenta Vinculada (No editable)

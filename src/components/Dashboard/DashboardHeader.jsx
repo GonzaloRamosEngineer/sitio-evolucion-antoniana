@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import EditProfileModal from './EditProfileModal';
-import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
+import { useMiAcceso, useMiAntiguedad, useAvatarUrl } from '@/hooks/useContentQueries';
 import { avatarDe } from '@/lib/avatar';
 import {
   SIN_ACCESO, etiquetaEstado, claseEstado, nombreOrigen, formatearMeses, formatearFecha,
@@ -78,10 +78,19 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
   const { data: antiguedad } = useMiAntiguedad(user?.id);
 
   /*
+    La foto propia vive en un bucket privado, así que su URL se firma y vence:
+    la resuelve `useAvatarUrl` a partir de `users.avatar_path` (§10.23.e).
+
+    Mientras se firma, `avatarDe` cae al dibujo por género — y eso es lo
+    correcto acá y no un «no sé» como el del acceso: mostrar el dibujo medio
+    segundo y después la foto es un reemplazo, no una afirmación falsa. Lo que
+    NO se puede hacer es dejar el hueco en blanco.
+
     `null` = no hay foto ni dibujo que corresponda → van las iniciales. El
-    porqué de que «otro / prefiero no decir» caiga acá está en `lib/avatar.js`.
+    porqué de que «otro / prefiero no decir» caiga ahí está en `lib/avatar.js`.
   */
-  const foto = avatarDe(user);
+  const { data: urlFoto } = useAvatarUrl(user?.avatar_path);
+  const foto = avatarDe(user, urlFoto);
 
   const esSocio = Boolean(acceso?.tiene_acceso);
 

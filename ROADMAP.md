@@ -838,6 +838,44 @@ la transparencia publicada y navegable. La crónica entera está en `HISTORIAL.m
 
 ---
 
+## 10.23.e — La foto de perfil del socio ✅ (2026-09-09, pendiente de aplicar en prod)
+
+Subir la foto propia, recortarla y verla en grande. Está **en el repo y verificada**, pero
+la migración `20260909020000_avatar_socio.sql` **todavía no se aplicó en el proyecto real**:
+hasta que se aplique, `users.avatar_path` no existe y la pantalla cae al dibujo por género,
+que es el comportamiento correcto mientras tanto.
+
+**Lo que falta para cerrarlo:**
+
+1. Aplicar `20260909020000_avatar_socio.sql` en el proyecto (`db push` o SQL Editor).
+2. Confirmar en la base que el bucket quedó **privado**, que es lo único que el check con
+   Postgres pelado no puede verificar:
+   `select id, public, file_size_limit from storage.buckets where id='avatares';`
+   Tiene que decir `public = false`. Si dice `true`, la cara de cada socio está en internet
+   abierto y hay que corregirlo **antes** de que alguien suba una foto.
+3. Subir una foto de punta a punta desde un celular real y volver a entrar para ver que la
+   URL firmada se renueva (vence a los 10 minutos).
+
+### Lo que se decidió NO hacer
+
+| | Por qué |
+|---|---|
+| **Detección de rostro** (era el pedido original) | El `FaceDetector` del navegador es en la práctica solo Chrome detrás de un flag, así que centrar la cara sola obliga a embarcar un modelo (MediaPipe o face-api: **1 a 3 MB**) en un panel al que, de 72 socias, **entraron 6**. El recortador con zoom y arrastre da el mismo resultado, pesa **0 KB** —el bundle creció 0,13 kB— y encima deja que la persona elija su encuadre en vez de adivinárselo |
+| **Bucket público** | Es la cara de una persona y la foto solo se muestra en el panel de su propio dueño: no hay un caso de uso que necesite que sea pública. Un bucket público la deja en internet abierto para siempre |
+| **Guardar una URL en la fila** | El bucket es privado: lo que se guarda es la **ruta** (`avatar_path`) y la URL se firma al leer. Una columna `avatar_url` con una ruta adentro es la clase de mentira que este repo ya pagó con `socio_desde` y con «Rango: Padrino» |
+| **Un archivo por subida** | Nombre fijo (`<uid>/avatar.webp`), así subir de nuevo **reemplaza**. Con nombres únicos el bucket acumularía todas las fotos viejas de cada socio —que nadie limpia y siguen siendo su cara— y habría que borrar la anterior a mano en cada cambio: el paso que alguien va a olvidar |
+| **Redimensionar en el servidor** | El recorte se hace en el cliente y lo que se sube ya es el cuadrado final de 512×512 en WebP: decenas de KB en vez de los 3-8 MB de una foto de cámara. Sin eso cada socio subiría el archivo completo por datos móviles para que se muestre a 64 px |
+| **Dar acceso al admin a las fotos** | Hoy ningún panel muestra la foto de un tercero, y una policy que habilita algo que nadie usa es superficie de ataque sin contraparte. El día que haga falta, se agrega con su motivo |
+
+### Y una deuda vieja que esto destapó
+
+`user.avatar_url` estaba leído en dos componentes **contra una columna que nunca existió**
+—resto del scaffold de Hostinger— así que el dibujo del varón no era un default: era la
+única respuesta posible, y el panel le mostraba un varón a todas las socias. Ver
+`HISTORIAL.md` §10.23.d. El otro consumidor,
+`src/components/Dashboard/UserProfileCard.jsx`, **no lo importa nadie**: es código muerto y
+sigue pendiente de borrar.
+
 ## 13. Apadrinamiento de cara al público — bloqueado por legal, no por código
 
 > Se sacó de §10.8 el 2026-09-05 **para que §10 pudiera cerrarse sin esconder un
