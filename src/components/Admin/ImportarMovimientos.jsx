@@ -48,6 +48,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { useDestinos } from '@/hooks/useContentQueries';
 import {
   consolidarArchivos, anterioresA, delDiaDelInicio, resumirLote,
+  referenciasEquivalentes,
   verificarSaldoCorrido, verificarTotales, verificarCadena,
 } from '@/lib/importarMovimientos';
 import { getReferenciasCargadas, importarLote } from '@/api/importarApi';
@@ -115,7 +116,11 @@ const ImportarMovimientos = () => {
       return;
     }
 
-    const refs = filas.map((f) => f.referencia).filter(Boolean);
+    // ⚠️ LAS DOS FORMAS, no sólo la del importador. El trigger de la pasarela
+    // guarda `referencia_externa = <payment_id>` pelado, así que preguntando
+    // sólo por `mp:<id>:<monto>` cada cobro que ya entró por el webhook se
+    // volvería a importar. Ver `referenciasEquivalentes`.
+    const refs = filas.flatMap(referenciasEquivalentes);
     const { data: cargadas, error } = await getReferenciasCargadas(refs);
     setTrabajando(false);
 
@@ -173,11 +178,15 @@ const ImportarMovimientos = () => {
   );
 
   const estadoDe = (f) => {
-    const yaEsta = Boolean(f.referencia && analisis.yaCargadas.has(f.referencia));
+    const yaEsta = referenciasEquivalentes(f).some((r) => analisis.yaCargadas.has(r));
+    // Distinguir de dónde viene: «ya lo importé» es esperable, «esto ya entró
+    // por la pasarela» es información nueva para quien mira, y explica por qué
+    // una fila del extracto no hace falta cargarla.
+    const porPasarela = yaEsta && analisis.yaCargadas.has(String(f.id ?? '').trim());
     const bloqueada = Boolean(f.problema) || yaEsta;
     const porDefecto = !bloqueada && !anteriores.has(f.indice);
     const entra = bloqueada ? false : decisiones.get(f.indice) ?? porDefecto;
-    return { yaEsta, bloqueada, entra };
+    return { yaEsta, porPasarela, bloqueada, entra };
   };
 
   const aImportar = useMemo(
@@ -629,7 +638,7 @@ const ImportarMovimientos = () => {
               </thead>
               <tbody className="divide-y divide-brand-dark/10">
                 {analisis.filas.map((f) => {
-                  const { yaEsta, bloqueada, entra } = estadoDe(f);
+                  const { yaEsta, porPasarela, bloqueada, entra } = estadoDe(f);
                   return (
                     <tr key={f.indice} className={entra ? '' : 'opacity-50'}>
                       <td className="p-2">
@@ -663,7 +672,11 @@ const ImportarMovimientos = () => {
                       </td>
                       <td className="p-2 text-xs">
                         {f.problema && <span className="text-amber-700">{f.problema}</span>}
-                        {yaEsta && <span className="text-brand-dark/50">Ya cargado</span>}
+                        {yaEsta && (
+                          <span className="text-brand-dark/50">
+                            {porPasarela ? 'Ya entró por la pasarela' : 'Ya cargado'}
+                          </span>
+                        )}
                         {!bloqueada && anteriores.has(f.indice) && (
                           <span className="text-amber-700">Anterior al inicio de este destino</span>
                         )}

@@ -90,6 +90,17 @@ export const REGLAS = [
   { patron: /transferencia enviada/i, categoria: 'Transferencias enviadas', tomarContraparte: true },
   { patron: /transferencia recibida/i, categoria: 'Transferencias recibidas', tomarContraparte: true },
   { patron: /liquidaci[oó]n de dinero|acreditaci[oó]n/i, categoria: 'Cobros liquidados' },
+  {
+    // El interés que paga la cuenta remunerada por el saldo parado. Aparece 52
+    // veces en los 22 resúmenes de la Fundación ($9.131,17) y ninguna regla lo
+    // reconocía, así que caía en «Otros gastos» de la rendición — que además es
+    // el cajón de los EGRESOS sin clasificar, y esto es un ingreso.
+    // ⚠️ Y encierra una decisión contable que no es del código: el saldo que los
+    // generó es casi todo el fondo del convenio, así que se puede sostener que
+    // el rendimiento también es del fondo. Queda anotado en ROADMAP §14.5.
+    patron: /rendimiento/i,
+    categoria: 'Rendimientos financieros',
+  },
 ];
 
 /**
@@ -163,6 +174,41 @@ export const clasificar = (descripcion) => {
  */
 export const referenciaDe = (fuente, id, monto) =>
   `${fuente}:${String(id ?? '').trim()}:${Number(monto).toFixed(2)}`;
+
+/**
+ * Todas las formas bajo las que este movimiento puede YA estar en el libro.
+ *
+ * ⚠️ EL IMPORTADOR NO ES EL ÚNICO QUE ESCRIBE EN `aportes`, Y ESO ROMPÍA LA
+ * IDEMPOTENCIA SIN QUE NADA AVISARA.
+ *
+ * El trigger de la pasarela (`aporte_desde_donacion`, migración `20260816160000`)
+ * guarda `referencia_externa = <payment_id>` **pelado**:
+ *
+ *     114211568925
+ *
+ * y este módulo genera:
+ *
+ *     mp:114211568925:9.38
+ *
+ * Son cadenas distintas, así que el UNIQUE de la columna **no las ve como el
+ * mismo cobro**: importar el extracto metería al libro, por segunda vez, cada
+ * pago que ya entró por el webhook. Y no es hipotético — el `REFERENCE_ID` que
+ * MercadoPago pone en una «Liquidación de dinero» ES el payment id (12 dígitos),
+ * y la Fundación tiene decenas de cobros de prueba de la etapa de desarrollo ya
+ * registrados así.
+ *
+ * Duplicar un ingreso es peor que duplicar un gasto: infla lo recaudado, y el
+ * porcentaje rendido —que es lo que la rendición publica— baja sin que nadie haya
+ * gastado nada.
+ *
+ * Preguntar por las dos formas cuesta un elemento más en el array.
+ */
+export const referenciasEquivalentes = (fila) =>
+  [fila?.referencia, fila?.id ? String(fila.id).trim() : null].filter(Boolean);
+
+/** ¿Este movimiento ya está en el libro, por cualquiera de sus dos formas? */
+export const yaEstaCargada = (fila, cargadas) =>
+  referenciasEquivalentes(fila).some((r) => cargadas.has(r));
 
 /* ============================
    El parseo
@@ -431,7 +477,9 @@ export const verificarCadena = (resumenes) => {
 /** Resumen del lote, para decidir sin contar a mano. */
 export const resumirLote = (filas, yaCargadas = new Set()) => {
   const utiles = filas.filter((f) => !f.problema);
-  const nuevas = utiles.filter((f) => !f.referencia || !yaCargadas.has(f.referencia));
+  // `yaEstaCargada` y no `yaCargadas.has(f.referencia)`: la pasarela guarda el
+  // payment_id pelado, así que hay que preguntar por las dos formas.
+  const nuevas = utiles.filter((f) => !yaEstaCargada(f, yaCargadas));
   const aportes = nuevas.filter((f) => f.tipo === 'aporte');
   const gastos = nuevas.filter((f) => f.tipo === 'gasto');
 

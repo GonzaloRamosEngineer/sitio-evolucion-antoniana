@@ -15,6 +15,7 @@ import {
   aNumero, aFechaISO, clasificar, referenciaDe, parsearExtracto, resumirLote,
   verificarSaldoCorrido, verificarTotales, verificarCadena, consolidarArchivos,
   anterioresA, delDiaDelInicio, conceptoGenerico,
+  referenciasEquivalentes, yaEstaCargada,
 } from '@/lib/importarMovimientos';
 
 // Extracto real, recortado. El encabezado es el que trae MercadoPago.
@@ -484,5 +485,62 @@ describe('consolidarArchivos — un mes sin movimientos', () => {
     ]);
     expect(resumenes.at(-1).nombre).toBe('suelto.csv');
     expect(verificarCadena(resumenes).ok).toBe(false);
+  });
+});
+
+/*
+  ⚠️ EL IMPORTADOR NO ES EL ÚNICO QUE ESCRIBE EN `aportes`.
+
+  El trigger de la pasarela (`aporte_desde_donacion`, migración 20260816160000)
+  guarda `referencia_externa = <payment_id>` PELADO, y este módulo genera
+  `mp:<payment_id>:<monto>`. Son cadenas distintas, así que el UNIQUE de la
+  columna no las ve como el mismo cobro: importar el extracto metería al libro,
+  por segunda vez, cada pago que ya entró por el webhook.
+
+  Y no es hipotético: el `REFERENCE_ID` de una «Liquidación de dinero» ES el
+  payment id, y la Fundación tiene decenas de cobros de prueba de la etapa de
+  desarrollo ya registrados así.
+*/
+describe('referenciasEquivalentes — la pasarela guarda el id pelado', () => {
+  const fila = { referencia: 'mp:114211568925:9.38', id: '114211568925' };
+
+  it('devuelve las dos formas bajo las que el cobro puede estar ya en el libro', () => {
+    expect(referenciasEquivalentes(fila)).toEqual(['mp:114211568925:9.38', '114211568925']);
+  });
+
+  it('🔒 detecta el cobro que entró por el WEBHOOK, no por el importador', () => {
+    // Esta es la que faltaba: preguntando sólo por `mp:*` daba false y el cobro
+    // se duplicaba.
+    expect(yaEstaCargada(fila, new Set(['114211568925']))).toBe(true);
+  });
+
+  it('detecta también el que entró por el importador', () => {
+    expect(yaEstaCargada(fila, new Set(['mp:114211568925:9.38']))).toBe(true);
+  });
+
+  it('y no inventa: si no está, no está', () => {
+    expect(yaEstaCargada(fila, new Set(['otra-cosa']))).toBe(false);
+  });
+
+  it('🔒 `resumirLote` descuenta lo que entró por la pasarela', () => {
+    const { filas } = parsearExtracto(
+      [
+        'Fecha\tDescripción\tID\tValor\tSaldo',
+        '21-06-2025\tLiquidación de dinero\t114211568925\t$ 9,38\t$ 100,00',
+        '22-06-2025\tLiquidación de dinero\t999999999999\t$ 50,00\t$ 150,00',
+      ].join('\n')
+    );
+    // Sólo el primero está en el libro, y con la forma del webhook.
+    const r = resumirLote(filas, new Set(['114211568925']));
+    expect(r.duplicadas).toBe(1);
+    expect(r.aportes).toBe(1);
+    expect(r.montoAportes).toBe(50);
+  });
+});
+
+describe('los rendimientos de la cuenta remunerada', () => {
+  it('🔒 tienen su propia categoría: son un INGRESO y caían en «Otros gastos»', () => {
+    // 52 movimientos y $9.131,17 en los 22 resúmenes reales, sin clasificar.
+    expect(clasificar('Rendimientos').categoria).toBe('Rendimientos financieros');
   });
 });
