@@ -544,3 +544,28 @@ describe('los rendimientos de la cuenta remunerada', () => {
     expect(clasificar('Rendimientos').categoria).toBe('Rendimientos financieros');
   });
 });
+
+/*
+  El impuesto de una transferencia repite a quién se le pagó: «Pago de impuestos
+  De Athayde Moncorvo Eduardo». La regla general de impuestos matcheaba primero y
+  NO extrae contraparte, así que el nombre iba entero al `concepto` público.
+  Eran 3 de los 130 movimientos reales: un contador y un escribano.
+*/
+describe('«Pago de impuestos <nombre>» — el nombre no puede quedar en el concepto', () => {
+  it('🔒 saca el nombre del contador y del escribano', () => {
+    for (const d of ['Pago de impuestos Ramon Jorge Fiqueni',
+      'Pago de impuestos De Athayde Moncorvo Eduardo']) {
+      const c = clasificar(d);
+      expect(c.categoria).toBe('Comisiones e impuestos');
+      expect(conceptoGenerico(d, c.contraparte)).toBe('Pago de impuestos');
+    }
+  });
+
+  it('el impuesto sin nombre sigue igual: la regla nueva no se come a la vieja', () => {
+    const c = clasificar('Impuesto por extracción');
+    expect(c.categoria).toBe('Comisiones e impuestos');
+    expect(c.contraparte).toBeNull();
+    expect(conceptoGenerico('Impuesto por extracción', c.contraparte))
+      .toBe('Impuesto por extracción');
+  });
+});

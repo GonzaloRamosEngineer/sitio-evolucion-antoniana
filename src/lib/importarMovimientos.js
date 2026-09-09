@@ -79,6 +79,23 @@ export const aFechaISO = (texto) => {
  */
 export const REGLAS = [
   {
+    /*
+      ⚠️ VA ANTES DE LA REGLA GENERAL DE IMPUESTOS, Y EL ORDEN ES EL ARREGLO.
+
+      MercadoPago describe el impuesto de una transferencia repitiendo a quién se
+      le pagó: «Pago de impuestos De Athayde Moncorvo Eduardo». La regla general
+      —`/impuesto/`— matcheaba primero y NO extrae contraparte, así que
+      `conceptoGenerico` devolvía la descripción entera **con el nombre adentro**
+      y lo publicaba (§14.4).
+
+      Eran 3 de los 130 movimientos reales: un contador y un escribano. Poquísimas
+      filas y exactamente el tipo de dato que no puede salir.
+    */
+    patron: /pago de impuestos/i,
+    categoria: 'Comisiones e impuestos',
+    tomarContraparte: true,
+  },
+  {
     patron: /impuesto|percepci[oó]n|retenci[oó]n|iva/i,
     categoria: 'Comisiones e impuestos',
     // Los "gastos hormiga": chicos de a uno, pesados en volumen. Agrupados bajo
@@ -107,9 +124,11 @@ export const REGLAS = [
  * El nombre que viene después del tipo de movimiento.
  * «Transferencia enviada Centro Juventud Antoniana» -> «Centro Juventud Antoniana»
  */
+const PREFIJOS = /^.*?(transferencia (enviada|recibida)|pago de impuestos)\s*/i;
+
 const contraparte = (descripcion) =>
   String(descripcion ?? '')
-    .replace(/^.*?transferencia (enviada|recibida)\s*/i, '')
+    .replace(PREFIJOS, '')
     .trim() || null;
 
 /**

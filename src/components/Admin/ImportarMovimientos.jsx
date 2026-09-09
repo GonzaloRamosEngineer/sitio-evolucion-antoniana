@@ -285,7 +285,7 @@ const ImportarMovimientos = () => {
     Sigue siendo la persona la que decide y confirma; esto sólo evita que la
     decisión correcta cueste cien clics más que la incorrecta.
   */
-  const marcarPorTipo = (tipo) => {
+  const marcarPorTipo = (tipo, categoria = null) => {
     if (!analisis) return;
     setDecisiones(() => {
       const m = new Map();
@@ -300,11 +300,36 @@ const ImportarMovimientos = () => {
         // tiene esta pantalla. Tildar en bloque selecciona lo ELEGIBLE de un
         // tipo, no todo lo de ese tipo.
         const elegible = !anteriores.has(f.indice);
-        m.set(f.indice, elegible && (tipo === 'todos' || f.tipo === tipo));
+        const esDelTipo = tipo === 'todos' || f.tipo === tipo;
+        const esDeLaCategoria = !categoria || f.categoria === categoria;
+        m.set(f.indice, elegible && esDelTipo && esDeLaCategoria);
       }
       return m;
     });
   };
+
+  /*
+    LAS CATEGORÍAS PRESENTES EN EL LOTE, para tildar por grupo.
+    Tildar por tipo no alcanza cuando dentro de un tipo hay grupos que van a
+    destinos distintos. En los 22 resúmenes de la Fundación los 109 ingresos son
+    tres cosas: 8 fondos de terceros que se devolvieron, 52 rendimientos de la
+    cuenta y 49 cobros y donaciones. Sin esto, separarlos son 52 clics.
+    Salen de los datos y no de una lista fija: otra entidad, otro banco, otras
+    categorías (§10.9 — lo que varía va en datos).
+  */
+  const categorias = useMemo(() => {
+    if (!analisis) return [];
+    const mapa = new Map();
+    for (const f of analisis.filas) {
+      if (f.problema || !f.categoria) continue;
+      const k = `${f.tipo}|${f.categoria}`;
+      if (!mapa.has(k)) mapa.set(k, { tipo: f.tipo, categoria: f.categoria, n: 0, total: 0 });
+      const c = mapa.get(k);
+      c.n += 1;
+      c.total += Math.abs(f.monto);
+    }
+    return [...mapa.values()].sort((a, b) => b.total - a.total);
+  }, [analisis]);
 
   const cuenta = useMemo(() => {
     if (!analisis) return { aportes: 0, gastos: 0 };
@@ -621,6 +646,34 @@ const ImportarMovimientos = () => {
                 Todo
               </Button>
             </div>
+
+            {categorias.length > 0 && (
+              <>
+                <p className="mt-4 mb-2 text-xs font-semibold text-brand-dark/70">
+                  O por categoría, cuando dentro de un tipo hay grupos que van a destinos
+                  distintos:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {categorias.map((c) => (
+                    <Button
+                      key={`${c.tipo}|${c.categoria}`}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => marcarPorTipo(c.tipo, c.categoria)}
+                    >
+                      <span className={c.tipo === 'aporte' ? 'text-green-700' : 'text-brand-dark'}>
+                        {c.tipo === 'aporte' ? '↓' : '↑'}
+                      </span>
+                      <span className="ml-1.5">{c.categoria}</span>
+                      <span className="ml-1.5 text-brand-dark/50 tabular-nums">
+                        {c.n} · {pesos(c.total)}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-sm border border-brand-dark/10 bg-white overflow-x-auto">
