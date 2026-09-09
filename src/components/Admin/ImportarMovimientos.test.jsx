@@ -171,6 +171,26 @@ describe('ImportarMovimientos — las decisiones manuales', () => {
     await waitFor(() => expect(botonImportar()).toHaveTextContent('Importar 2 movimientos'));
   });
 
+  /*
+    Pedido en la primera vuelta real de importación, mirando la pantalla: el botón
+    decía «Importar 5 movimientos» y con eso se confirmaba escribir $830.300 en el
+    libro. El conteo de filas no es la magnitud de lo que se está haciendo.
+  */
+  it('🔒 dice CUÁNTA PLATA va a entrar, no sólo cuántas filas', async () => {
+    await prepararLote();
+    fireEvent.click(screen.getByRole('button', { name: /Solo los \d+ gastos/i }));
+
+    // Los dos gastos del lote: 5.000 + 1.000.
+    await waitFor(() =>
+      expect(screen.getAllByText(/2 gastos · \$6\.000,00/).length).toBeGreaterThan(0)
+    );
+  });
+
+  it('🔒 dice A QUÉ DESTINO va, que es el error caro de esta pantalla', async () => {
+    await prepararLote();
+    expect(screen.getAllByText(new RegExp(DESTINO.nombre)).length).toBeGreaterThan(0);
+  });
+
   // Control positivo: sin esto, "nunca vuelve a tildar nada" y "conserva las
   // decisiones" se ven idénticos desde afuera, y una pantalla que dejara todo
   // destildado para siempre pasaría el test de arriba.

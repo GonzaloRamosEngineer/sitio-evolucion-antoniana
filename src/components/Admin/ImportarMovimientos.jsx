@@ -200,6 +200,31 @@ const ImportarMovimientos = () => {
   );
 
   /*
+    ⚠️ CUÁNTA PLATA ESTÁ POR ENTRAR, Y NO SÓLO CUÁNTAS FILAS.
+
+    El botón decía «Importar 5 movimientos» y con eso alguien confirmaba escribir
+    $830.300 en el libro. El conteo de filas no es la magnitud de lo que se está
+    haciendo, y en una pantalla contable la magnitud es el dato que hay que poder
+    revisar antes de apretar — sobre todo con una tabla de 130 filas, donde nadie
+    va a sumar de arriba a abajo para controlar.
+
+    Lo pidió el dueño en la primera vuelta real de importación, mirando la
+    pantalla: «no veo que me diga 5 · $830.300 en ningún lado».
+  */
+  const porEntrar = useMemo(() => {
+    const ap = aImportar.filter((f) => f.tipo === 'aporte');
+    const ga = aImportar.filter((f) => f.tipo === 'gasto');
+    return {
+      aportes: ap.length,
+      montoAportes: ap.reduce((t, f) => t + f.monto, 0),
+      gastos: ga.length,
+      // En valor absoluto: el extracto los trae negativos y «-$830.300 en gastos»
+      // se lee mal al lado de un total de aportes positivo.
+      montoGastos: Math.abs(ga.reduce((t, f) => t + f.monto, 0)),
+    };
+  }, [aImportar]);
+
+  /*
     LAS VERIFICACIONES (§14.3). Salen de datos que el propio resumen de cuenta
     trae —el saldo corrido de cada fila y los totales del encabezado—, así que no
     dependen de que le creamos al parser.
@@ -341,6 +366,42 @@ const ImportarMovimientos = () => {
   }, [analisis]);
 
   const variosArchivos = (analisis?.resumenes?.length ?? 0) > 1;
+
+  /** Qué va a entrar y a dónde. Se muestra dos veces: donde se tilda y donde se confirma. */
+  const VaAEntrar = () => (
+    <div className="rounded-sm border border-brand-primary/30 bg-brand-primary/5 p-3 text-sm">
+      {aImportar.length === 0 ? (
+        <p className="text-brand-dark/60">No hay nada tildado.</p>
+      ) : (
+        <>
+          <p className="text-brand-dark/70">
+            Va a entrar a{' '}
+            <strong className="text-brand-dark">
+              {destino ? destino.nombre : 'un destino todavía sin elegir'}
+            </strong>
+            :
+          </p>
+          <p className="mt-1 font-bold text-brand-dark tabular-nums">
+            {porEntrar.gastos > 0 && (
+              <span>
+                {porEntrar.gastos} {porEntrar.gastos === 1 ? 'gasto' : 'gastos'} ·{' '}
+                {pesos(porEntrar.montoGastos)}
+              </span>
+            )}
+            {porEntrar.gastos > 0 && porEntrar.aportes > 0 && (
+              <span className="text-brand-dark/40"> · </span>
+            )}
+            {porEntrar.aportes > 0 && (
+              <span className="text-green-700">
+                {porEntrar.aportes} {porEntrar.aportes === 1 ? 'aporte' : 'aportes'} ·{' '}
+                {pesos(porEntrar.montoAportes)}
+              </span>
+            )}
+          </p>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -674,6 +735,10 @@ const ImportarMovimientos = () => {
                 </div>
               </>
             )}
+
+            <div className="mt-4">
+              <VaAEntrar />
+            </div>
           </div>
 
           <div className="rounded-sm border border-brand-dark/10 bg-white overflow-x-auto">
@@ -747,7 +812,11 @@ const ImportarMovimientos = () => {
             </table>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 max-w-md">
+            <VaAEntrar />
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
             <Button
               variant="action"
               onClick={importar}
