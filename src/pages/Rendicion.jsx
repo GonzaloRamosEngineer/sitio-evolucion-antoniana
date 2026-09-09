@@ -177,13 +177,29 @@ const Rendicion = () => {
                         {[
                           ['Recaudado', balance.recaudado],
                           ['Rendido', balance.rendido],
-                          ['Saldo por rendir', balance.saldo],
+                          // La tercera cifra cambia de nombre cuando lo rendido
+                          // supera lo recaudado: ahí no queda nada por rendir, y
+                          // «Saldo por rendir: -$1.428,00» dice algo falso.
+                          balance.rendidoDeMas > 0
+                            ? ['Rendido de más', balance.rendidoDeMas]
+                            : ['Saldo por rendir', balance.saldo],
                         ].map(([label, amount]) => <div key={label} className="min-w-0 flex justify-between gap-3 sm:block">
                           <dt className="text-gray-600">{label}</dt>
                           <dd className="font-bold text-brand-dark break-words sm:mt-1">{pesos(amount)}</dd>
                         </div>)}
                       </dl>
                       {Number(d.meta_monto) > 0 && <p className="mt-3 text-sm text-gray-600">Meta de recaudación: <strong className="text-brand-dark">{pesos(d.meta_monto)}</strong></p>}
+
+                      {/* Explicar el exceso donde aparece. Sin esto, la cifra
+                          queda pidiendo una explicación que está tres párrafos
+                          arriba, en la descripción del destino. */}
+                      {balance.rendidoDeMas > 0 && (
+                        <p className="mt-3 text-sm text-gray-600">
+                          Se rindió más de lo recaudado: la diferencia de{' '}
+                          <strong className="text-brand-dark">{pesos(balance.rendidoDeMas)}</strong>{' '}
+                          la cubrió la entidad con fondos propios.
+                        </p>
+                      )}
 
                       {/* DESDE CUÁNDO RINDE, y no es un adorno.
                           Un destino puede tener movimientos anteriores a la fecha en

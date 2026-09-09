@@ -95,3 +95,16 @@ describe('pesos — dos decimales SIEMPRE', () => {
     expect(pesos('400000')).toBe('$400.000,00');
   });
 });
+
+describe('pesos — los negativos', () => {
+  it('🔒 pone el signo ANTES del peso', () => {
+    // Salió en producción como «$-1.428,00», que se lee como un error de la
+    // página antes que como un negativo.
+    expect(pesos(-1428)).toBe('-$1.428,00');
+  });
+
+  it('el cero no lleva signo', () => {
+    expect(pesos(0)).toBe('$0,00');
+    expect(pesos(-0)).toBe('$0,00');
+  });
+});

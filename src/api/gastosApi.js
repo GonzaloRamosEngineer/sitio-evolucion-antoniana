@@ -178,8 +178,23 @@ export const balanceDestino = (destino) => {
     recaudado,
     rendido,
     saldo: recaudado - rendido,
+    /*
+      ⚠️ CUÁNTO SE RINDIÓ DE MÁS, cuando el gasto supera lo recaudado.
+
+      Pasa de verdad, y no es un error de carga: el destino de regularización de
+      fondos de terceros recibió $118.286 netos de comisión y devolvió $119.714,
+      porque la entidad cubrió la diferencia con fondos propios.
+
+      Sin esto, la rendición pública mostraba **«Saldo por rendir: -$1.428,00»**,
+      que dice algo falso: no queda nada por rendir, se rindió de más. Un número
+      negativo bajo esa etiqueta se lee como un error de la página, y en una
+      rendición de cuentas parecer roto cuesta más que la cifra misma.
+    */
+    rendidoDeMas: Math.max(0, rendido - recaudado),
     // Qué porcentaje de lo recaudado ya tiene rendición. Es la métrica que
     // responde "¿en qué se gastó mi plata?" mejor que el saldo solo.
+    // ⚠️ Tope en 100 a propósito: por encima, el dato que importa no es «101%»
+    // sino cuánto se rindió de más, y eso lo dice `rendidoDeMas`.
     porcentajeRendido: recaudado > 0 ? Math.min(100, Math.round((rendido / recaudado) * 100)) : null,
   };
 };

@@ -109,3 +109,25 @@ describe('hoyISO', () => {
     expect(hoyISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
+
+describe('balanceDestino — cuando se rinde MÁS de lo recaudado', () => {
+  it('🔒 no dice «saldo por rendir» negativo: dice cuánto se rindió de más', () => {
+    // El caso real: el destino de regularización de fondos de terceros recibió
+    // $118.286 netos de comisión y devolvió $119.714, porque la entidad cubrió
+    // la diferencia con fondos propios. La rendición pública mostraba
+    // «Saldo por rendir: -$1.428,00», que dice algo falso.
+    const b = balanceDestino({ monto_recaudado: 118286, monto_rendido: 119714 });
+    expect(b.rendidoDeMas).toBe(1428);
+    expect(b.saldo).toBe(-1428);
+  });
+
+  it('en el caso normal no hay exceso, y el saldo es el que manda', () => {
+    const b = balanceDestino({ monto_recaudado: 1009131.17, monto_rendido: 914047.87 });
+    expect(b.rendidoDeMas).toBe(0);
+    expect(b.saldo).toBeCloseTo(95083.3, 2);
+  });
+
+  it('el porcentaje se topa en 100: por encima el dato es el exceso, no «101%»', () => {
+    expect(balanceDestino({ monto_recaudado: 100, monto_rendido: 150 }).porcentajeRendido).toBe(100);
+  });
+});

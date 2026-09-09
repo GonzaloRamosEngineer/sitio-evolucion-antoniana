@@ -64,7 +64,14 @@ export function palabraMasLarga(texto) {
  * un importe exacto», y `$400.000` deja la pregunta de si se redondeó.
  */
 export function pesos(n) {
-  return `$${Number(n || 0).toLocaleString('es-AR', {
+  const v = Number(n || 0);
+  // ⚠️ EL SIGNO VA ANTES DEL PESO: `-$1.428,00`, no `$-1.428,00`.
+  // Interpolando el número formateado directamente sale el signo en el medio,
+  // que en castellano se lee como un error de la página antes que como un
+  // negativo. Apareció en producción el 2026-09-08, en el único destino donde
+  // lo rendido supera lo recaudado.
+  const signo = v < 0 ? '-' : '';
+  return `${signo}$${Math.abs(v).toLocaleString('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
