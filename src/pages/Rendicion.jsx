@@ -327,34 +327,19 @@ const Rendicion = () => {
 
               <ol className="mt-5 space-y-4 text-sm text-gray-600 leading-relaxed">
                 <li>
-                  <strong className="text-brand-dark">Cada gasto lleva su número de operación.</strong>{' '}
-                  El <span className="tabular-nums">#</span> que ves en cada movimiento es el
-                  identificador que le asigna la pasarela de pagos: se corresponde, uno a uno, con
-                  una línea del resumen de la cuenta. No es un número que escribimos nosotros.
+                  <strong className="text-brand-dark">Movimientos identificables.</strong>{' '}
+                  Cada movimiento tiene un identificador que permite vincularlo con la operación correspondiente.
                 </li>
                 <li>
-                  <strong className="text-brand-dark">Los estados contables están auditados y publicados.</strong>{' '}
-                  Los ejercicios 2022, 2023 y 2024 están en la documentación oficial, con informe
-                  de contador. Ahí están los conceptos y las facturas agregadas por rubro.{' '}
-                  <span className="text-gray-500">
-                    Los movimientos de 2025 y 2026 que se ven acá van a integrar los ejercicios
-                    correspondientes; todavía no están en un balance publicado.
-                  </span>
+                  <strong className="text-brand-dark">Contabilidad respaldada.</strong>{' '}
+                  Ejercicios certificados por contador público independiente, con facturas y comprobantes agregados por rubro.
                 </li>
                 <li>
-                  <strong className="text-brand-dark">Un tercero ya revisó la documentación.</strong>{' '}
+                  <strong className="text-brand-dark">Requisito del programa.</strong>{' '}
                   Para ser parte de <strong className="text-brand-dark">Mercado Libre Solidario</strong>{' '}
-                  hubo que presentar la documentación obligatoria del programa —estatuto,
-                  personería, estados contables y respaldo de los gastos— y pasar su revisión. No
-                  es un sello que nos dimos nosotros.
+                  se debe presentar y pasar la revisión regularmente de documentación obligatoria, legal y contable.
                 </li>
               </ol>
-
-              <p className="mt-5 text-sm text-gray-600 leading-relaxed">
-                Las facturas no se publican una por una porque traen datos personales de
-                terceros —CUIT, domicilio, firma— que no nos corresponde difundir. Están en la
-                contabilidad y a disposición de quien las pida.
-              </p>
 
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
                 <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto whitespace-normal text-left" asChild>
