@@ -7228,3 +7228,38 @@ que no se reportó como verificado es que se corrieron los controles. Sin ellos,
 Lo que queda anotado no es el resultado sino el método: **un bucket no se verifica desde el
 código con la anon key**, y las dos respuestas que parecen decir algo no dicen nada. La
 próxima vez, a la base.
+
+### §10.23.e.4 — «No puedo salir de esta pantalla»
+
+Lo reportó el dueño del proyecto desde un iPhone, después de subir su foto: el modal de
+perfil no tenía salida. Y **eran dos causas apiladas**, no una.
+
+**1. La X estaba TAPADA, que era la grave.** `DialogContent` de shadcn pinta su botón de
+cierre en `absolute right-4 top-4` como **primer hijo**, y `DialogHeader` viene después con
+`relative`. Dos elementos posicionados con `z-index: auto` se pintan en orden de DOM, así
+que el header —con su `bg-brand-dark`— se dibuja **encima** del botón. No era solo
+invisible: los toques en esa esquina llegaban al header y no al botón.
+
+**2. Y además era del color del fondo.** El cierre de shadcn no declara color y hereda el
+foreground del tema, azul marino, sobre un header navy. Aun destapado, seguía sin verse.
+
+⚠️ **Arreglar solo el color habría dejado un botón visible que no responde, que es peor que
+ninguno.** La primera pasada hizo exactamente eso —`text-white` y nada más— y la captura
+del harness lo desmintió: la X no aparecía ni ampliando la esquina al triple. El diagnóstico
+salió de probar `z-index` inline en el harness antes de tocar el componente.
+
+⚠️ Y una trampa del método: **una variante arbitraria de Tailwind (`[&>button]:z-20`) no
+existe en el CSS hasta que está escrita en el código y se rebuildeó.** Probarla escribiéndola
+a mano en el HTML del harness no hace nada y parece que el arreglo no sirve. Se verificó al
+revés: `grep` del selector generado en `dist/assets/*.css`, y después la captura con la
+lista de clases real copiada del componente.
+
+Además del arreglo, **un botón «Cerrar» con la palabra escrita en el pie**, que es lo que se
+pidió. En mobile el modal ocupa el alto entero y el pie es lo último que se lee: quien
+terminó de cambiar su foto busca ahí cómo volver, no en una esquina de 44 px. Cerrar es
+seguro porque no hay nada sin guardar — la foto se guarda sola y el resto del formulario
+está deshabilitado hasta «Habilitar Edición», y hay un test que lo fija.
+
+`EditProfileModal.test.jsx` es nuevo: este modal no tenía ninguno. Cuatro casos, y el que
+importa es que **siempre haya una salida**, incluso en modo edición (donde «Cancelar» sale
+del modo, no del modal).

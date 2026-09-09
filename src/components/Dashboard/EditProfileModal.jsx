@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -113,7 +114,32 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
         )}
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-[550px] bg-white rounded-[2rem] shadow-2xl border-none p-0 overflow-hidden">
+      {/*
+        LA X DE CERRAR NO EXISTÍA EN LA PANTALLA, y son DOS causas apiladas.
+        Lo reportó el dueño del proyecto desde un iPhone: «no puedo salir de
+        esta pantalla». En un celular el modal ocupa el alto entero, no hay
+        tecla Escape y el clic afuera es un pixel — sin la X, encerrado.
+
+        1. **Estaba TAPADA, que era la grave.** `DialogContent` pinta su cierre
+           en `absolute right-4 top-4` como PRIMER hijo, y `DialogHeader` viene
+           después con `relative`. Dos elementos posicionados con `z-index:
+           auto` se pintan en orden de DOM, así que el header —con su fondo
+           navy— se dibuja ENCIMA del botón. No era solo invisible: los toques
+           en esa esquina llegaban al header, no al botón. De ahí el `z-20`.
+        2. **Y además era del color del fondo.** El cierre de shadcn no declara
+           color y hereda el foreground del tema, azul marino, sobre un header
+           `bg-brand-dark`. Aun destapado, hacía falta el `text-white`.
+
+        Arreglar solo el color habría dejado un botón visible que no responde,
+        que es peor que ninguno. Se comprobó en Chrome a 393 px: sin `z-index`
+        no aparece ni ampliando la esquina al triple.
+
+        El selector apunta al único `<button>` hijo DIRECTO de `DialogContent`,
+        que es ese: los demás hijos son `div`. Va acá y no en `dialog.jsx`
+        porque el resto de los diálogos tiene cabecera clara, y ahí el color
+        oscuro es el correcto y no hay nada que lo tape.
+      */}
+      <DialogContent className="sm:max-w-[550px] bg-white rounded-[2rem] shadow-2xl border-none p-0 overflow-hidden [&>button]:z-20 [&>button]:text-white [&>button]:opacity-80 [&>button]:hover:opacity-100 [&>button]:focus-visible:ring-white [&>button]:min-h-[44px] [&>button]:min-w-[44px] [&>button]:flex [&>button]:items-center [&>button]:justify-center">
         <DialogHeader className="bg-brand-dark p-8 text-white relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
           <DialogTitle className="text-2xl font-bold font-poppins relative z-10 flex items-center gap-3">
@@ -232,12 +258,30 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
 
         <DialogFooter className="p-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
           {!isEditing ? (
-            <Button 
-                onClick={() => setIsEditing(true)} 
-                className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-lg transition-all"
-            >
-              <Edit3 className="w-4 h-4 mr-2" /> Habilitar Edición
-            </Button>
+            <>
+              <Button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full sm:flex-1 bg-brand-primary hover:bg-brand-dark text-white font-bold h-12 rounded-2xl shadow-lg transition-all"
+              >
+                <Edit3 className="w-4 h-4 mr-2" /> Habilitar Edición
+              </Button>
+              {/*
+                Y una salida con la palabra escrita, además de la X. En mobile
+                el modal ocupa la pantalla entera y el pie es lo último que se
+                lee: quien terminó de cambiar su foto busca ahí cómo volver, no
+                en una esquina. `DialogClose` cierra sin tocar el formulario —
+                acá no hay nada sin guardar, porque la foto se guarda sola y el
+                resto está deshabilitado hasta «Habilitar Edición».
+              */}
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto min-h-[48px] rounded-2xl border-gray-300 font-bold text-brand-dark hover:bg-white"
+                >
+                  Cerrar
+                </Button>
+              </DialogClose>
+            </>
           ) : (
             <>
               <Button variant="ghost" onClick={() => setIsEditing(false)} disabled={isLoading} className="text-gray-500">
