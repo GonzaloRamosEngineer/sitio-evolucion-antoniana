@@ -3056,7 +3056,8 @@ de escribano vale lo mismo que una factura.
 **3. La historia que rompió el modelo.** Entre 2022 y 2024 la Fundación trabajó
 casi en exclusiva con una institución deportiva. Al cerrarse el convenio, esa
 institución dejó **$1.000.000 con destino estipulado**: dejar cubierto el
-ordenamiento contable y legal. Hoy quedan ~$180.000. Todo respaldado con
+ordenamiento contable y legal. Hoy quedan $95.083,30 —dicho «~$180.000» hasta el
+2026-09-08, que era el saldo de la CUENTA y no el del fondo—. Todo respaldado con
 documentación certificada ante escribano, firmada por autoridades de las dos
 instituciones, y todo en MercadoPago.
 

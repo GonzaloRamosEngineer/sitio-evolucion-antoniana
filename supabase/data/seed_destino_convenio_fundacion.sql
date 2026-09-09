@@ -74,10 +74,24 @@
 --                            historia real la cuentan recaudado/rendido/saldo.
 --
 -- ⚠️ EL REMANENTE NO ES «DISPONIBLE» Y LA DESCRIPCIÓN LO DICE. Al 2026-09-06
--- quedan ~$180.000 reservados para el trámite de Personería Jurídica, cuyo costo
+-- quedan **$95.083,30** reservados para el trámite de Personería Jurídica, cuyo costo
 -- todavía no se conoce. Publicarlos como disponibles invitaría a leer «tienen
 -- plata guardada». La distinción contable entre comprometido y disponible está
 -- anotada como pendiente en el ROADMAP; mientras no exista, se dice con palabras.
+--
+-- ⚠️ ESTA CIFRA DECÍA «~$180.000» Y ERA FALSA, por confundir el saldo de la
+-- CUENTA con el saldo del FONDO. Al imputar los 22 resúmenes movimiento por
+-- movimiento (2026-09-08) los $189.117,71 que hay en MercadoPago se reparten así:
+--
+--     fondo del convenio                      95.083,30
+--     aportes nuevos (institucional)          95.462,41
+--     regularización de fondos de terceros    -1.428,00
+--                                            ───────────
+--                                            189.117,71  ← el extracto, al peso
+--
+-- O sea que el fondo tiene **la mitad** de lo que el repo venía diciendo. Es
+-- exactamente el error que este destino existe para evitar: mirar el saldo de la
+-- cuenta y creer que es el del fondo.
 --
 -- Idempotente: se puede correr dos veces.
 -- =============================================================================

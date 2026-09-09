@@ -805,7 +805,7 @@ advirtió que no había que hacer.
 ### 14.1 — 🟡 Comprometido no es disponible
 
 `/rendicion` calcula `saldo = recaudado − rendido` y lo titula **«Disponible»**.
-Para el fondo del convenio eso es engañoso en la dirección peor: los ~$180.000 que
+Para el fondo del convenio eso es engañoso en la dirección peor: los **$95.083,30** que
 quedan **están afectados al trámite de Personería Jurídica**, y publicarlos como
 disponibles invita a leer «tienen plata guardada, no hace falta aportar».
 
