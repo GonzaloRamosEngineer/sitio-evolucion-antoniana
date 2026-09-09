@@ -838,23 +838,42 @@ la transparencia publicada y navegable. La crónica entera está en `HISTORIAL.m
 
 ---
 
-## 10.23.e — La foto de perfil del socio ✅ (2026-09-09, pendiente de aplicar en prod)
+## 10.23.e — La foto de perfil del socio ✅ CERRADA (2026-09-09)
 
-Subir la foto propia, recortarla y verla en grande. Está **en el repo y verificada**, pero
-la migración `20260909020000_avatar_socio.sql` **todavía no se aplicó en el proyecto real**:
-hasta que se aplique, `users.avatar_path` no existe y la pantalla cae al dibujo por género,
-que es el comportamiento correcto mientras tanto.
+Subir la foto propia, recortarla y verla en grande. **En producción**: la migración
+`20260909020000_avatar_socio.sql` se aplicó el 2026-09-09 y `users.avatar_path` existe
+—verificado contra la API: `select=id,avatar_path` devuelve 200 en lugar del `42703` de
+antes—. El puente `conColumnasDePerfil`, que toleraba el desfase entre el código y la base,
+**se borró junto con sus tests** en la misma jornada.
 
-**Lo que falta para cerrarlo:**
+### ⚠️ Los dos chequeos que siguen abiertos, y por qué no los pudo hacer el código
 
-1. Aplicar `20260909020000_avatar_socio.sql` en el proyecto (`db push` o SQL Editor).
-2. Confirmar en la base que el bucket quedó **privado**, que es lo único que el check con
-   Postgres pelado no puede verificar:
-   `select id, public, file_size_limit from storage.buckets where id='avatares';`
-   Tiene que decir `public = false`. Si dice `true`, la cara de cada socio está en internet
-   abierto y hay que corregirlo **antes** de que alguien suba una foto.
-3. Subir una foto de punta a punta desde un celular real y volver a entrar para ver que la
-   URL firmada se renueva (vence a los 10 minutos).
+**1. Que el bucket haya quedado PRIVADO.** Es el único punto de esto donde equivocarse
+publica la cara de cada socio en internet abierto, y **no se puede verificar con la anon
+key**. Se intentó por dos vías y las dos fallaron como discriminadores, con sus controles
+al lado:
+
+| Vía | `comision-docs` (existe, privado) | `avatares` | `no-existe-xyz` |
+|---|---|---|---|
+| `GET /storage/v1/object/public/<b>/x` | `NoSuchBucket` | `NoSuchBucket` | `NoSuchBucket` |
+| `POST /storage/v1/object/list/<b>` | `[]` 200 | `[]` 200 | `[]` 200 |
+
+Las tres columnas responden igual, así que **«Bucket not found» no distingue un bucket
+privado de uno que no existe** y ninguna de las dos respuestas prueba nada. Hay que mirarlo
+en la base, con una sesión que tenga permiso:
+
+```sql
+select id, public, file_size_limit from storage.buckets where id = 'avatares';
+```
+
+Tiene que devolver **una fila** con `public = false` y `file_size_limit = 2097152`. Cero
+filas significa que el bloque de storage de la migración no corrió; `public = true`
+significa corregirlo **antes** de que alguien suba una foto.
+
+**2. Una subida de punta a punta desde un celular real**, y volver a entrar más tarde para
+ver que la URL firmada se renueva (vence a los 10 minutos y el `staleTime` del hook son 8).
+Los tests cubren la decisión y el recorte; lo que no cubren es la ida y vuelta real al
+Storage.
 
 ### Lo que se decidió NO hacer
 

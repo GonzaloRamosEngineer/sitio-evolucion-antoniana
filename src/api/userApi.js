@@ -1,58 +1,35 @@
 import { supabase } from '@/lib/supabase';
 
 /*
-  LAS COLUMNAS DEL PERFIL, Y POR QUÉ HAY DOS LISTAS (§10.23.e, 2026-09-09)
-  ---------------------------------------------------------------------------
-  `avatar_path` la agrega la migración `20260909020000`, y el código llegó
-  antes que la migración a la base real. Ese desfase **tiró abajo el panel
-  entero**: PostgREST responde `42703 column users.avatar_path does not exist`,
-  el perfil no se pudo leer y la pantalla mostró «Error al cargar perfil» con el
-  email en lugar del nombre y el documento en «Sin registrar». O sea que un
-  campo nuevo para la FOTO se llevó puestos el nombre, el DNI y la antigüedad.
+  Las columnas del perfil, en un solo lugar. Las leen `useAuth` (al iniciar
+  sesión) y `updateUserProfile` (al guardar), y tienen que coincidir: si una
+  trae `avatar_path` y la otra no, la foto desaparece al editar cualquier otro
+  dato — pasó el 2026-09-09 con las dos listas escritas a mano.
 
-  La lección no es «acordate de aplicar la migración primero»: es que **la
-  lista de columnas de un `select` es un contrato con la base, y pedir una
-  columna que falta no degrada, rompe**. Cualquiera que clone el repo, o
-  cualquier deploy que salga antes de la migración, cae en lo mismo.
-
-  Así que se pide la lista completa y, ante ese código de error exacto, se
-  reintenta sin la columna nueva. La fila que vuelve entonces **no tiene la
-  clave `avatar_path`**, y eso es justo la señal que `AvatarUpload` usa para no
-  ofrecer una subida que no puede funcionar.
-
-  ⚠️ ESTO SE BORRA cuando la migración esté aplicada en producción (ver
-  `ROADMAP.md` §10.23.e). Es un puente entre dos estados de la base, no una
-  manera de escribir selects: dejarlo para siempre significa que nadie se
-  enteraría nunca de una columna que falta.
+  ⚠️ Es un contrato con la base: pedir una columna que falta NO degrada, rompe
+  la consulta entera. El 2026-09-09 este select tuvo `avatar_path` antes de que
+  la migración estuviera aplicada y el panel mostró «Error al cargar perfil»
+  con el email en lugar del nombre y el documento en «Sin registrar»: un campo
+  nuevo para la FOTO se llevó puestos el nombre, el DNI y la antigüedad.
+  Al agregar una columna acá, la migración va primero. Ver `HISTORIAL.md`
+  §10.23.e.1, donde vivió el puente que toleraba el desfase hasta que la
+  migración se aplicó (2026-09-09) y se borró.
 */
-const COLUMNAS_BASE = 'id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender';
-export const COLUMNAS_PERFIL = `${COLUMNAS_BASE}, avatar_path`;
-
-/** `undefined_column` de Postgres. */
-export const esColumnaFaltante = (error) => error?.code === '42703';
-
-/**
- * Corre `consultar(columnas)` con la lista completa y reintenta sin
- * `avatar_path` si la base todavía no la tiene.
- *
- * @param {(columnas: string) => Promise<{data: any, error: any}>} consultar
- */
-export const conColumnasDePerfil = async (consultar) => {
-  const completo = await consultar(COLUMNAS_PERFIL);
-  if (!esColumnaFaltante(completo.error)) return completo;
-  return consultar(COLUMNAS_BASE);
-};
+export const COLUMNAS_PERFIL =
+  'id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender, avatar_path';
 
 // Devuelve la fila actualizada: la policy SELECT de users sí permite leer la
 // fila propia (a diferencia de updateUserRole, que opera sobre filas ajenas).
-export const updateUserProfile = async (userId, profileData) =>
-  conColumnasDePerfil((columnas) => supabase
+export const updateUserProfile = async (userId, profileData) => {
+  const { data, error } = await supabase
     .from('users')
     .update(profileData)
     .eq('id', userId)
-    .select(columnas)
-    .single()
-    .then(({ data, error }) => ({ data, error })));
+    .select(COLUMNAS_PERFIL)
+    .single();
+
+  return { data, error };
+};
 
 export const verifyUser = async (userId) => {
   const { error } = await supabase

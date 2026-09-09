@@ -43,17 +43,21 @@ const MAX_ENTRADA = 8 * 1024 * 1024;
 
 const AvatarUpload = ({ user, onUpdateSuccess }) => {
   /*
-    SI LA BASE NO TIENE LA COLUMNA, ESTO NO SE OFRECE.
-    `conColumnasDePerfil` reintenta el select sin `avatar_path` cuando la
-    migración `20260909020000` todavía no está aplicada, y la fila que vuelve
-    entonces no tiene esa clave. Ese es el detector: sin columna no hay dónde
-    guardar la ruta, así que un botón «Subir mi foto» acá sería un clic que
+    SI EL PERFIL NO SE PUDO LEER, ESTO NO SE OFRECE.
+    La clave `avatar_path` viene siempre en `COLUMNAS_PERFIL`, así que su
+    AUSENCIA significa que el objeto `user` no salió de la tabla: es el respaldo
+    de `useAuth` cuando la consulta del perfil falla, que arma la persona con lo
+    que trae la sesión (`{...authUser, name: email, role: 'user'}`). Ahí no hay
+    fila donde guardar la ruta, y un botón «Subir mi foto» sería un clic que
     falla — la misma promesa vacía que el CTA de §10.23.b y que el visor sobre
     las iniciales. Se avisa en una línea y se sale.
 
-    ⚠️ `in` y no `user?.avatar_path`: la distinción es entre «la columna no
-    existe» y «existe y está en NULL», que es alguien sin foto todavía. Con un
-    chequeo por valor, quien no subió nada nunca podría subir.
+    Este guard nació el 2026-09-09 para otra cosa: detectar que la migración no
+    estaba aplicada. Se quedó porque el caso de arriba lo necesita igual.
+
+    ⚠️ `in` y no `user?.avatar_path`: la distinción es entre «no hay fila» y
+    «la hay y está en NULL», que es alguien que todavía no subió foto. Con un
+    chequeo por valor, esa persona nunca podría subir.
   */
   const disponible = Boolean(user) && 'avatar_path' in user;
   const [src, setSrc] = useState(null);       // object URL del archivo elegido

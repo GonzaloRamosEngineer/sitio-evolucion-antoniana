@@ -7189,3 +7189,37 @@ corta y queda adentro.
 
 Ese es el detalle que convierte «le puse `break-words` y no funcionó» en media hora:
 `overflow-wrap` no puede hacer nada si la caja se agranda para acomodar la palabra.
+
+### §10.23.e.3 — Migración aplicada, puente borrado, y la verificación que no se pudo hacer
+
+La migración `20260909020000_avatar_socio.sql` se aplicó en producción el 2026-09-09.
+Verificado contra la API: `select=id,avatar_path` pasó de `42703 column users.avatar_path
+does not exist` a un `200`. Con eso, `conColumnasDePerfil()` —el puente que toleraba el
+desfase entre el código y la base— **se borró junto con sus tests**, como estaba anotado:
+un puente que se queda para siempre significa que nadie se enteraría nunca de una columna
+que falta.
+
+El guard de `AvatarUpload` **se quedó**, pero por otro motivo, y el comentario se reescribió
+para que diga el verdadero: la clave `avatar_path` viene siempre en `COLUMNAS_PERFIL`, así
+que su ausencia ya no significa «falta la migración» sino «este `user` no salió de la
+tabla» — es el respaldo de `useAuth` cuando la consulta del perfil falla y arma la persona
+con lo que trae la sesión. Ahí tampoco hay fila donde guardar la ruta, así que la subida
+sigue sin ofrecerse. El guard nació para una cosa y quedó sirviendo para otra; eso se
+escribe, no se deja adivinar.
+
+⚠️ **Y quedó una verificación sin hacer, que es la más importante de todas.** Que el bucket
+haya quedado privado es el único punto de este frente donde equivocarse deja la cara de
+cada socio en internet abierto, y **no se puede comprobar con la anon key**. Se intentaron
+dos vías, las dos con controles al lado, y **las dos fallaron como discriminadores**:
+
+- `GET /storage/v1/object/public/<bucket>/x` devuelve `NoSuchBucket` para `comision-docs`
+  (que existe y es privado), para `avatares` y para un bucket inventado. Las tres iguales.
+- `POST /storage/v1/object/list/<bucket>` devuelve `[]` con 200 para los tres.
+
+O sea que **«Bucket not found» no distingue un bucket privado de uno que no existe**, y
+ninguna de las dos respuestas prueba nada. Es exactamente el «rechaza lo malo» y «rechaza
+todo» que se ven idénticos desde afuera, del final de `CLAUDE.md` — y la única razón por la
+que no se reportó como verificado es que se corrieron los controles. Sin ellos, el primer
+`NoSuchBucket` se habría leído como «privado, listo».
+
+Queda en `ROADMAP.md` §10.23.e, con la consulta exacta y qué tiene que devolver.

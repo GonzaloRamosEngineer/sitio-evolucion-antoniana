@@ -15,7 +15,7 @@ vi.mock('@/api/avatarApi', () => ({
 
 const AvatarUpload = (await import('./AvatarUpload')).default;
 
-// `avatar_path: null` = la columna existe y no hay foto. Sin la CLAVE, el
+// `avatar_path: null` = la fila se leyó y no hay foto. Sin la CLAVE, el
 // componente no se ofrece (ver el primer caso).
 const USUARIO = { id: 'u-1', name: 'Gonzalo Ramos', avatar_path: null };
 const archivo = (nombre, tipo, size) => {
@@ -33,18 +33,18 @@ beforeEach(() => {
 });
 
 describe('AvatarUpload', () => {
-  it('🔒 si la base no tiene la columna NO ofrece subir nada', () => {
-    // El usuario llega SIN la clave `avatar_path` porque el select cayó a la
-    // lista sin ella (la migración no está aplicada). Ofrecer «Subir mi foto»
-    // ahí es un clic que falla.
+  it('🔒 si el perfil no se pudo leer NO ofrece subir nada', () => {
+    // El usuario llega SIN la clave `avatar_path` porque no salió de la tabla:
+    // es el respaldo de `useAuth` cuando la consulta del perfil falla. No hay
+    // fila donde guardar la ruta, así que «Subir mi foto» es un clic que falla.
     render(<AvatarUpload user={{ id: 'u-1', name: 'Gonzalo Ramos' }} onUpdateSuccess={() => {}} />);
     expect(screen.getByText(/todavía no está disponible/i)).toBeInTheDocument();
     expect(screen.queryByText(/Subir mi foto/i)).toBeNull();
   });
 
-  it('con la columna en NULL (sin foto todavía) SÍ ofrece subir', () => {
-    // La distinción que importa: «la columna no existe» ≠ «existe y está
-    // vacía». Con un chequeo por valor, quien no subió nada nunca podría.
+  it('con la fila leída y sin foto todavía SÍ ofrece subir', () => {
+    // La distinción que importa: «no hay fila» ≠ «la hay y está vacía». Con un
+    // chequeo por valor, quien no subió nada nunca podría.
     render(<AvatarUpload user={{ ...USUARIO, avatar_path: null }} onUpdateSuccess={() => {}} />);
     expect(screen.getByText(/Subir mi foto/i)).toBeInTheDocument();
   });

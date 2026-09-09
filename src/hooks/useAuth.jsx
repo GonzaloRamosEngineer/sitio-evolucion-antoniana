@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
-import { conColumnasDePerfil } from '@/api/userApi';
+import { COLUMNAS_PERFIL } from '@/api/userApi';
 
 const AuthContext = createContext();
 
@@ -27,15 +27,13 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
     try {
-      // `conColumnasDePerfil` reintenta sin `avatar_path` si la base todavía no
-      // la tiene: sin eso, una columna nueva para la foto tira abajo el panel
-      // entero. El porqué está en `userApi.js`.
-      const { data: profile, error } = await conColumnasDePerfil((columnas) => supabase
+      // La lista de columnas es compartida con `updateUserProfile` a propósito:
+      // si las dos difieren, un campo desaparece al guardar el perfil.
+      const { data: profile, error } = await supabase
         .from('users')
-        .select(columnas)
+        .select(COLUMNAS_PERFIL)
         .eq('id', authUser.id)
-        .single()
-        .then(({ data, error: err }) => ({ data, error: err })));
+        .single();
 
       if (error && error.code !== 'PGRST116') { 
         logger.error('Error fetching user profile:', error.message);
