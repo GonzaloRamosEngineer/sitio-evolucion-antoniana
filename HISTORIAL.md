@@ -7166,3 +7166,26 @@ una columna que falta.
 
 Validación: 580 tests en 46 archivos (6 nuevos), lint 0 errores / 39 warnings, build
 correcto, y la lista del reintento probada **contra la base de producción**: HTTP 200.
+
+### §10.23.e.2 — «Hola, gonzaramosmp@gmail.com» desbordando la pantalla
+
+Colateral del error anterior, y visible en la misma captura. El hero del panel hacía
+`currentUser?.name?.split(' ')[0] || 'Miembro'`, y cuando `useAuth` no puede leer el perfil
+cae a `name: authUser.email`: un email **no tiene espacios**, así que `split(' ')[0]`
+devolvía los 22 caracteres completos dentro de un `h1` con `tracking-tighter leading-none`.
+
+La tarjeta del perfil, tres centímetros más abajo, ya recortaba en la arroba desde antes.
+Dos lugares diciendo cosas distintas del mismo dato: §10.23 otra vez. Ahora los dos usan
+`primerNombre()` de `src/lib/persona.js`, con test.
+
+⚠️ **Y el arreglo de layout tiene DOS mitades, no una.** `break-words` en el `h1` solo no
+hace nada, y tampoco alcanza agregarle `min-w-0` al contenedor: el div de arriba es
+`flex ... items-center`, y `align-items: center` hace que el hijo **se dimensione a su
+contenido** en vez de estirarse. Con el ancho libre, el `h1` cree que el texto entra
+perfecto —y entra, en una caja más ancha que la pantalla—, así que nunca corta. Hace falta
+`w-full`. Se comprobó en Chrome a 393 px con las dos variantes: con solo `min-w-0` un
+nombre de 30 caracteres sin espacios sigue saliéndose por los dos lados; con `w-full`
+corta y queda adentro.
+
+Ese es el detalle que convierte «le puse `break-words` y no funcionó» en media hora:
+`overflow-wrap` no puede hacer nada si la caja se agranda para acomodar la palabra.

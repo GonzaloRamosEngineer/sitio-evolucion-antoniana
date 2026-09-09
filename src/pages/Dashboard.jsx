@@ -14,6 +14,7 @@ import {
   useFoundationMetrics,
 } from '@/hooks/useContentQueries';
 import { queryKeys } from '@/lib/queryClient';
+import { primerNombre } from '@/lib/persona';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -183,13 +184,29 @@ const Dashboard = () => {
         <div className="absolute -top-24 -right-24 w-[600px] h-[600px] bg-brand-primary/10 blur-[150px] rounded-full" />
         
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-5 text-left">
-            <div className="space-y-4">
+            {/*
+              `w-full` ADEMÁS de `min-w-0`, y esto no es cinturón y tirantes: el
+              contenedor de arriba es `flex ... items-center`, y `align-items:
+              center` hace que el hijo se dimensione a su CONTENIDO en vez de
+              estirarse. Sin `w-full` el div toma su ancho máximo y el
+              `break-words` del h1 nunca se activa, porque desde su punto de
+              vista el texto entra perfecto — es la caja la que se pasó de la
+              pantalla. Comprobado en Chrome a 393 px con las dos variantes.
+            */}
+            <div className="space-y-4 min-w-0 w-full">
                 <div className="flex items-center justify-start gap-3">
                     <ShieldCheck className="text-brand-gold w-5 h-5" />
                     <span className="text-brand-sand text-[10px] font-black uppercase tracking-[0.4em]">Mi panel</span>
                 </div>
-                <h1 className="text-3xl md:text-5xl font-poppins font-black text-white tracking-tighter leading-none">
-                    Hola, {currentUser?.name?.split(' ')[0] || 'Miembro'}
+                {/*
+                  `min-w-0` arriba y `break-words` acá: son las dos mitades del
+                  mismo arreglo. En un contenedor flex, un hijo no baja de su
+                  ancho de contenido mínimo sin `min-w-0`, así que `break-words`
+                  solo no alcanza — la caja se ensancha y empuja la pantalla.
+                  Y `primerNombre` es la otra mitad: ver `lib/persona.js`.
+                */}
+                <h1 className="text-3xl md:text-5xl font-poppins font-black text-white tracking-tighter leading-none break-words">
+                    Hola, {primerNombre(currentUser)}
                 </h1>
                 <p className="text-white/80 text-base max-w-xl">Tu carnet, tus aportes y actividades, en un solo lugar.</p>
             </div>
