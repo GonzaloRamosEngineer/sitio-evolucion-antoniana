@@ -9,12 +9,14 @@
 // error de render acá —un hook sin provider, un icono que no existe— solo
 // aparecería en producción, con el socio adentro.
 //
-// LO QUE FIJA: los cuatro estados del acceso, y sobre todo que el CTA no miente.
+// LO QUE FIJA: los estados del acceso —incluidos «todavía no sé» y «falló», que
+// hasta el 2026-09-09 se veían igual que «nunca aportaste»— y sobre todo que el
+// CTA no miente.
 // El botón anterior era `!activeMembership && "ACTIVAR MEMBRESÍA"`, así que le
 // pedía suscribirse a quien acababa de suscribirse.
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender, screen } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -69,6 +71,46 @@ beforeEach(() => {
 });
 
 describe('DashboardHeader', () => {
+  // ------------------------------------------------------------------
+  // Cargando y falla. No son adornos: sin estos dos casos, `tiene_acceso:
+  // false` por ausencia de respuesta se leía como «no es socio» y la
+  // pantalla le ofrecía pagar de nuevo a alguien que ya paga.
+  // ------------------------------------------------------------------
+  it('si la consulta del acceso falla lo dice, y NO le ofrece pagar de nuevo', () => {
+    const refetch = vi.fn();
+    useMiAcceso.mockReturnValue({ data: undefined, isError: true, refetch });
+    render();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/No pudimos consultar tu acceso/i);
+    // Lo importante es lo que NO está: ni el CTA de pago ni una afirmación.
+    expect(screen.queryByRole('link', { name: /ACTIVAR MEMBRES/i })).toBeNull();
+    expect(screen.queryByText(/Sin aportes/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Volver a intentar/i }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it('mientras consulta no afirma que no hay aportes', () => {
+    useMiAcceso.mockReturnValue({ data: undefined, isPending: true });
+    render();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Consultando tus aportes/i);
+    expect(screen.queryByText(/Sin aportes/i)).toBeNull();
+    expect(screen.queryByRole('link', { name: /ACTIVAR MEMBRES/i })).toBeNull();
+  });
+
+  it('sin sesión no se queda consultando para siempre', () => {
+    // ⚠️ La trampa de `enabled: Boolean(userId)`: una query deshabilitada se
+    // queda en `isPending` PARA SIEMPRE (`useContentQueries.js`). Si el
+    // componente mirara `isPending` a secas, una cabecera sin usuario diría
+    // «Consultando tus aportes…» eternamente, sin nada en vuelo.
+    useMiAcceso.mockReturnValue({ data: undefined, isPending: true });
+    render({ user: null });
+
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByText(/Sin aportes/i)).toBeTruthy();
+  });
+
   it('con aporte vigente muestra el estado, el origen y el camino al carnet', () => {
     useMiAcceso.mockReturnValue(acceso({ tiene_acceso: true, vence_el: '2026-10-02', origen: 'membresia' }));
     useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-09-02', meses_aportados: 1 } });
@@ -142,9 +184,9 @@ describe('DashboardHeader', () => {
   });
 
   it('no se cae si los hooks todavía no devolvieron nada', () => {
-    // `useMiAcceso` queda en `isPending` mientras está deshabilitada (sin
-    // userId), y su `data` es `undefined`: el default `SIN_ACCESO` es lo que
-    // evita que el render explote.
+    // Una respuesta llegada pero vacía (`data: undefined` sin `isPending` ni
+    // `isError`): el default `SIN_ACCESO` es lo que evita que el render
+    // explote. Los casos «todavía no llegó» y «falló» están arriba.
     useMiAcceso.mockReturnValue({ data: undefined });
     useMiAntiguedad.mockReturnValue({ data: undefined });
     render();

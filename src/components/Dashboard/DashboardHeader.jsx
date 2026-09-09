@@ -50,7 +50,29 @@ import {
   consultas de lo mismo, y solo una tenía el bug.
 */
 const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
-  const { data: acceso = SIN_ACCESO } = useMiAcceso(user?.id);
+  /*
+    LOS TRES ESTADOS DE LA CONSULTA (§10.23.b, 2026-09-09)
+    -------------------------------------------------------------------
+    `= SIN_ACCESO` es el default para cuando la respuesta LLEGÓ y dice
+    que no hay aporte. No servía para las otras dos situaciones: cuando
+    todavía no llegó, y cuando falló. Sin distinguirlas, una consulta
+    caída se veía **idéntica** a «nunca aportaste»: badge apagado y
+    «ACTIVAR MEMBRESÍA» a un socio vigente, o sea invitándolo a pagar de
+    nuevo algo que ya paga. Es el `else` que adivina de §12.7, en la
+    pantalla donde adivinar sale más caro.
+
+    ⚠️ `isPending` NO alcanza solo: la query lleva `enabled: Boolean(userId)`
+    y una query deshabilitada se queda en `isPending` para siempre
+    (`useContentQueries.js`). Sin el `Boolean(user?.id)`, una cabecera sin
+    sesión diría «Consultando tus aportes…» eternamente. Misma combinación
+    que ya hace `ReclamarAportes`.
+  */
+  const accesoQuery = useMiAcceso(user?.id);
+  const { data: acceso = SIN_ACCESO } = accesoQuery;
+  const accesoCargando = Boolean(user?.id) && accesoQuery.isPending;
+  const accesoFallo = accesoQuery.isError;
+  const accesoConocido = !accesoCargando && !accesoFallo;
+
   const { data: antiguedad } = useMiAntiguedad(user?.id);
 
   const estado = estadoAcceso(acceso);
@@ -122,16 +144,23 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                     de gracia sigue teniendo acceso, pero le conviene
                     enterarse (§10.17).
                   */}
-                  <Badge
-                    className={`py-1 px-4 text-[10px] font-black tracking-[0.2em] border-none shadow-lg uppercase ${
-                      estado === 'vigente' ? 'bg-brand-gold text-brand-dark'
-                      : estado === 'gracia' ? 'bg-amber-300 text-brand-dark'
-                      : estado === 'vencido' ? 'bg-red-400/90 text-white'
-                      : 'bg-white/10 text-white/60'
-                    }`}
-                  >
-                    {etiquetaEstado(acceso)}
-                  </Badge>
+                  {/*
+                    El badge se calla mientras no sabe. «Sin aportes» es
+                    una afirmación sobre la persona, y no se puede afirmar
+                    con una consulta en vuelo o caída.
+                  */}
+                  {accesoConocido && (
+                    <Badge
+                      className={`py-1 px-4 text-[10px] font-black tracking-[0.2em] border-none shadow-lg uppercase ${
+                        estado === 'vigente' ? 'bg-brand-gold text-brand-dark'
+                        : estado === 'gracia' ? 'bg-amber-300 text-brand-dark'
+                        : estado === 'vencido' ? 'bg-red-400/90 text-white'
+                        : 'bg-white/10 text-white/60'
+                      }`}
+                    >
+                      {etiquetaEstado(acceso)}
+                    </Badge>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-brand-sand/80 text-sm break-all">
@@ -200,7 +229,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               </EditProfileModal>
 
               {/*
-                TRES estados, no dos. El botón anterior era
+                CINCO estados, no dos (eran tres hasta §10.23.b). El botón anterior era
                 `!activeMembership && "ACTIVAR MEMBRESÍA"`, así que le
                 pedía suscribirse a quien acababa de suscribirse y a quien
                 aporta por donación.
@@ -209,7 +238,30 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
                 y no se llegaba a ella desde acá — la misma familia de
                 §12.10.20, piezas que funcionan sin estar conectadas.
               */}
-              {esSocio ? (
+              {/*
+                Y antes de los tres, dos más: cargando y falla. Van
+                PRIMERO porque `esSocio` sale de `acceso.tiene_acceso`, y
+                ese `false` no significa «no es socio» hasta que la
+                consulta contestó.
+              */}
+              {accesoCargando ? (
+                <p role="status" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-white/70 text-center lg:text-left backdrop-blur-md">
+                  Consultando tus aportes…
+                </p>
+              ) : accesoFallo ? (
+                <div role="alert" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center lg:text-left backdrop-blur-md">
+                  <p className="text-sm text-white/70 leading-snug">
+                    No pudimos consultar tu acceso.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => accesoQuery.refetch()}
+                    className="mt-1 min-h-[44px] font-bold text-brand-gold underline"
+                  >
+                    Volver a intentar
+                  </button>
+                </div>
+              ) : esSocio ? (
                 <Button
                   className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-12 px-5 shadow-xl shadow-brand-primary/20 transition-all border-none"
                   asChild

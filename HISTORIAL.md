@@ -6876,3 +6876,45 @@ esto.** Está anotado también en §10, archivada.
 Los tres residuales de §10 (metas de destino sin cargar, `reporte_destino()` sin llamador,
 el diferencial de socio sin ejercer), los dos de §14.2 (extracto que mezcla destinos,
 heurísticas sin probar con otro banco), y las cifras remedidas de «Estado» y `CLAUDE.md`.
+
+## §10.23.b — El acceso tiene tres estados, y la cabecera conocía uno (2026-09-09)
+
+`DashboardHeader` abría con `const { data: acceso = SIN_ACCESO } = useMiAcceso(...)`. Ese
+default es correcto para **una respuesta que llegó y dice que no hay aporte**, y era lo
+único que el componente sabía distinguir. Las otras dos situaciones —la respuesta todavía
+no llegó, y la consulta falló— caían al mismo lugar, así que **una consulta caída se veía
+idéntica a «nunca aportaste»**: badge apagado, «Sin aportes», y el CTA «ACTIVAR
+MEMBRESÍA» ofreciéndole pagar de nuevo a un socio vigente que solo tuvo mala red.
+
+Es el `else` que adivina de §12.7, en la peor pantalla para adivinar: la que le dice a una
+persona cómo está como socia. Y era invisible en una revisión visual, porque con la red
+sana la pantalla acierta siempre.
+
+Ahora la cabecera mira los tres: `accesoCargando` («Consultando tus aportes…»),
+`accesoFallo` (aviso + «Volver a intentar», sin CTA de pago) y `accesoConocido`, que es la
+única condición bajo la cual el badge se anima a afirmar algo. El CTA pasó de tres ramas a
+cinco, y las dos nuevas van **primero**, porque `esSocio` sale de `acceso.tiene_acceso` y
+ese `false` no significa «no es socio» hasta que alguien contestó.
+
+⚠️ **`isPending` a secas no servía.** La query lleva `enabled: Boolean(userId)` y una query
+deshabilitada se queda en `isPending` **para siempre** — la trampa que `useContentQueries.js`
+ya tiene anotada y que `ReclamarAportes` ya había pisado. Sin combinarlo con
+`Boolean(user?.id)`, una cabecera sin sesión diría «Consultando tus aportes…» eternamente,
+sin nada en vuelo. Tiene test propio, porque es el error que se comete al arreglar esto.
+
+**De dónde salió**: de una captura en iPhone que motivó un rediseño de la cabecera a card
+clara. Ese rediseño se descartó —la app es light-only por decisión de la Sesión G, y el
+color del perfil es una discusión aparte— pero traía este arreglo adentro, mezclado con lo
+estético. Se rescató solo esta parte, sobre el diseño navy que sigue en producción.
+
+Validación: 543 tests en 42 archivos, de los cuales **10 en `DashboardHeader.test.jsx`** (tres
+nuevos), lint 0 errores / 39 warnings, build correcto.
+
+⚠️ **`src/pages/Rendicion.test.jsx` falla, y no es por este cambio**: el commit `2201bd13`
+sacó de `Rendicion.jsx` la frase «todavía no están en un balance publicado» y su test la
+sigue exigiendo. Ese test es el guardián de «declara el LÍMITE de lo publicado, en vez de
+exagerar el respaldo», así que lo que hay que decidir no es el test: es si la rendición
+quiere seguir declarando ese límite.
+
+**Código muerto detectado de paso**: `src/components/Dashboard/UserProfileCard.jsx` no lo
+importa nadie. Es otra tarjeta de perfil, de las que compiten por decir lo mismo.
