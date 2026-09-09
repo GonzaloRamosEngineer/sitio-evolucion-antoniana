@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Edit3, ShieldCheck, Star, Crown, Mail, Fingerprint, Calendar, Clock, IdCard } from 'lucide-react';
+import { Edit3, ShieldCheck, Star, Mail, Fingerprint, Calendar, Clock, IdCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import EditProfileModal from './EditProfileModal';
 import { useMiAcceso, useMiAntiguedad } from '@/hooks/useContentQueries';
 import {
-  SIN_ACCESO, estadoAcceso, etiquetaEstado, nombreOrigen, formatearMeses, formatearFecha,
+  SIN_ACCESO, etiquetaEstado, claseEstado, nombreOrigen, formatearMeses, formatearFecha,
 } from '@/lib/acceso';
 
 /*
@@ -75,7 +75,6 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
 
   const { data: antiguedad } = useMiAntiguedad(user?.id);
 
-  const estado = estadoAcceso(acceso);
   const esSocio = Boolean(acceso?.tiene_acceso);
 
   /*
@@ -98,209 +97,211 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
   };
 
   return (
-    <div className="w-full mb-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-brand-dark shadow-sm border border-white/5"
-      >
-        {/* Capas de diseño de fondo (Efecto Lujo) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/20 via-transparent to-brand-gold/10" />
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-brand-primary/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-brand-gold/5 rounded-full blur-[100px] pointer-events-none" />
+    /*
+      POR QUÉ ESTA TARJETA YA NO ES NAVY (§10.23.c, 2026-09-09)
+      -------------------------------------------------------------------
+      `Dashboard.jsx` abre con una banda `bg-brand-dark` que dice «Mi panel
+      / Hola, <nombre>». Esta tarjeta iba pegada abajo, también navy, y
+      TODO lo que sigue —la navegación de secciones, las suscripciones, el
+      historial— es `bg-white` sobre `bg-brand-sand`. O sea: dos bloques
+      oscuros apilados y después el panel entero claro. La tarjeta no era
+      un acento, era una isla, y encima repetía el nombre que la banda de
+      arriba ya había dicho tres centímetros antes.
 
-        <div className="relative z-10 p-5 md:p-8">
-          <div className="flex flex-col lg:flex-row items-center gap-5">
-            
-            {/* FOTO DE PERFIL / AVATAR CON AURA */}
-            <div className="relative group">
-              <div className={`absolute -inset-1.5 rounded-full opacity-70 blur-md transition duration-1000 ${esSocio ? 'bg-brand-gold animate-pulse' : 'bg-blue-400'}`} />
-              
-              <Avatar className="h-16 w-16 md:h-24 md:w-24 border-4 border-white/10 shadow-sm relative z-10">
-                <AvatarImage src={user?.avatar_url || '/img/default-avatar.png'} className="object-cover" />
-                <AvatarFallback className="bg-brand-sand text-brand-primary text-4xl font-bold">
-                  {getInitials(user?.name)}
-                </AvatarFallback>
-              </Avatar>
+      La app es **light-only** desde la Sesión G (ver `CLAUDE.md`): no hay
+      dos temas entre los que elegir, hay una gramática y esta tarjeta
+      estaba afuera. Ahora usa la misma que sus hermanas —blanco,
+      `rounded-2xl`, borde `gray-200` hairline— y el navy queda donde
+      significa algo: la banda del hero y los CTA.
 
-              {esSocio && (
-                <div className="absolute -bottom-2 -right-2 bg-brand-gold p-2.5 rounded-full shadow-lg border-4 border-brand-dark z-20">
-                  <Crown className="w-6 h-6 text-brand-dark" />
-                </div>
-              )}
-            </div>
+      Lo que se fue, y por qué:
+      - **La corona sobre el avatar.** Marcaba `esSocio` con una insignia
+        de jerarquía, justo lo que §10.23 sacó del texto («Rango:
+        Padrino/Miembro», una taxonomía que el sistema no tiene). El
+        estado del aporte ya lo dice el badge, con la palabra exacta.
+      - **El aura pulsante y los dos blobs desenfocados.** Son los
+        clichés que el «Lenguaje visual» del repo enumera para no usar.
+      - **`uppercase tracking-tighter` en el nombre.** Un nombre propio no
+        se grita, y en mobile «GONZARAMOS MP» a 393 px es lo primero que
+        se ve del panel.
 
-            {/* INFORMACIÓN DEL CARNET */}
-            <div className="min-w-0 w-full flex-1 text-center lg:text-left space-y-4">
-              <div>
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-3">
-                  <h2 className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase font-poppins">
-                    {user?.name || user?.email?.split('@')[0] || 'Usuario'}
-                  </h2>
-                  {/*
-                    El badge dice el ESTADO del aporte, que es lo único
-                    que el sistema sabe de verdad. «En tolerancia» tiene
-                    su propio tono a propósito: quien está en los 30 días
-                    de gracia sigue teniendo acceso, pero le conviene
-                    enterarse (§10.17).
-                  */}
-                  {/*
-                    El badge se calla mientras no sabe. «Sin aportes» es
-                    una afirmación sobre la persona, y no se puede afirmar
-                    con una consulta en vuelo o caída.
-                  */}
-                  {accesoConocido && (
-                    <Badge
-                      className={`py-1 px-4 text-[10px] font-black tracking-[0.2em] border-none shadow-lg uppercase ${
-                        estado === 'vigente' ? 'bg-brand-gold text-brand-dark'
-                        : estado === 'gracia' ? 'bg-amber-300 text-brand-dark'
-                        : estado === 'vencido' ? 'bg-red-400/90 text-white'
-                        : 'bg-white/10 text-white/60'
-                      }`}
-                    >
-                      {etiquetaEstado(acceso)}
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-center lg:justify-start gap-2 text-brand-sand/80 text-sm break-all">
-                   <Mail className="w-4 h-4" /> {user?.email}
-                </div>
-              </div>
+      Lo que NO se fue, porque la iteración anterior lo perdió sin querer:
+      el layout de desktop (`lg:` en las dos grillas — quedaba una columna
+      angosta y altísima), la animación de entrada, y los cuatro datos.
+    */
+    <motion.section
+      aria-label="Mi perfil y mis aportes"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+    >
+      {/* ---------- QUIÉN SOS ---------- */}
+      <div className="p-5 sm:p-6 lg:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <Avatar className="h-16 w-16 shrink-0 border border-gray-200 lg:h-20 lg:w-20">
+              {/* `alt=""`: el nombre está al lado en texto, y un lector de
+                  pantalla que lea las dos cosas lo dice dos veces. */}
+              <AvatarImage src={user?.avatar_url || '/img/default-avatar.png'} alt="" className="object-cover" />
+              <AvatarFallback className="bg-brand-sand text-xl font-bold text-brand-primary">
+                {getInitials(user?.name)}
+              </AvatarFallback>
+            </Avatar>
 
-              {/* GRILLA DE DATOS DEL SOCIO */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-white/5">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
-                    <Fingerprint className="w-3 h-3" /> Documento
-                  </p>
-                  <p className="text-white font-semibold text-sm">{user?.dni || '---'}</p>
-                </div>
-                
-                {/*
-                  Era «Rango: Padrino/Miembro», una jerarquía inventada.
-                  Ahora dice de dónde viene el acceso, que es un dato real
-                  de `aportes.origen` y el mismo que muestra el carnet.
-                */}
-                <div className="space-y-1">
-                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
-                    <ShieldCheck className="w-3 h-3" /> Origen del aporte
-                  </p>
-                  <p className="text-brand-gold font-semibold text-sm tracking-tight">
-                    {nombreOrigen(acceso?.origen) ?? '---'}
-                  </p>
-                </div>
-
-                {/*
-                  `socio_desde` sale del PRIMER APORTE, no de la fecha de
-                  alta de la cuenta. Son cosas distintas y la diferencia se
-                  nota: hay 23 cuentas y 6 aportes.
-                */}
-                <div className="space-y-1">
-                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
-                    <Calendar className="w-3 h-3" /> Aportando desde
-                  </p>
-                  <p className="text-white font-semibold text-sm">
-                    {formatearFecha(antiguedad?.socio_desde) ?? '---'}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-[10px] text-white/70 font-black uppercase tracking-widest flex items-center justify-center lg:justify-start gap-1.5">
-                    <Clock className="w-3 h-3" /> Tiempo aportado
-                  </p>
-                  <p className="text-white font-semibold text-sm">
-                    {antiguedad?.socio_desde ? formatearMeses(antiguedad.meses_aportados) : '---'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* BOTONES DE ACCIÓN */}
-            <div className="flex flex-col gap-4 w-full lg:w-auto">
-              <EditProfileModal user={user} onUpdateSuccess={onUpdateSuccess}>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-2xl h-12 px-5 font-bold transition-all backdrop-blur-md"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Editar Perfil
-                </Button>
-              </EditProfileModal>
-
-              {/*
-                CINCO estados, no dos (eran tres hasta §10.23.b). El botón anterior era
-                `!activeMembership && "ACTIVAR MEMBRESÍA"`, así que le
-                pedía suscribirse a quien acababa de suscribirse y a quien
-                aporta por donación.
-
-                Y con acceso el destino es `/carnet`: la credencial existe
-                y no se llegaba a ella desde acá — la misma familia de
-                §12.10.20, piezas que funcionan sin estar conectadas.
-              */}
-              {/*
-                Y antes de los tres, dos más: cargando y falla. Van
-                PRIMERO porque `esSocio` sale de `acceso.tiene_acceso`, y
-                ese `false` no significa «no es socio» hasta que la
-                consulta contestó.
-              */}
-              {accesoCargando ? (
-                <p role="status" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm text-white/70 text-center lg:text-left backdrop-blur-md">
-                  Consultando tus aportes…
-                </p>
-              ) : accesoFallo ? (
-                <div role="alert" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center lg:text-left backdrop-blur-md">
-                  <p className="text-sm text-white/70 leading-snug">
-                    No pudimos consultar tu acceso.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => accesoQuery.refetch()}
-                    className="mt-1 min-h-[44px] font-bold text-brand-gold underline"
-                  >
-                    Volver a intentar
-                  </button>
-                </div>
-              ) : esSocio ? (
-                <Button
-                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-12 px-5 shadow-xl shadow-brand-primary/20 transition-all border-none"
-                  asChild
-                >
-                  <Link to="/carnet">
-                    <IdCard className="w-4 h-4 mr-2" />
-                    VER MI CARNET
-                  </Link>
-                </Button>
-              ) : suscripcionEnCurso ? (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center lg:text-left backdrop-blur-md">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold mb-1">
-                    Suscripción en curso
-                  </p>
-                  <p className="text-sm text-white/70 leading-snug">
-                    Tu acceso se habilita en cuanto se acredite el primer cobro.
-                  </p>
-                </div>
-              ) : (
-                <Button
-                  className="bg-brand-primary hover:bg-brand-dark text-white font-black rounded-2xl h-12 px-5 shadow-xl shadow-brand-primary/20 transition-all border-none"
-                  asChild
-                >
-                  <Link to="/collaborate">
-                    <Star className="w-4 h-4 mr-2 fill-brand-gold text-brand-gold" />
-                    ACTIVAR MEMBRESÍA
-                  </Link>
-                </Button>
-              )}
+            <div className="min-w-0">
+              <h2 className="break-words font-poppins text-xl font-bold leading-tight tracking-tight text-brand-dark sm:text-2xl">
+                {user?.name || user?.email?.split('@')[0] || 'Usuario'}
+              </h2>
+              <p className="mt-1.5 flex items-center gap-2 break-all text-sm text-gray-600">
+                <Mail aria-hidden="true" className="h-4 w-4 shrink-0 text-gray-400" />
+                {user?.email || 'Sin registrar'}
+              </p>
             </div>
           </div>
 
-          {/* Marca de agua sutil del logo */}
-          <div className="absolute top-6 right-8 opacity-[0.03] pointer-events-none hidden md:block">
-             <img src="/img/logo-fundacion.png" alt="" className="w-40 grayscale brightness-200" />
-          </div>
+          <dl className="shrink-0 border-t border-gray-200 pt-4 lg:border-0 lg:pt-0">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
+              <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <Fingerprint aria-hidden="true" className="h-3.5 w-3.5" />
+                Documento
+              </dt>
+              <dd className="font-semibold text-brand-dark lg:mt-1">{user?.dni || 'Sin registrar'}</dd>
+            </div>
+          </dl>
         </div>
-      </motion.div>
-    </div>
+
+        <EditProfileModal user={user} onUpdateSuccess={onUpdateSuccess}>
+          <Button
+            variant="outline"
+            className="mt-5 min-h-[44px] w-full rounded-xl border-gray-300 font-semibold text-brand-primary hover:bg-brand-sand hover:text-brand-dark lg:w-auto lg:px-6"
+          >
+            <Edit3 aria-hidden="true" className="mr-2 h-4 w-4" />
+            Editar perfil
+          </Button>
+        </EditProfileModal>
+      </div>
+
+      {/* ---------- CÓMO VAS CON TU APORTE ---------- */}
+      <div className="border-t border-gray-200 bg-brand-sand/50 p-5 sm:p-6 lg:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="flex items-center gap-2 font-poppins text-base font-bold text-brand-dark">
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-brand-primary" />
+            Mi aporte
+          </h3>
+          {/*
+            El badge se calla mientras no sabe. «Sin aportes» es una
+            afirmación sobre la persona, y no se puede afirmar con una
+            consulta en vuelo o caída (§10.23.b).
+          */}
+          {accesoConocido && (
+            <Badge className={`shrink-0 rounded-full border-none px-3 py-1 text-xs font-semibold ${claseEstado(acceso)}`}>
+              {etiquetaEstado(acceso)}
+            </Badge>
+          )}
+        </div>
+
+        {/*
+          Cargando y falla van PRIMERO: `esSocio` sale de
+          `acceso.tiene_acceso`, y ese `false` no significa «no es socio»
+          hasta que la consulta contestó (§10.23.b).
+        */}
+        {accesoCargando ? (
+          <p role="status" className="mt-4 text-sm text-gray-600">
+            Consultando tus aportes…
+          </p>
+        ) : accesoFallo ? (
+          <div role="alert" className="mt-4 text-sm">
+            <p className="text-gray-600">No pudimos consultar tu acceso.</p>
+            <button
+              type="button"
+              onClick={() => accesoQuery.refetch()}
+              className="mt-1 min-h-[44px] font-semibold text-brand-primary underline"
+            >
+              Volver a intentar
+            </button>
+          </div>
+        ) : (
+          <>
+            {/*
+              Mobile: filas etiqueta→valor. Desktop: tres columnas.
+              A 393 px una grilla de dos columnas parte «2 de septiembre de
+              2026» en dos líneas y «ORIGEN DEL APORTE» también — es lo que
+              se veía en la captura del iPhone que originó todo esto.
+            */}
+            <dl className="mt-5 grid grid-cols-1 gap-y-3 lg:grid-cols-3 lg:gap-x-4 lg:gap-y-5">
+              {/*
+                Era «Rango: Padrino/Miembro», una jerarquía inventada.
+                Ahora dice de dónde viene el acceso, que es un dato real
+                de `aportes.origen` y el mismo que muestra el carnet.
+              */}
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
+                  Origen del aporte
+                </dt>
+                <dd className="font-semibold text-brand-dark lg:mt-1">{nombreOrigen(acceso?.origen) ?? 'Sin registrar'}</dd>
+              </div>
+
+              {/*
+                `socio_desde` sale del PRIMER APORTE, no de la fecha de
+                alta de la cuenta. Son cosas distintas y la diferencia se
+                nota: hay 23 cuentas y 6 aportes.
+              */}
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <Calendar aria-hidden="true" className="h-3.5 w-3.5" />
+                  Aportando desde
+                </dt>
+                <dd className="font-semibold text-brand-dark lg:mt-1">{formatearFecha(antiguedad?.socio_desde) ?? 'Sin registrar'}</dd>
+              </div>
+
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <Clock aria-hidden="true" className="h-3.5 w-3.5" />
+                  Tiempo aportado
+                </dt>
+                <dd className="font-semibold text-brand-dark lg:mt-1">
+                  {antiguedad?.socio_desde ? formatearMeses(antiguedad.meses_aportados) : 'Sin registrar'}
+                </dd>
+              </div>
+            </dl>
+
+            {/*
+              CINCO estados, no dos (eran tres hasta §10.23.b). El botón
+              anterior era `!activeMembership && "ACTIVAR MEMBRESÍA"`, así
+              que le pedía suscribirse a quien acababa de suscribirse y a
+              quien aporta por donación.
+
+              Y con acceso el destino es `/carnet`: la credencial existe y
+              no se llegaba a ella desde acá — la misma familia de
+              §12.10.20, piezas que funcionan sin estar conectadas.
+            */}
+            {esSocio ? (
+              <Button asChild className="mt-6 min-h-[48px] w-full rounded-xl bg-brand-primary font-bold text-white hover:bg-brand-dark lg:w-auto lg:px-8">
+                <Link to="/carnet">
+                  <IdCard aria-hidden="true" className="mr-2 h-4 w-4" />
+                  Ver mi carnet
+                </Link>
+              </Button>
+            ) : suscripcionEnCurso ? (
+              <div className="mt-5 rounded-xl border border-brand-primary/20 bg-white p-4">
+                <p className="text-sm font-bold text-brand-dark">Suscripción en curso</p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                  Tu acceso se habilita en cuanto se acredite el primer cobro.
+                </p>
+              </div>
+            ) : (
+              <Button asChild className="mt-6 min-h-[48px] w-full rounded-xl bg-brand-primary font-bold text-white hover:bg-brand-dark lg:w-auto lg:px-8">
+                <Link to="/collaborate">
+                  <Star aria-hidden="true" className="mr-2 h-4 w-4 fill-brand-gold text-brand-gold" />
+                  Activar membresía
+                </Link>
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+    </motion.section>
   );
 };
 

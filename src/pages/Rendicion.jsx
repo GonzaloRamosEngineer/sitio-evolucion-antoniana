@@ -332,7 +332,11 @@ const Rendicion = () => {
                 </li>
                 <li>
                   <strong className="text-brand-dark">Contabilidad respaldada.</strong>{' '}
-                  Ejercicios certificados por contador público independiente, con facturas y comprobantes agregados por rubro.
+                  Ejercicios certificados por contador público independiente, con facturas y comprobantes agregados por rubro.{' '}
+                  <span className="text-gray-500">
+                    Los ejercicios certificados llegan a 2024; los movimientos posteriores
+                    todavía no están en un balance publicado.
+                  </span>
                 </li>
                 <li>
                   <strong className="text-brand-dark">Requisito del programa.</strong>{' '}

@@ -70,6 +70,32 @@ const ETIQUETAS_ESTADO = {
 export const etiquetaEstado = (acceso) => ETIQUETAS_ESTADO[estadoAcceso(acceso)];
 
 /**
+ * Cómo se PINTA cada estado del acceso (§10.23.c, 2026-09-09).
+ *
+ * Va acá y no en el componente por la misma razón que `ETIQUETAS_ESTADO`: es
+ * una regla de presentación del acceso, y el acceso se muestra en más de una
+ * pantalla. Un `vigente` verde en el panel y ámbar en el carnet serían dos
+ * respuestas a la misma pregunta.
+ *
+ * Los nombres de tono son los que ya usa `Dashboard.jsx` para el estado de una
+ * suscripción (`ok` / `atencion` / `cerrado`), así que el panel habla UN solo
+ * idioma de estados. `vencido` es el que agrega esta tabla: una suscripción
+ * cancelada está cerrada y no hay nada que hacer, un aporte vencido se puede
+ * renovar hoy — no es lo mismo y no se pinta igual.
+ *
+ * ⚠️ Clases de modo claro, y es a propósito: la app es light-only desde la
+ * Sesión G. No agregar variantes `dark:` acá.
+ */
+export const CLASE_ESTADO = {
+  vigente: 'bg-green-500/10 text-green-700',
+  gracia: 'bg-amber-500/15 text-amber-700',
+  vencido: 'bg-red-500/10 text-red-700',
+  sin_aportes: 'bg-gray-100 text-gray-500',
+};
+
+export const claseEstado = (acceso) => CLASE_ESTADO[estadoAcceso(acceso)] ?? CLASE_ESTADO.sin_aportes;
+
+/**
  * Una fecha `YYYY-MM-DD` de la base, como la lee una persona.
  *
  * El `T00:00:00` no es adorno: sin él, `new Date('2026-09-02')` se interpreta

@@ -73,13 +73,21 @@ describe('Rendición pública — cómo se muestra el respaldo', () => {
   });
 
   it('🔒 declara el LÍMITE de lo publicado, en vez de exagerar el respaldo', () => {
-    // Los estados contables publicados llegan al ejercicio 2024 y esta página
+    // Los estados contables certificados llegan al ejercicio 2024 y esta página
     // muestra movimientos de 2026. Decir «todo está auditado» sería más lindo y
     // falso, y una rendición que exagera su respaldo pierde lo que vino a
     // construir. El aviso va en la página, no en una nota al pie.
+    //
+    // ⚠️ Este test ya falló una vez (2026-09-09) y NO por un bug: una pasada de
+    // redacción comprimió los tres puntos a una línea cada uno y el límite se
+    // fue con el recorte, dejando «Ejercicios certificados» sin fecha de corte.
+    // Por eso el matcher es la AFIRMACIÓN («no están en un balance publicado»)
+    // y no la frase entera: sobrevive a una reescritura de estilo y falla
+    // cuando desaparece la declaración. Si vuelve a fallar, la pregunta no es
+    // qué texto esperaba el test — es si la página todavía declara su límite.
     conGasto({ tiene_comprobante: false, tipo_comprobante: 'extracto', comprobante_numero: '1' });
     show();
-    expect(screen.getByText(/todavía no están en un balance publicado/i)).toBeVisible();
+    expect(screen.getByText(/no están en un balance publicado/i)).toBeVisible();
     expect(screen.getByText(/Mercado Libre Solidario/)).toBeVisible();
   });
 

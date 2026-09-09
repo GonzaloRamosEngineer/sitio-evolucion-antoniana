@@ -6902,10 +6902,9 @@ ya tiene anotada y que `ReclamarAportes` ya había pisado. Sin combinarlo con
 `Boolean(user?.id)`, una cabecera sin sesión diría «Consultando tus aportes…» eternamente,
 sin nada en vuelo. Tiene test propio, porque es el error que se comete al arreglar esto.
 
-**De dónde salió**: de una captura en iPhone que motivó un rediseño de la cabecera a card
-clara. Ese rediseño se descartó —la app es light-only por decisión de la Sesión G, y el
-color del perfil es una discusión aparte— pero traía este arreglo adentro, mezclado con lo
-estético. Se rescató solo esta parte, sobre el diseño navy que sigue en producción.
+**De dónde salió**: de una captura en iPhone que motivó un rediseño de la cabecera, con
+este arreglo adentro y mezclado con lo estético. Se separó a propósito y se hizo primero
+esta parte, que no depende del color. El rediseño se hizo después, en §10.23.c.
 
 Validación: 543 tests en 42 archivos, de los cuales **10 en `DashboardHeader.test.jsx`** (tres
 nuevos), lint 0 errores / 39 warnings, build correcto.
@@ -6918,3 +6917,92 @@ quiere seguir declarando ese límite.
 
 **Código muerto detectado de paso**: `src/components/Dashboard/UserProfileCard.jsx` no lo
 importa nadie. Es otra tarjeta de perfil, de las que compiten por decir lo mismo.
+
+
+## §10.23.c — La tarjeta del perfil estaba fuera de la gramática del panel (2026-09-09)
+
+`Dashboard.jsx` abre con una banda `bg-brand-dark` que dice «Mi panel / Hola, <nombre>».
+`DashboardHeader` iba pegada abajo, **también navy**, y todo lo que sigue —la navegación de
+secciones, las suscripciones, el historial— es `bg-white` sobre `bg-brand-sand`. Dos
+bloques oscuros apilados y después el panel entero claro: la tarjeta no era un acento, era
+una isla. Y encima repetía el nombre que la banda de arriba acababa de decir.
+
+La discusión que esto abrió fue «¿ponemos un selector claro/oscuro?», y la respuesta estaba
+escrita en `CLAUDE.md`: **la app es light-only desde la Sesión G** —no quedan
+`next-themes`, `ThemeSwitch`, paleta `.dark` ni variantes `dark:`— con la instrucción
+explícita de no agregarlas y la aclaración de que `brand-dark` es un color de marca, no
+dark mode. O sea que no había dos temas entre los que elegir: había una gramática, y esta
+tarjeta estaba afuera. Medido antes de decidir: **0 usos de `dark:`**, 40 archivos con
+`bg-brand-dark` y 78 con `bg-white`/`text-white` a mano
+(`grep -rl 'dark:' src --include='*.jsx'`).
+
+Ahora la tarjeta usa la misma gramática que sus hermanas: blanco, `rounded-2xl`, borde
+`gray-200` hairline, y dos regiones — **quién sos** (avatar, nombre, email, documento,
+editar) y **cómo vas con tu aporte** (estado, origen, antigüedad, carnet). El navy queda
+donde significa algo: la banda del hero y los CTA.
+
+Lo que se fue, y por qué: la **corona** sobre el avatar (marcaba una jerarquía, justo lo
+que §10.23 sacó del texto), el **aura pulsante y los dos blobs desenfocados** (están en la
+lista de clichés que el «Lenguaje visual» del repo enumera para no usar) y el
+**`uppercase tracking-tighter` del nombre** — a 393 px «GONZARAMOS MP» era lo primero que
+se veía del panel.
+
+⚠️ **Lo que la iteración descartada del 2026-09-08 había perdido sin querer, y acá está**:
+el layout de desktop (quedaba una columna angosta y altísima porque no tenía ni un `lg:`),
+la animación de entrada y dos de los cuatro datos. Rescatar un rediseño no es re-aplicar
+el patch.
+
+**Los tonos del estado se movieron a `src/lib/acceso.js`** (`CLASE_ESTADO`/`claseEstado`),
+que es donde el repo declara que viven las reglas de presentación del acceso. Reusan los
+nombres de tono que `Dashboard.jsx` ya usa para el estado de una suscripción, así que el
+panel habla un solo idioma; `vencido` es el que agrega esta tabla, porque una suscripción
+cancelada está cerrada y un aporte vencido se puede renovar hoy.
+
+### Cómo se verificó, que acá tiene truco
+
+`/dashboard` está detrás de sesión: un Chrome headless cae en el login y la cabecera no se
+monta nunca (es lo que dice el encabezado de su test desde el 2026-09-02). Así que el
+chequeo de navegador de §B **no la alcanza**, y se armó un harness: volcar el HTML real con
+RTL, pegarlo con el CSS **compilado** de `dist/assets/` y capturarlo con el mismo Chrome
+headless que usa `tools/generate-og-images.mjs`. Cuatro estados (vigente, vencido, sin
+aportes, consulta caída) a **393 px** y a **1280 px**.
+
+Dos cosas que el harness enseñó y conviene saber para la próxima:
+- **El volcado de un `motion.*` trae su estado inicial inline** (`opacity: 0`), así que la
+  primera captura salió en blanco con los espacios en su lugar. Va un
+  `*{opacity:1!important;transform:none!important}` en el shell.
+- **Sin `<meta name="viewport">`, `--window-size` no es el viewport de layout**: la segunda
+  captura mostró un desborde horizontal que no existía. Encajonar la tarjeta en un ancho
+  fijo con un `outline` visible fue lo que lo descartó en un intento.
+
+Y una cosa que el harness encontró de verdad: a 393 px una grilla de dos columnas partía
+«2 de septiembre de 2026» en dos líneas y «ORIGEN DEL APORTE» también — el mismo defecto de
+la captura original. Los datos van en **filas etiqueta→valor en mobile y grilla de tres en
+desktop**, no en una grilla que se parte.
+
+Validación: 543 tests en 42 archivos, lint 0 errores / 39 warnings (la línea base; hubo un
+`estado` muerto que la subió a 40 y se sacó), build correcto.
+
+## §14.9.b — La rendición se comprimió y se llevó su propio límite (2026-09-09)
+
+El commit `2201bd13` reescribió los tres puntos de «¿Cómo se verifica lo que dice esta
+página?» en una línea cada uno. Ganó en claridad y perdió dos declaraciones: **la fecha de
+corte** («los ejercicios publicados llegan a 2024; los movimientos de 2025 y 2026 todavía
+no están en un balance publicado») y **por qué no se publican las facturas una por una**
+(traen CUIT, domicilio y firma de terceros).
+
+Lo destapó `Rendicion.test.jsx`, que tiene un caso llamado «🔒 declara el LÍMITE de lo
+publicado, en vez de exagerar el respaldo». **Falló haciendo exactamente su trabajo**: no
+había un bug, había una pasada de redacción que dejó «Ejercicios certificados por contador
+público independiente» sin fecha de corte, en una página que muestra movimientos de 2026.
+El comentario del propio componente seguía diciendo, tres líneas más arriba, que «escribir
+"todo está auditado" sería más lindo y falso».
+
+Se conservó la redacción nueva y se devolvió **solo la cláusula del límite**. El matcher del
+test pasó a ser la afirmación (`/no están en un balance publicado/`) y no la frase entera,
+para que sobreviva a una reescritura de estilo y siga fallando cuando lo que desaparece es
+la declaración.
+
+⚠️ **Queda una decisión sin tomar**: la aclaración de las facturas no volvió. Hoy el único
+rastro de que se pueden pedir es el link «Pedir el detalle de un gasto →». Explicar una
+ausencia y ofrecer un formulario no son lo mismo.
