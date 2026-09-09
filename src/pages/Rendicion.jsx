@@ -24,8 +24,9 @@ import { Button } from '@/components/ui/button';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
 import { balanceDestino } from '@/api/gastosApi';
 import { entidad, tituloPagina } from '@/config/entidad';
+import { pesos } from '@/lib/utils';
 
-const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 /**
  * Agrupa los gastos por categoría, ordenando por monto descendente.
  *

@@ -42,3 +42,30 @@ export function palabraMasLarga(texto) {
     .split(/\s+/)
     .reduce((max, palabra) => Math.max(max, palabra.length), 0);
 }
+
+/**
+ * Un monto en pesos, siempre con dos decimales.
+ *
+ * ⚠️ POR QUÉ ESTO ES UNA FUNCIÓN COMPARTIDA Y NO UNA LÍNEA EN CADA PANTALLA.
+ *
+ * Al 2026-09-08 había **cuatro** formateadores distintos en el proyecto y no
+ * coincidían: `Rendicion` fijaba dos decimales, `ImportarMovimientos` fijaba el
+ * mínimo, y `AportesAdmin` y `GastosAdmin` **no fijaban ninguno**. Con eso, el
+ * panel de gastos mostraba
+ *
+ *     $78.748,7      cuando el monto es      $78.748,70
+ *
+ * y eso no es un detalle tipográfico: **se lee como siete centavos cuando son
+ * setenta.** En una pantalla cuyo trabajo es que alguien cruce el libro contra un
+ * extracto bancario, un decimal que aparece y desaparece hace dudar del número
+ * entero. Lo encontró el dueño mirando la línea del saldo al corregir un gasto.
+ *
+ * Dos decimales SIEMPRE, incluso en montos redondos: `$400.000,00` dice «esto es
+ * un importe exacto», y `$400.000` deja la pregunta de si se redondeó.
+ */
+export function pesos(n) {
+  return `$${Number(n || 0).toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}

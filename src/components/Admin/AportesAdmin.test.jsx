@@ -133,7 +133,8 @@ describe('AportesAdmin', () => {
       error: null,
     });
     render(<AportesAdmin />);
-    expect(await screen.findByText('$17.500')).toBeInTheDocument();
+    // Con dos decimales: ver la nota en GastosAdmin.test.jsx.
+    expect(await screen.findByText('$17.500,00')).toBeInTheDocument();
   });
 
   // Sin destinos no hay dónde imputar: `aportes.destino_id` es NOT NULL, así que

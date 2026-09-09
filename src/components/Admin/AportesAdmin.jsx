@@ -52,6 +52,7 @@ import SearchBar from '@/components/Admin/shared/SearchBar';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import { pesos } from '@/lib/utils';
 
 const CLASE_ORIGEN = {
   manual: 'bg-brand-gold/20 text-brand-dark',
@@ -59,7 +60,7 @@ const CLASE_ORIGEN = {
   membresia: 'bg-brand-primary/10 text-brand-primary',
 };
 
-const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
+
 
 /** `fecha` es timestamptz; para mostrar alcanza el día. */
 const soloFecha = (valor) => (valor ? String(valor).slice(0, 10) : '—');

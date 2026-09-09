@@ -47,8 +47,9 @@ import FilterChips from '@/components/Comision/FilterChips';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
+import { pesos } from '@/lib/utils';
 
-const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
+
 const soloFecha = (v) => (v ? String(v).slice(0, 10) : '—');
 
 const formVacio = () => ({
@@ -633,6 +634,17 @@ const GastosAdmin = () => {
                 onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
               />
               {errores.monto && <p className="mt-1 text-xs text-red-600">{errores.monto}</p>}
+              {/* ⚠️ EL MONTO FORMATEADO, DEBAJO DEL CAMPO.
+                  Un `<input type="number">` no puede llevar separador de miles, así
+                  que en pantalla se lee `400000` y no hay forma de distinguir de un
+                  golpe de vista cuatrocientos mil de cuatro millones. Un cero de más
+                  en un libro contable no lo atrapa ninguna validación: el número
+                  sigue siendo válido. Esto lo hace legible sin tocar el input. */}
+              {String(form.monto).trim() !== '' && Number(form.monto) > 0 && (
+                <p className="mt-1 text-xs font-semibold text-brand-dark tabular-nums">
+                  {pesos(form.monto)}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">

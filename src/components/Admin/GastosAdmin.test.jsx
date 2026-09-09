@@ -95,8 +95,13 @@ describe('GastosAdmin', () => {
     });
     render(<GastosAdmin />);
     await screen.findByText('Pelotas');
-    expect(screen.getByText('$62.000')).toBeInTheDocument(); // gastado: los tres
-    expect(screen.getByText('$50.000')).toBeInTheDocument(); // rendido: solo los publicados
+    // ⚠️ Con dos decimales SIEMPRE. Estas dos aserciones decían '$62.000' y
+    // '$50.000', o sea que FIJABAN EL BUG: el panel formateaba sin decimales y
+    // mostraba «$78.748,7» donde el monto era «$78.748,70» — siete centavos en
+    // lugar de setenta, en la pantalla que sirve para cruzar el libro contra un
+    // extracto. Ahora el formateo sale de `pesos()` en `src/lib/utils.js`.
+    expect(screen.getByText('$62.000,00')).toBeInTheDocument(); // gastado: los tres
+    expect(screen.getByText('$50.000,00')).toBeInTheDocument(); // rendido: solo los publicados
   });
 
   // El invariante del libro: `gastos` no tiene el GRANT de DELETE.
