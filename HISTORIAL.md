@@ -7222,4 +7222,9 @@ todo» que se ven idénticos desde afuera, del final de `CLAUDE.md` — y la ún
 que no se reportó como verificado es que se corrieron los controles. Sin ellos, el primer
 `NoSuchBucket` se habría leído como «privado, listo».
 
-Queda en `ROADMAP.md` §10.23.e, con la consulta exacta y qué tiene que devolver.
+**Se verificó en la base el mismo día** y dio lo que la migración pedía:
+`[{"id":"avatares","public":false,"file_size_limit":2097152}]`. Una fila, privado, 2 MB.
+
+Lo que queda anotado no es el resultado sino el método: **un bucket no se verifica desde el
+código con la anon key**, y las dos respuestas que parecen decir algo no dicen nada. La
+próxima vez, a la base.

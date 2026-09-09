@@ -846,12 +846,21 @@ Subir la foto propia, recortarla y verla en grande. **En producción**: la migra
 antes—. El puente `conColumnasDePerfil`, que toleraba el desfase entre el código y la base,
 **se borró junto con sus tests** en la misma jornada.
 
-### ⚠️ Los dos chequeos que siguen abiertos, y por qué no los pudo hacer el código
+### ✅ El bucket quedó privado — verificado en la base el 2026-09-09
 
-**1. Que el bucket haya quedado PRIVADO.** Es el único punto de esto donde equivocarse
-publica la cara de cada socio en internet abierto, y **no se puede verificar con la anon
-key**. Se intentó por dos vías y las dos fallaron como discriminadores, con sus controles
-al lado:
+```
+[{ "id": "avatares", "public": false, "file_size_limit": 2097152 }]
+```
+
+Una fila, `public = false`, 2 MB. Es el único punto de este frente donde equivocarse
+publica la cara de cada socio en internet abierto, así que se comprobó mirando
+`storage.buckets` y no desde el código — **con la anon key no se puede**, y eso es lo que
+sigue abajo, anotado para la próxima vez que alguien intente verificar un bucket desde
+afuera.
+
+#### Por qué la anon key no sirve para esto (y no hay que confundirse la próxima)
+
+Se intentó por dos vías y las dos fallaron como discriminadores, con sus controles al lado:
 
 | Vía | `comision-docs` (existe, privado) | `avatares` | `no-existe-xyz` |
 |---|---|---|---|
@@ -866,14 +875,17 @@ en la base, con una sesión que tenga permiso:
 select id, public, file_size_limit from storage.buckets where id = 'avatares';
 ```
 
-Tiene que devolver **una fila** con `public = false` y `file_size_limit = 2097152`. Cero
-filas significa que el bloque de storage de la migración no corrió; `public = true`
-significa corregirlo **antes** de que alguien suba una foto.
+Tiene que devolver **una fila** con `public = false` y `file_size_limit = 2097152` — y eso
+es exactamente lo que devolvió. Cero filas habría significado que el bloque de storage de
+la migración no corrió; `public = true`, corregirlo antes de que alguien suba una foto.
 
-**2. Una subida de punta a punta desde un celular real**, y volver a entrar más tarde para
-ver que la URL firmada se renueva (vence a los 10 minutos y el `staleTime` del hook son 8).
-Los tests cubren la decisión y el recorte; lo que no cubren es la ida y vuelta real al
-Storage.
+### ⚠️ Lo único que queda abierto
+
+**Una subida de punta a punta desde un celular real**, y volver a entrar más tarde para ver
+que la URL firmada se renueva (vence a los 10 minutos y el `staleTime` del hook son 8). Los
+tests cubren la decisión y el recorte; lo que no cubren es la ida y vuelta real al Storage
+—`upload` con `upsert`, las policies con un JWT de verdad, `createSignedUrl`— y eso no lo
+puede probar ni vitest ni el Postgres pelado.
 
 ### Lo que se decidió NO hacer
 
