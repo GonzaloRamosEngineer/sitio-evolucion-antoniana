@@ -7123,3 +7123,46 @@ Validación: 574 tests en 45 archivos (14 nuevos), lint 0 errores / 39 warnings,
 correcto, las 24 migraciones aplicadas desde cero en Docker (la de `pg_cron` falla por
 falta de superusuario, que es la limitación conocida del entorno y es anterior a esto), y
 los 9 casos de `avatar-check.sql` en OK, repetibles en corridas consecutivas.
+
+### §10.23.e.1 — Una columna para la FOTO se llevó puestos el nombre y el DNI
+
+El commit anterior agregó `avatar_path` a los `select` de `users` (`useAuth.jsx` y
+`userApi.js`) y **la migración todavía no estaba aplicada en la base real**. PostgREST
+responde `42703 column users.avatar_path does not exist`, el perfil no se pudo leer, y el
+panel mostró **«Error al cargar perfil»** con el email en lugar del nombre y el documento
+en «Sin registrar». Se vio en un iPhone, contra producción, un minuto después de darlo por
+terminado.
+
+Confirmado contra la API antes de tocar nada, con su control al lado:
+
+```
+select=id,avatar_path  → {"code":"42703","message":"column users.avatar_path does not exist"}
+select=id,gender       → []          (200: la columna existe, RLS filtra)
+```
+
+**La lección no es «acordate de aplicar la migración primero».** Es que **la lista de
+columnas de un `select` es un contrato con la base, y pedir una columna que falta no
+degrada: rompe, y se lleva todo lo demás de la consulta**. Un campo nuevo para una foto
+dejó sin nombre, sin DNI y sin antigüedad a una pantalla que no tiene nada que ver con la
+foto. Y le pasa igual a cualquiera que clone el repo, o a cualquier deploy que salga antes
+que la migración.
+
+`conColumnasDePerfil()` pide la lista completa y, **ante ese código de error exacto y
+ningún otro**, reintenta sin la columna nueva. Reintentar ante cualquier error convertiría
+un problema de red en dos consultas y taparía el error real con el del segundo intento;
+tiene test.
+
+Y la fila que vuelve del reintento **no tiene la clave `avatar_path`**, lo que resultó ser
+la señal exacta que hacía falta: `AvatarUpload` no se ofrece cuando la clave no está, así
+que no hay un botón «Subir mi foto» que falle. ⚠️ El chequeo es `'avatar_path' in user` y
+**no** `user?.avatar_path`: la diferencia es entre «la columna no existe» y «existe y está
+en NULL», que es alguien que todavía no subió nada — con un chequeo por valor, esa persona
+nunca podría subir. También tiene test.
+
+⚠️ **`conColumnasDePerfil` y sus tests se borran juntos** cuando la migración esté aplicada
+en producción (`ROADMAP.md` §10.23.e). Es un puente entre dos estados de la base, no una
+manera de escribir selects: dejarlo para siempre significa que nadie se enteraría nunca de
+una columna que falta.
+
+Validación: 580 tests en 46 archivos (6 nuevos), lint 0 errores / 39 warnings, build
+correcto, y la lista del reintento probada **contra la base de producción**: HTTP 200.

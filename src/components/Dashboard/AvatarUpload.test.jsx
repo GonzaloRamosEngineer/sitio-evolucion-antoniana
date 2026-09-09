@@ -15,7 +15,9 @@ vi.mock('@/api/avatarApi', () => ({
 
 const AvatarUpload = (await import('./AvatarUpload')).default;
 
-const USUARIO = { id: 'u-1', name: 'Gonzalo Ramos' };
+// `avatar_path: null` = la columna existe y no hay foto. Sin la CLAVE, el
+// componente no se ofrece (ver el primer caso).
+const USUARIO = { id: 'u-1', name: 'Gonzalo Ramos', avatar_path: null };
 const archivo = (nombre, tipo, size) => {
   const f = new File(['x'], nombre, { type: tipo });
   Object.defineProperty(f, 'size', { value: size });
@@ -31,8 +33,24 @@ beforeEach(() => {
 });
 
 describe('AvatarUpload', () => {
+  it('🔒 si la base no tiene la columna NO ofrece subir nada', () => {
+    // El usuario llega SIN la clave `avatar_path` porque el select cayó a la
+    // lista sin ella (la migración no está aplicada). Ofrecer «Subir mi foto»
+    // ahí es un clic que falla.
+    render(<AvatarUpload user={{ id: 'u-1', name: 'Gonzalo Ramos' }} onUpdateSuccess={() => {}} />);
+    expect(screen.getByText(/todavía no está disponible/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Subir mi foto/i)).toBeNull();
+  });
+
+  it('con la columna en NULL (sin foto todavía) SÍ ofrece subir', () => {
+    // La distinción que importa: «la columna no existe» ≠ «existe y está
+    // vacía». Con un chequeo por valor, quien no subió nada nunca podría.
+    render(<AvatarUpload user={{ ...USUARIO, avatar_path: null }} onUpdateSuccess={() => {}} />);
+    expect(screen.getByText(/Subir mi foto/i)).toBeInTheDocument();
+  });
+
   it('sin foto ofrece subir y NO ofrece quitar', () => {
-    render(<AvatarUpload user={USUARIO} onUpdateSuccess={() => {}} />);
+    render(<AvatarUpload user={{ ...USUARIO, avatar_path: null }} onUpdateSuccess={() => {}} />);
     expect(screen.getByText(/Subir mi foto/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Quitar/i })).toBeNull();
   });

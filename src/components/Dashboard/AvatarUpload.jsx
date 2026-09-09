@@ -42,6 +42,20 @@ const ZOOM_MAX = 4;
 const MAX_ENTRADA = 8 * 1024 * 1024;
 
 const AvatarUpload = ({ user, onUpdateSuccess }) => {
+  /*
+    SI LA BASE NO TIENE LA COLUMNA, ESTO NO SE OFRECE.
+    `conColumnasDePerfil` reintenta el select sin `avatar_path` cuando la
+    migración `20260909020000` todavía no está aplicada, y la fila que vuelve
+    entonces no tiene esa clave. Ese es el detector: sin columna no hay dónde
+    guardar la ruta, así que un botón «Subir mi foto» acá sería un clic que
+    falla — la misma promesa vacía que el CTA de §10.23.b y que el visor sobre
+    las iniciales. Se avisa en una línea y se sale.
+
+    ⚠️ `in` y no `user?.avatar_path`: la distinción es entre «la columna no
+    existe» y «existe y está en NULL», que es alguien sin foto todavía. Con un
+    chequeo por valor, quien no subió nada nunca podría subir.
+  */
+  const disponible = Boolean(user) && 'avatar_path' in user;
   const [src, setSrc] = useState(null);       // object URL del archivo elegido
   const [medidas, setMedidas] = useState(null); // { iw, ih }
   const [zoom, setZoom] = useState(1);
@@ -170,6 +184,14 @@ const AvatarUpload = ({ user, onUpdateSuccess }) => {
     if (err) { setError('No pudimos quitar la foto. Probá de nuevo.'); return; }
     onUpdateSuccess?.(data);
   };
+
+  if (!disponible) {
+    return (
+      <p className="text-sm text-gray-500">
+        La foto de perfil todavía no está disponible. Mientras tanto se usa el dibujo del carnet.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">

@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+import { conColumnasDePerfil } from '@/api/userApi';
 
 const AuthContext = createContext();
 
@@ -26,11 +27,15 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
     try {
-      const { data: profile, error } = await supabase
+      // `conColumnasDePerfil` reintenta sin `avatar_path` si la base todavía no
+      // la tiene: sin eso, una columna nueva para la foto tira abajo el panel
+      // entero. El porqué está en `userApi.js`.
+      const { data: profile, error } = await conColumnasDePerfil((columnas) => supabase
         .from('users')
-        .select('id, name, email, phone, role, is_verified, created_at, dni, birth_date, gender, avatar_path')
+        .select(columnas)
         .eq('id', authUser.id)
-        .single();
+        .single()
+        .then(({ data, error: err }) => ({ data, error: err })));
 
       if (error && error.code !== 'PGRST116') { 
         logger.error('Error fetching user profile:', error.message);
