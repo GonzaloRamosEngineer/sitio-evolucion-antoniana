@@ -120,6 +120,27 @@ export const importarLote = async ({ filas, destinoId }) => {
       proveedor: null,
       referencia_externa: f.referencia,
       carga_origen: 'importacion',
+      /*
+        EL RESPALDO YA EXISTE Y NO ES UN ARCHIVO: es el extracto de cuenta, en
+        esa operación.
+
+        Se declaraba `tipo_comprobante` en NULL, así que los 25 gastos del fondo
+        del convenio salieron a la rendición pública diciendo «Sin comprobante»
+        cuando el sistema tenía guardado el id exacto de la operación bancaria
+        desde el momento de importarlos. Era un hueco de presentación, no de
+        documentación.
+
+        `extracto` y no `transferencia`: no todos los movimientos son
+        transferencias —hay impuestos, débitos y liquidaciones—, y lo que
+        respalda a todos por igual es el resumen de cuenta.
+
+        ⚠️ ESTO NO REEMPLAZA A LA FACTURA. El id prueba que la plata se movió, no
+        qué se facturó ni por qué. Para los honorarios profesionales sigue
+        haciendo falta el comprobante del profesional; son dos afirmaciones
+        distintas y la rendición necesita las dos.
+      */
+      tipo_comprobante: 'extracto',
+      comprobante_numero: f.id ? String(f.id).trim() : null,
       // ⚠️ `publicado: false`. Un extracto entra al libro pero NO se publica
       // solo: publicar un gasto lo publica entero —concepto, proveedor, notas— y
       // la descripción de un movimiento bancario puede traer el nombre de un

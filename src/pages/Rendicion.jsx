@@ -23,6 +23,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { Button } from '@/components/ui/button';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
 import { balanceDestino } from '@/api/gastosApi';
+import { describirComprobante } from '@/lib/comprobantes';
 import { entidad, tituloPagina } from '@/config/entidad';
 import { pesos } from '@/lib/utils';
 
@@ -258,9 +259,17 @@ const Rendicion = () => {
                               </div>
                               <p className="font-bold text-lg text-brand-dark tabular-nums break-words min-[400px]:text-right">{pesos(g.monto)}</p>
                             </div>
-                            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 mt-3 text-xs font-semibold ${g.tiene_comprobante ? 'bg-green-50 text-green-800' : 'bg-amber-50 text-amber-800'}`}>
-                              {g.tiene_comprobante ? <FileCheck2 aria-hidden="true" className="w-4 h-4" /> : <FileX2 aria-hidden="true" className="w-4 h-4" />}
-                              {g.tiene_comprobante ? 'Con comprobante' : 'Sin comprobante'}
+                            {/* ⚠️ TRES ESTADOS, NO DOS.
+                                Esto mostraba «Con comprobante / Sin comprobante»
+                                mirando sólo `tiene_comprobante`, que es una columna
+                                generada: dice si hay ARCHIVO. Un gasto con el tipo y
+                                el número declarados —«Extracto de cuenta N° 90165423466»—
+                                aparecía como si no tuviera nada, y eso subvalúa un
+                                respaldo verificable. Decir cuál de los tres es más
+                                creíble que un binario que no distingue. */}
+                            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 mt-3 text-xs font-semibold ${g.tiene_comprobante ? 'bg-green-50 text-green-800' : (g.tipo_comprobante ? 'bg-brand-primary/10 text-brand-primary' : 'bg-amber-50 text-amber-800')}`}>
+                              {(g.tiene_comprobante || g.tipo_comprobante) ? <FileCheck2 aria-hidden="true" className="w-4 h-4" /> : <FileX2 aria-hidden="true" className="w-4 h-4" />}
+                              {describirComprobante(g)}
                             </span>
                           </li>)}
                         </ul>
