@@ -3713,6 +3713,114 @@ y firmas de terceros. La página lo dice y ofrece pedirlos por contacto.
 
 ---
 
+### 14.9 — Los 22 meses, y el libro que cierra al centavo (2026-09-08)
+
+Se cargaron los 22 resúmenes restantes (11/2024 a 08/2026): **130 movimientos**,
+repartidos en tres destinos. Lo que sigue es el relato de lo que apareció al
+hacerlo, porque casi nada estaba previsto.
+
+#### Pasar los archivos por el parser ANTES de importar encontró un bug
+
+Los 22 cuadraban —0 errores, todos con referencia, niveles 1 y 2 al centavo— pero
+la cadena reportaba **dos huecos que no existían**. Tres de los meses no tienen
+ningún movimiento (02, 03 y 05 de 2025), y sin movimientos no hay fecha que leer:
+el archivo **no trae el período en ninguna parte**. Se ordenaban al principio y
+partían la cadena. Se arregló encadenando por saldo, que un mes vacío sí trae
+(abre y cierra igual). Ver el commit `011855e4`.
+
+#### ⚠️ El importador duplicaba los cobros de la pasarela
+
+El hallazgo más serio de la jornada, y lo destapó el dueño contando que había
+hecho pagos de prueba durante el desarrollo.
+
+El trigger `aporte_desde_donacion` guarda `referencia_externa = <payment_id>`
+**pelado**; el importador genera `mp:<payment_id>:<monto>`. Cadenas distintas, así
+que el UNIQUE no las ve como el mismo cobro. Y el `REFERENCE_ID` de una
+«Liquidación de dinero» **ES el payment id** (12 dígitos, verificado contra los
+archivos). Importar los 22 meses habría metido cada cobro de la pasarela por
+segunda vez.
+
+Duplicar un ingreso es peor que duplicar un gasto: infla lo recaudado y **el
+porcentaje rendido —lo que la rendición publica— baja sin que nadie haya gastado
+nada.** La pantalla decía «reimportar no duplica» y era falso respecto de la otra
+mitad del sistema.
+
+**La lección: la idempotencia de un mecanismo no es la idempotencia del libro.**
+Preguntá quién más escribe en la tabla, y con qué forma de clave.
+
+#### Dos nombres más que se habrían publicado
+
+MercadoPago describe el impuesto de una transferencia repitiendo a quién se le
+pagó: «Pago de impuestos De Athayde Moncorvo Eduardo». La regla `/impuesto/`
+matcheaba primero y no extrae contraparte, así que el nombre iba entero al
+`concepto`, que es público. Un contador y un escribano, 3 de 130 filas.
+
+#### Lo que el contexto del dueño reordenó
+
+- **La transferencia de $119.714 al club no era un gasto**: era la devolución de
+  ocho transferencias que habían entrado por error (cuotas sociales de otra
+  institución). Destino propio, `seed_destino_terceros_fundacion.sql`, para que
+  quede **contado aparte y no escondido** — quien cruce la rendición con el
+  extracto vería salir esa plata sin explicación.
+  ⚠️ Y no netea a cero: entraron $118.286 netos, salieron $119.714. Devolver
+  plata ajena le costó **$1.428** de fondos propios, y eso está en la descripción
+  pública porque explicarlo vale más que redondearlo.
+- **El movimiento de $101.300 era «respaldo físico de documentación a entregar»**
+  —fotocopias de todo lo generado para el club—, que es literalmente uno de los
+  destinos que nombra el Acta. Del fondo, sin dudas.
+- **Los rendimientos de la cuenta remunerada** (52 mov, $9.131,17) no tenían
+  categoría, así que caían en «Otros gastos» de la rendición pública — el cajón de
+  los EGRESOS sin clasificar, y esto es un ingreso. Van al fondo: el saldo que los
+  generó es el millón, y el rendimiento de un fondo restringido sigue la
+  restricción.
+
+#### ⚠️ Y una cifra del repo que era falsa
+
+Se decía «~$180.000 quedan del fondo» en tres lugares. Es el saldo de la
+**cuenta**, no del **fondo**: el fondo tiene **$95.083,30**, la mitad. Es
+exactamente el error que el destino separado existe para evitar, cometido en la
+propia documentación. **Van catorce premisas de este repo que resultaron falsas.**
+
+#### El libro cierra al centavo, y las dos diferencias están explicadas
+
+| | |
+|---|---|
+| fondo del convenio | 95.083,30 |
+| institucional | 100.639,07 |
+| regularización de terceros | −1.428,00 |
+| equipamiento deportivo | 100,00 |
+| **total libro** | **194.394,37** |
+| cuenta MercadoPago al 31/08/2026 | 189.117,71 |
+| diferencia | **5.276,66** |
+
+Y la diferencia entera se explica con dos cosas:
+
+- **$5.000** — una membresía aprobada el **02/09/2026** que MercadoPago acredita el
+  12/09: los extractos llegan hasta agosto. **No era un aporte fantasma, era el
+  futuro.**
+- **$276,66** — la comisión de la pasarela en los 5 cobros que registró el
+  webhook. El aporte guarda el **bruto** (lo que dio el donante) y el extracto el
+  **neto** (lo que llegó). Las dos cifras son verdaderas.
+
+⚠️ **Y esto casi termina en un borrado de datos.** Al ver los $5.274,73 de más se
+sospechó «aportes fantasma de la etapa de desarrollo» y el dueño propuso ajustar
+por base, tomando la importación como fuente de la verdad. **Los seis aportes de
+la pasarela eran correctos y ninguno estaba duplicado** — el arreglo de la
+referencia doble los había salteado a todos—, así que borrarlos habría hecho
+desaparecer esa plata del libro **sin poder recuperarla**: las filas del extracto
+ya figuran como cargadas y no vuelven a entrar.
+
+Lo que evitó el daño fue **cruzar los 6 payment_id contra los 22 archivos uno por
+uno** antes de escribir una línea de SQL, en vez de aceptar la explicación
+plausible. Cinco tenían contrapartida exacta; el sexto tenía fecha de septiembre.
+
+**La lección, y es la más caliente de la jornada: una diferencia que "se explica
+sola" con una hipótesis razonable sigue siendo una diferencia sin explicar.** Acá
+la hipótesis razonable —pruebas duplicadas— habría costado datos irrecuperables
+de un libro contable.
+
+---
+
 ### 14.8 — Cierre de la jornada del 2026-09-06
 
 **Lo que cambió de verdad:** la rendición dejó de estar vacía. `/rendicion` pasó de
