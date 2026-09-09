@@ -7,7 +7,7 @@
 //  - un fallo de la capa de datos NO se muestra como éxito
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render as rtlRender, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const toast = vi.fn();
@@ -142,7 +142,12 @@ describe('GastosAdmin', () => {
     render(<GastosAdmin />);
     await screen.findByText('Compra de pelotas');
     expect(screen.getByText(/adjuntar comprobante/i)).toBeInTheDocument();
-    expect(screen.getByText(/sin comprobante/i)).toBeInTheDocument();
+    // `getAllByText` y no `getByText`: desde que hay chips de filtro (2026-09-08)
+    // «Sin comprobante» aparece dos veces —el chip y la tarjeta del resumen— y las
+    // dos son correctas. Lo que este test fija es que el hueco se MUESTRA, no
+    // dónde: se comprueba que está en la tarjeta, que es la que lo cuenta.
+    expect(screen.getAllByText(/sin comprobante/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('Se muestran igual, marcados')).toBeInTheDocument();
   });
 
   it('un gasto con comprobante lo ofrece abrir, no adjuntar', async () => {
@@ -236,6 +241,68 @@ describe('GastosAdmin', () => {
 
     expect(await screen.findByText(/se lee en la rendición pública/i)).toBeInTheDocument();
     expect(screen.getByText(/no una persona/i)).toBeInTheDocument();
+  });
+
+  /*
+    FILTRAR POR ESTADO Y PUBLICAR EN BLOQUE. Aparecieron cuando el importador
+    metió 25 gastos de golpe: la pregunta de quien entra acá dejó de ser «cuál
+    dice tal palabra» y pasó a ser «cuáles me faltan».
+  */
+  it('el filtro «sin publicar» deja solo los internos', async () => {
+    getGastos.mockResolvedValue({
+      data: [gasto({ id: 'g1', concepto: 'Interno uno', publicado: false }),
+        gasto({ id: 'g2', concepto: 'Ya publicado', publicado: true })],
+      error: null,
+    });
+    render(<GastosAdmin />);
+    await screen.findByText('Interno uno');
+    expect(screen.getByText('Ya publicado')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Sin publicar/i }));
+
+    expect(screen.getByText('Interno uno')).toBeInTheDocument();
+    expect(screen.queryByText('Ya publicado')).toBeNull();
+  });
+
+  it('🔒 publicar en bloque PIDE CONFIRMACIÓN y dice cuánta plata sale', async () => {
+    // La regla de esta pantalla es que publicar sea deliberado. Con 21 gastos,
+    // 21 clics idénticos no son deliberación: a partir del quinto nadie lee.
+    getGastos.mockResolvedValue({
+      data: [gasto({ id: 'g1', monto: 30000, publicado: false }),
+        gasto({ id: 'g2', concepto: 'Otro gasto', monto: 20000, publicado: false })],
+      error: null,
+    });
+    render(<GastosAdmin />);
+    await screen.findByText('Compra de pelotas');
+
+    fireEvent.click(screen.getByRole('button', { name: /Publicar los 2 sin publicar/i }));
+
+    // Nada se publicó todavía: primero informa.
+    expect(setPublicado).not.toHaveBeenCalled();
+    // `within(dialog)` y no `screen`: la tarjeta «Gastado» del panel muestra el
+    // mismo $50.000, y buscar en toda la pantalla haría pasar el test sin que el
+    // diálogo dijera nada — que es justo lo que se quiere fijar.
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText(/\$50\.000/)).toBeInTheDocument();
+    expect(within(dialogo).getByText(/Pelotas y conos/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Publicar 2$/i }));
+    await waitFor(() => expect(setPublicado).toHaveBeenCalledTimes(2));
+    expect(setPublicado).toHaveBeenCalledWith('g1', true);
+    expect(setPublicado).toHaveBeenCalledWith('g2', true);
+  });
+
+  it('cancelar la confirmación del lote no publica nada', async () => {
+    getGastos.mockResolvedValue({
+      data: [gasto({ id: 'g1', publicado: false }),
+        gasto({ id: 'g2', concepto: 'Otro', publicado: false })],
+      error: null,
+    });
+    render(<GastosAdmin />);
+    await screen.findByText('Compra de pelotas');
+    fireEvent.click(screen.getByRole('button', { name: /Publicar los 2 sin publicar/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Cancelar$/i }));
+    expect(setPublicado).not.toHaveBeenCalled();
   });
 
   it('un error de carga se muestra como mensaje, no como objeto', async () => {

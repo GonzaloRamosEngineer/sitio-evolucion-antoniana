@@ -43,6 +43,7 @@ import {
 } from '@/api/gastosApi';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
+import FilterChips from '@/components/Comision/FilterChips';
 import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
@@ -81,9 +82,39 @@ const GastosAdmin = () => {
   const { data: gastos = [], isPending, error } = useGastos();
   const { data: destinos = [] } = useDestinos();
 
-  const { query, setQuery, filtered } = useSearch(gastos, [
+  const { query, setQuery, filtered: buscados } = useSearch(gastos, [
     'concepto', 'categoria', 'proveedor', 'notas', 'destino.nombre',
   ]);
+
+  /*
+    FILTRO POR ESTADO, además del buscador.
+
+    Con 25 gastos cargados de golpe por el importador, la pregunta que se hace
+    quien entra acá no es «cuál dice tal palabra» sino **«cuáles me faltan»**: los
+    que están sin publicar, o sin comprobante. En una lista plana de 25 —donde un
+    débito de $0,04 ocupa lo mismo que una transferencia de $400.000— eso se
+    responde scrolleando y contando a ojo.
+  */
+  const [filtro, setFiltro] = useState('todos');
+
+  const filtrados = useMemo(() => {
+    if (filtro === 'sin-publicar') return buscados.filter((g) => !g.publicado);
+    if (filtro === 'publicados') return buscados.filter((g) => g.publicado);
+    if (filtro === 'sin-comprobante') return buscados.filter((g) => !g.tiene_comprobante);
+    return buscados;
+  }, [buscados, filtro]);
+
+  const opcionesFiltro = useMemo(() => [
+    { value: 'todos', label: 'Todos', count: buscados.length },
+    { value: 'sin-publicar', label: 'Sin publicar', count: buscados.filter((g) => !g.publicado).length },
+    { value: 'publicados', label: 'Publicados', count: buscados.filter((g) => g.publicado).length },
+    { value: 'sin-comprobante', label: 'Sin comprobante', count: buscados.filter((g) => !g.tiene_comprobante).length },
+  ], [buscados]);
+
+  // Los totales siguen calculándose sobre lo BUSCADO y no sobre lo filtrado: si
+  // al filtrar «sin publicar» el panel dijera «Rendido $0», la cifra que importa
+  // —cuánto ve el público— desaparecería justo cuando se está trabajando en ella.
+  const filtered = buscados;
 
   const [abierto, setAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -156,6 +187,58 @@ const GastosAdmin = () => {
     toast({ title: editando ? 'Gasto corregido' : 'Gasto registrado' });
     setAbierto(false);
     invalidar();
+  };
+
+  /*
+    PUBLICAR EN BLOQUE, SIN ROMPER LA REGLA DE ESTA PANTALLA.
+
+    La regla dice: «publicar es una acción aparte de guardar, y tiene que costar
+    un clic propio y deliberado». Lo que la hace valiosa es la DELIBERACIÓN, no
+    la repetición: publicar 21 gastos de a uno son 21 clics idénticos, y a partir
+    del quinto nadie lee lo que está publicando — que es exactamente lo que la
+    regla quería evitar.
+
+    Así que el lote se publica con UNA confirmación que dice cuántos, cuánta
+    plata y a qué destinos. Eso es más deliberado que 21 clics automáticos.
+  */
+  const [confirmarLote, setConfirmarLote] = useState(false);
+
+  const publicables = useMemo(() => filtrados.filter((g) => !g.publicado), [filtrados]);
+
+  const resumenLote = useMemo(() => ({
+    n: publicables.length,
+    total: publicables.reduce((t, g) => t + Number(g.monto || 0), 0),
+    sinComprobante: publicables.filter((g) => !g.tiene_comprobante).length,
+    destinos: [...new Set(publicables.map((g) => g.destino?.nombre ?? 'Destino eliminado'))],
+  }), [publicables]);
+
+  const publicarLote = async () => {
+    setConfirmarLote(false);
+    const fallos = [];
+    let hechos = 0;
+    // De a uno y en serie: son pocos, y así un fallo de RLS a mitad de camino
+    // deja el resto sin tocar en vez de un estado a medias sin explicación.
+    for (const g of publicables) {
+      setOcupadoId(g.id);
+      const { error: fallo } = await setPublicado(g.id, true);
+      if (fallo) fallos.push(`${g.concepto}: ${fallo.message}`);
+      else hechos += 1;
+    }
+    setOcupadoId(null);
+    invalidar();
+
+    if (fallos.length) {
+      toast({
+        title: `Se publicaron ${hechos} de ${publicables.length}`,
+        description: fallos[0],
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: `${hechos} ${hechos === 1 ? 'gasto publicado' : 'gastos publicados'}`,
+        description: 'Ya se ven en la rendición pública, con todos sus datos.',
+      });
+    }
   };
 
   const alternarPublicado = async (g) => {
@@ -253,6 +336,17 @@ const GastosAdmin = () => {
 
       <SearchBar value={query} onChange={setQuery} placeholder="Buscar por concepto, proveedor o destino..." />
 
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <FilterChips options={opcionesFiltro} value={filtro} onChange={setFiltro} />
+
+        {publicables.length > 1 && (
+          <Button size="sm" variant="action" onClick={() => setConfirmarLote(true)}>
+            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            Publicar los {publicables.length} sin publicar
+          </Button>
+        )}
+      </div>
+
       {filtered.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-sm border border-brand-dark/10 bg-white px-5 py-4">
@@ -273,7 +367,7 @@ const GastosAdmin = () => {
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {filtrados.length === 0 ? (
         <EmptyState
           icon={Receipt}
           title={query ? 'Sin resultados' : 'Todavía no hay gastos'}
@@ -288,20 +382,22 @@ const GastosAdmin = () => {
         />
       ) : (
         <div className="space-y-2">
-          {filtered.map((g) => (
+          {filtrados.map((g) => (
             <motion.div
               key={g.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-sm border border-brand-dark/10 bg-white p-4 space-y-3"
+              className="rounded-sm border border-brand-dark/10 bg-white px-4 py-2.5"
             >
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="text-xs text-gray-500 tabular-nums w-24 shrink-0">
+              {/* Una sola fila con todo: con 25 gastos, dos filas por gasto son
+                  1.500px de scroll para revisar una lista que cabe en 700. */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <span className="text-xs text-gray-500 tabular-nums w-20 shrink-0">
                   {soloFecha(g.fecha)}
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-brand-dark truncate">{g.concepto}</p>
+                  <p className="font-semibold text-brand-dark truncate text-sm">{g.concepto}</p>
                   <p className="text-xs text-gray-500 truncate">
                     {g.destino?.nombre ?? 'Destino eliminado'}
                     {g.categoria ? ` · ${g.categoria}` : ''}
@@ -323,9 +419,8 @@ const GastosAdmin = () => {
                 <span className="font-bold text-brand-dark tabular-nums shrink-0">
                   {pesos(g.monto)}
                 </span>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                 <Button size="sm" variant="outline" onClick={() => abrirEdicion(g)}>
                   <Edit className="w-3.5 h-3.5 mr-1.5" /> Corregir
                 </Button>
@@ -379,11 +474,60 @@ const GastosAdmin = () => {
                 )}
 
                 {ocupadoId === g.id && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* La confirmación del lote. Dice CUÁNTO y A DÓNDE, no «¿estás seguro?»:
+          una confirmación que no informa nada es un clic más, no una decisión. */}
+      <Dialog open={confirmarLote} onOpenChange={setConfirmarLote}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Publicar {resumenLote.n} {resumenLote.n === 1 ? 'gasto' : 'gastos'}
+            </DialogTitle>
+            <DialogDescription>
+              Van a quedar visibles para cualquiera, con todos sus datos: concepto,
+              monto, fecha, categoría, proveedor y notas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-sm border border-brand-dark/10 bg-brand-sand/40 p-4 text-sm space-y-1.5">
+            <p className="tabular-nums">
+              <strong>{resumenLote.n}</strong> gastos por{' '}
+              <strong>{pesos(resumenLote.total)}</strong>
+            </p>
+            <p className="text-brand-dark/70">
+              A {resumenLote.destinos.length === 1 ? 'el destino' : 'los destinos'}:{' '}
+              {resumenLote.destinos.join(' · ')}
+            </p>
+            {resumenLote.sinComprobante > 0 && (
+              <p className="text-amber-700">
+                <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />
+                {resumenLote.sinComprobante} sin comprobante adjunto. Se publican igual y
+                quedan marcados: mostrar el hueco es más honesto que esconder la fila.
+              </p>
+            )}
+          </div>
+
+          <p className="text-xs text-brand-dark/60">
+            Revisá los conceptos antes de seguir. Los que vienen del importador dicen lo que
+            dice el banco —«Transferencia enviada»—, no para qué fue el gasto.
+          </p>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setConfirmarLote(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="action" onClick={publicarLote}>
+              Publicar {resumenLote.n}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={abierto} onOpenChange={setAbierto}>
         {/*
