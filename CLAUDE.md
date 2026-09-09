@@ -288,30 +288,33 @@ decía 133 a mitad de esa jornada, 122 al cerrar §10 y 102 antes.) Mové ítems
 renumeres. ⚠️ **Al remedir, citá el comando**: sin él no se sabe si el número creció o
 cambió el patrón.
 
-Estado al **2026-09-06** (remedido, no copiado): **4 vulnerabilidades** (1 low, 2 moderate,
-1 high); `npm audit fix` sin `--force` cierra tres, y la que queda es `react-router-dom`,
-cuyo arreglo es react-router v7 —un major—. **459 tests en 36 archivos** (remedido el 2026-09-06 al cierre de §12 con `npm test`; más los del
+Estado al **2026-09-08** (remedido, no copiado): **8 vulnerabilidades** (1 low, 5 moderate,
+2 high: `browserslist` y `js-yaml`); npm reporta **fix no-breaking para las 8**, incluida
+`react-router-dom`. ⚠️ **Subieron de 4 a 8 al saltar a `vitest@4`**: actualizar también
+trae advisories, no solo los cierra. **494 tests en 41 archivos** (remedido el 2026-09-08 con `npx vitest run`; más los del
 servicio de pagos, repo aparte). Falta cobertura del flujo real, y en particular **el
 runtime de las Edge Functions no se puede probar acá** (`supabase start` falla en esta
 máquina): la lógica que decide vive en `supabase/functions/_shared/club-reglas.ts`, que sí
 se testea con vitest (**41 casos**), y cada `index.ts` se prueba recién en producción.
 **Al 2026-09-06 no queda ninguna decisión del club fuera de ese archivo**: la última que
-faltaba —el rescate diferido de §12.10.3— se extrajo como `decidirRescate()`. ESLint deja **50
-warnings** de backlog: **la barra es 0 errores**.
+faltaba —el rescate diferido de §12.10.3— se extrajo como `decidirRescate()`. ESLint deja **39
+warnings** de backlog (decía 50): **la barra es 0 errores**.
 
-⚠️ Este párrafo decía «2 vulnerabilidades, 265 tests, 53 warnings» y las tres cifras
-estaban viejas. **Es el archivo que se carga en cada sesión: si miente acá, arranca
+⚠️ Este párrafo decía «2 vulnerabilidades, 265 tests, 53 warnings», después «4, 459, 50»,
+y **las dos veces las cifras estaban viejas cuando alguien las leyó**. Van tres remediciones. **Es el archivo que se carga en cada sesión: si miente acá, arranca
 mintiendo todo lo demás.** Remedirlo es un minuto:
 `npm test`, `npm run lint`, `npm audit`.
 
 **Leé `ROADMAP.md` § "🚦 Por dónde arrancar" antes de trabajar**: es lo primero del archivo,
 se reescribe al cierre de cada jornada y dice qué verificar antes de tocar nada. El cierre
 de la última jornada está en **§14.7** de `HISTORIAL.md`; los cierres anteriores, en §11.7 y
-§11.6. Entre todos suman **catorce afirmaciones de este repo que resultaron falsas** — la
-decimocuarta es del 2026-09-06 y era de las peores: §12.10.11 declaró el cron del club
-«deuda consciente» porque «el plan Free de Supabase no lo trae», y **`pg_cron` estaba
-disponible y precargada**. Nadie miró la base; se escribió la limitación y se le creyó y varias
-verificaciones que no verificaban nada. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda del club se cerró el 2026-09-06**: lo que queda de §12 es de negocio
+§11.6. Entre todos suman **veinticuatro afirmaciones de este repo que resultaron falsas** —
+**diez de ellas el 2026-09-08, en una sola pasada de verificación**, que es el récord y la
+mejor prueba de por qué esta regla existe. Entre las peores: §12.10.11 declaró el cron del
+club «deuda consciente» porque «el plan Free de Supabase no lo trae», y **`pg_cron` estaba
+disponible y precargada** — nadie miró la base. Y el 2026-09-08, **§10 se declaraba cerrada
+con dos pendientes que ya no existían y un puntero a un ítem inexistente**, mientras tres
+tareas marcadas como pendientes estaban hechas. Leelas: son el mejor resumen de cómo se rompe este proyecto. **La deuda del club se cerró el 2026-09-06**: lo que queda de §12 es de negocio
 (conseguir comercios de ticket bajo) y vive en §12.14.
 
 ⚠️ **`tools/db.sh dump` produce un backup que NO restaura tal cual en PostgreSQL 15, y
