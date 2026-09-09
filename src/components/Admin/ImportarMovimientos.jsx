@@ -259,6 +259,53 @@ const ImportarMovimientos = () => {
     setDecisiones((prev) => new Map(prev).set(f.indice, !entra));
   };
 
+  /*
+    TILDAR EN BLOQUE POR TIPO, y no es comodidad: es lo que hace posible respetar
+    un fondo restringido.
+
+    Un lote entero se imputa a UN destino. Pero un extracto de una cuenta trae las
+    dos cosas mezcladas: los egresos del fondo y los ingresos nuevos, que son
+    plata de libre disponibilidad y **no pertenecen al fondo** — meterlos ahí hace
+    que su «recaudado» deje de ser el monto del convenio y que la restricción no
+    se pueda demostrar (CLAUDE.md: no mezclar un fondo restringido con la cuota).
+
+    La forma correcta es importar dos veces, una por destino. En los 22 resúmenes
+    de la Fundación eso es destildar **109 filas a mano** para el primer lote y 21
+    para el segundo: con eso, nadie lo hace y todo termina en un solo destino.
+
+    Sigue siendo la persona la que decide y confirma; esto sólo evita que la
+    decisión correcta cueste cien clics más que la incorrecta.
+  */
+  const marcarPorTipo = (tipo) => {
+    if (!analisis) return;
+    setDecisiones(() => {
+      const m = new Map();
+      for (const f of analisis.filas) {
+        // Las bloqueadas —con problema o ya cargadas— no se tocan: `estadoDe` las
+        // deja afuera igual, y anotarlas sólo ensuciaría el mapa.
+        if (f.problema) continue;
+        // ⚠️ EL CORTE POR FECHA DE INICIO SIGUE MANDANDO, incluso acá.
+        // Sin esta guarda, «Solo los N aportes» volvería a tildar las 21 filas
+        // anteriores al fondo que el corte había destildado: una acción pensada
+        // para ahorrar clics desharía en uno la única protección automática que
+        // tiene esta pantalla. Tildar en bloque selecciona lo ELEGIBLE de un
+        // tipo, no todo lo de ese tipo.
+        const elegible = !anteriores.has(f.indice);
+        m.set(f.indice, elegible && (tipo === 'todos' || f.tipo === tipo));
+      }
+      return m;
+    });
+  };
+
+  const cuenta = useMemo(() => {
+    if (!analisis) return { aportes: 0, gastos: 0 };
+    const utiles = analisis.filas.filter((f) => !f.problema);
+    return {
+      aportes: utiles.filter((f) => f.tipo === 'aporte').length,
+      gastos: utiles.filter((f) => f.tipo === 'gasto').length,
+    };
+  }, [analisis]);
+
   const variosArchivos = (analisis?.resumenes?.length ?? 0) > 1;
 
   return (
@@ -540,6 +587,31 @@ const ImportarMovimientos = () => {
                 <strong>{resumen.conProblema}</strong> sin entender
               </span>
             )}
+          </div>
+
+          {/*
+            Separar por tipo antes de importar. Un lote va a UN destino, y un
+            extracto trae las dos cosas: los egresos del fondo y los ingresos
+            nuevos, que son de libre disponibilidad y no pertenecen a él.
+          */}
+          <div className="rounded-sm border border-brand-dark/10 bg-white p-4 mb-4">
+            <p className="text-sm font-bold text-brand-dark mb-1">Tildar en bloque</p>
+            <p className="text-xs text-brand-dark/60 mb-3">
+              El lote entero se imputa a un solo destino. Si el extracto mezcla ingresos y
+              egresos que van a destinos distintos, importá <strong>dos veces</strong>:
+              tildá un tipo, importá, y después el otro cambiando el destino.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => marcarPorTipo('gasto')}>
+                Solo los {cuenta.gastos} gastos
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => marcarPorTipo('aporte')}>
+                Solo los {cuenta.aportes} aportes
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => marcarPorTipo('todos')}>
+                Todo
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-sm border border-brand-dark/10 bg-white overflow-x-auto">

@@ -138,6 +138,39 @@ describe('ImportarMovimientos — las decisiones manuales', () => {
     expect(excluida).not.toBeChecked();
   });
 
+  /*
+    TILDAR EN BLOQUE POR TIPO. Existe porque un lote va a UN destino y un extracto
+    trae las dos cosas mezcladas: los egresos del fondo restringido y los ingresos
+    nuevos, que son de libre disponibilidad y NO pertenecen a él. En los 22
+    resúmenes reales de la Fundación separar a mano es destildar 109 filas — con
+    eso nadie lo hace y todo termina en un solo destino, mezclado.
+  */
+  it('«solo los gastos» deja tildados los gastos y ninguno más', async () => {
+    await prepararLote();
+    fireEvent.click(screen.getByRole('button', { name: /Solo los \d+ gastos/i }));
+    // Los dos gastos: el del día del inicio y el posterior.
+    await waitFor(() => expect(botonImportar()).toHaveTextContent('Importar 2 movimientos'));
+  });
+
+  it('🔒 «solo los aportes» NO revive lo anterior al inicio del destino', async () => {
+    // El único aporte del lote es anterior al 10/10, así que el corte lo había
+    // destildado. Si el tildado en bloque lo pisara, una acción pensada para
+    // ahorrar clics desharía en uno la única protección automática que hay.
+    await prepararLote();
+    fireEvent.click(screen.getByRole('button', { name: /Solo los \d+ aportes/i }));
+
+    const anterior = screen.getByLabelText(/Liquidación de dinero/i);
+    expect(anterior).not.toBeChecked();
+    expect(botonImportar()).toBeDisabled();
+  });
+
+  it('🔒 «Todo» tampoco lo revive', async () => {
+    await prepararLote();
+    fireEvent.click(screen.getByRole('button', { name: /^Todo$/i }));
+    expect(screen.getByLabelText(/Liquidación de dinero/i)).not.toBeChecked();
+    await waitFor(() => expect(botonImportar()).toHaveTextContent('Importar 2 movimientos'));
+  });
+
   // Control positivo: sin esto, "nunca vuelve a tildar nada" y "conserva las
   // decisiones" se ven idénticos desde afuera, y una pantalla que dejara todo
   // destildado para siempre pasaría el test de arriba.

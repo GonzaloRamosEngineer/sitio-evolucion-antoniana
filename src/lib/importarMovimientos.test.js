@@ -421,3 +421,68 @@ describe('conceptoGenerico — lo que no pueda ser público no se escribe en un 
     expect(filas[0].contraparte).toBe('Maria Alejandra Torrado');
   });
 });
+
+/*
+  Un mes SIN NINGÚN movimiento. Pasó tres veces en los 22 resúmenes reales de la
+  Fundación (02/2025, 03/2025, 05/2025), y rompía el orden: sin movimientos no hay
+  fecha que leer, y el archivo no trae el período en ninguna parte —el bloque de
+  totales sólo tiene saldos—. Se iban al principio y la cadena reportaba dos
+  huecos que no existían.
+*/
+const CSV_VACIO = [
+  'INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE',
+  '1.200,00;0,00;0,00;1.200,00',
+  '',
+  'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+].join('\n');
+
+describe('consolidarArchivos — un mes sin movimientos', () => {
+  const lote = [
+    { nombre: 'nov.csv', texto: CSV_NOV },
+    { nombre: 'vacio.csv', texto: CSV_VACIO },
+    { nombre: 'oct.csv', texto: CSV_OCT },
+  ];
+
+  it('lo parsea sin errores en vez de tratarlo como archivo roto', () => {
+    const { resumenes, errores } = consolidarArchivos([{ nombre: 'v.csv', texto: CSV_VACIO }]);
+    expect(errores).toEqual([]);
+    expect(resumenes[0].filas).toEqual([]);
+    expect(resumenes[0].declarado.saldoInicial).toBe(1200);
+  });
+
+  it('🔒 lo ubica por SALDO, no al principio por no tener fecha', () => {
+    // El vacío abre y cierra en 1.200, que es donde cierra octubre: va entre los
+    // dos. Ordenando por fecha se iba primero y partía la cadena en dos.
+    const { resumenes } = consolidarArchivos(lote);
+    expect(resumenes.map((r) => r.nombre)).toEqual(['oct.csv', 'vacio.csv', 'nov.csv']);
+  });
+
+  it('🔒 con el vacío en el medio, la cadena CIERRA', () => {
+    const { resumenes } = consolidarArchivos(lote);
+    expect(verificarCadena(resumenes).ok).toBe(true);
+  });
+
+  it('🔒 y un mes que falta de verdad sigue dando hueco: la verificación puede fallar', () => {
+    // Control positivo. Sin esto, "encaja los vacíos" y "acomoda cualquier cosa
+    // hasta que cierre" se ven idénticos desde afuera.
+    const saltado = [
+      'INITIAL_BALANCE;CREDITS;DEBITS;FINAL_BALANCE',
+      '9.999,00;0,00;0,00;9.999,00',
+      '',
+      'RELEASE_DATE;TRANSACTION_TYPE;REFERENCE_ID;TRANSACTION_NET_AMOUNT;PARTIAL_BALANCE',
+      '05-12-2024;Liquidación de dinero;444;0,00;9.999,00',
+    ].join('\n');
+    const { resumenes } = consolidarArchivos([...lote, { nombre: 'dic.csv', texto: saltado }]);
+    expect(verificarCadena(resumenes).ok).toBe(false);
+  });
+
+  it('un vacío que no encaja en ningún lado queda al final, visible', () => {
+    const suelto = CSV_VACIO.replace('1.200,00;0,00;0,00;1.200,00', '7.777,00;0,00;0,00;7.777,00');
+    const { resumenes } = consolidarArchivos([
+      { nombre: 'oct.csv', texto: CSV_OCT },
+      { nombre: 'suelto.csv', texto: suelto },
+    ]);
+    expect(resumenes.at(-1).nombre).toBe('suelto.csv');
+    expect(verificarCadena(resumenes).ok).toBe(false);
+  });
+});

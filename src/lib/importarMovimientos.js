@@ -455,6 +455,52 @@ export const resumirLote = (filas, yaCargadas = new Set()) => {
 /** La fecha del primer movimiento que se entendió. Sirve para ordenar archivos. */
 const primeraFecha = (filas) => filas.find((f) => f.fecha)?.fecha ?? null;
 
+const cercaDe = (a, b) => a != null && b != null && Math.abs(a - b) < 0.01;
+
+/**
+ * Ordena los resúmenes cronológicamente.
+ *
+ * ⚠️ NO ALCANZA CON ORDENAR POR FECHA, Y LO DESCUBRIÓ UN CASO REAL.
+ *
+ * Un mes puede no tener **ningún** movimiento —pasó tres veces en los 22
+ * resúmenes de la Fundación: 02/2025, 03/2025 y 05/2025—. Sin movimientos no hay
+ * fecha que leer, y el archivo **no trae el período en ninguna parte**: el bloque
+ * de totales sólo tiene saldos. Ordenando por fecha, esos tres se iban al
+ * principio y la verificación de cadena reportaba **dos huecos que no existían**.
+ *
+ * La salida es que un mes vacío **abre y cierra con el mismo saldo**, así que se
+ * ubica solo: va donde el mes anterior cerró con ese número. Se encadena por
+ * saldo, que es un dato que el archivo sí trae siempre.
+ *
+ * Si alguno no encaja en ninguna parte, va al final **visible** en vez de
+ * escondido: que la cadena lo marque es la respuesta correcta, no acomodarlo.
+ */
+const ordenarResumenes = (resumenes) => {
+  const conFecha = resumenes
+    .filter((r) => r.desde)
+    .sort((a, b) => a.desde.localeCompare(b.desde) || a.nombre.localeCompare(b.nombre));
+  const sinFecha = resumenes.filter((r) => !r.desde);
+
+  const orden = [];
+  const encajarVacios = (saldo) => {
+    let i = sinFecha.findIndex((v) => cercaDe(v.declarado?.saldoInicial, saldo));
+    while (i >= 0) {
+      orden.push(sinFecha.splice(i, 1)[0]);
+      // El saldo no se mueve: un mes vacío cierra donde abrió, así que dos
+      // vacíos consecutivos encajan uno detrás del otro con el mismo número.
+      i = sinFecha.findIndex((v) => cercaDe(v.declarado?.saldoInicial, saldo));
+    }
+  };
+
+  // Un mes vacío puede estar antes del primero con movimientos.
+  encajarVacios(conFecha[0]?.declarado?.saldoInicial);
+  for (const r of conFecha) {
+    orden.push(r);
+    encajarVacios(r.declarado?.saldoFinal);
+  }
+  return [...orden, ...sinFecha];
+};
+
 /**
  * Junta varios extractos en un solo lote, ordenado cronológicamente.
  *
@@ -480,15 +526,11 @@ const primeraFecha = (filas) => filas.find((f) => f.fecha)?.fecha ?? null;
  * @param {Array<{nombre: string, texto: string}>} archivos
  */
 export const consolidarArchivos = (archivos, opciones = {}) => {
-  const resumenes = archivos.map(({ nombre, texto }) => {
-    const { filas, declarado, errores } = parsearExtracto(texto, opciones);
-    return { nombre, filas, declarado, errores, desde: primeraFecha(filas) };
-  });
-
-  resumenes.sort(
-    (a, b) =>
-      String(a.desde ?? '').localeCompare(String(b.desde ?? '')) ||
-      a.nombre.localeCompare(b.nombre)
+  const resumenes = ordenarResumenes(
+    archivos.map(({ nombre, texto }) => {
+      const { filas, declarado, errores } = parsearExtracto(texto, opciones);
+      return { nombre, filas, declarado, errores, desde: primeraFecha(filas) };
+    })
   );
 
   const vistas = new Map(); // referencia -> archivo donde apareció primero
