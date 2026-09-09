@@ -879,13 +879,17 @@ Tiene que devolver **una fila** con `public = false` y `file_size_limit = 209715
 es exactamente lo que devolvió. Cero filas habría significado que el bloque de storage de
 la migración no corrió; `public = true`, corregirlo antes de que alguien suba una foto.
 
-### ⚠️ Lo único que queda abierto
+### ✅ El e2e también, desde un iPhone (2026-09-09)
 
-**Una subida de punta a punta desde un celular real**, y volver a entrar más tarde para ver
-que la URL firmada se renueva (vence a los 10 minutos y el `staleTime` del hook son 8). Los
-tests cubren la decisión y el recorte; lo que no cubren es la ida y vuelta real al Storage
-—`upload` con `upsert`, las policies con un JWT de verdad, `createSignedUrl`— y eso no lo
-puede probar ni vitest ni el Postgres pelado.
+Subida de punta a punta contra el Storage real: elegir la foto, recortarla, guardarla, y
+**cambiarla una segunda vez**. Ese segundo cambio es el que importa —un `upload` con
+`upsert` sobre un objeto que ya existe es un UPDATE y no un INSERT—, así que con eso queda
+ejercitada la policy `avatares_update` con un JWT de verdad, que es lo único que ni vitest
+ni el Postgres pelado pueden probar. `createSignedUrl` también, porque la foto se ve.
+
+Y en el camino apareció lo que ningún test iba a encontrar: **el modal no tenía salida en
+mobile**. Ver `HISTORIAL.md` §10.23.e.4 — eran dos causas apiladas y la primera pasada
+arregló solo una.
 
 ### Lo que se decidió NO hacer
 
