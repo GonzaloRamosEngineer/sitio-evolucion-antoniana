@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
+import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart, Landmark, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
 import SelectorDestino from '@/components/Collaborate/SelectorDestino';
 import AvisoSesion from '@/components/Collaborate/AvisoSesion';
 import { Link } from 'react-router-dom';
+import { entidad } from '@/config/entidad';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 // ⬇️ usamos el microservicio en Render vía membershipApi
@@ -410,6 +411,92 @@ const Collaborate = () => {
             </div>
           </div>
         </section>
+
+        {/*
+          --- TRANSFERENCIA DIRECTA ---
+
+          ⚠️ POR QUÉ SE OFRECE ADEMÁS DEL LINK, Y QUÉ PIERDE CADA CAMINO.
+
+          Por la pasarela, el donante da $100 y a la cuenta entran ~$94: la
+          comisión se la lleva el intermediario. Por transferencia entra el 100%.
+          Con el volumen de hoy son centavos; el día que entre una donación
+          grande, no.
+
+          Pero una transferencia **no pasa por el webhook**: no crea el aporte
+          sola, no queda atada a la cuenta de quien donó —así que no habilita el
+          club de beneficios— y no trae a qué causa iba. Se registra al importar
+          el extracto, y asignarla es trabajo humano.
+
+          Por eso el texto invita a avisar: es lo único que recupera el destino y
+          la identidad. Y por eso el link sigue primero en la página — para la
+          mayoría de los donantes es mejor camino, aunque cueste la comisión.
+        */}
+        {entidad.pagos?.aliasTransferencia && (
+          <section className="py-8 md:py-12 bg-white mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-5xl mx-auto rounded-2xl border border-gray-200 p-5 md:p-8">
+                <div className="flex items-start gap-3">
+                  <Landmark aria-hidden="true" className="w-6 h-6 shrink-0 text-brand-primary mt-0.5" />
+                  <div className="min-w-0">
+                    <h3 className="text-2xl font-poppins font-bold text-brand-dark">
+                      ¿Preferís transferir?
+                    </h3>
+                    <p className="mt-1 text-gray-600 leading-relaxed">
+                      Es la forma en que más llega: una transferencia no paga comisión de
+                      procesamiento, así que a la Fundación le entra el total de lo que mandás.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl bg-brand-sand p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Alias</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      <code className="text-lg font-bold text-brand-dark break-all">
+                        {entidad.pagos.aliasTransferencia}
+                      </code>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="min-h-[44px]"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(entidad.pagos.aliasTransferencia);
+                          toast({ title: 'Alias copiado' });
+                        }}
+                      >
+                        <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {entidad.pagos.titularCuenta && (
+                    <div className="rounded-xl bg-brand-sand p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Titular</p>
+                      {/* Para que quien transfiere confirme, antes de mandar la plata,
+                          que el alias es de quien dice ser. */}
+                      <p className="mt-1 text-lg font-bold text-brand-dark break-words">
+                        {entidad.pagos.titularCuenta}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-5 text-sm text-gray-600 leading-relaxed">
+                  <strong className="text-brand-dark">Si transferís, avisanos.</strong> Una
+                  transferencia llega sin decirnos a qué causa querías destinarla ni cómo
+                  contactarte, así que escribinos y la imputamos donde vos quieras. Y si
+                  querés acceder a los beneficios, el pago desde el sitio es el camino: queda
+                  asociado a tu cuenta solo.
+                </p>
+
+                <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-3" asChild>
+                  <Link to="/contact">Avisar de una transferencia →</Link>
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* --- MERCADO LIBRE SOLIDARIO / TRUST --- */}
         <section className="py-8 md:py-12 bg-white mb-6">

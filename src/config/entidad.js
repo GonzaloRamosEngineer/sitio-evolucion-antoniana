@@ -107,6 +107,28 @@ export const entidad = {
     // Link de donación puntual de MercadoPago (alias público de la cuenta).
     // null si la entidad todavía no tiene uno: los componentes lo filtran.
     mercadoPagoDonacion: 'https://link.mercadopago.com.ar/evolucionantoniana',
+
+    /*
+      TRANSFERENCIA DIRECTA. `null` si la entidad no quiere publicarla.
+
+      ⚠️ POR QUÉ CONVIENE OFRECER LAS DOS, Y QUÉ PIERDE CADA UNA.
+
+      Por el link, la pasarela cobra comisión: el donante da $100 y a la cuenta
+      entran ~$94. Por transferencia entra el 100%. Con el volumen de hoy son
+      centavos; el día que entre una donación grande, no.
+
+      Pero no es gratis en el otro sentido: una transferencia **no pasa por el
+      webhook**, así que no crea el aporte sola, no queda atada a la cuenta de
+      quien donó —no habilita el club de beneficios— y no trae a qué causa iba.
+      Se registra al importar el extracto, y asignarla es trabajo humano.
+
+      Por eso el texto público invita a avisar por contacto: es lo único que
+      recupera el destino y la identidad.
+    */
+    aliasTransferencia: 'evolucionantoniana',
+    // Titular de la cuenta, para que quien transfiere pueda confirmar que el
+    // alias es de quien dice ser antes de mandar la plata.
+    titularCuenta: 'Fundación Evolución Antoniana',
   },
 
   // --- Redes -----------------------------------------------------------------
