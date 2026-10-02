@@ -126,9 +126,31 @@ export const entidad = {
       recupera el destino y la identidad.
     */
     aliasTransferencia: 'evolucionantoniana',
-    // Titular de la cuenta, para que quien transfiere pueda confirmar que el
-    // alias es de quien dice ser antes de mandar la plata.
-    titularCuenta: 'Fundación Evolución Antoniana',
+    // El CVU completo, por si el banco de quien transfiere no acepta alias.
+    cvu: '0000003100041254169815',
+    /*
+      ⚠️ EL TITULAR VA **COMO LO MUESTRA EL BANCO**, no como se escribe de cara
+      al público.
+
+      Cuando alguien pega el alias, su app bancaria le muestra el titular
+      registrado —sin tildes y en mayúsculas— y le pide confirmar. Si el sitio
+      dijera «Fundación Evolución Antoniana» y el banco «FUNDACION EVOLUCION
+      ANTONIANA», la diferencia es inofensiva pero siembra la duda justo en el
+      segundo en que la persona está por mandar plata. Que coincida carácter por
+      carácter es lo que convierte ese paso en una confirmación.
+    */
+    titularCuenta: 'FUNDACION EVOLUCION ANTONIANA',
+    /*
+      CUIT. Es dato PÚBLICO por definición —figura en la constancia de
+      inscripción de AFIP, en cada factura y en el estatuto—, así que publicarlo
+      no expone nada y agrega lo único que acá importa: que cualquiera pueda
+      verificar por su cuenta que la entidad existe y es la que dice ser.
+
+      Es, además, la defensa contra la estafa más común con alias publicados:
+      alguien difunde un alias propio a nombre de una entidad. Con CUIT y titular
+      a la vista, el engaño se cae en treinta segundos.
+    */
+    cuit: '30-71758392-9',
   },
 
   // --- Redes -----------------------------------------------------------------

@@ -448,39 +448,55 @@ const Collaborate = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-xl bg-brand-sand p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Alias</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-3">
-                      <code className="text-lg font-bold text-brand-dark break-all">
-                        {entidad.pagos.aliasTransferencia}
-                      </code>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="min-h-[44px]"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(entidad.pagos.aliasTransferencia);
-                          toast({ title: 'Alias copiado' });
-                        }}
-                      >
-                        <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
-                      </Button>
+                {/* Los dos primeros llevan botón de copiar y los otros dos no, y
+                    la diferencia es práctica: un alias y sobre todo un CVU de 22
+                    dígitos se tipean mal; un nombre y un CUIT se leen para
+                    confirmar, no para pegar. */}
+                <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {[
+                    ['Alias', entidad.pagos.aliasTransferencia, true],
+                    ['CVU', entidad.pagos.cvu, true],
+                    ['Titular', entidad.pagos.titularCuenta, false],
+                    ['CUIT', entidad.pagos.cuit, false],
+                  ].filter(([, valor]) => Boolean(valor)).map(([label, valor, copiable]) => (
+                    <div key={label} className="rounded-xl bg-brand-sand p-4">
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        {label}
+                      </dt>
+                      <dd className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <span className="text-base sm:text-lg font-bold text-brand-dark break-all tabular-nums">
+                          {valor}
+                        </span>
+                        {copiable && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[44px]"
+                            onClick={() => {
+                              navigator.clipboard?.writeText(valor);
+                              toast({ title: `${label} copiado` });
+                            }}
+                          >
+                            <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
+                          </Button>
+                        )}
+                      </dd>
                     </div>
-                  </div>
+                  ))}
+                </dl>
 
-                  {entidad.pagos.titularCuenta && (
-                    <div className="rounded-xl bg-brand-sand p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Titular</p>
-                      {/* Para que quien transfiere confirme, antes de mandar la plata,
-                          que el alias es de quien dice ser. */}
-                      <p className="mt-1 text-lg font-bold text-brand-dark break-words">
-                        {entidad.pagos.titularCuenta}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* ⚠️ EL PÁRRAFO QUE CONVIERTE ESTOS DATOS EN UNA DEFENSA.
+                    La estafa más común con un alias publicado es que alguien
+                    difunda el suyo a nombre de una entidad. Publicar titular y
+                    CUIT no sirve de nada si nadie sabe que tiene que mirarlos:
+                    decirlo en una línea es lo que vuelve verificable al resto. */}
+                <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                  <strong className="text-brand-dark">Verificá antes de enviar.</strong> Al pegar
+                  el alias, tu banco te va a mostrar el titular: tiene que decir exactamente{' '}
+                  <strong className="text-brand-dark">{entidad.pagos.titularCuenta}</strong>. Si
+                  dice otra cosa, no transfieras y avisanos.
+                </p>
 
                 <p className="mt-5 text-sm text-gray-600 leading-relaxed">
                   <strong className="text-brand-dark">Si transferís, avisanos.</strong> Una
