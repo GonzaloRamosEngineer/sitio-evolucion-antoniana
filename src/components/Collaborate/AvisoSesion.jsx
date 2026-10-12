@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserCheck, IdCard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { esEmailPlausible } from '@/lib/aportante';
@@ -54,7 +53,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
 
   if (user) {
     return (
-      <div className="mb-5 rounded-xl border border-brand-primary/25 bg-white px-5 py-4">
+      <div className="rounded-xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
         <div className="flex items-start gap-3">
           <UserCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-primary" />
           <div className="flex-1">
@@ -76,7 +75,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
               <button
                 type="button"
                 onClick={() => setOtroEmail(true)}
-                className="mt-2 min-h-[44px] text-sm font-semibold text-brand-primary underline underline-offset-4"
+              className="mt-1 min-h-[44px] text-sm font-semibold text-brand-primary underline underline-offset-4"
               >
                 Pagar con otro email
               </button>
@@ -124,60 +123,38 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
   }
 
   return (
-    <div className="mb-5 rounded-xl border border-brand-gold/50 bg-brand-gold/10 px-5 py-4 sm:px-6">
-      <div className="flex items-start gap-3">
-        <IdCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-dark" />
-        <div className="flex-1">
-          <h3 className="font-poppins text-base font-bold leading-tight text-brand-dark">
-            ¿Tenés cuenta? Iniciá sesión antes de aportar
-          </h3>
-          <p className="mt-2 max-w-[46rem] text-sm leading-relaxed text-brand-dark/70">
-            Tu aporte queda a tu nombre y suma para acceder a los beneficios del club.
-            También podés aportar sin cuenta.
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {/* `state.from` es el mecanismo que LoginPage ya usa para volver a
-                donde estabas. Sin esto, iniciar sesión te deja en el panel que
-                corresponda a tu rol y perdés el aporte que ibas a hacer. */}
-            <Link to="/login" state={{ from: { pathname: '/collaborate' } }}>
-              <Button variant="action" size="sm">Iniciar sesión</Button>
-            </Link>
-            <Link
-              to="/register"
-              className="text-sm font-bold text-brand-primary underline underline-offset-4"
-            >
-              Crear una cuenta
-            </Link>
-          </div>
-
-          <div className="mt-4 border-t border-brand-dark/10 pt-5">
-            <Label htmlFor="email-aportante" className="font-semibold text-brand-dark">
-              ¿Preferís aportar sin cuenta? Dejanos tu email
-            </Label>
-            <p className="mt-1 text-sm leading-relaxed text-brand-dark/60">
-              Es opcional. Te permite vincular el aporte cuando crees una cuenta con ese email.
-            </p>
-            <Input
-              id="email-aportante"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={(e) => onEmailChange(e.target.value)}
-              className="mt-2 h-11 text-base max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
-            />
-            {/* Avisa, no bloquea: el botón de donar sigue habilitado y el aporte
-                entra igual, solo que sin este dato. */}
-            {emailEscrito && !emailSirve && (
-              <p className="mt-2 text-sm text-red-600">
-                Eso no parece un email. Revisalo, o dejalo vacío y aportá igual.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+      <Label htmlFor="email-aportante" className="font-semibold text-brand-dark">
+        Tu email (opcional)
+      </Label>
+      <p className="mt-1 text-sm leading-relaxed text-gray-600">
+        Nos ayuda a identificar tu aporte y vincularlo a tu cuenta si la creás después.
+      </p>
+      <Input
+        id="email-aportante"
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        placeholder="tu@email.com"
+        value={email}
+        onChange={(e) => onEmailChange(e.target.value)}
+        className="mt-2 h-11 text-base max-w-md rounded-xl border-gray-200 bg-white text-brand-dark focus:border-brand-primary focus:ring-brand-primary"
+      />
+      {emailEscrito && !emailSirve && (
+        <p className="mt-2 text-sm text-red-600">
+          Eso no parece un email. Revisalo, o dejalo vacío y aportá igual.
+        </p>
+      )}
+      <p className="mt-3 text-sm text-gray-600">
+        ¿Ya tenés cuenta?{' '}
+        <Link to="/login" state={{ from: { pathname: '/collaborate' } }} className="font-semibold text-brand-primary underline underline-offset-4">
+          Iniciá sesión
+        </Link>
+        {' · '}
+        <Link to="/register" className="font-semibold text-brand-primary underline underline-offset-4">
+          Crear una cuenta
+        </Link>
+      </p>
     </div>
   );
 };

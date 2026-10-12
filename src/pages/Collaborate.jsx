@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, CheckCircle2, ShieldCheck, Heart, Landmark, Copy } from 'lucide-react';
+import { Gift, HeartHandshake as HandshakeIcon, Building, Loader2, ShieldCheck, CheckCircle2, Heart, Landmark, Copy, ChevronDown, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ContactModal from '@/components/Collaborate/ContactModal';
 import SelectorDestino from '@/components/Collaborate/SelectorDestino';
@@ -23,8 +22,27 @@ import { useDestinosActivos } from '@/hooks/useContentQueries';
 import { destinoEfectivo } from '@/api/destinosApi';
 import { emailParaCheckout } from '@/lib/aportante';
 
+const copiarDato = async (valor) => {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(valor);
+    return;
+  }
+
+  // La vista local por IP usa HTTP y algunos navegadores no exponen Clipboard API.
+  const campo = document.createElement('textarea');
+  campo.value = valor;
+  campo.setAttribute('readonly', '');
+  campo.style.position = 'fixed';
+  campo.style.opacity = '0';
+  document.body.appendChild(campo);
+  campo.select();
+  const copiado = document.execCommand('copy');
+  campo.remove();
+  if (!copiado) throw new Error('No se pudo copiar el dato');
+};
+
 const Collaborate = () => {
-  const [selectedOption, setSelectedOption] = useState('donation');
+  const [selectedOption, setSelectedOption] = useState('subscription');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contactModalCollaborationType, setContactModalCollaborationType] = useState('');
   const { user } = useAuth();
@@ -73,8 +91,8 @@ const Collaborate = () => {
   // Derivado, no sincronizado: la lista llega asincrónica y puede cambiar, así
   // que el id se resuelve en cada render contra la lista vigente. Ver
   // `destinoEfectivo` en destinosApi.
-  const destinoDonacionId = destinoEfectivo(destinoDonacionElegido, destinosPuntuales);
-  const destinoSuscripcionId = destinoEfectivo(destinoSuscripcionElegido, destinosRecurrentes);
+  const destinoDonacionId = destinoEfectivo(destinoDonacionElegido, destinosPuntuales, 'sostenimiento-institucional');
+  const destinoSuscripcionId = destinoEfectivo(destinoSuscripcionElegido, destinosRecurrentes, 'sostenimiento-institucional');
 
   const destinoDonacion = destinosPuntuales.find((d) => d.id === destinoDonacionId) ?? null;
   const destinoSuscripcion = destinosRecurrentes.find((d) => d.id === destinoSuscripcionId) ?? null;
@@ -165,29 +183,7 @@ const Collaborate = () => {
       id: 'donation',
       icon: Gift,
       iconBg: 'bg-red-100 text-brand-action',
-      title: 'Donación Única',
-      subtitle: 'Campaña: Experiencias educativas',
-      description: (
-  <>
-    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-      Tu donación hace posible experiencias que amplían la formación de los chicos, dentro y fuera de la cancha.
-    </p>
-    <details className="mb-3"><summary className="cursor-pointer text-sm font-semibold text-brand-primary py-2">Cómo ayuda tu donación</summary><ul className="space-y-2 mt-2">
-      <li className="flex items-start text-sm text-gray-600">
-        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Instancias de evaluación y orientación para el desarrollo personal y deportivo
-      </li>
-      <li className="flex items-start text-sm text-gray-600">
-        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Talleres que fortalecen la motivación, el compromiso y los hábitos diarios
-      </li>
-      <li className="flex items-start text-sm text-gray-600">
-        <CheckCircle2 className="w-4 h-4 text-brand-gold mr-2 mt-0.5 flex-shrink-0" />
-        Encuentros con referentes que inspiran y amplían la mirada de los chicos
-      </li>
-    </ul></details>
-  </>
-),
+      title: 'Aporte por única vez',
 
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
@@ -199,7 +195,7 @@ const Collaborate = () => {
           />
 
           <div>
-            <Label htmlFor="donation-amount" className="text-brand-dark font-semibold">Monto a donar (ARS)</Label>
+            <Label htmlFor="donation-amount" className="text-brand-dark font-semibold">Elegí cuánto aportar (ARS)</Label>
             <div className="grid grid-cols-3 gap-2 my-3">
               {['5000', '10000', '25000'].map(amount => <button key={amount} type="button" aria-pressed={donationAmount === amount} onClick={() => setDonationAmount(amount)} className={`min-h-[44px] rounded-lg border text-sm font-semibold ${donationAmount === amount ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-200 text-brand-dark bg-white'}`}>${Number(amount).toLocaleString('es-AR')}</button>)}
             </div><div className="relative mt-1">
@@ -217,6 +213,8 @@ const Collaborate = () => {
             </div>
           </div>
 
+          <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />
+
           <Button
             onClick={handleOneTimeDonation}
             size="lg"
@@ -225,7 +223,7 @@ const Collaborate = () => {
             className="w-full h-12 rounded-xl"
           >
             {isProcessingDonation ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Heart className="mr-2 h-5 w-5" />}
-            Donar ahora
+            Aportar una vez
           </Button>
         </div>
       )
@@ -234,10 +232,7 @@ const Collaborate = () => {
       id: 'subscription',
       icon: HandshakeIcon,
       iconBg: 'bg-blue-100 text-brand-primary',
-      title: 'Suscripción Mensual',
-      subtitle: 'Programa de Beca de acompañamiento deportivo',
-      description:
-  'Las becas permiten acompañar trayectorias deportivas, reducir barreras económicas y generar condiciones para que más chicos puedan sostener su formación en el tiempo.',
+      title: 'Sumate cada mes',
       content: (
         <div className="space-y-4 mt-auto" data-theme="light">
           <SelectorDestino
@@ -249,28 +244,23 @@ const Collaborate = () => {
           />
 
           <div>
-            <Label htmlFor="subscription-plan" className="text-brand-dark font-semibold">Tu aporte mensual</Label>
-            <Select value={subscriptionAmount} onValueChange={setSubscriptionAmount}>
-              <SelectTrigger
+            <Label htmlFor="subscription-plan" className="text-brand-dark font-semibold">Elegí cuánto aportar por mes</Label>
+            <div className="relative mt-1">
+              <select
                 id="subscription-plan"
-                className="w-full bg-gray-50 border-gray-200 text-brand-dark focus:ring-brand-primary focus:border-brand-primary rounded-xl h-12 text-lg"
+                value={subscriptionAmount}
+                onChange={(event) => setSubscriptionAmount(event.target.value)}
+                className="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 pl-3 pr-10 text-lg text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
               >
-                <SelectValue placeholder="Elige un plan" />
-              </SelectTrigger>
-
-              <SelectContent className="bg-white border-gray-100">
-                {subscriptionPlans.map(plan => (
-                  <SelectItem
-                    key={plan.value}
-                    value={plan.value}
-                    className="hover:bg-gray-50 cursor-pointer py-3"
-                  >
-                    {plan.label}
-                  </SelectItem>
+                {subscriptionPlans.map((plan) => (
+                  <option key={plan.value} value={plan.value}>{plan.label}</option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+              <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            </div>
           </div>
+
+          <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />
 
           <Button
             onClick={handleSubscription}
@@ -279,7 +269,7 @@ const Collaborate = () => {
             className="w-full font-bold h-12 text-white bg-brand-primary hover:bg-brand-dark shadow-md hover:shadow-lg transition-all rounded-xl"
           >
             {isProcessingSubscription ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <HandshakeIcon className="mr-2 h-5 w-5" />}
-            Suscribirme
+            Aportar ${Number(subscriptionAmount).toLocaleString('es-AR')} por mes
           </Button>
         </div>
       )
@@ -339,38 +329,38 @@ const Collaborate = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16"
+            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 lg:py-16"
           >
-            <div className="mb-6">
+            <div className="mb-3 sm:mb-6">
               <Eyebrow light>Colaboración</Eyebrow>
             </div>
-            <h1 className="font-poppins font-bold text-3xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
-              Sumá tu ayuda, multiplicá oportunidades
+            <h1 className="font-poppins font-bold text-3xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-3 sm:mb-6">
+              Sostené la Fundación cada mes
             </h1>
             <p className="max-w-[36rem] text-base sm:text-lg leading-relaxed text-white/75">
-              Ayudá a crear experiencias educativas y becas deportivas. Elegí un aporte único o mensual.
+              Tu aporte hace posible que sigamos creando oportunidades. Elegí cuánto aportar; también podés colaborar una sola vez.
             </p>
           </motion.div>
         </section>
 
         {/* --- OPCIONES DE COLABORACIÓN --- */}
-        <section className="py-8 md:py-12 px-4">
+        <section className="py-6 md:py-12 px-4">
           <div className="mx-auto max-w-3xl">
-            <div className="mb-6">
-              <div className="mb-4">
+            <div className="mb-4">
+              <div className="mb-2 sm:mb-4">
                 <Eyebrow>Formas de colaborar</Eyebrow>
               </div>
-              <h2 className="font-poppins font-bold text-3xl tracking-tight text-brand-dark">
+              <h2 className="font-poppins font-bold text-2xl sm:text-3xl tracking-tight text-brand-dark">
                 Elegí cómo sumarte
               </h2>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-5" role="group" aria-label="Forma de colaborar">
-              {collaborationOptions.map(option => (
+              {['subscription', 'donation', 'volunteer'].map((id) => collaborationOptions.find((option) => option.id === id)).map(option => (
                 <button key={option.id} type="button" aria-pressed={selectedOption === option.id}
                   onClick={() => setSelectedOption(option.id)}
                   className={`min-h-[72px] rounded-xl border px-2 py-3 text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-colors ${selectedOption === option.id ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-dark border-gray-200 hover:bg-gray-50'}`}>
                   <option.icon className="h-5 w-5" aria-hidden="true" />
-                  {option.id === 'donation' ? 'Una vez' : option.id === 'subscription' ? 'Cada mes' : 'Voluntariado'}
+                  {option.id === 'subscription' ? 'Cada mes' : option.id === 'donation' ? 'Una vez' : 'Voluntariado'}
                 </button>
               ))}
             </div>
@@ -384,26 +374,33 @@ const Collaborate = () => {
                   transition={{ duration: 0.5, delay: index * 0.15 }}
                   className="h-full"
                 >
-                  <Card className="h-full w-full flex flex-col bg-white rounded-3xl border border-transparent hover:border-brand-primary/10 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group">
-                    <CardHeader className="p-5 sm:p-8 pb-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${option.iconBg} transition-transform group-hover:scale-110 duration-300`}>
-                        <option.icon className="w-8 h-8" />
+              <Card className="h-full w-full flex flex-col bg-white rounded-3xl border border-transparent shadow-lg overflow-hidden">
+                    <CardHeader className="p-5 sm:p-8 pb-2">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${option.iconBg}`}>
+                        <option.icon className="w-6 h-6" />
                       </div>
                       <CardTitle className="text-2xl font-poppins font-bold text-brand-dark">
                         {option.title}
                       </CardTitle>
-                      <p className="text-sm font-bold text-gray-600 uppercase tracking-wide mt-1">
-                          {option.subtitle}
-                      </p>
+                      {option.subtitle && <p className="text-sm font-bold text-gray-600 uppercase tracking-wide mt-1">{option.subtitle}</p>}
                     </CardHeader>
 
                     <CardContent className="p-5 sm:p-8 pt-2 flex-grow flex flex-col">
-                      <div className="text-gray-600 mb-5 leading-relaxed">
-                        {option.description}
-                      </div>
-                      {option.id !== 'volunteer' && <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />}
+                      {option.description && <div className="text-gray-600 mb-4 leading-relaxed">{option.description}</div>}
                       {option.content}
-                      {option.id !== 'volunteer' && <p className="mt-3 text-center text-sm text-gray-600 flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" />Pago seguro en Mercado Pago{option.id === 'subscription' ? ' · Cobro mensual' : ' · Por única vez'}</p>}
+                      {option.id !== 'volunteer' && (
+                        <div className="mt-4 space-y-2 text-sm leading-relaxed text-gray-600">
+                          <p className="flex items-start gap-2">
+                            <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+                            <span>Pago seguro en Mercado Pago · {option.id === 'subscription' ? 'Cobro automático mensual' : 'Por única vez'}</span>
+                          </p>
+                          {option.id === 'subscription' && (
+                            <p className="pl-6">
+                              Podés pausar o cancelar desde <Link to="/dashboard" className="font-semibold text-brand-primary underline underline-offset-2">Mi panel</Link> si aportás con tu cuenta. Si aportás sin cuenta, <Link to="/contact" className="font-semibold text-brand-primary underline underline-offset-2">escribinos</Link> para gestionarlo.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -432,21 +429,19 @@ const Collaborate = () => {
           mayoría de los donantes es mejor camino, aunque cueste la comisión.
         */}
         {entidad.pagos?.aliasTransferencia && (
-          <section className="py-8 md:py-12 bg-white mb-6">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="max-w-5xl mx-auto rounded-2xl border border-gray-200 p-5 md:p-8">
-                <div className="flex items-start gap-3">
-                  <Landmark aria-hidden="true" className="w-6 h-6 shrink-0 text-brand-primary mt-0.5" />
-                  <div className="min-w-0">
-                    <h3 className="text-2xl font-poppins font-bold text-brand-dark">
-                      ¿Preferís transferir?
-                    </h3>
-                    <p className="mt-1 text-gray-600 leading-relaxed">
-                      Es la forma en que más llega: una transferencia no paga comisión de
-                      procesamiento, así que a la Fundación le entra el total de lo que mandás.
-                    </p>
-                  </div>
-                </div>
+          <section className="px-4 pb-8 md:pb-12" aria-labelledby="transferencia-titulo">
+            <details className="group mx-auto max-w-3xl rounded-3xl border border-gray-200 bg-white shadow-sm open:border-brand-primary/25">
+              <summary className="flex min-h-[88px] cursor-pointer list-none items-center gap-3 p-5 marker:content-none [&::-webkit-details-marker]:hidden sm:p-7">
+                <Landmark aria-hidden="true" className="h-6 w-6 shrink-0 text-brand-primary" />
+                <span className="min-w-0 flex-1">
+                  <span id="transferencia-titulo" role="heading" aria-level="3" className="block font-poppins text-xl font-bold text-brand-dark sm:text-2xl">
+                    ¿Preferís transferir?
+                  </span>
+                  <span className="mt-1 block text-sm text-gray-600">Ver datos para transferir sin comisión de procesamiento</span>
+                </span>
+                <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-primary transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="border-t border-gray-100 px-5 pb-5 sm:px-7 sm:pb-7">
 
                 {/* Los dos primeros llevan botón de copiar y los otros dos no, y
                     la diferencia es práctica: un alias y sobre todo un CVU de 22
@@ -459,12 +454,12 @@ const Collaborate = () => {
                     ['Titular', entidad.pagos.titularCuenta, false],
                     ['CUIT', entidad.pagos.cuit, false],
                   ].filter(([, valor]) => Boolean(valor)).map(([label, valor, copiable]) => (
-                    <div key={label} className="rounded-xl bg-brand-sand p-4">
+                    <div key={label} className={`rounded-xl p-4 ${copiable ? 'border border-brand-primary/15 bg-brand-primary/5' : 'bg-brand-sand'}`}>
                       <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                         {label}
                       </dt>
                       <dd className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <span className="text-base sm:text-lg font-bold text-brand-dark break-all tabular-nums">
+                        <span className={`font-bold text-brand-dark break-all tabular-nums ${copiable ? 'text-base sm:text-lg' : 'text-sm sm:text-base'}`}>
                           {valor}
                         </span>
                         {copiable && (
@@ -473,9 +468,13 @@ const Collaborate = () => {
                             size="sm"
                             variant="outline"
                             className="min-h-[44px]"
-                            onClick={() => {
-                              navigator.clipboard?.writeText(valor);
-                              toast({ title: `${label} copiado` });
+                            onClick={async () => {
+                              try {
+                                await copiarDato(valor);
+                                toast({ title: `${label} copiado` });
+                              } catch {
+                                toast({ title: 'No se pudo copiar', description: 'Seleccioná el dato y copialo manualmente.', variant: 'destructive' });
+                              }
                             }}
                           >
                             <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
@@ -491,76 +490,67 @@ const Collaborate = () => {
                     difunda el suyo a nombre de una entidad. Publicar titular y
                     CUIT no sirve de nada si nadie sabe que tiene que mirarlos:
                     decirlo en una línea es lo que vuelve verificable al resto. */}
-                <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                <p className="mt-5 rounded-xl border border-brand-gold/30 bg-brand-gold/10 p-4 text-sm text-gray-700 leading-relaxed">
                   <strong className="text-brand-dark">Verificá antes de enviar.</strong> Al pegar
                   el alias, tu banco te va a mostrar el titular: tiene que decir exactamente{' '}
                   <strong className="text-brand-dark">{entidad.pagos.titularCuenta}</strong>. Si
                   dice otra cosa, no transfieras y avisanos.
                 </p>
 
-                <p className="mt-5 text-sm text-gray-600 leading-relaxed">
-                  <strong className="text-brand-dark">Si transferís, avisanos.</strong> Una
-                  transferencia llega sin decirnos a qué causa querías destinarla ni cómo
-                  contactarte, así que escribinos y la imputamos donde vos quieras. Y si
-                  querés acceder a los beneficios, el pago desde el sitio es el camino: queda
-                  asociado a tu cuenta solo.
+                <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                  <strong className="text-brand-dark">Después de transferir, avisanos.</strong> Decinos el monto y a qué destino querés asignarlo para poder identificar tu aporte. Las transferencias se registran manualmente; si buscás que el pago quede asociado a tu cuenta y a los beneficios, aportá desde el sitio.
                 </p>
 
-                <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-3" asChild>
+                <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-2" asChild>
                   <Link to="/contact">Avisar de una transferencia →</Link>
                 </Button>
               </div>
-            </div>
+            </details>
           </section>
         )}
 
-        {/* --- MERCADO LIBRE SOLIDARIO / TRUST --- */}
-        <section className="py-8 md:py-12 bg-white mb-6">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto bg-brand-sand rounded-2xl p-5 md:p-8 flex flex-col md:flex-row items-center gap-6 border border-gray-100">
-                
-                <div className="md:w-1/2 text-center md:text-left">
-                    <div className="inline-flex items-center gap-2 mb-4">
-                         <ShieldCheck className="w-6 h-6 text-green-600" />
-                         <span className="font-bold text-green-700 uppercase tracking-wide text-sm">Transparencia Garantizada</span>
-                    </div>
-                    <h3 className="text-3xl font-poppins font-bold text-brand-dark mb-4">
-                        Tu ayuda, en buenas manos.
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed mb-6">
-                        Todas las donaciones se procesan de forma segura a través de <strong className="text-brand-primary">Mercado Pago</strong>, con el respaldo oficial del programa <strong>Mercado Libre Solidario</strong>, del cual la Fundación Evolución Antoniana forma parte.
-                    </p>
-                    <ul className="space-y-2 mb-6 text-left inline-block">
-                        <li className="flex items-center text-sm text-gray-700">
-                            <CheckCircle2 className="w-4 h-4 text-brand-primary mr-2" />
-                            Recibís comprobante oficial.
-                        </li>
-                        <li className="flex items-center text-sm text-gray-700">
-                            <CheckCircle2 className="w-4 h-4 text-brand-primary mr-2" />
-                            Reportes de impacto trimestrales.
-                        </li>
-                    </ul>
-                    {/* Antes apuntaba a /contact, que no mostraba ninguna gestión
-                        financiera. Ahora hay una rendición de verdad para enlazar. */}
-                    <Button variant="link" className="text-brand-action font-bold p-0 h-auto hover:text-brand-dark" asChild>
-                        <Link to="/rendicion">Mirá en qué se usó cada aporte →</Link>
-                    </Button>
-                </div>
-
-                <div className="md:w-1/2 flex justify-center">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                         <img
-                            className="w-full max-w-[250px] object-contain"
-                            alt="Logo de Mercado Pago Solidario"
-                            src="/img/mercadolibre_solidario.webp"
-                            width="1200"
-                            height="800"
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    </div>
-                </div>
-
+        <section className="bg-white px-4 py-10 md:py-16" aria-labelledby="transparencia-titulo">
+          <div className="mx-auto grid max-w-5xl items-center gap-8 rounded-3xl border border-gray-100 bg-brand-sand px-5 py-8 shadow-sm sm:px-10 sm:py-10 lg:grid-cols-2 lg:gap-12 lg:px-12 lg:py-12">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-green-800">
+                <ShieldCheck aria-hidden="true" className="h-5 w-5" />
+                Aporte seguro y transparente
+              </div>
+              <h3 id="transparencia-titulo" className="mx-auto mt-5 max-w-md font-poppins text-[28px] font-bold leading-tight text-brand-dark sm:text-3xl lg:mx-0">
+                Tu ayuda, en buenas manos.
+              </h3>
+              <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-gray-600 lg:mx-0">
+                Los aportes desde este sitio se procesan con <strong className="text-brand-dark">Mercado Pago</strong>. La Fundación forma parte de <strong className="text-brand-dark">Mercado Libre Solidario</strong> y podés consultar cómo se usan los fondos.
+              </p>
+              <ul className="mx-auto mt-6 inline-grid gap-3 text-left text-sm text-gray-700 lg:mx-0">
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                  Pago seguro a través de Mercado Pago.
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                  Rendición de cuentas disponible para consultar.
+                </li>
+              </ul>
+              <div className="mt-6">
+                <Link to="/rendicion" className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-brand-action underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-action">
+                  Mirá la rendición de cuentas
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="rounded-[26px] border border-gray-100 bg-white p-4 shadow-[0_12px_35px_-22px_rgba(15,41,74,0.35)] sm:p-6">
+              <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-[#f7f7f7]">
+                <img
+                  className="absolute left-0 top-1/2 h-auto w-full -translate-y-1/2"
+                  alt="Mercado Libre Solidario"
+                  src="/img/mercadolibre_solidario.webp"
+                  width="1200"
+                  height="800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             </div>
           </div>
         </section>

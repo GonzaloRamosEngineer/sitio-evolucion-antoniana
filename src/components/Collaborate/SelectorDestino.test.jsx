@@ -5,7 +5,7 @@
 // desplegable inútil, y que el progreso salga de los contadores del destino.
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import SelectorDestino from './SelectorDestino';
 
 const destino = (extra = {}) => ({
@@ -39,15 +39,18 @@ describe('SelectorDestino', () => {
   });
 
   it('con VARIOS destinos ofrece elegir', () => {
+    const onChange = vi.fn();
     render(
       <SelectorDestino
         id="x"
         destinos={[destino(), destino({ id: 'd2', nombre: 'Pelotas y conos' })]}
         value="d1"
-        onChange={vi.fn()}
+        onChange={onChange}
       />
     );
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'd2' } });
+    expect(onChange).toHaveBeenCalledWith('d2');
   });
 
   it('muestra el avance cuando el destino tiene meta', () => {

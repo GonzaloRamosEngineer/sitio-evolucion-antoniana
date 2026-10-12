@@ -21,18 +21,18 @@ const props = (extra = {}) => ({
 });
 
 describe('AvisoSesion — sin sesión', () => {
-  it('explica para qué sirve iniciar sesión y ofrece las dos puertas', () => {
+  it('explica para qué sirve el email y ofrece las dos puertas', () => {
     enRouter(<AvisoSesion {...props()} />);
 
-    expect(screen.getByText(/Iniciá sesión antes de aportar/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Iniciar sesión/i })).toBeInTheDocument();
+    expect(screen.getByText(/identificar tu aporte/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Iniciá sesión/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Crear una cuenta/i })).toBeInTheDocument();
   });
 
   it('el link apunta a /login', () => {
     enRouter(<AvisoSesion {...props()} />);
     // El <Link> envuelve al botón; se busca el ancla más cercana.
-    const enlace = screen.getByRole('button', { name: /Iniciar sesión/i }).closest('a');
+    const enlace = screen.getByRole('link', { name: /Iniciá sesión/i });
     expect(enlace).toHaveAttribute('href', '/login');
   });
 
@@ -56,7 +56,7 @@ describe('AvisoSesion — sin sesión', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Iniciar sesión/i }));
+    fireEvent.click(screen.getByRole('link', { name: /Iniciá sesión/i }));
 
     expect(JSON.parse(screen.getByTestId('state').textContent)).toEqual({
       from: { pathname: '/collaborate' },
@@ -66,8 +66,7 @@ describe('AvisoSesion — sin sesión', () => {
   it('ofrece el email como opcional, con el porqué', () => {
     enRouter(<AvisoSesion {...props()} />);
 
-    expect(screen.getByLabelText(/Dejanos tu email/i)).toBeInTheDocument();
-    expect(screen.getByText(/Es opcional/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tu email \(opcional\)/i)).toBeInTheDocument();
   });
 
   it('avisa si el email está mal escrito, pero NO impide nada', () => {
@@ -75,7 +74,7 @@ describe('AvisoSesion — sin sesión', () => {
 
     expect(screen.getByText(/no parece un email/i)).toBeInTheDocument();
     // Lo que importa: el aviso no deshabilita nada ni pretende frenar el aporte.
-    expect(screen.getByLabelText(/Dejanos tu email/i)).not.toBeDisabled();
+    expect(screen.getByLabelText(/Tu email \(opcional\)/i)).not.toBeDisabled();
     expect(screen.queryAllByRole('button').every((b) => !b.disabled)).toBe(true);
   });
 
@@ -93,7 +92,7 @@ describe('AvisoSesion — sin sesión', () => {
     const onEmailChange = vi.fn();
     enRouter(<AvisoSesion {...props({ onEmailChange })} />);
 
-    fireEvent.change(screen.getByLabelText(/Dejanos tu email/i), {
+    fireEvent.change(screen.getByLabelText(/Tu email \(opcional\)/i), {
       target: { value: 'nuevo@mail.com' },
     });
     expect(onEmailChange).toHaveBeenCalledWith('nuevo@mail.com');

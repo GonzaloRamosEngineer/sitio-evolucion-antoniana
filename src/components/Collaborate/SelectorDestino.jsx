@@ -22,10 +22,8 @@
 //     y el monto de cada persona, y después de la fuga de las vistas
 //     (20260816120000) la regla es que no se expone ni siquiera agregada.
 import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
 
@@ -49,31 +47,24 @@ const SelectorDestino = ({ id, destinos = [], value, onChange, label = 'Tu aport
       ) : (
         <>
           <Label htmlFor={id} className="text-brand-dark font-semibold">{label}</Label>
-          <Select value={value ?? ''} onValueChange={onChange}>
-            <SelectTrigger
+          <div className="relative mt-1">
+            <select
               id={id}
-              className="mt-1 w-full bg-gray-50 border-gray-200 text-brand-dark focus:ring-brand-primary focus:border-brand-primary rounded-xl h-12"
+              value={value ?? ''}
+              onChange={(event) => onChange(event.target.value)}
+              className="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 pl-3 pr-10 text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
             >
-              <SelectValue placeholder="Elegí un destino" />
-            </SelectTrigger>
-
-            <SelectContent className="bg-white border-gray-100">
               {destinos.map((d) => (
-                <SelectItem
-                  key={d.id}
-                  value={d.id}
-                  className="hover:bg-gray-50 cursor-pointer py-3"
-                >
-                  {d.nombre}
-                </SelectItem>
+                <option key={d.id} value={d.id}>{d.nombre}</option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+            <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          </div>
         </>
       )}
 
       {elegido?.descripcion && (
-        <p className="mt-2 text-xs text-gray-500 leading-relaxed">{elegido.descripcion}</p>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">{elegido.descripcion}</p>
       )}
 
       {avance !== null && (

@@ -257,8 +257,8 @@ const Home = () => {
                   className="bg-white text-brand-dark font-semibold hover:bg-brand-sand shadow-none"
                   asChild
                 >
-                  <Link to="/activities">
-                    Conocé nuestras actividades
+                  <Link to="/collaborate">
+                    Sostener cada mes
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -268,7 +268,7 @@ const Home = () => {
                   className="border-white/40 text-white bg-transparent hover:bg-white/10 hover:text-white font-medium shadow-none"
                   asChild
                 >
-                  <Link to="/collaborate">Quiero colaborar</Link>
+                  <Link to="/activities">Conocé nuestras actividades</Link>
                 </Button>
               </motion.div>
             </div>

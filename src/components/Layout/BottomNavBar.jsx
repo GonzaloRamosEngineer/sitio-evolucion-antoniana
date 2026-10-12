@@ -19,7 +19,7 @@ const BottomNavBar = () => {
       color: 'text-green-500'
     },
     {
-      name: 'Donar',
+      name: 'Aportar',
       href: '/collaborate',
       icon: Heart,
       isExternal: false,
@@ -69,7 +69,7 @@ const BottomNavBar = () => {
                     'w-6 h-6 transition-all duration-300',
                     linkIsActive ? 'text-brand-primary' : 'text-gray-600',
                     item.isExternal && item.name === 'WhatsApp' && 'group-hover:text-green-500',
-                    item.isExternal && item.name === 'Donar' && 'text-brand-action'
+                    item.name === 'Aportar' && 'text-brand-action'
                   )}
                   strokeWidth={linkIsActive ? 2.5 : 2}
                 />

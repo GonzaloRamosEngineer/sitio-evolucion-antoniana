@@ -7,7 +7,7 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ isAuthenticated: true }) }
 describe('Navegación mobile', () => {
   it('lleva al formulario de aporte y conserva el estado de navegación', () => {
     render(<MemoryRouter initialEntries={['/collaborate']}><BottomNavBar /></MemoryRouter>);
-    const donate = screen.getByRole('link', { name: 'Donar' });
+    const donate = screen.getByRole('link', { name: 'Aportar' });
     expect(donate).toHaveAttribute('href', '/collaborate');
     expect(donate).toHaveAttribute('aria-current', 'page');
     expect(donate).not.toHaveAttribute('target', '_blank');

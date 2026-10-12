@@ -130,6 +130,16 @@ describe('destinoEfectivo', () => {
     expect(destinoEfectivo(null, conInstitucional)).toBe('campana');
   });
 
+  it('permite iniciar en sostenimiento institucional sin anular una elección posterior', () => {
+    const destinos = [
+      { id: 'beca', slug: 'beca-deportiva' },
+      { id: 'inst', slug: 'sostenimiento-institucional' },
+    ];
+    expect(destinoEfectivo(null, destinos, 'sostenimiento-institucional')).toBe('inst');
+    expect(destinoEfectivo('beca', destinos, 'sostenimiento-institucional')).toBe('beca');
+    expect(destinoEfectivo('inst', [destinos[0]], 'sostenimiento-institucional')).toBe('beca');
+  });
+
   it('devuelve null sin destinos, para que la UI no se rompa', () => {
     expect(destinoEfectivo('a', [])).toBeNull();
     expect(destinoEfectivo(null)).toBeNull();

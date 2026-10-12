@@ -97,16 +97,19 @@ export const validarDestino = (f) => {
  * de corregirlo con un efecto —que siempre llega un render tarde y deja la
  * pantalla mostrando A mientras se envía B— se deriva en cada render.
  *
- * El default es `destinos[0]`, y no el institucional, a propósito: la lista
- * viene ordenada por `orden`, así que el primero es el que la entidad decidió
- * poner adelante. Respetar esa decisión es más útil que imponer una nuestra.
+ * Por defecto gana el primer destino según el orden configurado. Una pantalla
+ * puede indicar un slug preferido para su recorrido inicial, sin impedir que
+ * la persona elija otro destino ni enviar uno que dejó de estar activo.
  *
  * @param {string|null} idElegido - lo último que tocó el usuario, o null.
  * @param {Array<{id: string}>} destinos - lista vigente, ya filtrada.
+ * @param {string|null} slugPreferido - destino inicial si sigue en la lista.
  * @returns {string|null} id vigente, o null si no hay ninguno.
  */
-export const destinoEfectivo = (idElegido, destinos = []) =>
-  destinos.some((d) => d.id === idElegido) ? idElegido : destinos[0]?.id ?? null;
+export const destinoEfectivo = (idElegido, destinos = [], slugPreferido = null) =>
+  destinos.some((d) => d.id === idElegido)
+    ? idElegido
+    : destinos.find((d) => d.slug === slugPreferido)?.id ?? destinos[0]?.id ?? null;
 
 /** Todos los destinos, para el panel. Las RLS filtran según quién consulta. */
 export const getDestinos = async () =>
