@@ -55,6 +55,11 @@ la base.
   justo lo que no se puede dejar sin probar. Lo que el doble **no** puede confirmar es que
   el bucket real quede privado en el proyecto; eso se mira una vez con
   `select id, public from storage.buckets where id='avatares'`.
+- **`documentacion-check.sql`** — el perfil externo de consulta documental. Fija
+  las dos mitades del permiso: puede leer documentos, versiones y objetos del
+  bucket privado; no ve proyectos y no puede crear, editar, borrar, versionar ni
+  subir archivos. Incluye un control positivo para confirmar que la Comisión
+  conserva sus permisos de trabajo.
 - **`club-check.sql`** — el club (§12), fases 2 y 3. `club_canjes` otorga **valor económico**:
   del otro lado hay un comercio esperando que le paguen. Lo que no puede fallar es que
   `authenticated` no inserte ni auto-confirme canjes. Trae los controles positivos al

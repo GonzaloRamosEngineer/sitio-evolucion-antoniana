@@ -41,7 +41,7 @@ const ALL = 'all';
 const NO_CATEGORY = '__none__';
 const emptyDoc = () => ({ title: '', category: NONE, description: '' });
 
-const DocumentsManager = () => {
+const DocumentsManager = ({ readOnly = false }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -175,6 +175,7 @@ const DocumentsManager = () => {
       <div className="p-4 sm:p-6">
         <DocumentDetail
           document={selected}
+          readOnly={readOnly}
           onBack={() => { setSelectedId(null); fetchDocuments(); }}
           onChanged={fetchDocuments}
         />
@@ -187,12 +188,12 @@ const DocumentsManager = () => {
       <SectionHeader
         icon={FileStack}
         title="Documentación"
-        description="Estatuto, balances, convenios y demás, con historial de versiones."
-        actions={
+        description={readOnly ? 'Archivo interno de la Fundación, disponible únicamente para consulta.' : 'Estatuto, balances, convenios y demás, con historial de versiones.'}
+        actions={!readOnly ? (
           <Button onClick={openCreate} variant="action" className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Nuevo documento
           </Button>
-        }
+        ) : null}
       />
 
       {loading ? (
@@ -208,12 +209,14 @@ const DocumentsManager = () => {
         <EmptyState
           icon={FileStack}
           title="Todavía no hay documentos"
-          description="Creá un documento (ej. Estatuto) y subí su primera versión."
-          action={
+          description={readOnly
+            ? 'El archivo interno todavía no tiene documentos disponibles.'
+            : 'Creá un documento (ej. Estatuto) y subí su primera versión.'}
+          action={!readOnly ? (
             <Button onClick={openCreate} className="bg-brand-primary hover:bg-brand-dark text-white">
               <Plus className="w-4 h-4 mr-2" /> Nuevo documento
             </Button>
-          }
+          ) : null}
         />
       ) : (
         <>
@@ -259,26 +262,46 @@ const DocumentsManager = () => {
               {sortedDocuments.map((d, i) => {
                 const versionCount = (d.document_versions || []).length;
                 return (
-                  <motion.button
+                  <motion.article
                     key={d.id}
-                    type="button"
-                    onClick={() => setSelectedId(d.id)}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, delay: i * 0.03 }}
-                    className="text-left bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-gray-100 p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                    className="relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 border border-gray-100"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(d.id)}
+                      className="w-full rounded-2xl p-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                    >
+                      <div className={`flex items-center gap-2.5 min-w-0 ${readOnly ? '' : 'pr-8'}`}>
                         <div className="p-2 rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
                           <FileText className="w-5 h-5" />
                         </div>
                         <h3 className="font-poppins font-bold text-brand-dark leading-tight truncate">{d.title}</h3>
                       </div>
-                      <span onClick={(e) => e.stopPropagation()}>
+
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {d.category && <Badge variant="outline" className="border-brand-primary/20 text-brand-primary bg-brand-primary/5">{d.category}</Badge>}
+                        <Badge className="bg-brand-dark text-white hover:bg-brand-dark">
+                          {versionCount === 0 ? 'Sin archivos' : `v${d.current_version}`}
+                        </Badge>
+                      </div>
+
+                      {d.description && <p className="text-sm text-gray-500 mt-3 line-clamp-2">{d.description}</p>}
+
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-3">
+                        <Clock className="w-3.5 h-3.5" />
+                        {versionCount > 0 ? `${versionCount} ${versionCount === 1 ? 'versión' : 'versiones'} · ` : ''}
+                        {formatDateTime(d.updated_at)}
+                      </div>
+                    </button>
+
+                    {!readOnly && (
+                      <div className="absolute right-4 top-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="text-gray-300 hover:text-brand-primary shrink-0 p-1 -mr-1 -mt-0.5">
+                            <button type="button" aria-label={`Acciones para ${d.title}`} className="text-gray-300 hover:text-brand-primary shrink-0 p-1">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
@@ -292,24 +315,9 @@ const DocumentsManager = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-3 flex-wrap">
-                      {d.category && <Badge variant="outline" className="border-brand-primary/20 text-brand-primary bg-brand-primary/5">{d.category}</Badge>}
-                      <Badge className="bg-brand-dark text-white hover:bg-brand-dark">
-                        {versionCount === 0 ? 'Sin archivos' : `v${d.current_version}`}
-                      </Badge>
-                    </div>
-
-                    {d.description && <p className="text-sm text-gray-500 mt-3 line-clamp-2">{d.description}</p>}
-
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-3">
-                      <Clock className="w-3.5 h-3.5" />
-                      {versionCount > 0 ? `${versionCount} ${versionCount === 1 ? 'versión' : 'versiones'} · ` : ''}
-                      {formatDateTime(d.updated_at)}
-                    </div>
-                  </motion.button>
+                      </div>
+                    )}
+                  </motion.article>
                 );
               })}
             </div>

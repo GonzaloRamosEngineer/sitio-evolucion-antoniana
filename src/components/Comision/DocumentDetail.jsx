@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { uploadVersion, getSignedUrl, downloadFile, fileKind } from '@/api/documentsApi';
 import { formatBytes, formatDateTime } from './documentConstants';
 
-const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
+const DocumentDetail = ({ document: doc, onBack, onChanged, readOnly = false }) => {
   const { toast } = useToast();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -126,9 +126,9 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
             </div>
             {doc.description && <p className="text-sm text-gray-500 mt-1">{doc.description}</p>}
           </div>
-          <Button onClick={() => setUploadOpen(true)} variant="action" className="rounded-xl shrink-0">
+          {!readOnly && <Button onClick={() => setUploadOpen(true)} variant="action" className="rounded-xl shrink-0">
             <Upload className="w-4 h-4 mr-2" /> Subir nueva versión
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -140,10 +140,12 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
           <FileUp className="w-8 h-8 text-gray-300 mx-auto mb-3" />
           <p className="font-semibold text-brand-dark">Todavía no hay archivos</p>
-          <p className="text-sm text-gray-500 mt-1">Subí la primera versión de este documento.</p>
-          <Button onClick={() => setUploadOpen(true)} variant="outline" className="mt-4 gap-2 text-brand-primary border-brand-primary/30">
+          <p className="text-sm text-gray-500 mt-1">
+            {readOnly ? 'Este documento todavía no tiene una versión disponible.' : 'Subí la primera versión de este documento.'}
+          </p>
+          {!readOnly && <Button onClick={() => setUploadOpen(true)} variant="outline" className="mt-4 gap-2 text-brand-primary border-brand-primary/30">
             <Upload className="w-4 h-4" /> Subir versión
-          </Button>
+          </Button>}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
@@ -196,7 +198,7 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
       )}
 
       {/* Dialog subir versión */}
-      <Dialog open={uploadOpen} onOpenChange={(o) => { if (!uploading) { setUploadOpen(o); if (!o) resetForm(); } }}>
+      {!readOnly && <Dialog open={uploadOpen} onOpenChange={(o) => { if (!uploading) { setUploadOpen(o); if (!o) resetForm(); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-poppins text-brand-dark flex items-center gap-2">
@@ -231,7 +233,7 @@ const DocumentDetail = ({ document: doc, onBack, onChanged }) => {
             </DialogFooter>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Modal de vista previa */}
       <Dialog open={!!preview} onOpenChange={(o) => { if (!o) closePreview(); }}>

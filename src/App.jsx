@@ -133,7 +133,7 @@ const PageRoutes = () => {
         <Route
           path="/comision"
           element={
-            <ProtectedRoute allowedRoles={["admin", "comision_directiva"]}>
+            <ProtectedRoute allowedRoles={["admin", "comision_directiva", "documentacion_lectura"]}>
               <CommissionPortal />
             </ProtectedRoute>
           }

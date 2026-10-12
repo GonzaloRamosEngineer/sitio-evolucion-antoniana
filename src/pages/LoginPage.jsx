@@ -47,6 +47,7 @@ const LoginPage = () => {
       const role = user?.role;
       const landingByRole =
         role === 'comision_directiva' ? '/comision'
+        : role === 'documentacion_lectura' ? '/comision?tab=documents'
         : role === 'educacion_manager' ? '/admin/education'
         : role === 'admin' ? '/admin'
         : '/dashboard';

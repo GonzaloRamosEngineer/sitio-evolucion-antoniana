@@ -65,6 +65,7 @@ export const resendVerificationEmail = async (userId) => {
 export const USER_ROLES = [
   { value: 'user', label: 'Miembro' },
   { value: 'comision_directiva', label: 'Comisión Directiva' },
+  { value: 'documentacion_lectura', label: 'Acceso documental' },
   { value: 'educacion_manager', label: 'Gestor de Educación' },
   { value: 'admin', label: 'Administrador' },
 ];

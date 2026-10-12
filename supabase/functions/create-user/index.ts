@@ -18,7 +18,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
-const VALID_ROLES = ["admin", "user", "educacion_manager", "comision_directiva"];
+const VALID_ROLES = [
+  "admin",
+  "user",
+  "educacion_manager",
+  "comision_directiva",
+  "documentacion_lectura",
+];
 
 Deno.serve(async (req) => {
   // 1) Preflight CORS

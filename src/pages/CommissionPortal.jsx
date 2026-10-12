@@ -7,28 +7,33 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectsManager from '@/components/Comision/ProjectsManager';
 import DocumentsManager from '@/components/Comision/DocumentsManager';
+import OfficialDocumentsPanel from '@/components/Comision/OfficialDocumentsPanel';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
   { value: 'documents', label: 'Documentos', icon: FileStack },
 ];
 
-// Portal interno de la Comisión Directiva. Acceso gateado en App.jsx por
-// ProtectedRoute allowedRoles={["admin","comision_directiva"]} (la barrera real
-// son las RLS de Supabase).
+// Portal interno. App.jsx controla qué perfiles pueden entrar y las RLS de
+// Supabase determinan qué información puede leer o modificar cada uno.
 const CommissionPortal = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
+  const isDocumentReader = user?.role === 'documentacion_lectura';
   const location = useLocation();
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'projects';
+  const initialTab = isDocumentReader ? 'documents' : (queryParams.get('tab') || 'projects');
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
+    if (isDocumentReader) {
+      setActiveTab('documents');
+      return;
+    }
     const current = new URLSearchParams(location.search).get('tab') || 'projects';
     setActiveTab((prev) => (current !== prev ? current : prev));
-  }, [location.search]);
+  }, [isDocumentReader, location.search]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -46,7 +51,7 @@ const CommissionPortal = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
-        <title>Comisión Directiva - Fundación Evolución Antoniana</title>
+        <title>{isDocumentReader ? 'Documentación institucional' : 'Comisión Directiva'} - Fundación Evolución Antoniana</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -66,9 +71,9 @@ const CommissionPortal = () => {
               <Briefcase className="w-6 h-6 text-brand-gold" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-poppins font-bold text-white">Comisión Directiva</h1>
+              <h1 className="text-2xl md:text-3xl font-poppins font-bold text-white">{isDocumentReader ? 'Documentación institucional' : 'Comisión Directiva'}</h1>
               <p className="text-gray-300 text-sm">
-                Hola{user?.name ? `, ${user.name.split(' ')[0]}` : ''}. Proyectos y documentación de la fundación.
+                Hola{user?.name ? `, ${user.name.split(' ')[0]}` : ''}. {isDocumentReader ? 'Acceso de consulta a la documentación de la Fundación.' : 'Proyectos y documentación de la fundación.'}
               </p>
             </div>
           </div>
@@ -90,27 +95,29 @@ const CommissionPortal = () => {
       </section>
 
       {/* --- TABS --- */}
-      <div className="sticky top-20 z-30 bg-brand-sand/95 backdrop-blur-md px-4 py-2 border-b border-gray-200/60">
-        <div className="max-w-screen-xl mx-auto flex gap-2 overflow-x-auto no-scrollbar">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => handleTabChange(tab.value)}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-brand-primary text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:text-brand-primary border border-gray-100'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
+      {!isDocumentReader && (
+        <div className="sticky top-20 z-30 bg-brand-sand/95 backdrop-blur-md px-4 py-2 border-b border-gray-200/60">
+          <div className="max-w-screen-xl mx-auto flex gap-2 overflow-x-auto no-scrollbar">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => handleTabChange(tab.value)}
+                  className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-brand-primary text-white shadow-md'
+                      : 'bg-white text-gray-600 hover:text-brand-primary border border-gray-100'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* --- CONTENIDO --- */}
       <section className="px-4 py-8">
@@ -123,9 +130,18 @@ const CommissionPortal = () => {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                {activeTab === 'projects' ? <ProjectsManager /> : <DocumentsManager />}
-              </div>
+              {isDocumentReader ? (
+                <div className="space-y-6">
+                  <OfficialDocumentsPanel />
+                  <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+                    <DocumentsManager readOnly />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                  {activeTab === 'projects' ? <ProjectsManager /> : <DocumentsManager />}
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

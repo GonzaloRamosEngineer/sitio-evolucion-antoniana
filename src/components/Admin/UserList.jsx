@@ -30,6 +30,7 @@ import {
   UserCog,
   Briefcase,
   GraduationCap,
+  BookOpenCheck,
   MailWarning,
   Copy,
 } from 'lucide-react';
@@ -46,6 +47,7 @@ import { logger } from '@/lib/logger';
 const ROLE_META = {
   admin: { label: 'Admin', icon: ShieldCheck, badge: 'bg-red-50 text-red-700 border-red-200' },
   comision_directiva: { label: 'Comisión Directiva', icon: Briefcase, badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  documentacion_lectura: { label: 'Acceso documental', icon: BookOpenCheck, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   educacion_manager: { label: 'Gestor Educación', icon: GraduationCap, badge: 'bg-amber-50 text-amber-700 border-amber-200' },
   user: { label: 'Miembro', icon: UserCheck, badge: 'bg-blue-50 text-blue-700 border-blue-200' },
 };
