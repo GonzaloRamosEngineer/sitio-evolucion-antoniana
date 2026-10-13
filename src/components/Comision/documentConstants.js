@@ -4,6 +4,7 @@ export const DOC_CATEGORIES = [
   'Estatuto',
   'Acta',
   'Balance / Estado contable',
+  'Resumen bancario',
   'Memoria',
   'Inventario',
   'Plan Trienal',
