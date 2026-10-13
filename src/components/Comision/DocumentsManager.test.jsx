@@ -117,4 +117,20 @@ describe('DocumentsManager — acceso documental', () => {
 
     expect((await screen.findAllByText('Estatuto fundacional')).length).toBe(2);
   });
+
+  it('muestra la biblioteca extensa en bloques para evitar un scroll interminable', async () => {
+    const longLibrary = Array.from({ length: 9 }, (_, index) => ({
+      ...documentFixture,
+      id: `documento-${index + 1}`,
+      title: `Documento ${index + 1}`,
+      document_versions: [{ id: `version-${index + 1}`, version_number: 1, file_path: `documento-${index + 1}/archivo.pdf` }],
+    }));
+    getDocuments.mockResolvedValue({ data: longLibrary, error: null });
+    render(<DocumentsManager readOnly />);
+
+    await screen.findAllByText('Documento 1');
+    expect(screen.queryByText('Documento 9')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Mostrar 1 documento más/i }));
+    expect((await screen.findAllByText('Documento 9')).length).toBe(2);
+  });
 });

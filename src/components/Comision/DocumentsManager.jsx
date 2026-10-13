@@ -41,6 +41,7 @@ const ALL = 'all';
 const NO_CATEGORY = '__none__';
 const INTERNAL = 'internal';
 const PUBLIC = 'public';
+const PAGE_SIZE = 8;
 const emptyDoc = () => ({ title: '', category: NONE, description: '', visibility: 'internal', public_url: '' });
 
 const DocumentsManager = ({ readOnly = false }) => {
@@ -64,6 +65,7 @@ const DocumentsManager = ({ readOnly = false }) => {
   const [categoryFilter, setCategoryFilter] = useState(ALL);
   const [accessFilter, setAccessFilter] = useState(ALL);
   const [sortBy, setSortBy] = useState('recent');
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
 
   const accessOptions = useMemo(() => {
     const internalCount = documents.filter((d) => d.visibility !== PUBLIC).length;
@@ -119,6 +121,11 @@ const DocumentsManager = ({ readOnly = false }) => {
     return list;
   }, [filtered, sortBy]);
 
+  const visibleDocuments = useMemo(
+    () => sortedDocuments.slice(0, visibleLimit),
+    [sortedDocuments, visibleLimit]
+  );
+
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -140,6 +147,12 @@ const DocumentsManager = ({ readOnly = false }) => {
       setCategoryFilter(ALL);
     }
   }, [categoryOptions, categoryFilter]);
+
+  // Cada nueva exploración empieza acotada. Así la biblioteca se mantiene
+  // manejable en móvil, sin esconder documentos ni cortar una búsqueda.
+  useEffect(() => {
+    setVisibleLimit(PAGE_SIZE);
+  }, [query, accessFilter, categoryFilter, sortBy]);
 
   const openCreate = () => { setEditing(null); setForm(emptyDoc()); setFormOpen(true); };
 
@@ -353,7 +366,7 @@ const DocumentsManager = ({ readOnly = false }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {sortedDocuments.map((d, i) => {
+                      {visibleDocuments.map((d, i) => {
                         const versionCount = (d.document_versions || []).length;
                         return (
                           <motion.tr
@@ -410,7 +423,7 @@ const DocumentsManager = ({ readOnly = false }) => {
               </div>
 
             <div className="grid grid-cols-1 gap-4 md:hidden">
-              {sortedDocuments.map((d, i) => {
+              {visibleDocuments.map((d, i) => {
                 const versionCount = (d.document_versions || []).length;
                 return (
                   <motion.article
@@ -431,7 +444,7 @@ const DocumentsManager = ({ readOnly = false }) => {
                         <div className="p-2 rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
                           <FileText className="w-5 h-5" />
                         </div>
-                        <h3 className="flex items-center gap-2 font-poppins font-bold text-brand-dark leading-tight truncate">{d.title}{openingId === d.id && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}</h3>
+                        <h3 className="min-w-0 flex-1 text-[15px] font-poppins font-bold leading-snug text-brand-dark line-clamp-2">{d.title}{openingId === d.id && <Loader2 className="ml-2 inline h-4 w-4 animate-spin align-text-bottom" />}</h3>
                       </div>
 
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -483,6 +496,14 @@ const DocumentsManager = ({ readOnly = false }) => {
                 );
               })}
             </div>
+              {visibleDocuments.length < sortedDocuments.length && (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <p className="text-sm text-gray-500">Mostrando {visibleDocuments.length} de {sortedDocuments.length} documentos</p>
+                  <Button type="button" variant="outline" onClick={() => setVisibleLimit((current) => current + PAGE_SIZE)} className="rounded-xl border-brand-primary/20 font-semibold text-brand-primary hover:bg-brand-primary hover:text-white">
+                    Mostrar {Math.min(PAGE_SIZE, sortedDocuments.length - visibleDocuments.length)} {sortedDocuments.length - visibleDocuments.length === 1 ? 'documento más' : 'documentos más'}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </>
