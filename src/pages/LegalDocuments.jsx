@@ -20,9 +20,10 @@ const LegalDocuments = () => {
     setError(null);
     try {
       const { data, error: dbError } = await supabase
-        .from('legal_documents')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from('documents')
+        .select('id, title, category, description, public_url, published_at, created_at')
+        .eq('visibility', 'public')
+        .order('published_at', { ascending: false });
 
       if (dbError) throw dbError;
       setDocuments(data || []);
@@ -160,7 +161,7 @@ const LegalDocuments = () => {
                       )}
                       <p className="text-xs text-gray-500">
                         Publicado el{' '}
-                        {new Date(doc.created_at).toLocaleDateString('es-AR', {
+                        {new Date(doc.published_at || doc.created_at).toLocaleDateString('es-AR', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -168,7 +169,7 @@ const LegalDocuments = () => {
                       </p>
                     </div>
                     <a
-                      href={doc.url}
+                      href={doc.public_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 mt-0.5 text-sm font-semibold text-brand-primary hover:text-brand-action transition-colors flex-shrink-0"

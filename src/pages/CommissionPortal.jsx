@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectsManager from '@/components/Comision/ProjectsManager';
 import DocumentsManager from '@/components/Comision/DocumentsManager';
-import OfficialDocumentsPanel from '@/components/Comision/OfficialDocumentsPanel';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
@@ -131,11 +130,8 @@ const CommissionPortal = () => {
               transition={{ duration: 0.2 }}
             >
               {isDocumentReader ? (
-                <div className="space-y-6">
-                  <OfficialDocumentsPanel />
-                  <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-                    <DocumentsManager readOnly />
-                  </div>
+                <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+                  <DocumentsManager readOnly />
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100">

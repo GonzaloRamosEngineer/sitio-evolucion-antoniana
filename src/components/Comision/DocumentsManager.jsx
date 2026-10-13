@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileStack, Plus, Loader2, MoreVertical, Pencil, Trash2,
-  AlertTriangle, FileText, Clock,
+  AlertTriangle, FileText, Clock, Globe2, LockKeyhole,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +39,7 @@ import { logger } from '@/lib/logger';
 const NONE = 'none';
 const ALL = 'all';
 const NO_CATEGORY = '__none__';
-const emptyDoc = () => ({ title: '', category: NONE, description: '' });
+const emptyDoc = () => ({ title: '', category: NONE, description: '', visibility: 'internal', public_url: '' });
 
 const DocumentsManager = ({ readOnly = false }) => {
   const { user } = useAuth();
@@ -123,7 +123,13 @@ const DocumentsManager = ({ readOnly = false }) => {
   const openCreate = () => { setEditing(null); setForm(emptyDoc()); setFormOpen(true); };
   const openEdit = (d) => {
     setEditing(d);
-    setForm({ title: d.title || '', category: d.category || NONE, description: d.description || '' });
+    setForm({
+      title: d.title || '',
+      category: d.category || NONE,
+      description: d.description || '',
+      visibility: d.visibility || 'internal',
+      public_url: d.public_url || '',
+    });
     setFormOpen(true);
   };
 
@@ -136,6 +142,8 @@ const DocumentsManager = ({ readOnly = false }) => {
         title: form.title.trim(),
         category: form.category === NONE ? null : form.category,
         description: form.description.trim() || null,
+        visibility: form.visibility,
+        public_url: form.visibility === 'public' ? form.public_url.trim() || null : null,
       };
       const { error: err } = editing
         ? await updateDocument(editing.id, payload)
@@ -188,7 +196,7 @@ const DocumentsManager = ({ readOnly = false }) => {
       <SectionHeader
         icon={FileStack}
         title="Documentación"
-        description={readOnly ? 'Archivo interno de la Fundación, disponible únicamente para consulta.' : 'Estatuto, balances, convenios y demás, con historial de versiones.'}
+        description={readOnly ? 'Biblioteca institucional de la Fundación, disponible únicamente para consulta. Los documentos publicados y los internos se identifican con claridad.' : 'Un único catálogo para estatutos, balances, convenios y demás, con historial de versiones.'}
         actions={!readOnly ? (
           <Button onClick={openCreate} variant="action" className="rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Nuevo documento
@@ -283,6 +291,15 @@ const DocumentsManager = ({ readOnly = false }) => {
 
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
                         {d.category && <Badge variant="outline" className="border-brand-primary/20 text-brand-primary bg-brand-primary/5">{d.category}</Badge>}
+                        {d.visibility === 'public' ? (
+                          <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                            <Globe2 className="mr-1 h-3 w-3" /> Público
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">
+                            <LockKeyhole className="mr-1 h-3 w-3" /> Interno
+                          </Badge>
+                        )}
                         <Badge className="bg-brand-dark text-white hover:bg-brand-dark">
                           {versionCount === 0 ? 'Sin archivos' : `v${d.current_version}`}
                         </Badge>
@@ -357,6 +374,25 @@ const DocumentsManager = ({ readOnly = false }) => {
               <Textarea id="d-description" value={form.description} rows={3}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="De qué se trata, contexto..." />
             </div>
+            <div className="space-y-1.5">
+              <Label>Visibilidad</Label>
+              <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="internal">Interno — solo perfiles autorizados</SelectItem>
+                  <SelectItem value="public">Público — aparece en Transparencia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.visibility === 'public' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="d-public-url">Enlace de la versión pública</Label>
+                <Input id="d-public-url" type="url" value={form.public_url}
+                  onChange={(e) => setForm({ ...form, public_url: e.target.value })}
+                  placeholder="https://…" />
+                <p className="text-xs text-gray-500">Este enlace es el que verá cualquier persona desde Transparencia.</p>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" disabled={saving} onClick={() => setFormOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={saving} className="bg-brand-primary hover:bg-brand-dark text-white">

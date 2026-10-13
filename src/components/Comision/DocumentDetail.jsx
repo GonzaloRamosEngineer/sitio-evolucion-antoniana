@@ -122,6 +122,7 @@ const DocumentDetail = ({ document: doc, onBack, onChanged, readOnly = false }) 
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-poppins font-bold text-brand-dark">{doc.title}</h2>
               {doc.category && <Badge variant="outline" className="border-brand-primary/20 text-brand-primary bg-brand-primary/5">{doc.category}</Badge>}
+              {doc.visibility === 'public' && <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">Publicado</Badge>}
               <Badge className="bg-brand-dark text-white hover:bg-brand-dark">v{doc.current_version}</Badge>
             </div>
             {doc.description && <p className="text-sm text-gray-500 mt-1">{doc.description}</p>}
@@ -131,6 +132,17 @@ const DocumentDetail = ({ document: doc, onBack, onChanged, readOnly = false }) 
           </Button>}
         </div>
       </div>
+
+      {doc.visibility === 'public' && doc.public_url && (
+        <a
+          href={doc.public_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+        >
+          <ExternalLink className="h-4 w-4" /> Ver versión publicada
+        </a>
+      )}
 
       <div className="flex items-center gap-2 text-sm font-bold text-brand-dark mb-3">
         <History className="w-4 h-4 text-brand-gold" /> Historial de versiones
