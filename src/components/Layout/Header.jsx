@@ -350,7 +350,8 @@ const Header = () => {
                   {/* --- SECCIÓN DE ADMINISTRACIÓN DINÁMICA --- */}
                   {(isAdmin ||
                     user?.role === "educacion_manager" ||
-                    user?.role === "comision_directiva") && (
+                    user?.role === "comision_directiva" ||
+                    user?.role === "documentacion_lectura") && (
                     <>
                       <DropdownMenuSeparator className="bg-gray-100 my-1" />
                       <p className="text-[10px] uppercase font-bold text-gray-400 px-3 py-1 tracking-wider">
@@ -385,6 +386,21 @@ const Header = () => {
                           >
                             <Briefcase className="mr-2 h-4 w-4" />
                             <span>Comisión Directiva</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {user?.role === "documentacion_lectura" && (
+                        <DropdownMenuItem
+                          asChild
+                          className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
+                        >
+                          <Link
+                            to="/comision?tab=documents"
+                            className="flex items-center py-2 px-3"
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            <span>Documentación institucional</span>
                           </Link>
                         </DropdownMenuItem>
                       )}
