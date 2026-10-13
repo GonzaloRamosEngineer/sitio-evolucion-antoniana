@@ -28,9 +28,12 @@ const RequestPasswordResetForm = () => {
       });
       setEmail(''); 
     } catch (error) {
+      const isRateLimited = error.message?.toLowerCase().includes('rate limit');
       toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el correo de reestablecimiento.",
+        title: isRateLimited ? "Esperá un momento" : "No se pudo enviar el enlace",
+        description: isRateLimited
+          ? "Por seguridad, esperá 1 minuto antes de pedir otro enlace de recuperación."
+          : "No pudimos enviar el enlace. Revisá el email e intentá nuevamente.",
         variant: "destructive",
       });
     } finally {
