@@ -261,6 +261,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
+
+      // La sesión creada para recuperar la contraseña es temporal. Si queda
+      // abierta, `/login` detecta una sesión válida y manda a la persona al
+      // panel en vez de dejarla comprobar su nueva clave.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+      if (signOutError) throw signOutError;
+
       return data.user;
     } catch (error) {
       logger.error('Error updating password:', error.message);

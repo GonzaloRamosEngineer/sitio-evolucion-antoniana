@@ -32,12 +32,18 @@ export const updateUserProfile = async (userId, profileData) => {
 };
 
 export const verifyUser = async (userId) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .update({ is_verified: true })
-    .eq('id', userId);
+    .eq('id', userId)
+    .select('id, is_verified')
+    .maybeSingle();
 
-  return { data: null, error };
+  if (error) return { data: null, error };
+  if (!data?.is_verified) {
+    return { data: null, error: { message: 'No tenés permiso para verificar este usuario.' } };
+  }
+  return { data, error: null };
 };
 
 export const resendVerificationEmail = async (userId) => {
@@ -97,16 +103,20 @@ export const createUser = async ({ email, password, name, role }) => {
   return { data, error: null };
 };
 
-// Cambia el rol de un usuario existente. Sólo un admin tiene permiso real
-// (lo garantiza el trigger prevent_privilege_escalation + RLS en Supabase).
-// No usamos .select().single() porque la policy SELECT de users no devuelve
-// filas ajenas al caller, lo que haría fallar PGRST116 aunque el UPDATE haya
-// funcionado correctamente.
+// Cambia el rol de un usuario existente. La policy de UPDATE restringe la
+// operación a administradores y el resultado se lee de vuelta: una update que
+// RLS filtró no puede presentarse como un éxito.
 export const updateUserRole = async (userId, role) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('users')
     .update({ role })
-    .eq('id', userId);
+    .eq('id', userId)
+    .select('id, role')
+    .maybeSingle();
 
-  return { data: null, error };
+  if (error) return { data: null, error };
+  if (!data || data.role !== role) {
+    return { data: null, error: { message: 'No tenés permiso para cambiar el rol de este usuario.' } };
+  }
+  return { data, error: null };
 };

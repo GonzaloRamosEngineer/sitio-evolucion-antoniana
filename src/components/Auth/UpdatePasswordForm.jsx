@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,45 +23,55 @@ const UpdatePasswordForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const checkTokenValidity = useCallback(() => {
-    const hash = location.hash.substring(1); // Quitar el '#'
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    const type = params.get('type');
+  useEffect(() => {
+    let active = true;
+    let fallbackTimer;
+    const hashParams = new URLSearchParams(location.hash.substring(1));
+    const searchParams = new URLSearchParams(location.search);
 
-    if (accessToken && type === 'recovery') {
+    // Supabase admite dos formatos de enlace: el histórico deja un token en el
+    // hash y el actual usa `?code=` (PKCE). El formulario anterior entendía
+    // únicamente el primero y expulsaba a quien recibía el formato nuevo antes
+    // de poder definir la contraseña.
+    const hasRecoveryLink =
+      hashParams.get('type') === 'recovery' ||
+      Boolean(searchParams.get('code'));
+
+    const markValidIfSessionExists = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (active && session) setTokenStatus('valid');
+      return Boolean(session);
+    };
+
+    if (hasRecoveryLink) {
       setTokenStatus('valid');
     } else {
-      setTokenStatus('invalid');
+      // Si el SDK ya intercambió el código, puede haber limpiado la URL antes
+      // de que React monte. La sesión temporal sigue siendo la fuente válida.
+      markValidIfSessionExists().then((hasSession) => {
+        if (!active || hasSession) return;
+        // El intercambio PKCE y el evento de auth son asíncronos. Esperamos una
+        // vuelta corta antes de declarar el enlace inválido.
+        fallbackTimer = window.setTimeout(async () => {
+          if (!await markValidIfSessionExists() && active) setTokenStatus('invalid');
+        }, 800);
+      });
     }
-  }, [location.hash]);
 
-  useEffect(() => {
-    checkTokenValidity();
-
-    // Supabase maneja el evento de PASSWORD_RECOVERY y establece la sesión temporalmente.
-    // No necesitamos hacer nada más aquí para la validación del token si usamos supabase.auth.updateUser.
-    // La clave es que el token debe estar en la URL cuando esta página carga.
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // El usuario está en el flujo de recuperación de contraseña
-        // Esto es bueno, el token de la URL fue procesado por Supabase.
-        setTokenStatus('valid'); // Reconfirmar si Supabase lo procesó
-      } else if (event === 'SIGNED_IN' && location.pathname === '/update-password' && tokenStatus !== 'valid') {
-        // Si se inicia sesión normalmente mientras se está en esta página sin un token de recuperación válido,
-        // no debería estar aquí.
-        // Pero no es un error fatal, es más para debug.
+      if (active && session && (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN')) {
+        setTokenStatus('valid');
       }
     });
-    
+
     return () => {
+      active = false;
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
       if (subscription) {
         subscription.unsubscribe();
       }
     };
-
-  }, [location.pathname, tokenStatus, checkTokenValidity]);
+  }, [location.hash, location.search]);
   
   useEffect(() => {
     if (tokenStatus === 'invalid' && !authHookLoading) {
