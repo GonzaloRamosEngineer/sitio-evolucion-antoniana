@@ -15,7 +15,7 @@ import PendingConfirmationsList from '@/components/Admin/PendingConfirmationsLis
 import UserList from '@/components/Admin/UserList';
 import MembershipList from '@/components/Admin/MembershipList';
 import DonationList from '@/components/Admin/DonationList';
-import LegalDocumentList from '@/components/Admin/LegalDocumentList';
+import DocumentsManager from '@/components/Comision/DocumentsManager';
 import PartnersAdmin from '@/components/Admin/PartnersAdmin';
 import BenefitsAdmin from '@/components/Admin/BenefitsAdmin';
 import NewsAdmin from '@/components/Admin/NewsAdmin';
@@ -100,7 +100,7 @@ const AdminPanel = () => {
       },
       {
         label: 'Institucional',
-        items: [{ value: 'legal_documents', label: 'Legales', icon: FileText }],
+        items: [{ value: 'legal_documents', label: 'Documentación', icon: FileText }],
       },
     ],
     [stats.pendingConfirmations, stats.pendingPartners]
@@ -129,7 +129,7 @@ const AdminPanel = () => {
       case 'donations':
         return <DonationList />;
       case 'legal_documents':
-        return <LegalDocumentList />;
+        return <DocumentsManager />;
       case 'partners':
         return <PartnersAdmin />;
       case 'club':

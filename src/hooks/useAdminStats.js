@@ -59,7 +59,7 @@ export function useAdminStats() {
         countQuery('memberships', (q) => q.eq('status', 'active')),
         countQuery('registrations', (q) => q.eq('is_confirmed', false)),
         countQuery('donations', (q) => q.in('status', ['completed', 'approved', 'succeeded'])),
-        countQuery('legal_documents'),
+        countQuery('documents'),
         supabase
           .from('activities')
           .select('id, title, date, modality')
