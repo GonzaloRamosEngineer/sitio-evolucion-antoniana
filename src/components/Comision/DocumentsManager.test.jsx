@@ -35,6 +35,7 @@ const publicDocumentFixture = {
   category: 'Estatuto',
   description: 'Documento público institucional.',
   visibility: 'public',
+  public_url: 'https://drive.google.com/estatuto-oficial',
   current_version: 1,
   updated_at: '2026-10-11T12:00:00Z',
   document_versions: [{ id: 'version-2', version_number: 1, file_path: 'documento-2/estatuto.pdf' }],
@@ -42,6 +43,8 @@ const publicDocumentFixture = {
 
 describe('DocumentsManager — acceso documental', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
     vi.stubGlobal('IntersectionObserver', class {
       observe() {}
       unobserve() {}
@@ -89,6 +92,19 @@ describe('DocumentsManager — acceso documental', () => {
 
     await vi.waitFor(() => expect(getSignedUrl).toHaveBeenCalledWith('documento-1/balance.pdf'));
     expect(tab.location.href).toBe('https://example.test/balance.pdf');
+  });
+
+  it('prioriza el enlace oficial para documentos públicos', async () => {
+    const tab = { location: {} };
+    vi.spyOn(window, 'open').mockReturnValue(tab);
+    getDocuments.mockResolvedValue({ data: [publicDocumentFixture], error: null });
+    render(<DocumentsManager readOnly />);
+
+    await screen.findAllByText('Estatuto fundacional');
+    fireEvent.click(screen.getAllByRole('button', { name: /Abrir última versión de Estatuto fundacional/i })[0]);
+
+    expect(tab.location.href).toBe('https://drive.google.com/estatuto-oficial');
+    expect(getSignedUrl).not.toHaveBeenCalled();
   });
 
   it('busca en toda la biblioteca aunque haya un filtro de acceso activo', async () => {

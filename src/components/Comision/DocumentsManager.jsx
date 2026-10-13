@@ -147,11 +147,15 @@ const DocumentsManager = ({ readOnly = false }) => {
   // del archivo. Evita una pantalla intermedia sin conceder capacidades de edición.
   const openLatestVersion = async (document) => {
     if (openingId) return;
+    // Los documentos publicados tienen un enlace aprobado por Transparencia.
+    // Ese enlace es la fuente de consulta para cualquier perfil, incluido el
+    // documental: una copia privada nunca lo reemplaza.
+    const officialPublicUrl = document.visibility === PUBLIC ? document.public_url : null;
     const latest = [...(document.document_versions || [])]
       .filter((version) => version.file_path)
       .sort((a, b) => b.version_number - a.version_number)[0];
 
-    if (!latest && !document.public_url) {
+    if (!latest && !officialPublicUrl) {
       toast({ title: 'Archivo no disponible', description: 'Este documento todavía no tiene una versión para consultar.', variant: 'destructive' });
       return;
     }
@@ -161,15 +165,14 @@ const DocumentsManager = ({ readOnly = false }) => {
     const tab = window.open('', '_blank');
     setOpeningId(document.id);
     try {
-      if (latest) {
+      if (officialPublicUrl) {
+        if (tab) tab.location.href = officialPublicUrl;
+        else window.location.assign(officialPublicUrl);
+      } else if (latest) {
         const { data, error: signedUrlError } = await getSignedUrl(latest.file_path);
         if (signedUrlError || !data?.signedUrl) throw signedUrlError || new Error('No se pudo abrir el archivo.');
         if (tab) tab.location.href = data.signedUrl;
         else window.location.assign(data.signedUrl);
-      } else if (tab) {
-        tab.location.href = document.public_url;
-      } else {
-        window.location.assign(document.public_url);
       }
     } catch (openError) {
       tab?.close();
