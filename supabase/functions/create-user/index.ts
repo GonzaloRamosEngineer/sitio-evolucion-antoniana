@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     const { error: upsertErr } = await supabaseAdmin
       .from("users")
       .upsert(
-        { id: newUserId, email, name, role, is_verified: true },
+        { id: newUserId, email, name, role, is_verified: false },
         { onConflict: "id" },
       );
 

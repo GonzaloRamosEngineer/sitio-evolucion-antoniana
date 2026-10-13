@@ -35,6 +35,9 @@ otp_expiry = 3600
 [functions.create-user]
 verify_jwt = true
 
+[functions.activate-account]
+verify_jwt = true
+
 # --- Club de beneficios, fase 2 (ROADMAP §12.5) ------------------------------
 # Las tres exigen JWT: la identidad del invocador es la base de toda la
 # autorizacion. Que sea socio o cajero se resuelve DENTRO de cada funcion

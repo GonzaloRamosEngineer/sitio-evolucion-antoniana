@@ -262,6 +262,13 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
 
+      // El enlace de recuperación prueba que la persona controla el correo.
+      // Marcamos el perfil como verificado sólo después de que pudo elegir su
+      // propia contraseña; el endpoint vuelve a comprobar la sesión y el email
+      // confirmado en el servidor.
+      const { error: activationError } = await supabase.functions.invoke('activate-account');
+      if (activationError) throw activationError;
+
       // La sesión creada para recuperar la contraseña es temporal. Si queda
       // abierta, `/login` detecta una sesión válida y manda a la persona al
       // panel en vez de dejarla comprobar su nueva clave.
