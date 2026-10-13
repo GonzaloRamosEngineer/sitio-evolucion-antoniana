@@ -54,7 +54,7 @@ const ROLE_META = {
 
 const roleMeta = (role) => ROLE_META[role] || ROLE_META.user;
 
-const EMPTY_FORM = { name: '', email: '', password: '', role: 'comision_directiva' };
+const EMPTY_FORM = { name: '', email: '', role: 'comision_directiva' };
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -148,14 +148,16 @@ const UserList = () => {
       const { error } = await createUser({
         name: form.name.trim(),
         email: form.email.trim(),
-        password: form.password,
         role: form.role,
       });
       if (error) {
         toast({ title: 'No se pudo crear el usuario', description: error.message, variant: 'destructive' });
         return;
       }
-      toast({ title: 'Usuario creado', description: `${form.name} fue dado de alta correctamente.` });
+      toast({
+        title: 'Invitación enviada',
+        description: `${form.name} recibirá un email para crear su contraseña.`,
+      });
       setCreateOpen(false);
       setForm(EMPTY_FORM);
       fetchUsers();
@@ -407,7 +409,7 @@ const UserList = () => {
           <DialogHeader>
             <DialogTitle className="font-poppins text-brand-dark">Crear usuario</DialogTitle>
             <DialogDescription>
-              La cuenta queda activa de inmediato (sin paso de verificación de email).
+              La persona recibirá un email para crear su contraseña y acceder a su cuenta.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -420,12 +422,6 @@ const UserList = () => {
               <Label htmlFor="cu-email">Email</Label>
               <Input id="cu-email" type="email" value={form.email} required
                 onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="persona@ejemplo.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cu-password">Contraseña</Label>
-              <Input id="cu-password" type="text" value={form.password} required minLength={8}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 8 caracteres" />
-              <p className="text-xs text-gray-400">Compartísela con la persona; podrá cambiarla luego.</p>
             </div>
             <div className="space-y-1.5">
               <Label>Rol</Label>
@@ -443,7 +439,7 @@ const UserList = () => {
                 Cancelar
               </Button>
               <Button type="submit" disabled={creating} className="bg-brand-primary hover:bg-brand-dark text-white">
-                {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creando...</> : 'Crear usuario'}
+                {creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando invitación...</> : 'Enviar invitación'}
               </Button>
             </DialogFooter>
           </form>

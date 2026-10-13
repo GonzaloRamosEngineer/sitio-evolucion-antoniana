@@ -79,9 +79,9 @@ export const USER_ROLES = [
 // Crea un usuario completo (cuenta + perfil + rol) vía la Edge Function create-user.
 // Sólo un admin autenticado puede invocarla con éxito (la función valida el rol
 // del invocador en el servidor). Devuelve { data, error } con error normalizado.
-export const createUser = async ({ email, password, name, role }) => {
+export const createUser = async ({ email, name, role }) => {
   const { data, error } = await supabase.functions.invoke('create-user', {
-    body: { email, password, name, role },
+    body: { email, name, role },
   });
 
   if (error) {

@@ -1,10 +1,9 @@
 // =============================================================================
 // Edge Function: create-user
 // =============================================================================
-// Crea un usuario completo (auth + perfil en public.users) con un rol asignado.
-// Pensada para que un ADMIN dé de alta cuentas (ej. comisión directiva) desde el
-// panel SIN perder su propia sesión (cosa que pasaría con supabase.auth.signUp
-// desde el browser).
+// Crea un usuario completo (auth + perfil en public.users) con un rol asignado
+// y le envía un enlace para que defina su propia contraseña. Está pensada para
+// que un ADMIN dé de alta cuentas sin perder su propia sesión.
 //
 // Seguridad:
 //  - La autorización NO confía en el body ni en metadata del JWT: lee el rol del
@@ -79,31 +78,26 @@ Deno.serve(async (req) => {
     // 4) Validar input
     const body = await req.json().catch(() => null);
     const email = body?.email?.trim()?.toLowerCase();
-    const password = body?.password;
     const name = body?.name?.trim();
     const role = body?.role;
 
-    if (!email || !password || !name || !role) {
+    if (!email || !name || !role) {
       return jsonResponse(
-        { error: "Faltan campos obligatorios: email, password, name, role" },
+        { error: "Faltan campos obligatorios: email, name, role" },
         400,
       );
     }
     if (!VALID_ROLES.includes(role)) {
       return jsonResponse({ error: `Rol inválido: ${role}` }, 400);
     }
-    if (password.length < 8) {
-      return jsonResponse(
-        { error: "La contraseña debe tener al menos 8 caracteres" },
-        400,
-      );
-    }
-
-    // 5) Crear la cuenta en auth.users (email ya confirmado, sin paso de verificación).
+    // 5) Crear la cuenta confirmada con una clave aleatoria de un solo uso.
+    // La persona nunca recibe ni usa esta clave: el enlace de activación le
+    // permite elegir la suya antes de iniciar sesión.
+    const initialPassword = `${crypto.randomUUID()}!A1`;
     const { data: created, error: createErr } =
       await supabaseAdmin.auth.admin.createUser({
         email,
-        password,
+        password: initialPassword,
         email_confirm: true,
         user_metadata: { name, role },
       });
@@ -134,8 +128,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 7) Enviar el email de activación usando el SMTP configurado en Supabase.
+    // El enlace abre /update-password, que ya maneja sesiones de recovery y
+    // deja a la persona elegir su contraseña sin conocer ninguna clave previa.
+    const { error: inviteErr } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://www.evolucionantoniana.com/update-password",
+    });
+
+    if (inviteErr) {
+      // No dejamos una cuenta creada sin que su destinatario pueda activarla.
+      await supabaseAdmin.from("users").delete().eq("id", newUserId);
+      await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      return jsonResponse(
+        { error: `No se pudo enviar el email de invitación: ${inviteErr.message}` },
+        502,
+      );
+    }
+
     return jsonResponse(
-      { ok: true, user: { id: newUserId, email, name, role } },
+      { ok: true, invitationSent: true, user: { id: newUserId, email, name, role } },
       201,
     );
   } catch (e) {
