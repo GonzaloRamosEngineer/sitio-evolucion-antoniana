@@ -32,7 +32,6 @@ import {
   GraduationCap,
   BookOpenCheck,
   MailWarning,
-  Copy,
 } from 'lucide-react';
 import SectionHeader from '@/components/Admin/shared/SectionHeader';
 import SearchBar from '@/components/Admin/shared/SearchBar';
@@ -40,7 +39,7 @@ import ListSkeleton from '@/components/Admin/shared/ListSkeleton';
 import EmptyState from '@/components/Admin/shared/EmptyState';
 import { useSearch } from '@/components/Admin/shared/useSearch';
 import FilterChips from '@/components/Comision/FilterChips';
-import { USER_ROLES, createUser, updateUserRole, verifyUser, resendVerificationEmail } from '@/api/userApi';
+import { USER_ROLES, createUser, updateUserRole, resendVerificationEmail } from '@/api/userApi';
 import { logger } from '@/lib/logger';
 
 // Presentación visual de cada rol (label + estilo + icono).
@@ -91,10 +90,8 @@ const UserList = () => {
 
   // Verificación de email
   const [verifyDialog, setVerifyDialog] = useState(null); // usuario seleccionado
-  const [generatedLink, setGeneratedLink] = useState('');
   const [emailSent, setEmailSent] = useState(''); // email al que se envió
   const [verifyLoading, setVerifyLoading] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -192,26 +189,7 @@ const UserList = () => {
   const closeVerifyDialog = () => {
     if (verifyLoading) return;
     setVerifyDialog(null);
-    setGeneratedLink('');
     setEmailSent('');
-    setLinkCopied(false);
-  };
-
-  const handleManualVerify = async () => {
-    if (!verifyDialog || verifyLoading) return;
-    setVerifyLoading(true);
-    try {
-      const { error } = await verifyUser(verifyDialog.id);
-      if (error) {
-        toast({ title: 'Error al verificar', description: error.message, variant: 'destructive' });
-        return;
-      }
-      toast({ title: 'Usuario verificado', description: `${verifyDialog.name || 'El usuario'} fue verificado correctamente.` });
-      closeVerifyDialog();
-      fetchUsers();
-    } finally {
-      setVerifyLoading(false);
-    }
   };
 
   const handleGetVerificationLink = async () => {
@@ -220,28 +198,13 @@ const UserList = () => {
     try {
       const { data, error } = await resendVerificationEmail(verifyDialog.id);
       if (error) {
-        toast({ title: 'Error al enviar verificación', description: error.message, variant: 'destructive' });
+        toast({ title: 'Error al reenviar invitación', description: error.message, variant: 'destructive' });
         return;
       }
-      if (data.sent) {
-        // Resend configurado: email enviado exitosamente
-        setEmailSent(data.email);
-      } else {
-        // Sin Resend o fallo de envío: mostrar link para copiar manualmente
-        setGeneratedLink(data.link);
-        if (data.emailError) {
-          toast({ title: 'No se pudo enviar el email', description: `${data.emailError}. Podés copiar el link manualmente.`, variant: 'destructive' });
-        }
-      }
+      if (data.sent) setEmailSent(data.email);
     } finally {
       setVerifyLoading(false);
     }
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(generatedLink);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   return (
@@ -379,7 +342,7 @@ const UserList = () => {
                                   onClick={() => setVerifyDialog(u)}
                                   className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 gap-1.5"
                                 >
-                                  <MailWarning className="w-4 h-4" /> Verificar
+                                  <MailWarning className="w-4 h-4" /> Reenviar invitación
                                 </Button>
                               )}
                               <Button
@@ -491,44 +454,18 @@ const UserList = () => {
               <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
-              <p className="font-semibold text-brand-dark">Email enviado</p>
+              <p className="font-semibold text-brand-dark">Invitación enviada</p>
               <p className="text-sm text-gray-500">
-                Se envió un link de acceso a <span className="font-medium">{emailSent}</span>.
-                Al hacer clic quedará logueado y su cuenta se verificará automáticamente.
-              </p>
-            </div>
-          ) : generatedLink ? (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-500">
-                Compartí este link con el usuario. Al hacer clic quedará logueado y
-                su cuenta se verificará automáticamente.
-              </p>
-              <div className="flex items-center gap-2">
-                <Input value={generatedLink} readOnly className="text-xs font-mono" />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} title="Copiar link">
-                  {linkCopied ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-400">
-                El link es de un solo uso y expira en 1 hora.
+                Se envió un enlace para crear contraseña a <span className="font-medium">{emailSent}</span>.
+                El enlace es de un solo uso y vence en una hora.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-gray-500">
-                Este usuario aún no confirmó su email. Podés verificarlo manualmente
-                o enviarle un email con un link de acceso.
+                Este usuario todavía no completó su acceso. Reenviá una invitación
+                para que pueda crear su contraseña.
               </p>
-              <Button
-                onClick={handleManualVerify}
-                disabled={verifyLoading}
-                className="w-full bg-brand-primary hover:bg-brand-dark text-white"
-              >
-                {verifyLoading
-                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando...</>
-                  : <><CheckCircle2 className="w-4 h-4 mr-2" /> Verificar manualmente</>
-                }
-              </Button>
               <Button
                 onClick={handleGetVerificationLink}
                 disabled={verifyLoading}
@@ -537,7 +474,7 @@ const UserList = () => {
               >
                 {verifyLoading
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</>
-                  : <><Mail className="w-4 h-4 mr-2" /> Enviar email de verificación</>
+                  : <><Mail className="w-4 h-4 mr-2" /> Reenviar invitación</>
                 }
               </Button>
             </div>

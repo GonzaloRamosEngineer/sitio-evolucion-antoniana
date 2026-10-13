@@ -1,12 +1,9 @@
 // =============================================================================
 // Edge Function: resend-verification
 // =============================================================================
-// Genera un magic link de acceso y lo envía por email al usuario via Resend.
-// Si RESEND_API_KEY no está configurada devuelve el link para que el admin
-// lo comparta manualmente (fallback seguro).
-//
-// Al hacer clic en el link, el usuario queda logueado Y su email queda confirmado,
-// lo que dispara el trigger handle_email_confirmed → is_verified = true.
+// Reenvía una invitación para que el usuario cree su propia contraseña.
+// Usa el SMTP configurado en Supabase, que es el mismo canal del formulario
+// “Olvidé mi contraseña”. No genera claves para compartir por fuera.
 //
 // Setup de Resend (una sola vez):
 //  1. Crear cuenta en resend.com (gratis hasta 3000 mails/mes).
@@ -35,9 +32,6 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const RESEND_FROM = Deno.env.get("RESEND_FROM_EMAIL") ??
-      "Evolución Antoniana <noreply@evolucionantoniana.com>";
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -76,7 +70,7 @@ Deno.serve(async (req) => {
 
     const { data: targetUser, error: targetErr } = await supabaseAdmin
       .from("users")
-      .select("email, name")
+      .select("email")
       .eq("id", userId)
       .single();
 
@@ -84,79 +78,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Usuario no encontrado" }, 404);
     }
 
-    // Genera el magic link (un solo uso, expira en 1h por defecto en Supabase).
-    const { data: linkData, error: linkErr } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email: targetUser.email,
-      });
+    const { error: inviteErr } = await supabaseAdmin.auth.resetPasswordForEmail(
+      targetUser.email,
+      { redirectTo: "https://www.evolucionantoniana.com/update-password" },
+    );
 
-    if (linkErr || !linkData?.properties?.action_link) {
+    if (inviteErr) {
       return jsonResponse(
-        { error: linkErr?.message ?? "No se pudo generar el link" },
+        { error: inviteErr.message ?? "No se pudo enviar la invitación" },
         500,
       );
     }
 
-    const actionLink = linkData.properties.action_link;
-
-    // Si Resend está configurado, enviar el email directamente.
-    if (RESEND_API_KEY) {
-      const firstName = targetUser.name?.split(" ")[0] || "usuario";
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head><meta charset="UTF-8"></head>
-        <body style="font-family:sans-serif;background:#f9fafb;padding:32px">
-          <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:40px;border:1px solid #e5e7eb">
-            <img src="https://evolucionantoniana.com/logo-ea.png" alt="Evolución Antoniana" style="height:48px;margin-bottom:24px" />
-            <h2 style="color:#1e2a4a;margin:0 0 8px">Acceso a tu cuenta</h2>
-            <p style="color:#6b7280;margin:0 0 24px">Hola ${firstName}, el administrador generó un link de acceso para tu cuenta en el portal de Evolución Antoniana.</p>
-            <a href="${actionLink}"
-               style="display:inline-block;background:#b91c1c;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px">
-              Acceder a mi cuenta
-            </a>
-            <p style="color:#9ca3af;font-size:12px;margin-top:24px">
-              Este link es de un solo uso y expira en 1 hora.<br/>
-              Si no esperabas este email, podés ignorarlo.
-            </p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: RESEND_FROM,
-          to: [targetUser.email],
-          subject: "Acceso a tu cuenta — Fundación Evolución Antoniana",
-          html: emailHtml,
-        }),
-      });
-
-      if (!resendRes.ok) {
-        const resendError = await resendRes.json().catch(() => ({}));
-        // Si el envío falla, devolvemos el link de todas formas para que
-        // el admin pueda compartirlo manualmente.
-        return jsonResponse(
-          {
-            link: actionLink,
-            emailError: resendError?.message ?? "No se pudo enviar el email",
-          },
-          200,
-        );
-      }
-
-      return jsonResponse({ sent: true, email: targetUser.email }, 200);
-    }
-
-    // Sin Resend: devuelve el link para compartir manualmente.
-    return jsonResponse({ link: actionLink }, 200);
+    return jsonResponse({ sent: true, email: targetUser.email }, 200);
   } catch (e) {
     return jsonResponse({ error: String((e as Error)?.message ?? e) }, 500);
   }
