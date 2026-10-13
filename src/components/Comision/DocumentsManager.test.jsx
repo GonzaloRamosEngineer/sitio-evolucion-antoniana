@@ -35,7 +35,8 @@ describe('DocumentsManager — acceso documental', () => {
   it('muestra el archivo interno sin ofrecer acciones de escritura', async () => {
     render(<DocumentsManager readOnly />);
 
-    expect(await screen.findByText('Balance interno 2025')).toBeInTheDocument();
+    expect((await screen.findAllByText('Balance interno 2025')).length).toBe(2);
+    expect(screen.getByRole('columnheader', { name: 'Acceso' })).toBeInTheDocument();
     expect(screen.getByText(/únicamente para consulta/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Nuevo documento/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Editar|Eliminar/i })).not.toBeInTheDocument();
@@ -44,7 +45,7 @@ describe('DocumentsManager — acceso documental', () => {
   it('conserva las acciones para la Comisión Directiva', async () => {
     render(<DocumentsManager />);
 
-    expect(await screen.findByText('Balance interno 2025')).toBeInTheDocument();
+    expect((await screen.findAllByText('Balance interno 2025')).length).toBe(2);
     expect(screen.getByRole('button', { name: /Nuevo documento/i })).toBeInTheDocument();
   });
 });

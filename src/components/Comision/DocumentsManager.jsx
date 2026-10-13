@@ -266,7 +266,81 @@ const DocumentsManager = ({ readOnly = false }) => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <>
+              {/* En escritorio el archivo se lee como un registro: cada columna
+                  responde una pregunta concreta. Las tarjetas se mantienen en
+                  móvil, donde una tabla perdería legibilidad. */}
+              <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[820px] text-left">
+                    <thead className="bg-brand-sand/60 border-b border-gray-100">
+                      <tr className="text-xs uppercase tracking-wider text-gray-500">
+                        <th scope="col" className="px-5 py-4 font-semibold">Documento</th>
+                        <th scope="col" className="px-4 py-4 font-semibold">Categoría</th>
+                        <th scope="col" className="px-4 py-4 font-semibold">Acceso</th>
+                        <th scope="col" className="px-4 py-4 font-semibold">Versión</th>
+                        <th scope="col" className="px-4 py-4 font-semibold">Actualizado</th>
+                        {!readOnly && <th scope="col" className="w-14 px-4 py-4"><span className="sr-only">Acciones</span></th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {sortedDocuments.map((d, i) => {
+                        const versionCount = (d.document_versions || []).length;
+                        return (
+                          <motion.tr
+                            key={d.id}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: i * 0.02 }}
+                            className="group hover:bg-brand-sand/35 transition-colors"
+                          >
+                            <td className="px-5 py-4">
+                              <button type="button" onClick={() => setSelectedId(d.id)} className="flex max-w-md items-start gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded-lg">
+                                <span className="mt-0.5 rounded-lg bg-brand-primary/10 p-2 text-brand-primary shrink-0"><FileText className="w-4 h-4" /></span>
+                                <span>
+                                  <span className="block font-poppins font-bold text-brand-dark group-hover:text-brand-primary transition-colors">{d.title}</span>
+                                  {d.description && <span className="mt-1 block text-sm leading-5 text-gray-500 line-clamp-2">{d.description}</span>}
+                                </span>
+                              </button>
+                            </td>
+                            <td className="px-4 py-4 align-top">
+                              {d.category ? <Badge variant="outline" className="whitespace-nowrap border-brand-primary/20 text-brand-primary bg-brand-primary/5">{d.category}</Badge> : <span className="text-sm text-gray-400">Sin categoría</span>}
+                            </td>
+                            <td className="px-4 py-4 align-top">
+                              {d.visibility === 'public' ? (
+                                <Badge variant="outline" className="whitespace-nowrap border-emerald-200 bg-emerald-50 text-emerald-700"><Globe2 className="mr-1 h-3 w-3" /> Público</Badge>
+                              ) : (
+                                <Badge variant="outline" className="whitespace-nowrap border-amber-200 bg-amber-50 text-amber-800"><LockKeyhole className="mr-1 h-3 w-3" /> Interno</Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 align-top">
+                              <Badge className="whitespace-nowrap bg-brand-dark text-white hover:bg-brand-dark">{versionCount === 0 ? 'Sin archivos' : `v${d.current_version}`}</Badge>
+                              {versionCount > 1 && <span className="ml-2 text-xs text-gray-400">{versionCount} versiones</span>}
+                            </td>
+                            <td className="px-4 py-4 align-top text-sm text-gray-500 whitespace-nowrap">{formatDateTime(d.updated_at)}</td>
+                            {!readOnly && (
+                              <td className="px-4 py-4 align-top">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button type="button" aria-label={`Acciones para ${d.title}`} className="rounded-md p-1 text-gray-400 hover:text-brand-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"><MoreVertical className="w-4 h-4" /></button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => openEdit(d)}><Pencil className="w-4 h-4 mr-2" /> Editar</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setToDelete(d)} className="text-red-600 focus:text-red-700 focus:bg-red-50"><Trash2 className="w-4 h-4 mr-2" /> Eliminar</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            )}
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            <div className="grid grid-cols-1 gap-4 md:hidden">
               {sortedDocuments.map((d, i) => {
                 const versionCount = (d.document_versions || []).length;
                 return (
@@ -338,6 +412,7 @@ const DocumentsManager = ({ readOnly = false }) => {
                 );
               })}
             </div>
+            </>
           )}
         </>
       )}
