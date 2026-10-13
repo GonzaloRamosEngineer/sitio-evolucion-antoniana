@@ -98,14 +98,16 @@ const DocumentsManager = ({ readOnly = false }) => {
     return options;
   }, [accessDocuments]);
 
-  // Pipeline: documents → filtro por categoría → búsqueda (useSearch) → orden.
+  // Los chips acotan la exploración manual. Una búsqueda, en cambio, siempre
+  // recorre la biblioteca completa para no ocultar coincidencias por un filtro previo.
   const categoryDocuments = useMemo(() => {
     if (categoryFilter === ALL) return accessDocuments;
     if (categoryFilter === NO_CATEGORY) return accessDocuments.filter((d) => !d.category);
     return accessDocuments.filter((d) => d.category === categoryFilter);
   }, [accessDocuments, categoryFilter]);
 
-  const { query, setQuery, filtered } = useSearch(categoryDocuments, ['title', 'category', 'description']);
+  const { query, setQuery, filtered: searchResults } = useSearch(documents, ['title', 'category', 'description']);
+  const filtered = query.trim() ? searchResults : categoryDocuments;
 
   const sortedDocuments = useMemo(() => {
     const list = [...filtered];

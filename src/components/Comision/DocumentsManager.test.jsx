@@ -29,6 +29,17 @@ const documentFixture = {
   document_versions: [{ id: 'version-1', version_number: 1, file_path: 'documento-1/balance.pdf' }],
 };
 
+const publicDocumentFixture = {
+  id: 'documento-2',
+  title: 'Estatuto fundacional',
+  category: 'Estatuto',
+  description: 'Documento público institucional.',
+  visibility: 'public',
+  current_version: 1,
+  updated_at: '2026-10-11T12:00:00Z',
+  document_versions: [{ id: 'version-2', version_number: 1, file_path: 'documento-2/estatuto.pdf' }],
+};
+
 describe('DocumentsManager — acceso documental', () => {
   beforeEach(() => {
     vi.stubGlobal('IntersectionObserver', class {
@@ -78,5 +89,16 @@ describe('DocumentsManager — acceso documental', () => {
 
     await vi.waitFor(() => expect(getSignedUrl).toHaveBeenCalledWith('documento-1/balance.pdf'));
     expect(tab.location.href).toBe('https://example.test/balance.pdf');
+  });
+
+  it('busca en toda la biblioteca aunque haya un filtro de acceso activo', async () => {
+    getDocuments.mockResolvedValue({ data: [documentFixture, publicDocumentFixture], error: null });
+    render(<DocumentsManager readOnly />);
+
+    await screen.findAllByText('Balance interno 2025');
+    fireEvent.click(screen.getByRole('button', { name: /Internos 1/i }));
+    fireEvent.change(screen.getByPlaceholderText('Buscar documento...'), { target: { value: 'estat' } });
+
+    expect((await screen.findAllByText('Estatuto fundacional')).length).toBe(2);
   });
 });
