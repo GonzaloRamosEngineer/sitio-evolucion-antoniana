@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 const getDocuments = vi.fn();
+const getSignedUrl = vi.fn();
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'persona-1', role: 'documentacion_lectura' } }),
@@ -10,6 +11,7 @@ vi.mock('@/hooks/useAuth', () => ({
 
 vi.mock('@/api/documentsApi', () => ({
   getDocuments,
+  getSignedUrl,
   createDocument: vi.fn(),
   updateDocument: vi.fn(),
   deleteDocument: vi.fn(),
@@ -24,7 +26,7 @@ const documentFixture = {
   description: 'Documentación presentada ante Personería Jurídica.',
   current_version: 1,
   updated_at: '2026-10-12T12:00:00Z',
-  document_versions: [{ id: 'version-1' }],
+  document_versions: [{ id: 'version-1', version_number: 1, file_path: 'documento-1/balance.pdf' }],
 };
 
 describe('DocumentsManager — acceso documental', () => {
@@ -35,6 +37,7 @@ describe('DocumentsManager — acceso documental', () => {
       disconnect() {}
     });
     getDocuments.mockResolvedValue({ data: [documentFixture], error: null });
+    getSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.test/balance.pdf' }, error: null });
   });
 
   it('muestra el archivo interno sin ofrecer acciones de escritura', async () => {
@@ -63,5 +66,17 @@ describe('DocumentsManager — acceso documental', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Internos 1/i }));
     expect((await screen.findAllByText('Balance interno 2025')).length).toBe(2);
+  });
+
+  it('abre la última versión directamente para acceso documental', async () => {
+    const tab = { location: {} };
+    vi.spyOn(window, 'open').mockReturnValue(tab);
+    render(<DocumentsManager readOnly />);
+
+    await screen.findAllByText('Balance interno 2025');
+    fireEvent.click(screen.getAllByRole('button', { name: /Abrir última versión de Balance interno 2025/i })[0]);
+
+    await vi.waitFor(() => expect(getSignedUrl).toHaveBeenCalledWith('documento-1/balance.pdf'));
+    expect(tab.location.href).toBe('https://example.test/balance.pdf');
   });
 });
