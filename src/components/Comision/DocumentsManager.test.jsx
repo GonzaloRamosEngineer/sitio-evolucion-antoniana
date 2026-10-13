@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 const getDocuments = vi.fn();
 
@@ -29,6 +29,11 @@ const documentFixture = {
 
 describe('DocumentsManager — acceso documental', () => {
   beforeEach(() => {
+    vi.stubGlobal('IntersectionObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
     getDocuments.mockResolvedValue({ data: [documentFixture], error: null });
   });
 
@@ -47,5 +52,16 @@ describe('DocumentsManager — acceso documental', () => {
 
     expect((await screen.findAllByText('Balance interno 2025')).length).toBe(2);
     expect(screen.getByRole('button', { name: /Nuevo documento/i })).toBeInTheDocument();
+  });
+
+  it('filtra el catálogo completo por tipo de acceso', async () => {
+    render(<DocumentsManager readOnly />);
+
+    await screen.findAllByText('Balance interno 2025');
+    fireEvent.click(screen.getByRole('button', { name: /Públicos 0/i }));
+    expect(await screen.findByText('Sin coincidencias')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Internos 1/i }));
+    expect((await screen.findAllByText('Balance interno 2025')).length).toBe(2);
   });
 });

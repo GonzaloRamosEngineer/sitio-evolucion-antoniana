@@ -39,6 +39,8 @@ import { logger } from '@/lib/logger';
 const NONE = 'none';
 const ALL = 'all';
 const NO_CATEGORY = '__none__';
+const INTERNAL = 'internal';
+const PUBLIC = 'public';
 const emptyDoc = () => ({ title: '', category: NONE, description: '', visibility: 'internal', public_url: '' });
 
 const DocumentsManager = ({ readOnly = false }) => {
@@ -59,13 +61,29 @@ const DocumentsManager = ({ readOnly = false }) => {
   const [deleting, setDeleting] = useState(false);
 
   const [categoryFilter, setCategoryFilter] = useState(ALL);
+  const [accessFilter, setAccessFilter] = useState(ALL);
   const [sortBy, setSortBy] = useState('recent');
+
+  const accessOptions = useMemo(() => {
+    const internalCount = documents.filter((d) => d.visibility !== PUBLIC).length;
+    const publicCount = documents.filter((d) => d.visibility === PUBLIC).length;
+    return [
+      { value: ALL, label: 'Todos', count: documents.length },
+      { value: INTERNAL, label: 'Internos', count: internalCount },
+      { value: PUBLIC, label: 'Públicos', count: publicCount },
+    ];
+  }, [documents]);
+
+  const accessDocuments = useMemo(() => {
+    if (accessFilter === ALL) return documents;
+    return documents.filter((d) => (d.visibility || INTERNAL) === accessFilter);
+  }, [documents, accessFilter]);
 
   // Opciones de chips: "Todas" + categorías realmente presentes (en orden de DOC_CATEGORIES) + "Sin categoría".
   const categoryOptions = useMemo(() => {
     const counts = new Map();
     let noneCount = 0;
-    documents.forEach((d) => {
+    accessDocuments.forEach((d) => {
       if (d.category) counts.set(d.category, (counts.get(d.category) || 0) + 1);
       else noneCount += 1;
     });
@@ -74,17 +92,17 @@ const DocumentsManager = ({ readOnly = false }) => {
     counts.forEach((count, c) => {
       if (!DOC_CATEGORIES.includes(c)) ordered.push({ value: c, label: c, count });
     });
-    const options = [{ value: ALL, label: 'Todas', count: documents.length }, ...ordered];
+    const options = [{ value: ALL, label: 'Todas', count: accessDocuments.length }, ...ordered];
     if (noneCount > 0) options.push({ value: NO_CATEGORY, label: 'Sin categoría', count: noneCount });
     return options;
-  }, [documents]);
+  }, [accessDocuments]);
 
   // Pipeline: documents → filtro por categoría → búsqueda (useSearch) → orden.
   const categoryDocuments = useMemo(() => {
-    if (categoryFilter === ALL) return documents;
-    if (categoryFilter === NO_CATEGORY) return documents.filter((d) => !d.category);
-    return documents.filter((d) => d.category === categoryFilter);
-  }, [documents, categoryFilter]);
+    if (categoryFilter === ALL) return accessDocuments;
+    if (categoryFilter === NO_CATEGORY) return accessDocuments.filter((d) => !d.category);
+    return accessDocuments.filter((d) => d.category === categoryFilter);
+  }, [accessDocuments, categoryFilter]);
 
   const { query, setQuery, filtered } = useSearch(categoryDocuments, ['title', 'category', 'description']);
 
@@ -246,13 +264,16 @@ const DocumentsManager = ({ readOnly = false }) => {
             </Select>
           </SearchBar>
 
+          <div className="-mt-2 mb-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Acceso</p>
+            <FilterChips options={accessOptions} value={accessFilter} onChange={setAccessFilter} />
+          </div>
+
           {categoryOptions.length > 1 && (
-            <FilterChips
-              options={categoryOptions}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              className="-mt-2 mb-5"
-            />
+            <div className="mb-5">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Categoría</p>
+              <FilterChips options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} />
+            </div>
           )}
 
           {sortedDocuments.length === 0 ? (
