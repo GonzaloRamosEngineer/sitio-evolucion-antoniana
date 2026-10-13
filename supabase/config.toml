@@ -3,6 +3,35 @@
 # anon, JWT secret) viven en la plataforma / variables de entorno, nunca acá.
 project_id = "lbtyxnbyetsvngsxczkt"
 
+# URL canónica y destinos permitidos para los enlaces de autenticación.
+# Supabase descarta `redirectTo` si no figura aquí y vuelve a la portada.
+[auth]
+site_url = "https://www.evolucionantoniana.com"
+additional_redirect_urls = [
+  "https://www.evolucionantoniana.com/update-password",
+  "https://evolucionantoniana.com/update-password",
+]
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1m0s"
+otp_length = 6
+otp_expiry = 3600
+
 [functions.create-user]
 verify_jwt = true
 
