@@ -53,6 +53,20 @@
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
+### 🔴 P0 (2026-10-16) — cualquier sesión puede insertarse un pago aprobado
+
+`20261016110000_p0_cerrar_escritura_pagos.sql` — rama `fix/p0-escritura-pagos`, **sin
+aplicar**. En producción `authenticated` tiene INSERT sobre `donations` y `memberships`
+con policies que lo permiten: una sesión se inserta una donación `approved` y el trigger
+le da acceso y monto acumulado. `anon` puede insertar donaciones anónimas aprobadas.
+La migración revoca toda escritura de `anon`/`authenticated` (también TRUNCATE, como
+defensa en profundidad), conserva SELECT (el historial) y la escritura de `service_role`
+(el webhook). Trae pre y post chequeo: si algo queda abierto, se revierte sola.
+Prueba funcional: `supabase/checks/pagos-escritura-check.sql` (19 PASA; sin la migración
+da FALLA). Ninguna pantalla escribe esas tablas: lo fija `src/lib/escrituras-pagos.test.js`.
+**Es independiente del trabajo de cuotas** (`feat/cuotas-concepto`) y no necesita
+desplegar frontend ni webhook.
+
 **Estado en una línea:** el circuito de ingresos está cerrado, §10 está cerrado desde el
 2026-09-05, §14 se cerró el 2026-09-06 y **§12 se cerró como módulo el 2026-09-06**. Lo
 que queda es de contenido, de gente y de una consulta legal; de infraestructura ya no

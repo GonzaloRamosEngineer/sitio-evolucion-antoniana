@@ -20,6 +20,12 @@ la base.
   otorgaba **diez meses** de acceso porque se convertía con la regla proporcional de las
   donaciones. Trae el par que lo hace discriminar: R1 (una donación **sí** da 3 meses) al
   lado de R2 (una renovación del mismo monto da 1).
+- **`pagos-escritura-check.sql`** — el P0 de `20261016110000`: una sesión autenticada
+  (y anon) NO puede insertar, aprobar, borrar ni truncar pagos o membresías, SÍ sigue
+  leyendo lo suyo (el historial), y el webhook (`service_role`) SÍ registra un cobro de
+  punta a punta —donación, aporte, reproceso idempotente y reclasificación como cuota—.
+  Cada intento informa si se rechazó por PERMISOS o por otro motivo: que algo falle por
+  una FK no prueba que esté cerrado. **Corrido sin la migración tiene que dar FALLA.**
 - **`fondos-check.sql`** — fondos restringidos (`20260906120000`). Dos cosas distintas
   que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
   trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que
@@ -108,6 +114,7 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/club-che
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/membresia-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/fondos-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/pagos-escritura-check.sql
 
 # 3b. El de la foto de perfil va aparte: necesita el schema `storage` (que en un
 #     Postgres pelado no existe) y por lo tanto otro usuario y el arbol adentro.
