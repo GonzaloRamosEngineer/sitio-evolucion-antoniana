@@ -41,9 +41,20 @@ fi
 # ⚠️ NO usar `. <(...)`: en el bash 3.2 que trae macOS, hacer `source` de una
 # sustitución de proceso no lee NADA y las variables quedan vacías sin ningún
 # error (auditoría 2026-10-15: "falta PGHOST en .env.db" con el archivo bien).
-# `eval` del contenido ya limpio funciona igual en bash 3.2 y en 5.x.
+#
+# Se normaliza a un archivo temporal y se hace `source` de ESE archivo:
+#   * funciona igual en bash 3.2 y en 5.x, y no pasa el contenido por `eval`;
+#   * `mktemp` lo crea con permisos 0600 (solo el usuario), y el `trap` lo
+#     borra al salir por CUALQUIER camino: éxito, `exit 1` de una validación o
+#     un error con `set -e`. La contraseña no queda en disco más que lo que
+#     dura la corrida;
+#   * no se imprime nada de su contenido, ni siquiera ante un error.
+env_normalizado="$(mktemp "${TMPDIR:-/tmp}/db-env.XXXXXX")"
+trap 'rm -f "$env_normalizado"' EXIT
+tr -d '\r' < "$ENV_DB" > "$env_normalizado"
 set -a
-eval "$(tr -d '\r' < "$ENV_DB")"
+# shellcheck disable=SC1090
+. "$env_normalizado"
 set +a
 
 for v in PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD; do
