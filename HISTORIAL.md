@@ -7345,3 +7345,24 @@ Huellas de datos, idénticas antes y después (sin datos personales):
 aparte. **Falta:** `p0_4_monitoreo.sql` a +24 h, +72 h y después del próximo cobro real
 (renovación ≈ 2/11), esperando una fila nueva con `tiene_aporte = t`.
 
+## §17 — Simulación en producción de la regla 2026-10 (2026-10-16)
+
+Autorizada **solo la simulación**. `bash tools/cuotas-2026-10.sh simular` a las 04:25:59 UTC,
+en una ventana sin cobros (sin escrituras del webhook en 24 h; próxima renovación ≈ 2/11).
+**Terminó en ROLLBACK y no dejó cambios.** No se aplicó ni desplegó nada después.
+
+| | Resultado |
+|---|---|
+| Pre chequeo | `HUELLA OK` (4b1fbf15…), `PRE CHEQUEO OK`: 8 aportes, 8 cobros, 135 manuales |
+| Simulación | bloqueos obtenidos; huella OK antes de migrar; las 2 migraciones; 8 `CAMBIO ESPERADO`; `POST CHEQUEO OK` (cuenta de control: 2 cuotas, $30.000, acceso); `FIN: ROLLBACK`; exit 0; 17 s |
+| Foto de lógica (227 objetos) | idéntica antes y después |
+| Foto de datos (permisos, policies, huellas md5) | idéntica: donations 8 · memberships 18 · aportes 143 |
+| Objetos de la regla en producción | ninguno (columna, tabla, funciones, trigger, UNIQUE) |
+| Sesiones / bloqueos remanentes | 0 / 0 |
+
+Antes de simular se agregaron límites (`lock_timeout` 10 s, `statement_timeout` 120 s, sin
+reintentos), la huella de la base de reversión (que expuso que 35 funciones de producción
+tienen fines de línea CRLF) y se corrigió `foto_logica_aportes.sql`, cuya consulta de
+policies fallaba y era la causa de las fallas intermitentes del ensayo. Réplica: 10
+corridas consecutivas, 36/36 cada una.
+
