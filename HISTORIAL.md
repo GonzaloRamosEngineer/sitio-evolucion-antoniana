@@ -7263,3 +7263,29 @@ está deshabilitado hasta «Habilitar Edición», y hay un test que lo fija.
 `EditProfileModal.test.jsx` es nuevo: este modal no tenía ninguno. Cuatro casos, y el que
 importa es que **siempre haya una salida**, incluso en modo edición (donde «Cancelar» sale
 del modo, no del modal).
+
+## §16 — P0 aplicada: nadie desde el navegador escribe pagos (2026-10-16)
+
+Migración `20261016110000_p0_cerrar_escritura_pagos.sql`, sola, con
+`bash tools/db.sh apply` siguiendo `docs/operacion-p0-escritura-pagos.md`. No se aplicó
+ninguna otra migración, ni hubo deploy.
+
+| Paso | Resultado |
+|---|---|
+| 0 conexión | `OK · postgres · PostgreSQL 15.8` |
+| 1 respaldo | dump de `public` (373.756 bytes, fuera del repo, 0600) + foto; permisos y policies idénticos a la referencia |
+| 2 pre chequeo | `PRE CHEQUEO OK` — 9 permisos de escritura de anon/authenticated y 2 policies `Insert …` |
+| 3 aplicar | `POST CHEQUEO OK`, exit 0 |
+| 4 post chequeo | 19/19 PASA, `residuo 0`: una sesión real no escribe y lee lo suyo; el webhook (`service_role`) inserta y actualiza |
+| 5 foto después | solo cambian permisos (anon/authenticated → `SELECT`) y desaparecen las 2 policies |
+| 6 webhook | `/health` ok, `2026-08-31.consulta-mp` |
+| monitoreo | `aprobadas_sin_aporte = 0`; última escritura del webhook 2026-10-12 |
+
+Huellas de datos, idénticas antes y después (sin datos personales):
+`donations 8 · f9093d95e36a4cfc2df21c4fe80a2122`, `memberships 18 · d0c78ed09f5e2d4d948b03643c196bb8`,
+`aportes 143 · f8b612231061a5c87186a144155046b4`.
+
+**No se modificó el SELECT de `anon` sobre `donations`** (hoy ve 0 filas por RLS): se revisa
+aparte. **Falta:** `p0_4_monitoreo.sql` a +24 h, +72 h y después del próximo cobro real
+(renovación ≈ 2/11), esperando una fila nueva con `tiene_aporte = t`.
+

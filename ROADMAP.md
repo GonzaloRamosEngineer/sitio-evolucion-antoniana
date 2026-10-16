@@ -53,7 +53,15 @@
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-### 🔴 P0 (2026-10-16) — cualquier sesión puede insertarse un pago aprobado
+### ✅ P0 (2026-10-16) — APLICADA en producción (2026-10-16 03:21:42 UTC aprox.)
+
+Aplicada con el runbook completo: pre chequeo OK, `POST CHEQUEO OK`, post chequeo funcional
+19/19 PASA (`residuo 0`), huellas de datos idénticas antes/después, webhook en pie. Ver
+`HISTORIAL.md` §16. **Pendiente:** monitoreo a +24 h y +72 h y en el próximo cobro real
+(`p0_4_monitoreo.sql`); revisión aparte del SELECT de `anon` sobre `donations`.
+
+El texto de abajo es el que motivó el cambio:
+
 
 `20261016110000_p0_cerrar_escritura_pagos.sql` — rama `fix/p0-escritura-pagos`, **sin
 aplicar**. En producción `authenticated` tiene INSERT sobre `donations` y `memberships`
