@@ -105,12 +105,16 @@ const ReclamarAportes = ({ userId }) => {
               <>
                 {' '}
                 Hay ${montoTotal.toLocaleString('es-AR')} en aportes
-                {mesesTotal > 0 && (
+                {/* Solo una CUOTA da meses (regla 2026-10). Una donación suma
+                    al total aportado y no se promete acceso por ella. */}
+                {mesesTotal > 0 ? (
                   <>
                     {' '}
                     que te {mesesTotal === 1 ? 'daría' : 'darían'} {formatearMeses(mesesTotal)} de
                     acceso
                   </>
+                ) : (
+                  <> que suman a tu total aportado</>
                 )}
                 .
               </>

@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { ESTADOS_HISTORIAL, ESTADOS_MEMBRESIA, describirEstado } from '@/lib/estadosPago';
 
+// El cobro mensual de una suscripción también aterriza en `donations` (regla
+// de oro del webhook), con `donation_type = 'suscripción'`. Llamarlo «Donación
+// única» le decía a un socio que sus cuotas eran donaciones (regla 2026-10).
+const esCobroDeCuota = (d) => ['suscripción', 'suscripcion'].includes(String(d?.donation_type ?? '').toLowerCase());
+const tituloMovimiento = (item) =>
+  item.kind === 'membership' ? 'Suscripción mensual'
+    : esCobroDeCuota(item) ? 'Cuota mensual'
+    : 'Donación extraordinaria';
+
 const tones = { ok: 'bg-green-50 text-green-800', curso: 'bg-blue-50 text-blue-800', atencion: 'bg-amber-50 text-amber-800', cerrado: 'bg-gray-100 text-gray-600', desconocido: 'bg-gray-100 text-gray-600' };
 
 export default function AccountHistory({ donations, memberships, loading, error, onRetry }) {
@@ -19,8 +28,8 @@ export default function AccountHistory({ donations, memberships, loading, error,
           const state = describirEstado(item.kind === 'membership' ? ESTADOS_MEMBRESIA : ESTADOS_HISTORIAL, item.status);
           return <li key={`${item.kind}-${item.id}`} className="p-5 sm:px-6">
             <div className="flex justify-between items-start gap-3">
-              <div className="min-w-0"><p className="font-semibold text-brand-dark">{item.kind === 'donation' ? 'Donación única' : 'Suscripción mensual'}</p><p className="text-sm text-gray-600 mt-1">{item.created_at ? new Date(item.created_at).toLocaleDateString('es-AR') : 'Fecha no disponible'}</p></div>
-              <div className="text-right shrink-0"><p className="font-bold text-brand-dark">${Number(item.amount).toLocaleString('es-AR')} <span className="text-xs font-normal">ARS</span></p><span className={`inline-block mt-1 px-2 py-1 rounded-md text-xs font-semibold ${tones[state.tono]}`}>{state.label}</span></div>
+              <div className="min-w-0"><p className="font-semibold text-brand-dark">{tituloMovimiento(item)}</p><p className="text-sm text-gray-600 mt-1">{item.created_at ? new Date(item.created_at).toLocaleDateString('es-AR') : 'Fecha no disponible'}</p></div>
+              <div className="text-right shrink-0"><p className="font-bold text-brand-dark">${Number(item.amount).toLocaleString('es-AR')} <span className="text-xs font-normal">ARS</span></p><span className={`inline-block mt-1 px-2 py-1 rounded-md text-xs font-semibold ${tones[state.tono]}`}>{state.label}</span>{item.status === 'approved' && Number(item.monto_reintegrado) > 0 && <p className="mt-1 text-xs text-gray-600">Reintegro parcial: ${Number(item.monto_reintegrado).toLocaleString('es-AR')}</p>}</div>
             </div>
             <details className="mt-2 text-sm text-gray-600"><summary className="cursor-pointer min-h-[44px] flex items-center underline underline-offset-4">Ver referencia de pago</summary><p className="break-all pb-2">Mercado Pago: {item.payment_id || item.preapproval_id || 'Referencia pendiente'}</p></details>
           </li>;

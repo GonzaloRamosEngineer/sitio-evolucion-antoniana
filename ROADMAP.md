@@ -53,6 +53,24 @@
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
+### 🔴 2026-10-16 — Cuotas, donaciones, adelantos y webhook: LISTO EN RAMA, SIN DESPLEGAR
+
+Rama local `feat/cuotas-concepto` (sitio, rebasada sobre la P0) + `feat/seguridad-reintegros-idempotencia`
+(repo `mp-supabase-webhook`). Nada aplicado ni desplegado. Crónica y razones en
+`HISTORIAL.md` §15. **Bloquea sumar los 5–10 socios nuevos**: con lo que hay en
+producción, una donación compra meses y empuja las cuotas (período de UN día). El
+agujero de escritura de pagos ya lo cerró la P0 (abajo, y §16).
+
+**Procedimiento completo, con pre y post chequeos, ventanas y reversión:**
+[`docs/operacion-cuotas-2026-10.md`](docs/operacion-cuotas-2026-10.md). Orden fijo:
+**migraciones → frontend → webhook → Edge Function `club-generar-canje`**.
+
+**Pendiente de verificar con datos reales:** de qué campo de un `payment` de renovación
+sale el id del preapproval (el webhook prueba `metadata.preapproval_id`,
+`point_of_interaction.transaction_data.subscription_id` y `subscription_id`; si no viene
+en ninguno, cae a `external_reference` filtrando suscripciones vivas). Mirar el log
+`🔍 Respuesta MP (payment)` del próximo cobro (≈ 2/11).
+
 ### ✅ P0 (2026-10-16) — APLICADA en producción (2026-10-16 03:21:42 UTC aprox.)
 
 Aplicada con el runbook completo: pre chequeo OK, `POST CHEQUEO OK`, post chequeo funcional

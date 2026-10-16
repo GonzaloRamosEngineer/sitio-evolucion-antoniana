@@ -3,12 +3,18 @@
 // distinguirlos de un error real del negocio (4xx), que no se reintenta.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// El módulo importa el cliente Supabase en el nivel superior; no lo usa en las
-// funciones que probamos acá, así que lo stubbeamos para que el test sea hermético.
-vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+// El módulo importa el cliente Supabase en el nivel superior. Solo usa
+// `auth.getSession()` para mandar el token al webhook; por defecto no hay
+// sesión, y los casos con sesión lo configuran (ver «la sesión viaja…»).
+const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({ supabase: { auth: { getSession: (...a) => getSession(...a) } } }));
+beforeEach(() => {
+  getSession.mockReset();
+  getSession.mockResolvedValue({ data: { session: null } });
+});
 
 import {
-  createOneTimeDonation, createSubscription, WebhookError, COLD_START_MESSAGE,
+  createOneTimeDonation, createSubscription, cancelMembership, WebhookError, COLD_START_MESSAGE,
 } from '@/api/membershipApi';
 import { entidad } from '@/config/entidad';
 
@@ -220,5 +226,49 @@ describe('el destino del aporte viaja en el body', () => {
     await promise;
 
     expect(ultimoBody().description).toBe(`Donación — ${entidad.nombre}`);
+  });
+});
+
+describe('la sesión viaja al webhook (versión 2026-10-16.reintegros-auth)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { ok: true })));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('con sesión manda Authorization: Bearer <token>', async () => {
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok-123' } } });
+    await createOneTimeDonation({ userId: 'u1', emailUsuario: 'a@b.com', amount: 1000 });
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok-123');
+  });
+
+  it('sin sesión no inventa un header: donar sin cuenta sigue permitido', async () => {
+    await createOneTimeDonation({ userId: null, emailUsuario: 'a@b.com', amount: 1000 });
+    expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('Authorization');
+  });
+
+  it('si leer la sesión falla, la llamada sale igual (sin header)', async () => {
+    getSession.mockRejectedValue(new Error('storage bloqueado'));
+    const r = await createOneTimeDonation({ userId: null, emailUsuario: 'a@b.com', amount: 1000 });
+    expect(r.error).toBeNull();
+    expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('Authorization');
+  });
+
+  it('pausar/cancelar también llevan el token: el webhook exige que la suscripción sea tuya', async () => {
+    getSession.mockResolvedValue({ data: { session: { access_token: 'tok-9' } } });
+    await cancelMembership('pre-1');
+    expect(fetch.mock.calls[0][0]).toMatch(/\/api\/suscripciones\/pre-1\/cancelar$/);
+    expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok-9');
+  });
+});
+
+describe('createSubscription no inventa un monto', () => {
+  beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sin monto devuelve error y NO crea una suscripción de $50', async () => {
+    const r = await createSubscription({ userId: 'u1', emailUsuario: 'a@b.com' });
+    expect(r.data).toBeNull();
+    expect(r.error?.message).toMatch(/monto mensual válido/);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

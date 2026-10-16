@@ -11,6 +11,21 @@ export const SIN_ACCESO = Object.freeze({
   vence_el: null,
   origen: null,
   en_gracia: false,
+  concepto: null,
+});
+
+/**
+ * Forma neutra del resumen de aportes (`mi_resumen_aportes()`).
+ *
+ * Existe desde la regla 2026-10: una donación ya no da acceso, pero la persona
+ * que donó tiene que verse REGISTRADA como donante aunque no tenga cuota, ni
+ * fila en `memberships`, ni en el padrón de miembros.
+ */
+export const SIN_RESUMEN = Object.freeze({
+  total_aportado: 0,
+  cuotas_efectivas: 0,
+  donaciones: 0,
+  es_donante: false,
 });
 
 /**
@@ -37,10 +52,17 @@ export const diasHasta = (fechaISO, hoy = new Date()) => {
 
 /**
  * Estado del acceso en una sola palabra, para elegir color y mensaje.
- * 'vigente' | 'gracia' | 'vencido' | 'sin_aportes'
+ * 'vigente' | 'gracia' | 'vencido' | 'donante' | 'sin_aportes'
+ *
+ * `donante` (regla 2026-10): nunca tuvo una cuota que diera acceso, pero sí
+ * donó. No es «sin aportes» — decírselo a quien acaba de donar $20.000 es
+ * negarle el aporte. Si alguna vez tuvo cuota, manda el estado de la cuota
+ * (vencido/gracia): eso es lo que tiene que regularizar.
  */
-export const estadoAcceso = (acceso) => {
-  if (!acceso || (!acceso.tiene_acceso && !acceso.vence_el)) return 'sin_aportes';
+export const estadoAcceso = (acceso, resumen = null) => {
+  if (!acceso || (!acceso.tiene_acceso && !acceso.vence_el)) {
+    return resumen?.es_donante ? 'donante' : 'sin_aportes';
+  }
   if (acceso.en_gracia) return 'gracia';
   return acceso.tiene_acceso ? 'vigente' : 'vencido';
 };
@@ -64,10 +86,11 @@ const ETIQUETAS_ESTADO = {
   vigente: 'Aporte vigente',
   gracia: 'En tolerancia',
   vencido: 'Aporte vencido',
+  donante: 'Donante',
   sin_aportes: 'Sin aportes',
 };
 
-export const etiquetaEstado = (acceso) => ETIQUETAS_ESTADO[estadoAcceso(acceso)];
+export const etiquetaEstado = (acceso, resumen = null) => ETIQUETAS_ESTADO[estadoAcceso(acceso, resumen)];
 
 /**
  * Cómo se PINTA cada estado del acceso (§10.23.c, 2026-09-09).
@@ -90,10 +113,12 @@ export const CLASE_ESTADO = {
   vigente: 'bg-green-500/10 text-green-700',
   gracia: 'bg-amber-500/15 text-amber-700',
   vencido: 'bg-red-500/10 text-red-700',
+  donante: 'bg-brand-gold/15 text-brand-dark',
   sin_aportes: 'bg-gray-100 text-gray-500',
 };
 
-export const claseEstado = (acceso) => CLASE_ESTADO[estadoAcceso(acceso)] ?? CLASE_ESTADO.sin_aportes;
+export const claseEstado = (acceso, resumen = null) =>
+  CLASE_ESTADO[estadoAcceso(acceso, resumen)] ?? CLASE_ESTADO.sin_aportes;
 
 /**
  * Una fecha `YYYY-MM-DD` de la base, como la lee una persona.
@@ -123,6 +148,34 @@ const ORIGENES = {
 };
 
 export const nombreOrigen = (origen) => ORIGENES[origen] ?? null;
+
+/**
+ * Qué SIGNIFICA el aporte (regla 2026-10), que es lo que le importa a la
+ * persona. `origen` es el canal técnico —por dónde entró la plata— y una cuota
+ * puede entrar por `donacion` (así aterriza el cobro de una suscripción), así
+ * que mostrar el origen decía «Donación» a un socio mensual (§10.22).
+ */
+const CONCEPTOS = {
+  cuota_mensual: 'Cuota mensual',
+  adelanto_cuotas: 'Adelanto de cuotas',
+  donacion_extraordinaria: 'Donación extraordinaria',
+};
+
+export const nombreConcepto = (concepto) => CONCEPTOS[concepto] ?? null;
+
+/** De dónde viene el acceso: el concepto si la base lo informa, si no el canal. */
+export const fuenteDelAcceso = (acceso) =>
+  nombreConcepto(acceso?.concepto) ?? nombreOrigen(acceso?.origen);
+
+/** Cuotas efectivas en "1 cuota" / "6 cuotas". Son cuotas, no meses de calendario. */
+export const formatearCuotas = (cuotas) => {
+  const total = Math.max(0, Math.trunc(Number(cuotas) || 0));
+  return `${total} ${total === 1 ? 'cuota' : 'cuotas'}`;
+};
+
+/** Un monto en pesos, como se lee en Argentina: "$30.000". */
+export const formatearPesos = (monto) =>
+  `$${Number(monto || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
 /** Meses en "1 año y 7 meses", que es como lo lee una persona. */
 export const formatearMeses = (meses) => {

@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import EditProfileModal from './EditProfileModal';
-import { useMiAcceso, useMiAntiguedad, useAvatarUrl } from '@/hooks/useContentQueries';
+import { useMiAcceso, useMiAntiguedad, useMiResumenAportes, useAvatarUrl } from '@/hooks/useContentQueries';
 import { avatarDe } from '@/lib/avatar';
 import {
-  SIN_ACCESO, etiquetaEstado, claseEstado, nombreOrigen, formatearMeses, formatearFecha,
+  SIN_ACCESO, SIN_RESUMEN, etiquetaEstado, claseEstado, estadoAcceso, fuenteDelAcceso, formatearCuotas,
+  formatearFecha,
 } from '@/lib/acceso';
 
 /*
@@ -76,6 +77,10 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
   const accesoConocido = !accesoCargando && !accesoFallo;
 
   const { data: antiguedad } = useMiAntiguedad(user?.id);
+  // Quien solo donó no tiene acceso ni membresía, y aun así es donante (regla
+  // 2026-10). Sin esto la cabecera le decía «Sin aportes» a quien donó.
+  const { data: resumen = SIN_RESUMEN } = useMiResumenAportes(user?.id);
+  const esDonante = estadoAcceso(acceso, resumen) === 'donante';
 
   /*
     La foto propia vive en un bucket privado, así que su URL se firma y vence:
@@ -249,8 +254,8 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
             consulta en vuelo o caída (§10.23.b).
           */}
           {accesoConocido && (
-            <Badge className={`shrink-0 rounded-full border-none px-3 py-1 text-xs font-semibold ${claseEstado(acceso)}`}>
-              {etiquetaEstado(acceso)}
+            <Badge className={`shrink-0 rounded-full border-none px-3 py-1 text-xs font-semibold ${claseEstado(acceso, resumen)}`}>
+              {etiquetaEstado(acceso, resumen)}
             </Badge>
           )}
         </div>
@@ -292,9 +297,11 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
                 <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
                   <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
-                  Origen del aporte
+                  Tipo de aporte
                 </dt>
-                <dd className="font-semibold text-brand-dark lg:mt-1">{nombreOrigen(acceso?.origen) ?? 'Sin registrar'}</dd>
+                <dd className="font-semibold text-brand-dark lg:mt-1">
+                  {fuenteDelAcceso(acceso) ?? (esDonante ? 'Donación extraordinaria' : 'Sin registrar')}
+                </dd>
               </div>
 
               {/*
@@ -313,10 +320,10 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
                 <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
                   <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-                  Tiempo aportado
+                  Cuotas pagadas
                 </dt>
                 <dd className="font-semibold text-brand-dark lg:mt-1">
-                  {antiguedad?.socio_desde ? formatearMeses(antiguedad.meses_aportados) : 'Sin registrar'}
+                  {antiguedad?.socio_desde ? formatearCuotas(antiguedad.meses_aportados) : 'Sin registrar'}
                 </dd>
               </div>
             </dl>
@@ -349,7 +356,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               <Button asChild className="mt-6 min-h-[48px] w-full rounded-xl bg-brand-primary font-bold text-white hover:bg-brand-dark lg:w-auto lg:px-8">
                 <Link to="/collaborate">
                   <Star aria-hidden="true" className="mr-2 h-4 w-4 fill-brand-gold text-brand-gold" />
-                  Activar membresía
+                  {esDonante ? 'Sumarme con la cuota mensual' : 'Activar membresía'}
                 </Link>
               </Button>
             )}

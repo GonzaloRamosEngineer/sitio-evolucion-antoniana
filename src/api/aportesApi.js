@@ -28,6 +28,21 @@ export const ORIGENES_APORTE = {
 export const describirOrigen = (origen) =>
   ORIGENES_APORTE[origen] ?? { label: origen || 'sin origen', ayuda: '' };
 
+/**
+ * Qué SIGNIFICA un aporte manual (regla 2026-10). El `value` vacío es "sin
+ * clasificar" y es el default a propósito: así quedaron los 135 aportes
+ * importados hasta revisarlos uno por uno, y un aporte sin clasificar no da
+ * cuotas ni acceso. Marcar `cuota_mensual` hace que la base calcule el período
+ * a partir de la fecha (un mes); las fechas de acceso no se escriben a mano.
+ * `adelanto_cuotas` no se ofrece todavía: es una operación explícita que llega
+ * después.
+ */
+export const CONCEPTOS_APORTE_MANUAL = [
+  { value: '', label: 'Sin clasificar', ayuda: 'No cuenta como cuota. Revisalo cuando puedas.' },
+  { value: 'cuota_mensual', label: 'Cuota mensual', ayuda: 'Cubre un mes de cuota de la persona aportante.' },
+  { value: 'donacion_extraordinaria', label: 'Donación extraordinaria', ayuda: 'Suma al total aportado. No da cuotas ni acceso.' },
+];
+
 /** Fecha de hoy en `YYYY-MM-DD`, que es lo que espera un `<input type="date">`. */
 export const hoyISO = () => new Date().toISOString().slice(0, 10);
 
@@ -89,6 +104,8 @@ export const aPayloadAporte = (f, destinoSlug) => ({
   nombre_aportante: f.nombre_aportante.trim() || null,
   email_aportante: f.email_aportante.trim() || null,
   notas: f.notas.trim() || null,
+  // Vacío -> null: "sin clasificar" es un estado legítimo (regla 2026-10).
+  concepto: f.concepto || null,
   // Respaldo documental (20260906120000). Vacío -> null: no declarar el tipo es
   // válido y es distinto de declarar 'otro'.
   tipo_comprobante: f.tipo_comprobante || null,

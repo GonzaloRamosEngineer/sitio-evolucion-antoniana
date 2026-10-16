@@ -293,7 +293,7 @@ export const faltaParaBeneficio = (beneficio, elegibilidad) => {
   const faltaMonto = minMonto != null ? Math.max(0, minMonto - monto) : null;
   const partes = [];
   if (faltanMeses != null) {
-    partes.push(`${faltanMeses} ${faltanMeses === 1 ? 'mes' : 'meses'} de aporte`);
+    partes.push(enCuotas(faltanMeses));
   }
   /*
     ⚠️ EL `$` NO ES COSMÉTICO, y faltaba: en producción se leía «Te faltan 5
@@ -316,7 +316,10 @@ export const faltaParaBeneficio = (beneficio, elegibilidad) => {
 
 /** Un monto como lo lee una persona en Argentina. */
 const plata = (n) => `$${Number(n).toLocaleString('es-AR')}`;
-const enMeses = (n) => `${n} ${n === 1 ? 'mes' : 'meses'}`;
+// Regla 2026-10: el requisito de antigüedad se mide en CUOTAS efectivas, no en
+// meses de calendario. Una donación suma al monto, nunca a esta cuenta. Misma
+// redacción que `cumpleRequisitos()` en la Edge Function.
+const enCuotas = (n) => `${n} ${n === 1 ? 'cuota' : 'cuotas'}`;
 
 /**
  * El mensaje completo para «tiene acceso pero no llega a este beneficio».
@@ -354,9 +357,9 @@ export const mensajeRequisitos = (beneficio, elegibilidad) => {
   const vas = [];
   const restan = [];
   if (minMeses != null) {
-    pide.push(`${enMeses(minMeses)} de aporte`);
-    vas.push(enMeses(meses));
-    restan.push(enMeses(falta.faltanMeses));
+    pide.push(enCuotas(minMeses));
+    vas.push(enCuotas(meses));
+    restan.push(enCuotas(falta.faltanMeses));
   }
   if (minMonto != null) {
     pide.push(`${plata(minMonto)} en total`);

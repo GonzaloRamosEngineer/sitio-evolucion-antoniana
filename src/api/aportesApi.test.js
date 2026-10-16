@@ -62,6 +62,16 @@ describe('aPayloadAporte', () => {
     expect(aPayloadAporte(base).monto).toBe(5000);
   });
 
+  // Regla 2026-10: vacío = sin clasificar (no da cuotas). Las fechas de
+  // acceso NUNCA salen del formulario: las calcula la base desde el concepto.
+  it('manda el concepto, null si no se clasificó, y nunca fechas de acceso', () => {
+    expect(aPayloadAporte({ ...base, concepto: 'cuota_mensual' }).concepto).toBe('cuota_mensual');
+    const p = aPayloadAporte({ ...base, concepto: '' });
+    expect(p.concepto).toBeNull();
+    expect(p).not.toHaveProperty('acceso_desde');
+    expect(p).not.toHaveProperty('acceso_hasta');
+  });
+
   // Los vacios van como null, nunca como '': una cadena vacia en la base es un
   // dato que parece existir y no existe.
   it('manda null en vez de cadena vacia', () => {

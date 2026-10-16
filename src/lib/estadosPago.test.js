@@ -89,3 +89,12 @@ describe('cobertura de los estados del esquema', () => {
     expect(TONOS).toContain(describirEstado(ESTADOS_MEMBRESIA, null).tono);
   });
 });
+
+describe('reintegros y contracargos (2026-10)', () => {
+  it('un contracargo y una disputa tienen nombre propio, no caen al "desconocido"', () => {
+    expect(describirEstado(ESTADOS_HISTORIAL, 'charged_back')).toMatchObject({ label: 'Contracargo', tono: 'cerrado' });
+    expect(describirEstado(ESTADOS_HISTORIAL, 'in_mediation')).toMatchObject({ label: 'En disputa', tono: 'atencion' });
+    expect(describirEstado(ESTADOS_HISTORIAL, 'refunded').label).toBe('Reintegrado');
+  });
+});
+

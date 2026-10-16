@@ -15,6 +15,7 @@ import { urlAvatar } from '@/api/avatarApi';
 import {
   getMiAcceso,
   getMiAntiguedad,
+  getMiResumenAportes,
   getDonacionesReclamables,
   reclamarDonaciones,
   getHuellasReclamables,
@@ -276,6 +277,15 @@ export const useMiAntiguedad = (userId, options = {}) =>
   useQuery({
     queryKey: queryKeys.antiguedad(userId),
     queryFn: () => unwrap(getMiAntiguedad()),
+    enabled: Boolean(userId),
+    ...options,
+  });
+
+/** Total aportado, cuotas efectivas y "donante". Mismo `enabled` que el acceso. */
+export const useMiResumenAportes = (userId, options = {}) =>
+  useQuery({
+    queryKey: queryKeys.resumenAportes(userId),
+    queryFn: () => unwrap(getMiResumenAportes()),
     enabled: Boolean(userId),
     ...options,
   });

@@ -58,9 +58,11 @@ END $esc$;
 INSERT INTO public.destinos (id, tipo, nombre, slug, estado, otorga_acceso)
 VALUES ('dddddddd-0000-0000-0000-00000000000d', 'institucional', 'ZZ Institucional', 'zz-institucional', 'activo', true);
 
--- $5.000 = exactamente una cuota de referencia -> 1 mes.
+-- $5.000 = exactamente una cuota de referencia -> 1 mes. Es el COBRO DE UNA
+-- CUOTA hecho sin sesión (`suscripción`): desde 20261016120000 una donación
+-- reclamada suma al total pero no da meses (ver T17).
 INSERT INTO public.donations (id, user_id, amount, donation_type, payment_provider, payment_id, status, payer_email, destino_id)
-VALUES ('11111111-0000-0000-0000-000000000001', NULL, 5000, 'única', 'mercadopago', 'ZZCLAIM-1', 'approved', 'ANA@Ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d');
+VALUES ('11111111-0000-0000-0000-000000000001', NULL, 5000, 'suscripción', 'mercadopago', 'ZZCLAIM-1', 'approved', 'ANA@Ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d');
 
 \echo ''
 \echo '--- T0: CONTROL — el escenario existe y el trigger creó el aporte sin dueño'
@@ -117,7 +119,8 @@ UPDATE public.donations SET payer_email = 'ANA@Ejemplo.com' WHERE payment_id = '
 \echo '--- T6: ANA reclama: 1 donación, 1 mes'
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000001', true);
-SELECT CASE WHEN vinculadas = 1 AND meses_nuevos = 1 AND vence_el = (current_date + interval '1 month')::date
+SELECT CASE WHEN vinculadas = 1 AND meses_nuevos = 1
+             AND vence_el = (public.hoy_local() + interval '1 month' - interval '1 day')::date
             THEN 'PASA · vinculada, 1 mes, vence ' || vence_el
             ELSE 'FALLA · vinculadas=' || vinculadas || ' meses=' || meses_nuevos || ' vence=' || COALESCE(vence_el::text,'NULL') END
   FROM public.reclamar_donaciones();
@@ -133,7 +136,7 @@ SELECT CASE WHEN vinculadas = 0 AND meses_nuevos = 0
   FROM public.reclamar_donaciones();
 
 \echo '--- T9: el acceso NO se estiró con el segundo reclamo'
-SELECT CASE WHEN (SELECT vence_el FROM public.mi_acceso()) = (current_date + interval '1 month')::date
+SELECT CASE WHEN (SELECT vence_el FROM public.mi_acceso()) = (public.hoy_local() + interval '1 month' - interval '1 day')::date
             THEN 'PASA · sigue venciendo en 1 mes'
             ELSE 'FALLA · el acceso se estiró' END;
 
@@ -168,18 +171,18 @@ SELECT CASE WHEN bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
 \echo '--- T14: dos donaciones encadenan períodos, no los solapan'
 INSERT INTO public.donations (id, user_id, amount, donation_type, payment_provider, payment_id, status, payer_email, destino_id)
 VALUES
-  ('22222222-0000-0000-0000-000000000002', NULL, 5000, 'única', 'mercadopago', 'ZZCLAIM-2', 'approved', 'ana@ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d'),
-  ('33333333-0000-0000-0000-000000000003', NULL, 5000, 'única', 'mercadopago', 'ZZCLAIM-3', 'approved', 'ana@ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d');
+  ('22222222-0000-0000-0000-000000000002', NULL, 5000, 'suscripción', 'mercadopago', 'ZZCLAIM-2', 'approved', 'ana@ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d'),
+  ('33333333-0000-0000-0000-000000000003', NULL, 5000, 'suscripción', 'mercadopago', 'ZZCLAIM-3', 'approved', 'ana@ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d');
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000001', true);
--- La ventana no es un margen de error: `proximo_acceso_desde()` arranca el
--- período nuevo AL DÍA SIGUIENTE del anterior, justamente para no solaparlos,
--- así que tres cuotas encadenadas dan tres meses **más un día por empalme**.
--- Fijar la fecha exacta sería copiar la implementación al test; lo que importa
--- es que no falte un mes (se pisaron) ni sobre uno (se contó dos veces).
+-- Tres cuotas pagadas el mismo día se ENCADENAN: el período nuevo arranca al
+-- día siguiente del anterior. Desde 20261016120000 cada período es un mes
+-- menos un día, así que ya no se corre un día por empalme; la ventana queda
+-- igual para no copiar la implementación al test: lo que importa es que no
+-- falte un mes (se pisaron) ni sobre uno (se contó dos veces).
 SELECT CASE WHEN vinculadas = 2
-             AND vence_el >= (current_date + interval '3 months')::date
-             AND vence_el <  (current_date + interval '3 months 5 days')::date
+             AND vence_el >= (public.hoy_local() + interval '3 months' - interval '1 day')::date
+             AND vence_el <  (public.hoy_local() + interval '3 months 5 days')::date
             THEN 'PASA · 2 más, acceso hasta ' || vence_el || ' (3 meses encadenados)'
             ELSE 'FALLA · vinculadas=' || vinculadas || ' vence=' || COALESCE(vence_el::text,'NULL') END
   FROM public.reclamar_donaciones();
@@ -193,6 +196,23 @@ SELECT CASE WHEN count(*) = 0 THEN 'PASA · sin solapamientos'
     ON a.user_id = b.user_id AND a.id <> b.id
    AND daterange(a.acceso_desde, a.acceso_hasta, '[]') && daterange(b.acceso_desde, b.acceso_hasta, '[]')
  WHERE a.user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
+\echo '--- T17: una DONACIÓN anónima reclamada se vincula y suma, pero no da meses ni corre el vencimiento'
+INSERT INTO public.donations (id, user_id, amount, donation_type, payment_provider, payment_id, status, payer_email, destino_id)
+VALUES ('44444444-0000-0000-0000-000000000004', NULL, 20000, 'única', 'mercadopago', 'ZZCLAIM-4', 'approved', 'ana@ejemplo.com', 'dddddddd-0000-0000-0000-00000000000d');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000001', true);
+SELECT set_config('zz.vence_antes', (SELECT vence_el::text FROM public.mi_acceso()), true);
+SELECT CASE WHEN vinculadas = 1 AND meses_nuevos = 0 AND vence_el::text = current_setting('zz.vence_antes')
+            THEN 'PASA · donación vinculada, 0 meses, el vencimiento no se movió'
+            ELSE 'FALLA · vinculadas=' || vinculadas || ' meses=' || meses_nuevos || ' vence=' || COALESCE(vence_el::text,'NULL') END
+  FROM public.reclamar_donaciones();
+RESET ROLE;
+SELECT CASE WHEN user_id = 'aaaaaaaa-0000-0000-0000-000000000001' AND acceso_desde IS NULL
+             AND concepto = 'donacion_extraordinaria'
+            THEN 'PASA · el aporte es de Ana, sin período'
+            ELSE 'FALLA · la donación reclamada quedó con período o sin dueño' END
+  FROM public.aportes WHERE referencia_externa = 'ZZCLAIM-4';
 
 ROLLBACK;
 

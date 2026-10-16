@@ -26,12 +26,14 @@ vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
 const useMiAcceso = vi.fn();
 const useMiAntiguedad = vi.fn();
+const useMiResumenAportes = vi.fn();
 // `useAvatarUrl` firma la URL de la foto contra un bucket privado; acá no hay
 // storage, así que por defecto devuelve «sin foto» y la cabecera cae al dibujo.
 const useAvatarUrl = vi.fn();
 vi.mock('@/hooks/useContentQueries', () => ({
   useMiAcceso: (...a) => useMiAcceso(...a),
   useMiAntiguedad: (...a) => useMiAntiguedad(...a),
+  useMiResumenAportes: (...a) => useMiResumenAportes(...a),
   useAvatarUrl: (...a) => useAvatarUrl(...a),
 }));
 
@@ -70,6 +72,8 @@ const acceso = (over = {}) => ({
 beforeEach(() => {
   useMiAcceso.mockReset();
   useMiAntiguedad.mockReset();
+  useMiResumenAportes.mockReset();
+  useMiResumenAportes.mockReturnValue({ data: undefined });
   useAvatarUrl.mockReset();
   useAvatarUrl.mockReturnValue({ data: null });
   useMiAcceso.mockReturnValue(acceso());
@@ -170,7 +174,8 @@ describe('DashboardHeader', () => {
     // La fecha del PRIMER APORTE (2026), no la del alta de la cuenta (2025).
     expect(screen.getByText(/2 de septiembre de 2026/)).toBeTruthy();
     expect(screen.queryByText(/2025/)).toBeNull();
-    expect(screen.getByText('1 mes')).toBeTruthy();
+    // Son CUOTAS efectivas, no meses de calendario (regla 2026-10).
+    expect(screen.getByText('1 cuota')).toBeTruthy();
 
     // Con acceso, el CTA lleva a la credencial y NO ofrece suscribirse.
     const carnet = screen.getByRole('link', { name: /VER MI CARNET/i });
@@ -229,6 +234,35 @@ describe('DashboardHeader', () => {
     });
     expect(screen.getByText(/Aporte vigente/i)).toBeTruthy();
     expect(screen.getByRole('link', { name: /VER MI CARNET/i })).toBeTruthy();
+  });
+
+  it('con concepto informado muestra QUÉ es el aporte, no el canal', () => {
+    // Una cuota aterriza por `donations` (origen=donacion): mostrar el canal
+    // le decía «Donación» a un socio mensual.
+    useMiAcceso.mockReturnValue(acceso({
+      tiene_acceso: true, vence_el: '2026-11-01', origen: 'donacion', concepto: 'cuota_mensual',
+    }));
+    render();
+    expect(screen.getByText('Cuota mensual')).toBeTruthy();
+    expect(screen.queryByText('Donación')).toBeNull();
+  });
+
+  it('una cuenta que SOLO donó es Donante, sin membresía, y se la invita a la cuota', () => {
+    // Regla 2026-10: la donación no da acceso, pero la persona queda
+    // registrada como donante. Antes se le decía «Sin aportes».
+    useMiResumenAportes.mockReturnValue({
+      data: { total_aportado: 20000, cuotas_efectivas: 0, donaciones: 1, es_donante: true },
+    });
+    useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-10-02', meses_aportados: 0 } });
+    render({ memberships: [] });
+
+    expect(screen.getByText('Donante')).toBeTruthy();
+    expect(screen.queryByText(/Sin aportes/i)).toBeNull();
+    expect(screen.getByText('Donación extraordinaria')).toBeTruthy();
+    expect(screen.getByText('0 cuotas')).toBeTruthy();
+    const cta = screen.getByRole('link', { name: /Sumarme con la cuota mensual/i });
+    expect(cta.getAttribute('href')).toBe('/collaborate');
+    expect(screen.queryByRole('link', { name: /VER MI CARNET/i })).toBeNull();
   });
 
   it('no se cae si los hooks todavía no devolvieron nada', () => {

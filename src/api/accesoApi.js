@@ -13,7 +13,7 @@
 //     frontend y las policies RLS podrían decir cosas distintas.
 import { supabase } from '@/lib/supabase';
 import { listResult } from '@/lib/dataResult';
-import { SIN_ACCESO } from '@/lib/acceso';
+import { SIN_ACCESO, SIN_RESUMEN } from '@/lib/acceso';
 
 /** Estado de acceso del usuario de la sesión. */
 export const getMiAcceso = async () => {
@@ -28,6 +28,17 @@ export const getMiAntiguedad = async () => {
   const { data, error } = listResult(await supabase.rpc('mi_antiguedad'), 'getMiAntiguedad');
   if (error) return { data: null, error };
   return { data: data[0] ?? null, error: null };
+};
+
+/**
+ * Total aportado, cuotas efectivas y si la persona es donante (regla 2026-10).
+ * Una cuenta que solo donó no tiene acceso ni membresía, y esto es lo que la
+ * registra como donante en el carnet y en el panel.
+ */
+export const getMiResumenAportes = async () => {
+  const { data, error } = listResult(await supabase.rpc('mi_resumen_aportes'), 'getMiResumenAportes');
+  if (error) return { data: null, error };
+  return { data: data[0] ?? SIN_RESUMEN, error: null };
 };
 
 /* ============================

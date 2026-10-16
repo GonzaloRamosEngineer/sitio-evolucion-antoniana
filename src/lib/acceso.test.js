@@ -6,6 +6,12 @@ import {
   estadoAcceso,
   formatearMeses,
   nombreOrigen,
+  nombreConcepto,
+  fuenteDelAcceso,
+  formatearCuotas,
+  formatearPesos,
+  etiquetaEstado,
+  claseEstado,
 } from '@/lib/acceso';
 
 describe('beneficioBloqueado', () => {
@@ -103,3 +109,52 @@ describe('nombreOrigen', () => {
     expect(nombreOrigen(undefined)).toBeNull();
   });
 });
+
+describe('regla 2026-10: donante, concepto y cuotas', () => {
+  const sinAcceso = { tiene_acceso: false, vence_el: null, en_gracia: false };
+  const donante = { es_donante: true, total_aportado: 20000 };
+
+  it('quien solo donó es "donante", no "sin aportes"', () => {
+    expect(estadoAcceso(sinAcceso, donante)).toBe('donante');
+    expect(etiquetaEstado(sinAcceso, donante)).toBe('Donante');
+    expect(claseEstado(sinAcceso, donante)).toMatch(/brand-gold/);
+  });
+
+  it('sin resumen (o sin donaciones) sigue siendo "sin aportes"', () => {
+    expect(estadoAcceso(sinAcceso)).toBe('sin_aportes');
+    expect(estadoAcceso(sinAcceso, { es_donante: false })).toBe('sin_aportes');
+  });
+
+  it('si tuvo cuota, manda el estado de la cuota aunque además done', () => {
+    expect(estadoAcceso({ tiene_acceso: false, vence_el: '2026-07-01' }, donante)).toBe('vencido');
+    expect(estadoAcceso({ tiene_acceso: true, vence_el: '2026-11-01' }, donante)).toBe('vigente');
+  });
+
+  it('nombra el CONCEPTO, y cae al canal solo si la base no lo informa', () => {
+    expect(nombreConcepto('cuota_mensual')).toBe('Cuota mensual');
+    expect(nombreConcepto('donacion_extraordinaria')).toBe('Donación extraordinaria');
+    expect(nombreConcepto('adelanto_cuotas')).toBe('Adelanto de cuotas');
+    expect(nombreConcepto('otra')).toBeNull();
+    // Una cuota que entró por `donations`: el canal diría «Donación».
+    expect(fuenteDelAcceso({ origen: 'donacion', concepto: 'cuota_mensual' })).toBe('Cuota mensual');
+    expect(fuenteDelAcceso({ origen: 'membresia', concepto: null })).toBe('Cuota social');
+    expect(fuenteDelAcceso(null)).toBeNull();
+  });
+
+  it('las cuotas se cuentan como cuotas, con singular', () => {
+    expect(formatearCuotas(0)).toBe('0 cuotas');
+    expect(formatearCuotas(1)).toBe('1 cuota');
+    expect(formatearCuotas(6)).toBe('6 cuotas');
+    expect(formatearCuotas(undefined)).toBe('0 cuotas');
+  });
+
+  it('formatea pesos como en Argentina', () => {
+    expect(formatearPesos(30000)).toBe('$30.000');
+    expect(formatearPesos(null)).toBe('$0');
+  });
+
+  it('SIN_ACCESO trae concepto en null', () => {
+    expect(SIN_ACCESO.concepto).toBeNull();
+  });
+});
+

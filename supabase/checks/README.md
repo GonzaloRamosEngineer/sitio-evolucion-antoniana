@@ -26,6 +26,19 @@ la base.
   punta a punta —donación, aporte, reproceso idempotente y reclasificación como cuota—.
   Cada intento informa si se rechazó por PERMISOS o por otro motivo: que algo falle por
   una FK no prueba que esté cerrado. **Corrido sin la migración tiene que dar FALLA.**
+- **`cuotas-check.sql`** — la regla 2026-10 (`20261016120000`): una cuota cubre un mes
+  aunque el monto sea mayor, una donación suma pero no da período ni cuotas, el orden real
+  del webhook (donación y después cuota) no produce el período de un día, la racha tolera
+  un cobro tarde y se corta con un hueco mayor que la gracia, reintegro total y parcial,
+  contracargo y reactivación con rastro, un aviso viejo que se descarta, el reclamo que
+  respeta el concepto, **una cuenta que solo donó** (donante, con historial, sin
+  membresía ni padrón) y **la seguridad**: ninguna sesión se inserta un cobro aprobado.
+  Todo en una transacción con ROLLBACK.
+- **`reclasificacion-replica.sh`** — no es un `.sql`: levanta su PROPIO Postgres 15
+  (`pgreplica15`, puerto 55464), aplica las migraciones de antes de 2026-10-16, carga una
+  foto de producción (mismos IDs e importes, sin datos personales) y ensaya la
+  reclasificación histórica como se haría de verdad: pre chequeo, aplicar, re-aplicar,
+  revertir a la foto exacta y dos controles negativos. `RESULTADO: 0 falla/s`.
 - **`fondos-check.sql`** — fondos restringidos (`20260906120000`). Dos cosas distintas
   que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
   trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que
@@ -115,6 +128,8 @@ docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/membresi
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/fondos-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/renovacion-check.sql
 docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/pagos-escritura-check.sql
+docker exec -i pgtest psql -U postgres -d postgres -q < supabase/checks/cuotas-check.sql
+# (aparte, con su propio contenedor)  supabase/checks/reclasificacion-replica.sh
 
 # 3b. El de la foto de perfil va aparte: necesita el schema `storage` (que en un
 #     Postgres pelado no existe) y por lo tanto otro usuario y el arbol adentro.

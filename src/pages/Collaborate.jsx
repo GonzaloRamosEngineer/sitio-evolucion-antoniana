@@ -211,6 +211,10 @@ const Collaborate = () => {
                 className="pl-8 bg-gray-50 border-gray-200 text-brand-dark focus:border-brand-action focus:ring-brand-action rounded-xl h-12 text-lg"
                 />
             </div>
+            {/* Regla 2026-10: una donación suma, pero no adelanta cuotas ni da acceso. */}
+            <p className="mt-2 text-sm text-gray-600">
+              Suma a tu total aportado. No adelanta cuotas: el acceso a los beneficios es con la cuota mensual.
+            </p>
           </div>
 
           <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />
@@ -258,6 +262,10 @@ const Collaborate = () => {
               </select>
               <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             </div>
+            {/* Regla 2026-10: un cobro mensual cubre UN mes, sea cual sea el monto. */}
+            <p className="mt-2 text-sm text-gray-600">
+              Cada cobro cubre un mes de cuota y te da acceso a los beneficios. Un monto mayor ayuda más, pero sigue cubriendo un mes.
+            </p>
           </div>
 
           <AvisoSesion user={user} email={emailAportante} onEmailChange={setEmailAportante} />

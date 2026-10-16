@@ -53,6 +53,10 @@ export const ESTADOS_HISTORIAL = {
   cancelled: { label: 'Cancelada', tono: 'cerrado' },
   rejected: { label: 'Rechazado', tono: 'cerrado' },
   refunded: { label: 'Reintegrado', tono: 'cerrado' },
+  // Desde 2026-10 el webhook ya no los junta con `refunded`: un contracargo lo
+  // inició el banco de la persona, y una disputa abierta todavía puede volver.
+  charged_back: { label: 'Contracargo', tono: 'cerrado' },
+  in_mediation: { label: 'En disputa', tono: 'atencion' },
   expired: { label: 'Vencida', tono: 'atencion' },
 };
 

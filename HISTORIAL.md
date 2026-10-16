@@ -7264,6 +7264,62 @@ está deshabilitado hasta «Habilitar Edición», y hay un test que lo fija.
 importa es que **siempre haya una salida**, incluso en modo edición (donde «Cancelar» sale
 del modo, no del modal).
 
+## §15 — Una cuota cubre un mes; una donación suma pero no compra meses (2026-10-16)
+
+**Cómo se encontró.** Auditoría de solo lectura (2026-10-15) sobre la única cuenta con
+cobros reales: cuota 2/9 ($5.000), donación 2/10 ($20.000), cuota 2/10 ($5.000). El libro
+proyectaba 2/9–2/10, **3/10–3/2/2027** (la donación convertida en 4 meses) y **4/2–4/2/2027:
+un período de un día**. Tres defectos encadenados:
+
+1. `meses_por_donacion()` daba meses por una donación y `proximo_acceso_desde()` los ponía
+   DETRÁS del último acceso: la donación empujaba las cuotas siguientes al futuro.
+2. La reclasificación de la cuota usaba `next_charge_date`, que el webhook solo escribe en
+   los avisos de `preapproval`, no al cobrar: `GREATEST(2/10, 4/2)` = un día.
+3. `antiguedad_socio()` medía días / 30 de la unión de períodos **incluida la parte
+   futura**: la donación se veía como 5 meses de racha y casi habilitaba el beneficio web.
+
+**La regla nueva (decisión de la Fundación).** `concepto` = `cuota_mensual` (un mes, sea
+cual sea el monto) | `donacion_extraordinaria` (suma al total y registra al donante; no da
+acceso, cuotas ni racha) | `adelanto_cuotas` (operación explícita, admitida por el modelo,
+sin pantalla todavía). `origen` queda como **canal técnico** — son dos preguntas y una
+columna contaba las dos historias. Beneficio web: acceso + 6 cuotas efectivas **o**
+$30.000. Los 135 aportes manuales quedan **sin clasificar** y sin efecto de cuota hasta
+revisarlos uno por uno.
+
+**Lo que se cerró de paso, y es lo más grave** (finalmente se aplicó APARTE, antes que todo esto, como la P0: ver §16): la policy del baseline "Insert donations:
+if own or anonymous" dejaba a **cualquier sesión** insertar su propia donación `approved`,
+y el trigger la convertía en acceso y monto acumulado. Lo mismo con `memberships`.
+Ninguna pantalla escribe esas tablas (lo hace el webhook con `service_role`; el único
+`insert` del front estaba en `useMembership.jsx`, sin consumidores). Se cerraron.
+
+**Reintegros y contracargos** no existían: un `approved → refunded` dejaba todo intacto.
+Ahora anulan sin borrar (`anulado_en`), el parcial descuenta solo lo devuelto y la cuota
+sigue contando, y un `approved` más reciente reactiva solo lo que anuló Mercado Pago (una
+anulación de la comisión no la deshace un aviso). Cada cambio deja ANTES/DESPUÉS en
+`aportes_correcciones`. Un aviso más viejo que el guardado se descarta
+(`mp_actualizado_en`), y una donación reclamada no se desvincula con un aviso posterior.
+
+**La migración histórica tiene pre chequeo y no vive en la migración.** Los IDs, estados e
+importes verificados son de esta entidad: no pueden correr en una base vacía ni en otra
+entidad. La migración define `reclasificar_aportes_v2(simular|aplicar)`; los scripts de
+`supabase/data/` verifican los 8 aportes automáticos y los 135 manuales, informan cada
+cambio y FALLAN ante cualquier diferencia. Ensayado de punta a punta sobre una réplica de
+producción en Postgres 15 (`supabase/checks/reclasificacion-replica.sh`, 16/16): aplicar,
+re-aplicar sin cambios, revertir a la foto exacta —incluido el período de un día— y los
+dos controles negativos.
+
+**Webhook.** Autenticación y titularidad en pausar/activar/cancelar (cualquiera con el
+id de un preapproval podía cancelar la suscripción de otro), `user_id` sacado del token y
+no del body, upsert por `payment_id`/`preapproval_id` en vez de select-then-insert, estados
+crudos de MP sin colapsar `charged_back` en `refunded`, y `next_charge_date` releída tras
+cada cobro (informativa: la base ya no depende de ella).
+
+**`tools/db.sh check` fallaba con el archivo bien:** `. <(…)` en el bash 3.2 de macOS no
+lee nada. Se cambió por `eval` del contenido.
+
+**Verificación:** `cuotas-check.sql` 50 PASA; los checks que afirmaban la regla vieja
+(`acceso`, `renovacion`, `reclamar`, `membresia`) se actualizaron conservando sus pares
+positivo/negativo; vitest 623 verdes; webhook 155 verdes.
 ## §16 — P0 aplicada: nadie desde el navegador escribe pagos (2026-10-16)
 
 Migración `20261016110000_p0_cerrar_escritura_pagos.sql`, sola, con

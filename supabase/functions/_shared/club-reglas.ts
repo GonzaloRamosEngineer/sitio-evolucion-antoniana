@@ -278,15 +278,18 @@ export function cumpleRequisitos(
     la función.
   */
   const plata = (n: number) => `$${n.toLocaleString("es-AR")}`;
-  const enMeses = (n: number) => `${n} ${n === 1 ? "mes" : "meses"}`;
+  // Regla 2026-10: la antigüedad se mide en CUOTAS efectivas (una donación
+  // suma al monto, no a esta cuenta). `meses_aportados` conserva el nombre por
+  // compatibilidad del contrato con `elegibilidad_club()`.
+  const enCuotas = (n: number) => `${n} ${n === 1 ? "cuota" : "cuotas"}`;
 
   const pide: string[] = [];
   const vas: string[] = [];
   const restan: string[] = [];
   if (minMeses != null) {
-    pide.push(`${enMeses(minMeses)} de aporte`);
-    vas.push(enMeses(meses));
-    restan.push(enMeses(faltanMeses as number));
+    pide.push(enCuotas(minMeses));
+    vas.push(enCuotas(meses));
+    restan.push(enCuotas(faltanMeses as number));
   }
   if (minMonto != null) {
     pide.push(`${plata(minMonto)} en total`);

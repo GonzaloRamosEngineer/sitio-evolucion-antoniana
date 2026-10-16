@@ -126,11 +126,33 @@ async function readError(res) {
   }
 }
 
+/**
+ * El token de la sesión, si hay una.
+ *
+ * Desde la versión `2026-10-16.reintegros-auth` el webhook YA NO confía en el
+ * `user_id` del body (cualquiera podía atribuir su pago a la cuenta de otro):
+ * lo saca de este token. Y pausar/activar/cancelar una suscripción exige que
+ * sea de quien llama. Sin sesión no se manda nada: donar sin cuenta sigue
+ * permitido y se reclama después por email.
+ *
+ * ⚠️ Orden de despliegue: este front tiene que salir ANTES que ese webhook,
+ * si no la gestión de suscripciones da 401 para todos.
+ */
+async function headerDeSesion() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function callWebhook(path, options = {}) {
   const url = buildUrl(path);
   const init = {
     method: options.method || 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await headerDeSesion()) },
     body: options.body ? JSON.stringify(options.body) : undefined
   };
 
@@ -245,17 +267,23 @@ const tituloAporte = (destinoNombre, porDefecto) =>
 /**
  * Crear suscripción recurrente (Render)
  */
+// Sin monto por defecto: el `amount = 50` que había acá es de dónde salieron
+// las suscripciones de prueba de ARS 50 (auditoría 2026-10-15). Un monto que no
+// llega es un error del que llama, no un valor a inventar.
 export const createSubscription = ({
   userId,
   emailUsuario,
-  amount = 50,
+  amount,
   currency = 'ARS',
   destinoId = null,
   destinoNombre = null
 }) =>
   attempt(
-    () =>
-      callWebhook(`/api/crear-suscripcion`, {
+    () => {
+      if (!(Number(amount) > 0)) {
+        throw new WebhookError('Elegí un monto mensual válido.', { status: 400 });
+      }
+      return callWebhook(`/api/crear-suscripcion`, {
         method: 'POST',
         body: {
           reason: tituloAporte(destinoNombre, 'Aporte mensual'),
@@ -269,7 +297,8 @@ export const createSubscription = ({
             currency_id: currency
           }
         }
-      }),
+      });
+    },
     'createSubscription'
   );
 

@@ -24,15 +24,19 @@ INSERT INTO public.destinos (id, tipo, nombre, slug, estado, otorga_acceso) VALU
   ('dddd0000-0000-0000-0000-000000000002','campana','ZZ Sin acceso','zz-sin-acceso','activo', false)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.aportes (user_id, monto, destino_id, origen, equivale_a, acceso_desde, acceso_hasta) VALUES
-  ('aaaa0000-0000-0000-0000-000000000001',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    current_date-30, current_date+10),
-  ('aaaa0000-0000-0000-0000-000000000002',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    current_date-60, current_date-10),
-  ('aaaa0000-0000-0000-0000-000000000003',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    current_date-90, current_date-40),
-  ('aaaa0000-0000-0000-0000-000000000006',5000,'dddd0000-0000-0000-0000-000000000001','manual','donacion', current_date-60, current_date-10);
+-- Desde 20261016120000 el período de un aporte manual NO se escribe: lo
+-- calcula el trigger a partir del concepto y de la FECHA del pago (un mes
+-- menos un día). Por eso la semilla describe cuándo se pagó, no hasta cuándo.
+-- `equivale_a` se sigue aceptando y se traduce a `concepto`.
+INSERT INTO public.aportes (user_id, monto, destino_id, origen, equivale_a, fecha) VALUES
+  ('aaaa0000-0000-0000-0000-000000000001',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    now() - interval '20 days'),
+  ('aaaa0000-0000-0000-0000-000000000002',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    now() - interval '40 days'),
+  ('aaaa0000-0000-0000-0000-000000000003',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota',    now() - interval '75 days'),
+  ('aaaa0000-0000-0000-0000-000000000006',5000,'dddd0000-0000-0000-0000-000000000001','manual','donacion', now() - interval '40 days');
 
 \echo ''
 \echo '=== A1: la gracia de 30 dias aplica a cuota, NO a donacion ==='
-\echo '    esperado: Cuota=t | Gracia=t(en_gracia) | Vencido=f | ManualDonac=f | SinAportes=f'
+\echo '    esperado: Cuota=t | Gracia=t(en_gracia) | Vencido=f | ManualDonac=f SIN vencimiento (una donacion no da periodo) | SinAportes=f'
 SELECT u.name, a.tiene_acceso, a.vence_el, a.origen, a.en_gracia
   FROM public.users u CROSS JOIN LATERAL public.acceso_vigente(u.id) a
  WHERE u.name LIKE 'ZZ %' AND u.name NOT IN ('ZZ Triggers','ZZ Antiguedad','ZZ DonacVencida')
@@ -75,7 +79,7 @@ SELECT public.tiene_acceso('aaaa0000-0000-0000-0000-000000000001');
 ROLLBACK;
 
 \echo ''
-\echo '=== T1: donacion aprobada >= piso -> aporte CON acceso (esperado: 3 meses) ==='
+\echo '=== T1: donacion aprobada de $17.000 -> entra al libro SIN periodo (regla 2026-10: una donacion suma, no compra meses) ==='
 INSERT INTO public.donations (id, user_id, amount, donation_type, status, payment_id, destino_id)
 VALUES ('ffff0000-0000-0000-0000-000000000001','aaaa0000-0000-0000-0000-000000000008',
         17000,'unica','approved','MP-T1','dddd0000-0000-0000-0000-000000000001');
@@ -108,7 +112,7 @@ VALUES ('ffff0000-0000-0000-0000-000000000004', NULL, 50000,'unica','approved','
 SELECT monto, acceso_desde IS NULL AS sin_acceso FROM public.aportes WHERE referencia_externa='MP-T5';
 
 \echo ''
-\echo '=== T6: cobro de MEMBRESIA -> aporte encadenado tras el acceso vigente ==='
+\echo '=== T6: cobro de MEMBRESIA -> UN mes desde hoy; next_charge_date (a 120 dias) NO lo gobierna ==='
 INSERT INTO public.memberships (id, user_id, plan, amount, payment_method, status,
                                 last_payment_id, last_payment_status, next_charge_date, destino_id)
 VALUES ('eeee0000-0000-0000-0000-000000000001','aaaa0000-0000-0000-0000-000000000008',
@@ -117,7 +121,7 @@ VALUES ('eeee0000-0000-0000-0000-000000000001','aaaa0000-0000-0000-0000-00000000
 SELECT origen, acceso_desde, acceso_hasta FROM public.aportes
  WHERE user_id='aaaa0000-0000-0000-0000-000000000008' AND acceso_desde IS NOT NULL
  ORDER BY acceso_desde;
-\echo '   ^ el segundo tramo debe arrancar al dia siguiente del primero, sin solapar';
+\echo '   ^ esperado: 1 fila, membresia, de hoy a dentro de un mes menos un dia (las donaciones T1-T5 no generan tramos)';
 
 \echo ''
 \echo '=== T7: update de la membresia SIN pago nuevo -> no genera otro aporte ==='
@@ -125,13 +129,13 @@ UPDATE public.memberships SET payer_email='otro@mp.com' WHERE id='eeee0000-0000-
 SELECT count(*) AS aportes_de_membresia FROM public.aportes WHERE origen='membresia';
 
 \echo ''
-\echo '=== T8: ANTIGUEDAD con un corte de un anio y un doble pago solapado ==='
-INSERT INTO public.aportes (user_id, monto, destino_id, origen, equivale_a, acceso_desde, acceso_hasta) VALUES
-  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota','2024-01-01','2024-12-31'),
-  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota', current_date-180, current_date+30),
-  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota', current_date-150, current_date-60);
+\echo '=== T8: ANTIGUEDAD con un corte de un anio: cuenta CUOTAS, no dias / 30 ==='
+INSERT INTO public.aportes (user_id, monto, destino_id, origen, equivale_a, fecha) VALUES
+  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota','2024-01-01 15:00-03'),
+  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota', now() - interval '180 days'),
+  ('aaaa0000-0000-0000-0000-000000000009',5000,'dddd0000-0000-0000-0000-000000000001','manual','cuota', now() - interval '150 days');
 SELECT * FROM public.antiguedad_socio('aaaa0000-0000-0000-0000-000000000009');
-\echo '   esperado: socio_desde=2024-01-01 | cortes=1 | 577 dias (NO 668: el doble pago no cuenta dos veces)';
+\echo '   esperado: socio_desde=2024-01-01 | meses_aportados=3 (CUOTAS, no dias/30) | cortes=1 (2024 -> hoy) | racha=0 (la ultima vencio hace mas que la gracia)';
 
 -- ---- limpieza ------------------------------------------------------
 DELETE FROM public.aportes     WHERE user_id::text LIKE 'aaaa0000-%' OR destino_id::text LIKE 'dddd0000-%';

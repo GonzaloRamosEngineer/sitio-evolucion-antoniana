@@ -13,9 +13,12 @@
 -- CADA NEGATIVO TIENE SU POSITIVO AL LADO, que es la regla de este repo
 -- ("rechaza lo malo" y "rechaza todo" se ven idénticos desde afuera):
 --
---     R2  (una renovación da 1 mes)      ←→  R1  (una donación SÍ da 3)
---     R3  (bajo el piso no da acceso)    ←→  R1  (sobre el piso sí)
---     R6  (la cuota tiene gracia)        ←→  R7  (la donación NO)
+--     R2  (una renovación da 1 mes)      ←→  R1  (una donación NO da meses:
+--                                              regla 2026-10, 20261016120000)
+--     R3  (bajo el piso no da acceso)    ←→  R2  (sobre el piso sí)
+--     R6  (la cuota tiene gracia)        ←→  R7  (la donación no da acceso alguno)
+--     R5  (vincular la membresía NO mueve el período; next_charge_date no
+--          lo gobierna — era la causa del período de UN DÍA en producción)
 --     R9  (una corrección humana vive)   ←→  R4  (una fila automática sí se toca)
 --     R11 (el CHECK rechaza incoherente) ←→  R12 (y NO rechaza de más)
 --
@@ -60,8 +63,8 @@ INSERT INTO public.destinos (id, tipo, nombre, slug, estado, otorga_acceso) VALU
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
--- R1 — CONTROL POSITIVO: una donación PUNTUAL sigue dando meses
---      proporcionales. Si esto falla, el arreglo rompió las donaciones.
+-- R1 — Una donación PUNTUAL suma al total pero NO da meses (regla 2026-10).
+--      Antes daba meses proporcionales y empujaba las cuotas al futuro.
 -- =====================================================================
 INSERT INTO public.donations (id, user_id, amount, donation_type, payment_provider,
                               payment_id, status, destino_id, created_at)
@@ -70,17 +73,16 @@ VALUES ('f1f10000-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-00000000
         'cccc0000-0000-0000-0000-000000000001', now());
 
 DO $$
-DECLARE v_meses integer; v_origen text;
+DECLARE r record;
 BEGIN
-  SELECT (EXTRACT(year FROM age(acceso_hasta, acceso_desde)) * 12
-          + EXTRACT(month FROM age(acceso_hasta, acceso_desde)))::int, origen
-    INTO v_meses, v_origen
+  SELECT origen, concepto, cuotas_cubiertas, acceso_desde INTO r
     FROM public.aportes WHERE referencia_externa = 'ZZR-P1';
-  IF v_meses = 3 AND v_origen = 'donacion' THEN
-    RAISE NOTICE 'R1  OK    · donacion puntual de $15.000 -> 3 meses, origen=donacion';
+  IF r.origen = 'donacion' AND r.concepto = 'donacion_extraordinaria'
+     AND r.cuotas_cubiertas = 0 AND r.acceso_desde IS NULL THEN
+    RAISE NOTICE 'R1  OK    · donacion puntual de $15.000 -> entra al libro SIN periodo ni cuotas';
   ELSE
-    RAISE NOTICE 'FALLA · R1: la regla proporcional de las DONACIONES se rompio (meses=%, origen=%)',
-      COALESCE(v_meses::text,'sin fila'), COALESCE(v_origen,'sin fila');
+    RAISE NOTICE 'FALLA · R1: una DONACION genero periodo o cuotas (origen=%, concepto=%, cuotas=%, desde=%)',
+      r.origen, r.concepto, r.cuotas_cubiertas, r.acceso_desde;
   END IF;
 END $$;
 
@@ -99,8 +101,9 @@ VALUES ('f1f10000-0000-0000-0000-000000000002','bbbb0000-0000-0000-0000-00000000
 DO $$
 DECLARE v_meses integer; v_proporcional integer;
 BEGIN
-  SELECT (EXTRACT(year FROM age(acceso_hasta, acceso_desde)) * 12
-          + EXTRACT(month FROM age(acceso_hasta, acceso_desde)))::int
+  -- `+ 1`: el período es inclusivo y dura un mes menos un día (20261016120000).
+  SELECT (EXTRACT(year FROM age(acceso_hasta + 1, acceso_desde)) * 12
+          + EXTRACT(month FROM age(acceso_hasta + 1, acceso_desde)))::int
     INTO v_meses FROM public.aportes WHERE referencia_externa = 'ZZR-P2';
   v_proporcional := public.meses_por_donacion(15000);
   IF v_meses = 1 THEN
@@ -177,11 +180,11 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- R5 — LA TRAMPA DEL `EXCLUDED` ENVENENADO. `proximo_acceso_desde()` se
---      evalúa cuando la fila del conflicto YA existe, así que devuelve el
---      día siguiente al acceso que esa misma fila otorga. Si la
---      reclasificación usara `EXCLUDED.acceso_desde`, el período se iría
---      un mes al futuro y el socio quedaría SIN acceso hoy.
+-- R5 — Vincular la membresía NO toca el período. Antes la reclasificación
+--      recalculaba `acceso_hasta` con `next_charge_date`, que el webhook no
+--      actualiza al cobrar: con una fecha vieja daba un período de UN DÍA
+--      (pasó en producción, 2026-10-02). Acá `next_charge_date` está a 30
+--      días a propósito: si el período terminara ahí, la regla vieja volvió.
 -- =====================================================================
 DO $$
 DECLARE v_desde_antes date; v_desde_ahora date; v_hasta_ahora date; v_hay boolean;
@@ -191,8 +194,11 @@ BEGIN
     FROM public.aportes WHERE referencia_externa = 'ZZR-P4';
   SELECT tiene_acceso INTO v_hay FROM public.acceso_vigente('bbbb0000-0000-0000-0000-000000000004');
 
-  IF v_desde_ahora = v_desde_antes AND v_hasta_ahora = current_date + 30 AND v_hay THEN
-    RAISE NOTICE 'R5  OK    · acceso_desde intacto (%), acceso_hasta = el proximo cobro (%), y HOY tiene acceso',
+  IF v_desde_ahora = v_desde_antes
+     AND v_hasta_ahora = (SELECT acceso_hasta FROM zzr_antes)
+     AND v_hasta_ahora = (v_desde_ahora + interval '1 month' - interval '1 day')::date
+     AND v_hay THEN
+    RAISE NOTICE 'R5  OK    · periodo intacto (% .. %), un mes; next_charge_date no lo gobierna; HOY tiene acceso',
       v_desde_ahora, v_hasta_ahora;
   ELSE
     RAISE NOTICE 'FALLA · R5: el periodo se movio. antes desde=% | ahora desde=% hasta=% | tiene_acceso hoy=%',
@@ -203,12 +209,12 @@ END $$;
 -- =====================================================================
 -- R6/R7 — EL BUG 1, que es el que sufrió el socio real: la GRACIA.
 --
--- Se vencen las dos filas a mano diez días atrás y se pregunta. La cuota
--- tiene que seguir vigente por los 30 días de gracia; la donación no.
--- Es el par que prueba que el `origen` no es decorativo.
+-- Se vence la cuota a mano diez días atrás y se pregunta: tiene que seguir
+-- vigente por los 30 días de gracia. La donación ni siquiera tiene período
+-- (regla 2026-10), así que su titular no tiene acceso alguno.
 -- =====================================================================
 UPDATE public.aportes SET acceso_desde = current_date - 40, acceso_hasta = current_date - 10
- WHERE referencia_externa IN ('ZZR-P4','ZZR-P1');
+ WHERE referencia_externa = 'ZZR-P4';
 
 DO $$
 DECLARE c record; d record;
@@ -223,10 +229,10 @@ BEGIN
       c.tiene_acceso, c.en_gracia, c.origen;
   END IF;
 
-  IF NOT d.tiene_acceso AND NOT d.en_gracia THEN
-    RAISE NOTICE 'R7  OK    · donacion vencida hace 10 dias: sin acceso y sin gracia (control negativo)';
+  IF NOT d.tiene_acceso AND NOT d.en_gracia AND d.vence_el IS NULL THEN
+    RAISE NOTICE 'R7  OK    · quien solo dono: sin acceso, sin gracia, sin vencimiento (control negativo)';
   ELSE
-    RAISE NOTICE 'FALLA · R7: una DONACION vencida recibio gracia (acceso=%, gracia=%)', d.tiene_acceso, d.en_gracia;
+    RAISE NOTICE 'FALLA · R7: una DONACION dio acceso o gracia (acceso=%, gracia=%, vence=%)', d.tiene_acceso, d.en_gracia, d.vence_el;
   END IF;
 END $$;
 

@@ -4,15 +4,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import CarnetPage from './CarnetPage';
-import { useMiAcceso, useMiAntiguedad, useMiMembresia } from '@/hooks/useContentQueries';
+import { useMiAcceso, useMiAntiguedad, useMiMembresia, useMiResumenAportes } from '@/hooks/useContentQueries';
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', name: 'Persona de prueba', dni: '12345678' } }) }));
-vi.mock('@/hooks/useContentQueries', () => ({ useMiAcceso: vi.fn(), useMiAntiguedad: vi.fn(), useMiMembresia: vi.fn() }));
+vi.mock('@/hooks/useContentQueries', () => ({ useMiAcceso: vi.fn(), useMiAntiguedad: vi.fn(), useMiMembresia: vi.fn(), useMiResumenAportes: vi.fn() }));
 vi.mock('@/components/Acceso/ReclamarAportes', () => ({ default: () => null }));
 const show = () => render(<HelmetProvider><MemoryRouter><CarnetPage /></MemoryRouter></HelmetProvider>);
 beforeEach(() => {
   useMiAcceso.mockReturnValue({ data: { tiene_acceso: true, vence_el: '2026-10-02', en_gracia: false, origen: 'donacion' }, isPending: false });
   useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-09-02', meses_aportados: 1 }, isPending: false });
   useMiMembresia.mockReturnValue({ data: { numero: 5, estado: 'activo', categoria: 'General' }, isPending: false });
+  useMiResumenAportes.mockReturnValue({ data: { total_aportado: 5000, cuotas_efectivas: 1, donaciones: 0, es_donante: false } });
 });
 afterEach(() => vi.useRealTimers());
 describe('Carnet', () => {
@@ -49,6 +50,26 @@ describe('Carnet', () => {
     expect(screen.getByText('Acceso vigente')).toBeInTheDocument();
     expect(screen.getByText(/No es un tema de pagos/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Consultar mi condición' })).toHaveAttribute('href', '/contact');
+  });
+  it('muestra cuotas pagadas y total aportado, no "tiempo aportado"', () => {
+    useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-09-02', meses_aportados: 2, racha_meses: 2 }, isPending: false });
+    useMiResumenAportes.mockReturnValue({ data: { total_aportado: 30000, cuotas_efectivas: 2, donaciones: 1, es_donante: true } });
+    show();
+    expect(screen.getByText('Cuotas pagadas')).toBeInTheDocument();
+    expect(screen.getByText('2 cuotas')).toBeInTheDocument();
+    expect(screen.getByText('$30.000')).toBeInTheDocument();
+    expect(screen.queryByText('Tiempo aportado')).not.toBeInTheDocument();
+  });
+  it('una cuenta que SOLO donó se ve como Donante, sin membresía ni acceso', () => {
+    useMiAcceso.mockReturnValue({ data: { tiene_acceso: false, vence_el: null, en_gracia: false, origen: null }, isPending: false });
+    useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-10-02', meses_aportados: 0, racha_meses: 0 }, isPending: false });
+    useMiMembresia.mockReturnValue({ data: { numero: null, estado: null }, isPending: false });
+    useMiResumenAportes.mockReturnValue({ data: { total_aportado: 20000, cuotas_efectivas: 0, donaciones: 1, es_donante: true } });
+    show();
+    expect(screen.getByText('Sos donante de la Fundación')).toBeInTheDocument();
+    expect(screen.getByText(/tus donaciones suman \$20\.000/)).toBeInTheDocument();
+    expect(screen.queryByText('Todavía no tenés acceso')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Sumarme con la cuota mensual/ })).toHaveAttribute('href', '/collaborate');
   });
   it('mantiene el reloj en vivo sin anunciar cada segundo al lector de pantalla', () => {
     vi.useFakeTimers();

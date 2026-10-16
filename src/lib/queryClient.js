@@ -52,6 +52,9 @@ export const queryKeys = {
   avatar: (path) => ['avatar', path],
   acceso: (userId) => ['acceso', userId],
   antiguedad: (userId) => ['acceso', userId, 'antiguedad'],
+  // Bajo 'acceso' por lo mismo: reclamar una donación cambia el total aportado
+  // y puede convertir a alguien en donante.
+  resumenAportes: (userId) => ['acceso', userId, 'resumen'],
   // Anidada bajo 'acceso' a propósito: reclamar una donación cambia el acceso,
   // la antigüedad y esta misma lista, así que una sola invalidación por prefijo
   // tiene que alcanzar a las tres.

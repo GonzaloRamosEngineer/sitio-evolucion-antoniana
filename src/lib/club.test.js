@@ -96,18 +96,18 @@ describe('mensajeRequisitos', () => {
     // Sin esto, «te faltan 5 meses» flota: no se puede saber si falta poco o
     // mucho porque nunca se dijo contra qué.
     const m = mensajeRequisitos(pide6oTreinta, suCaso);
-    expect(m).toMatch(/6 meses de aporte/);
+    expect(m).toMatch(/6 cuotas/);
     expect(m).toMatch(/\$30\.000/);
   });
 
   it('dice DÓNDE ESTÁ la persona', () => {
     const m = mensajeRequisitos(pide6oTreinta, suCaso);
-    expect(m).toMatch(/Vas por 1 mes y \$5\.000/);
+    expect(m).toMatch(/Vas por 1 cuota y \$5\.000/);
   });
 
   it('dice CUÁNTO FALTA, con el signo y sin jerga', () => {
     const m = mensajeRequisitos(pide6oTreinta, suCaso);
-    expect(m).toMatch(/te faltan 5 meses o \$25\.000/);
+    expect(m).toMatch(/te faltan 5 cuotas o \$25\.000/);
     // «acumulados» es jerga nuestra, no de quien lee.
     expect(m).not.toMatch(/acumulados/);
   });
@@ -122,19 +122,19 @@ describe('mensajeRequisitos', () => {
 
   it('concuerda en singular cuando falta un solo mes', () => {
     const m = mensajeRequisitos(pide6oTreinta, { meses_aportados: 5, aporte_acumulado: 25000 });
-    expect(m).toMatch(/te falta 1 mes o \$5\.000/);
-    expect(m).not.toMatch(/te faltan 1 mes/);
+    expect(m).toMatch(/te falta 1 cuota o \$5\.000/);
+    expect(m).not.toMatch(/te faltan 1 cuota/);
   });
 
   it('con un solo requisito no inventa el otro', () => {
     const soloMeses = mensajeRequisitos({ antiguedad_minima_meses: 6 }, suCaso);
-    expect(soloMeses).toMatch(/pide 6 meses de aporte\./);
+    expect(soloMeses).toMatch(/pide 6 cuotas\./);
     expect(soloMeses).not.toMatch(/\$30/);
     expect(soloMeses).not.toMatch(/ o /);
 
     const soloMonto = mensajeRequisitos({ aporte_minimo_acumulado: 30000 }, suCaso);
     expect(soloMonto).toMatch(/pide \$30\.000 en total/);
-    expect(soloMonto).not.toMatch(/meses de aporte/);
+    expect(soloMonto).not.toMatch(/cuotas/);
     // Con solo monto va plural, que es el uso corriente.
     expect(soloMonto).toMatch(/te faltan \$25\.000/);
   });
@@ -159,7 +159,7 @@ describe('mensajeRequisitos', () => {
     expect(a.estado).toBe('sin_requisitos');
     expect(a.puedeCanjear).toBe(false);
     expect(a.mensaje).toBe(mensajeRequisitos({ requiere_acceso: true, ...pide6oTreinta }, suCaso));
-    expect(a.mensaje).toMatch(/6 meses de aporte/);
+    expect(a.mensaje).toMatch(/6 cuotas/);
   });
 });
 
@@ -470,7 +470,7 @@ describe('faltaParaBeneficio', () => {
     const f = faltaParaBeneficio(pideAmbos, eleg(2, 10000));
     expect(f.faltanMeses).toBe(4);
     expect(f.faltaMonto).toBe(20000);
-    expect(f.texto).toMatch(/4 meses/);
+    expect(f.texto).toMatch(/4 cuotas/);
     /*
       ⚠️ Esta aserción decía `/20\.000/` y **le daba la razón al defecto**: en
       producción se leía «o 25.000 acumulados», sin el signo, y el test pasaba
@@ -490,8 +490,8 @@ describe('faltaParaBeneficio', () => {
     for (const e of [null, undefined]) expect(faltaParaBeneficio(pideAmbos, e)).not.toBeNull();
   });
 
-  it('singular: "1 mes", no "1 meses"', () => {
-    expect(faltaParaBeneficio({ antiguedad_minima_meses: 6 }, eleg(5, 0)).texto).toMatch(/1 mes de/);
+  it('singular: "1 cuota", no "1 cuotas"', () => {
+    expect(faltaParaBeneficio({ antiguedad_minima_meses: 6 }, eleg(5, 0)).texto).toBe("1 cuota");
   });
 });
 
@@ -507,7 +507,7 @@ describe('accionVidriera con requisitos (§12.11)', () => {
     });
     expect(a.estado).toBe('sin_requisitos');
     expect(a.puedeCanjear).toBe(false);
-    expect(a.mensaje).toMatch(/4 meses/);
+    expect(a.mensaje).toMatch(/4 cuotas/);
     // Y se le confirma que su aporte SÍ está vigente: no es un rechazo, es un
     // "todavía no", que es la diferencia entre que se quede y que se vaya.
     expect(a.mensaje).toMatch(/vigente/);

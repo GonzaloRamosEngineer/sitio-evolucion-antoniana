@@ -195,28 +195,28 @@ describe('cumpleRequisitos', () => {
     expect(r.ok).toBe(false);
     expect(r.faltan_meses).toBe(4);
     expect(r.falta_monto).toBe(20000);
-    expect(r.motivo).toMatch(/te faltan 4 meses o \$20\.000/);
+    expect(r.motivo).toMatch(/te faltan 4 cuotas o \$20\.000/);
   });
 
   /*
-    ⚠️ LAS DOS ASERCIONES DE ARRIBA ERAN `/4 meses/` y `/20.000/`, y le DABAN LA
+    ⚠️ LAS DOS ASERCIONES DE ARRIBA ERAN `/4 cuotas/` y `/20.000/`, y le DABAN LA
     RAZÓN AL DEFECTO: el motivo decía «Este beneficio pide 4 meses de aporte o
     20.000 de aporte acumulado», o sea la palabra «pide» seguida de lo que
     FALTA. Anunciaba un requisito que no existe —el beneficio pide 6 meses y
     $30.000— y los números del hueco pasaban el test igual.
 
     Tercera vez en el día que una aserción acompaña al bug (§11.4). Lo que lo
-    hace repetible es asertar el número suelto en vez de la frase: `/4 meses/`
+    hace repetible es asertar el número suelto en vez de la frase: `/4 cuotas/`
     pasa esté donde esté, incluso donde significa lo contrario.
   */
   it('🔑 el motivo dice EL REQUISITO, no el hueco disfrazado de requisito', () => {
     const r = cumpleRequisitos(pideAmbos, eleg(2, 10000));
     // Lo que el beneficio pide de verdad.
-    expect(r.motivo).toMatch(/pide 6 meses de aporte o \$30\.000 en total/);
+    expect(r.motivo).toMatch(/pide 6 cuotas o \$30\.000 en total/);
     // Dónde está la persona.
-    expect(r.motivo).toMatch(/Vas por 2 meses y \$10\.000/);
+    expect(r.motivo).toMatch(/Vas por 2 cuotas y \$10\.000/);
     // Y nunca "pide" seguido del hueco.
-    expect(r.motivo).not.toMatch(/pide 4 meses/);
+    expect(r.motivo).not.toMatch(/pide 4 cuotas/);
   });
 
   it('el monto lleva el signo, en las tres posiciones', () => {
@@ -228,12 +228,12 @@ describe('cumpleRequisitos', () => {
 
   it('con un solo requisito no inventa el otro', () => {
     const soloMeses = cumpleRequisitos(pideSeisMeses, eleg(1, 5000)).motivo ?? '';
-    expect(soloMeses).toMatch(/pide 6 meses de aporte\./);
+    expect(soloMeses).toMatch(/pide 6 cuotas\./);
     expect(soloMeses).not.toMatch(/\$/);
 
     const soloMonto = cumpleRequisitos(pideTreintaMil, eleg(1, 5000)).motivo ?? '';
     expect(soloMonto).toMatch(/pide \$30\.000 en total/);
-    expect(soloMonto).not.toMatch(/meses de aporte/);
+    expect(soloMonto).not.toMatch(/cuotas/);
   });
 
   it('la frase es la MISMA que la del front, para no decir dos cosas', () => {
@@ -242,8 +242,8 @@ describe('cumpleRequisitos', () => {
     // apretar y otra después.
     const r = cumpleRequisitos(pideAmbos, eleg(1, 5000));
     expect(r.motivo).toBe(
-      'Este beneficio pide 6 meses de aporte o $30.000 en total. ' +
-      'Vas por 1 mes y $5.000, así que te faltan 5 meses o $25.000.',
+      'Este beneficio pide 6 cuotas o $30.000 en total. ' +
+      'Vas por 1 cuota y $5.000, así que te faltan 5 cuotas o $25.000.',
     );
   });
 
@@ -261,10 +261,10 @@ describe('cumpleRequisitos', () => {
     }
   });
 
-  it('singular/plural: "1 mes", no "1 meses"', () => {
+  it('singular/plural: "1 cuota", no "1 cuotas"', () => {
     const m = cumpleRequisitos(pideSeisMeses, eleg(5, 0)).motivo ?? '';
-    expect(m).toMatch(/te falta 1 mes/);
-    expect(m).not.toMatch(/te faltan 1 mes/);
+    expect(m).toMatch(/te falta 1 cuota/);
+    expect(m).not.toMatch(/te faltan 1 cuota/);
   });
 });
 

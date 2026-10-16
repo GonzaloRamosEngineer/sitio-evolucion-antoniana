@@ -43,7 +43,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { useAportes, useDestinos } from '@/hooks/useContentQueries';
 import {
   createAporteManual, updateAporte, reimputarAporte,
-  validarAporte, aPayloadAporte, describirOrigen, hoyISO,
+  validarAporte, aPayloadAporte, describirOrigen, hoyISO, CONCEPTOS_APORTE_MANUAL,
   subirComprobanteAporte,
   quitarComprobanteAporte,
 } from '@/api/aportesApi';
@@ -72,6 +72,7 @@ const formVacio = () => ({
   nombre_aportante: '',
   email_aportante: '',
   notas: '',
+  concepto: '',
   tipo_comprobante: '',
   comprobante_numero: '',
   es_saldo_inicial: false,
@@ -84,6 +85,7 @@ const aFormulario = (a) => ({
   nombre_aportante: a.nombre_aportante ?? '',
   email_aportante: a.email_aportante ?? '',
   notas: a.notas ?? '',
+  concepto: a.concepto ?? '',
   tipo_comprobante: a.tipo_comprobante ?? '',
   comprobante_numero: a.comprobante_numero ?? '',
   es_saldo_inicial: String(a.referencia_externa ?? '').startsWith('saldo-inicial:'),
@@ -486,6 +488,29 @@ const AportesAdmin = () => {
               {errores.email_aportante && (
                 <p className="mt-1 text-xs text-red-600">{errores.email_aportante}</p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="aporte-concepto">Qué es este aporte</Label>
+              <Select
+                value={form.concepto || 'sin-clasificar'}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, concepto: v === 'sin-clasificar' ? '' : v }))}
+              >
+                <SelectTrigger id="aporte-concepto" className="mt-1">
+                  <SelectValue placeholder="Sin clasificar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONCEPTOS_APORTE_MANUAL.map((c) => (
+                    <SelectItem key={c.value || 'sin-clasificar'} value={c.value || 'sin-clasificar'}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-gray-500">
+                {CONCEPTOS_APORTE_MANUAL.find((c) => c.value === (form.concepto || ''))?.ayuda}
+              </p>
             </div>
 
             <div>

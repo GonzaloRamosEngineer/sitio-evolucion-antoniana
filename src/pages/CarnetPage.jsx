@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, Lock, AlertTriangle, ArrowRight, ArrowLeft, CreditCard } from 'lucide-react';
+import { ShieldCheck, Clock, Lock, AlertTriangle, ArrowRight, ArrowLeft, CreditCard, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
-import { useMiAcceso, useMiAntiguedad, useMiMembresia } from '@/hooks/useContentQueries';
+import { useMiAcceso, useMiAntiguedad, useMiMembresia, useMiResumenAportes } from '@/hooks/useContentQueries';
 import ReclamarAportes from '@/components/Acceso/ReclamarAportes';
 import {
-  SIN_ACCESO, estadoAcceso, diasHasta, formatearMeses, nombreOrigen, formatearFecha,
+  SIN_ACCESO, SIN_RESUMEN, estadoAcceso, diasHasta, formatearMeses, fuenteDelAcceso, formatearFecha,
+  formatearCuotas, formatearPesos,
 } from '@/lib/acceso';
 import {
   SIN_MEMBRESIA, estadoMembresia, etiquetaEstado, fraseEstado, etiquetaNumero,
@@ -39,6 +40,14 @@ const ESTADOS = {
     tono: 'border-red-200 bg-red-50/60',
     acento: 'text-red-700',
   },
+  // Regla 2026-10: quien solo donó queda registrado como donante, pero el
+  // acceso a beneficios sale de la cuota. No es "sin aportes".
+  donante: {
+    icono: Heart,
+    titulo: 'Sos donante de la Fundación',
+    tono: 'border-brand-gold/50 bg-white',
+    acento: 'text-brand-dark',
+  },
   sin_aportes: {
     icono: Lock,
     titulo: 'Todavía no tenés acceso',
@@ -62,6 +71,7 @@ const CarnetPage = () => {
   const antiguedadQuery = useMiAntiguedad(userId);
   const { data: acceso = SIN_ACCESO, isPending: cargandoAcceso } = accesoQuery;
   const { data: antiguedad } = antiguedadQuery;
+  const { data: resumen = SIN_RESUMEN } = useMiResumenAportes(userId);
   // La condición institucional (§10.1.a). Es OTRA pregunta que el acceso, y por
   // eso son dos consultas: alguien puede estar al día y suspendido, o en regla
   // y con la cuota vencida. Las dos antigüedades salen de la misma función SQL
@@ -80,7 +90,7 @@ const CarnetPage = () => {
   // Ojo con el spinner: la query queda en `isPending` mientras está deshabilitada.
   const cargando = Boolean(userId) && (cargandoAcceso || membresiaQuery.isPending);
 
-  const estado = estadoAcceso(acceso);
+  const estado = estadoAcceso(acceso, resumen);
   const { icono: Icono, titulo, tono, acento } = ESTADOS[estado];
   const diasRestantes = diasHasta(acceso?.vence_el);
 
@@ -154,10 +164,17 @@ const CarnetPage = () => {
                     </p>
                   )}
 
+                  {estado === 'donante' && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      Gracias: tus donaciones suman {formatearPesos(resumen.total_aportado)} a tu
+                      total aportado. El acceso a los beneficios se obtiene con la cuota mensual.
+                    </p>
+                  )}
+
                   {estado === 'sin_aportes' && (
                     <p className="mt-2 text-sm text-gray-600">
-                      El acceso a los beneficios se obtiene con la cuota social o con una
-                      donación desde el valor de una cuota.
+                      El acceso a los beneficios se obtiene con la cuota mensual. Una donación
+                      suma a tu total aportado, pero no da acceso por sí sola.
                     </p>
                   )}
                 </div>
@@ -167,7 +184,9 @@ const CarnetPage = () => {
                 <div className="mt-4">
                   <Button variant="action" asChild className="w-full sm:w-auto min-h-[48px]">
                     <Link to="/collaborate">
-                      {estado === 'sin_aportes' ? 'Quiero ser parte' : 'Regularizar mi aporte'}
+                      {estado === 'sin_aportes' ? 'Quiero ser parte'
+                        : estado === 'donante' ? 'Sumarme con la cuota mensual'
+                        : 'Regularizar mi aporte'}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -265,10 +284,13 @@ const CarnetPage = () => {
                 {antiguedad?.socio_desde && (
                   <Dato etiqueta="Parte de la comunidad desde" valor={formatearFecha(antiguedad.socio_desde)} />
                 )}
+                {/* `meses_aportados` son CUOTAS EFECTIVAS desde la regla
+                    2026-10 (una donación no suma cuotas). La racha son cuotas
+                    seguidas, y una cuota cubre un mes. */}
                 {antiguedad && (
                   <Dato
-                    etiqueta="Tiempo aportado"
-                    valor={formatearMeses(antiguedad.meses_aportados)}
+                    etiqueta="Cuotas pagadas"
+                    valor={formatearCuotas(antiguedad.meses_aportados)}
                   />
                 )}
                 {antiguedad?.racha_meses > 0 && (
@@ -277,8 +299,11 @@ const CarnetPage = () => {
                     valor={formatearMeses(antiguedad.racha_meses)}
                   />
                 )}
-                {nombreOrigen(acceso.origen) && (
-                  <Dato etiqueta="Origen del acceso" valor={nombreOrigen(acceso.origen)} />
+                {Number(resumen.total_aportado) > 0 && (
+                  <Dato etiqueta="Total aportado" valor={formatearPesos(resumen.total_aportado)} />
+                )}
+                {fuenteDelAcceso(acceso) && (
+                  <Dato etiqueta="Tu acceso viene de" valor={fuenteDelAcceso(acceso)} />
                 )}
               </dl>
               {antiguedadQuery.isPending && <p role="status" className="px-5 pb-4 text-sm text-gray-600">Cargando tu antigüedad…</p>}

@@ -177,10 +177,12 @@ ROLLBACK TO SAVEPOINT t2;
 RESET ROLE;
 
 \echo '--- T3: ✅ CONTROL POSITIVO — un aporte con acceso SÍ da de alta sola'
+-- Desde 20261016120000 el período de un manual lo calcula el trigger a partir
+-- del concepto: se carga como `cuota_mensual`, no con fechas escritas a mano.
 SAVEPOINT t3;
-INSERT INTO public.aportes (user_id, destino_id, origen, monto, acceso_desde, acceso_hasta)
+INSERT INTO public.aportes (user_id, destino_id, origen, monto, concepto)
 VALUES ('aa000000-0000-0000-0000-0000000000a1','e1000000-0000-0000-0000-0000000000e1',
-        'manual', 5000, current_date, current_date + 30);
+        'manual', 5000, 'cuota_mensual');
 SELECT CASE WHEN EXISTS (SELECT 1 FROM public.miembros
                           WHERE user_id='aa000000-0000-0000-0000-0000000000a1' AND estado='activo')
             THEN 'PASA · Ana quedo de alta con numero ' ||
@@ -215,9 +217,9 @@ SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM public.miembros WHERE user_id='dd0000
 
 \echo '--- T4: 🔒 un aporte nuevo NO reactiva a un suspendido (la suspension es una decision)'
 UPDATE public.miembros SET estado='suspendido' WHERE user_id='aa000000-0000-0000-0000-0000000000a1';
-INSERT INTO public.aportes (user_id, destino_id, origen, monto, acceso_desde, acceso_hasta)
+INSERT INTO public.aportes (user_id, destino_id, origen, monto, concepto)
 VALUES ('aa000000-0000-0000-0000-0000000000a1','e1000000-0000-0000-0000-0000000000e1',
-        'manual', 5000, current_date, current_date + 60);
+        'manual', 5000, 'cuota_mensual');
 SELECT CASE WHEN (SELECT estado FROM public.miembros WHERE user_id='aa000000-0000-0000-0000-0000000000a1') = 'suspendido'
             THEN 'PASA · sigue suspendido: pagar no revierte una sancion'
             ELSE 'FALLA · un pago reactivo a un miembro suspendido' END;
@@ -371,9 +373,9 @@ ROLLBACK TO SAVEPOINT t18;
 \echo ''
 \echo '=== PRECIO DE ACTIVIDADES (§10.1.d) ==='
 SAVEPOINT t12;
-INSERT INTO public.aportes (user_id, destino_id, origen, monto, acceso_desde, acceso_hasta)
+INSERT INTO public.aportes (user_id, destino_id, origen, monto, concepto)
 VALUES ('aa000000-0000-0000-0000-0000000000a1','e1000000-0000-0000-0000-0000000000e1',
-        'manual', 5000, current_date, current_date + 30);
+        'manual', 5000, 'cuota_mensual');
 -- Ya no se asigna a mano: la trae el alta automatica (T3a). Que el descuento de
 -- T12b funcione SIN un UPDATE explicito es la prueba de que la cadena
 -- alta -> categoria por defecto -> descuento esta completa.
