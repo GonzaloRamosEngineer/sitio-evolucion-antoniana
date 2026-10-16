@@ -37,9 +37,13 @@ fi
 
 # `tr -d '\r'`: si el archivo se guardó en Windows, el \r final se colaría
 # DENTRO de PGPASSWORD y la autenticación fallaría con un error que no lo dice.
+#
+# ⚠️ NO usar `. <(...)`: en el bash 3.2 que trae macOS, hacer `source` de una
+# sustitución de proceso no lee NADA y las variables quedan vacías sin ningún
+# error (auditoría 2026-10-15: "falta PGHOST en .env.db" con el archivo bien).
+# `eval` del contenido ya limpio funciona igual en bash 3.2 y en 5.x.
 set -a
-# shellcheck disable=SC1090
-. <(tr -d '\r' < "$ENV_DB")
+eval "$(tr -d '\r' < "$ENV_DB")"
 set +a
 
 for v in PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD; do
