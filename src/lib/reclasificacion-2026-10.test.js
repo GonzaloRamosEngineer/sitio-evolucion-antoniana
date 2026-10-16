@@ -41,12 +41,14 @@ describe('reclasificación de aportes 2026-10', () => {
   it('la aplicación bloquea, verifica, aplica, re-verifica y valida el CHECK, todo en una transacción', () => {
     const orden = [
       'BEGIN;',
-      'LOCK TABLE public.aportes',
-      'LOCK TABLE public.donations',
+      // El mismo orden que el webhook: donations → memberships → aportes.
+      'LOCK TABLE public.donations, public.memberships, public.aportes',
+      '-- >>> CUERPO-RECLASIFICACION-2026-10',
       '-- >>> BLOQUE-VERIFICACION-2026-10',
       'reclasificar_aportes_v2(true',
       'POST CHEQUEO',
       'VALIDATE CONSTRAINT aportes_acceso_solo_cuotas_chk',
+      '-- <<< CUERPO-RECLASIFICACION-2026-10',
       'COMMIT;',
     ].map((marca) => aplicar.indexOf(marca));
     expect(orden.every((i) => i >= 0)).toBe(true);

@@ -8,15 +8,19 @@
 # 8 cobros aprobados, 8 aportes automáticos —incluido el período de UN DÍA—
 # y 135 aportes manuales por $1.238.997,77.
 #
-# Recorre, en orden, lo que se haría en producción:
-#   1. migraciones hasta 20261013 (el esquema de hoy) + la foto
-#   2. pre chequeo ANTES de las migraciones nuevas      -> debe pasar
-#   3. migraciones nuevas + pre chequeo                 -> debe pasar e informar
-#   4. aplicar                                          -> debe pasar
-#   5. aplicar de nuevo                                 -> 0 cambios
-#   6. revertir                                         -> la foto exacta
-#   7. aplicar otra vez                                 -> mismo resultado
-#   8. control NEGATIVO: un aporte no verificado        -> el pre chequeo FALLA
+# Recorre, en orden, el runbook (docs/operacion-cuotas-2026-10.md):
+#   1. el esquema de hoy (con la P0) + la foto de datos + la foto de LÓGICA
+#   2. pre chequeo (fuera de la transacción); sin lo verificado, FALLA
+#   3. SIMULAR la aplicación atómica -> no deja NADA (ni datos ni lógica)
+#   4. APLICAR atómico (esquema + funciones + reclasificación, una transacción)
+#   5. re-aplicar                    -> 0 cambios
+#   6. revertir SOLO datos           -> la foto exacta; aplicar de nuevo
+#   7. SIMULAR la reversión completa -> no deja nada
+#   8. REVERTIR completo (datos + lógica, una transacción) -> foto de datos y
+#      foto de lógica IGUALES a las de antes, salvo lo que se conserva adrede
+#   9. los checks SQL de master, corridos sobre la base revertida, pasan igual
+#  10. aplicar atómico otra vez      -> mismo resultado que en 4
+#  11. controles NEGATIVOS: un aporte no verificado / un importe distinto
 #
 # Los ids de la foto son SINTÉTICOS (el repo es público): mismas formas,
 # importes, fechas y períodos que producción, otros identificadores. Lo
@@ -66,7 +70,7 @@ aplicar_migraciones() {  # $1 = filtro: "viejas" | "nuevas"
 
 aplicar_migraciones viejas
 
-# ---- la foto -----------------------------------------------------------------
+# ---- 1. la foto de datos ------------------------------------------------------
 psqlc <<'SQL' >/dev/null
 INSERT INTO auth.users (id, email, created_at, email_confirmed_at, raw_user_meta_data) VALUES
   ('5e5e0001-0000-4000-8000-000000000001','replica-cuenta-auditada@test.invalid', now(), now(), '{"name":"Replica Auditada"}'),
@@ -125,85 +129,133 @@ foto() {
 }
 FOTO_ORIGINAL=$(foto)
 
-# ---- 2. pre chequeo antes de las migraciones nuevas ----------------------------
+# Lógica: funciones, triggers, permisos, restricciones, columnas, policies.
+foto_logica() { psqlc -q < "$RAIZ/supabase/data/foto_logica_aportes.sql" 2>&1; }
+LOGICA_ANTES=$(foto_logica)
+[ "$(echo "$LOGICA_ANTES" | grep -c '^funcion ')" -gt 50 ] && ok "foto de lógica tomada ($(echo "$LOGICA_ANTES" | wc -l | tr -d ' ') objetos)" || mal "foto de lógica vacía"
+
+# La herramienta atómica, apuntada a ESTE contenedor (emitir no se conecta).
+atomico() { VERIFICADO="$VERIFICADO" bash "$RAIZ/tools/cuotas-2026-10.sh" emitir "$1" | psqlc 2>&1; }
+
+# ---- 2. pre chequeo, fuera de la transacción ---------------------------------
 out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'PRE CHEQUEO OK' && echo "$out" | grep -q 'todavía no está instalada' \
-  && ok "pre chequeo sobre el esquema de hoy (antes de migrar)" || mal "pre chequeo antes de migrar: $out"
-
-# ---- 2b. sin lo verificado, el pre chequeo NO puede aprobar nada --------------
+  && ok "pre chequeo sobre el esquema de hoy" || mal "pre chequeo: $out"
 out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
 echo "$out" | grep -q 'falta lo verificado' && ! echo "$out" | grep -q 'PRE CHEQUEO OK' \
   && ok "sin el archivo de lo verificado, el pre chequeo FALLA" || mal "pre chequeo sin verificado: $out"
 
-# ---- 3. migraciones nuevas + pre chequeo ------------------------------------
-aplicar_migraciones nuevas
-out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
-if echo "$out" | grep -q 'PRE CHEQUEO OK'; then
-  ok "pre chequeo con la reclasificación instalada"
-  echo "$out" | grep 'CAMBIO ESPERADO' | sed 's/^.*NOTICE: */      /'
-  [ "$(echo "$out" | grep -c 'CAMBIO ESPERADO')" -eq 8 ] && ok "informa 8 cambios esperados" || mal "cantidad de cambios esperados"
-else mal "pre chequeo después de migrar: $out"; fi
-[ "$(foto)" == "$FOTO_ORIGINAL" ] || true   # (las columnas nuevas cambian la foto: se compara al revertir)
-FOTO_MIGRADA=$(foto)
+# ---- 3. simular: todo y ROLLBACK ---------------------------------------------
+out=$(atomico simular)
+echo "$out" | grep -q 'POST CHEQUEO OK' && echo "$out" | grep -q 'FIN: ROLLBACK' \
+  && ok "simulación atómica completa (POST CHEQUEO OK) y ROLLBACK" || mal "simular: $(echo "$out" | grep -iE 'error|fall' | head -3)"
+[ "$(echo "$out" | grep -c 'CAMBIO ESPERADO')" -eq 8 ] && ok "la simulación informa los 8 cambios esperados" || mal "cambios esperados en la simulación"
+[ "$(foto)" == "$FOTO_ORIGINAL" ] && [ "$(foto_logica)" == "$LOGICA_ANTES" ] \
+  && ok "la simulación no dejó NADA: datos y lógica idénticos" || mal "la simulación dejó rastros"
 
-# ---- 4. aplicar --------------------------------------------------------------
-out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
-echo "$out" | grep -q 'POST CHEQUEO OK' && ok "aplicar" || mal "aplicar: $out"
+# ---- 4. aplicar atómico --------------------------------------------------------
+out=$(atomico aplicar)
+echo "$out" | grep -q 'POST CHEQUEO OK' && echo "$out" | grep -q 'FIN: COMMIT' \
+  && ok "aplicación atómica: esquema + funciones + reclasificación en una transacción" || mal "aplicar: $(echo "$out" | grep -iE 'error|fall' | head -3)"
 
 r=$(psqlc -At -F'|' -c "select concepto, cuotas_cubiertas, acceso_desde, acceso_hasta from public.aportes where id in
      ('5e5e0011-0000-4000-8000-000000000011','5e5e0012-0000-4000-8000-000000000012','5e5e0013-0000-4000-8000-000000000013')
      order by fecha")
 esperado=$'cuota_mensual|1|2026-09-02|2026-10-01\ndonacion_extraordinaria|0||\ncuota_mensual|1|2026-10-02|2026-11-01'
-[ "$r" == "$esperado" ] && ok "cuenta auditada: 2/9–1/10, donación sin período, 2/10–1/11" || mal "cuenta auditada quedó: $r"
-
+[ "$r" == "$esperado" ] && ok "cuenta de control: 2/9–1/10, donación sin período, 2/10–1/11" || mal "cuenta de control quedó: $r"
 r=$(psqlc -At -c "select count(*) from public.aportes where origen='manual' and (concepto is not null or cuotas_cubiertas<>0 or acceso_desde is not null)")
 [ "$r" == "0" ] && ok "los 135 manuales siguen sin clasificar y sin efecto de cuota" || mal "manuales con efecto: $r"
-
 r=$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2026-10-cuotas-v2' and accion='reclasificacion'")
 [ "$r" == "8" ] && ok "8 correcciones con ANTES/DESPUÉS" || mal "correcciones: $r"
-
 r=$(psqlc -At -c "select convalidated from pg_constraint where conname='aportes_acceso_solo_cuotas_chk'")
 [ "$r" == "t" ] && ok "CHECK de períodos validado" || mal "CHECK sin validar"
-
 r=$(psqlc -At -F'|' -c "select meses_aportados, aporte_acumulado from public.elegibilidad_club('5e5e0001-0000-4000-8000-000000000001')")
 [ "$r" == "2|30000" ] && ok "elegibilidad: 2 cuotas efectivas, \$30.000" || mal "elegibilidad: $r"
-
+r=$(psqlc -At -c "select has_table_privilege('authenticated','public.donations','INSERT')")
+[ "$r" == "f" ] && ok "la P0 sigue cerrada después de aplicar" || mal "la P0 se abrió"
 FOTO_APLICADA=$(foto)
+LOGICA_APLICADA=$(foto_logica)
 
-# ---- 5. idempotencia ---------------------------------------------------------
-out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
-echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] \
+# ---- 5. re-aplicar -------------------------------------------------------------
+out=$(atomico aplicar)
+echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] && [ "$(foto_logica)" == "$LOGICA_APLICADA" ] \
   && [ "$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2026-10-cuotas-v2'")" == "8" ] \
-  && ok "re-aplicar no cambia nada" || mal "re-aplicar: $out"
+  && ok "re-aplicar no cambia nada" || mal "re-aplicar: $(echo "$out" | grep -iE 'error|fall' | head -3)"
 
-# ---- 6. revertir -------------------------------------------------------------
+# ---- 6. revertir SOLO datos, y aplicar de nuevo --------------------------------
 out=$(psqlc < "$RAIZ/supabase/data/revertir_reclasificacion_aportes_2026_10.sql" 2>&1)
-echo "$out" | grep -q ERROR && mal "revertir: $(echo "$out" | grep ERROR | head -1)"
-[ "$(foto)" == "$FOTO_MIGRADA" ] && ok "revertir devuelve la foto exacta (incluido el período de un día)" \
-  || { mal "revertir"; diff <(echo "$FOTO_MIGRADA") <(foto); }
-r=$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2026-10-cuotas-v2'")
-[ "$r" == "16" ] && ok "revertir no borra: 8 reclasificaciones marcadas + 8 reversiones" || mal "correcciones tras revertir: $r"
-
-# ---- 7. aplicar otra vez -----------------------------------------------------
-out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
+echo "$out" | grep -q ERROR && mal "revertir datos: $(echo "$out" | grep ERROR | head -1)"
+[ "$(foto)" == "$FOTO_ORIGINAL" ] && ok "revertir datos devuelve la foto exacta (incluido el período de un día)" || mal "revertir datos"
+out=$(atomico aplicar)
 echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] \
-  && ok "aplicar después de revertir da el mismo resultado" || mal "re-aplicar tras revertir: $out"
+  && ok "aplicar después de revertir datos da el mismo resultado" || mal "re-aplicar tras revertir datos"
 
-# ---- 8. control negativo -----------------------------------------------------
+# ---- 7. simular la reversión completa ------------------------------------------
+out=$(atomico simular-reversion)
+c1=$(echo "$out" | grep -c 'POST REVERSIÓN OK'); c2=$(echo "$out" | grep -c 'FIN: ROLLBACK')
+dd=$(diff <(echo "$FOTO_APLICADA") <(foto) | grep -c '^[<>]'); dl=$(diff <(echo "$LOGICA_APLICADA") <(foto_logica) | grep -c '^[<>]')
+if [ "$c1" == 1 ] && [ "$c2" == 1 ] && [ "$dd" == 0 ] && [ "$dl" == 0 ]; then
+  ok "simulación de la reversión completa: OK y no dejó nada"
+else
+  mal "simular reversión: post_ok=$c1 rollback=$c2 dif_datos=$dd dif_logica=$dl $(echo "$out" | grep -iE 'error|fall' | head -3)"
+  [ -z "$out" ] && echo "      (la salida vino VACÍA: falló el comando, no la base)"
+  diff <(echo "$LOGICA_APLICADA") <(foto_logica) | head -10
+fi
+
+# ---- 8. revertir completo --------------------------------------------------------
+out=$(atomico revertir)
+echo "$out" | grep -q 'POST REVERSIÓN OK' && echo "$out" | grep -q 'FIN: COMMIT' \
+  && ok "reversión completa (datos + lógica) en una transacción" || mal "revertir: $(echo "$out" | grep -iE 'error|fall' | head -3)"
+[ "$(foto)" == "$FOTO_ORIGINAL" ] && ok "datos: la foto exacta de antes" || mal "datos tras revertir"
+# Lógica: idéntica, salvo lo que se conserva A PROPÓSITO (columnas nuevas con sus
+# CHECK, aportes_correcciones con su policy, permisos de esa tabla).
+CONSERVADO='^(columna (aportes\.(concepto|cuotas_cubiertas|monto_reintegrado|anulado_en|anulado_motivo)|donations\.(mp_status|mp_status_detail|monto_reintegrado|mp_actualizado_en)|aportes_correcciones\.)|restriccion (aportes (aportes_concepto_chk|aportes_cuotas_chk|aportes_reintegro_chk|aportes_anulado_chk)|donations donations_monto_reintegrado_chk|aportes_correcciones )|permiso_tabla aportes_correcciones|policy aportes_correcciones )'
+DIF=$(diff <(echo "$LOGICA_ANTES") <(foto_logica) | grep -E '^[<>]' | sed 's/^[<>] //')
+INESPERADO=$(echo "$DIF" | grep -vE "$CONSERVADO" | grep -v '^$')
+if [ -z "$INESPERADO" ]; then
+  ok "lógica: funciones, triggers, permisos y policies IDÉNTICOS a antes ($(echo "$DIF" | grep -c .) diferencias, todas conservadas adrede)"
+else
+  mal "lógica distinta tras revertir:"; echo "$INESPERADO" | head -20
+fi
+r=$(psqlc -At -c "select has_table_privilege('authenticated','public.donations','INSERT')")
+[ "$r" == "f" ] && ok "la P0 sigue cerrada después de revertir" || mal "revertir reabrió la P0"
+
+# ---- 9. los checks de MASTER sobre la base revertida ------------------------------
+MASTER_TMP=$(mktemp -d)
+git -C "$RAIZ" archive master supabase/checks | tar -x -C "$MASTER_TMP"
+for c in acceso renovacion reclamar membresia pagos-escritura; do
+  out=$(psqlc -q < "$MASTER_TMP/supabase/checks/$c-check.sql" 2>&1 | sed 's/.*NOTICE: *//')
+  falla=$(echo "$out" | grep -cE '^FALLA|MAL |FALLA ·')
+  pasa=$(echo "$out" | grep -cE 'PASA|^R[0-9]+ +OK ')
+  [ "$falla" == "0" ] && ok "check de master '$c' sobre la base revertida: $pasa PASA, 0 FALLA" \
+    || { mal "check de master '$c' tras revertir: $falla FALLA"; echo "$out" | grep -E 'FALLA|MAL ' | head -5; }
+done
+rm -rf "$MASTER_TMP"
+
+# ---- 10. aplicar atómico otra vez ---------------------------------------------------
+out=$(atomico aplicar)
+echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] \
+  && ok "aplicar después de la reversión completa da el mismo resultado" || mal "re-aplicar tras revertir: $(echo "$out" | grep -iE 'error|fall' | head -3)"
+
+# ---- 11. controles negativos --------------------------------------------------------
 psqlc -c "INSERT INTO public.donations (id, user_id, amount, donation_type, payment_id, status)
           VALUES ('99999999-0000-0000-0000-000000000001', NULL, 777, 'única', 'replica-intruso', 'approved');" >/dev/null
 out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'PRE CHEQUEO FALLÓ' && echo "$out" | grep -q 'aporte automático NO verificado' \
   && ok "un aporte no verificado hace FALLAR el pre chequeo" || mal "control negativo no falló: $out"
-out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
 ANTES_INTRUSO=$(psqlc -At -c "select count(*) from public.aportes_correcciones")
+out=$(atomico aplicar)
 echo "$out" | grep -q 'PRE CHEQUEO FALLÓ' \
   && [ "$(psqlc -At -c "select count(*) from public.aportes_correcciones")" == "$ANTES_INTRUSO" ] \
-  && ok "y aplicar se niega (no deja nada a medias)" || mal "aplicar con intruso: $out"
+  && ok "y la aplicación atómica se niega entera (no deja nada a medias)" || mal "aplicar con intruso: $out"
 
-psqlc -c "UPDATE public.aportes SET monto = monto + 1 WHERE origen='manual' AND referencia_externa='replica-extracto:1';" >/dev/null 2>&1
-psqlc -c "DELETE FROM public.aportes WHERE referencia_externa='replica-intruso';" >/dev/null 2>&1
-psqlc -c "DELETE FROM public.donations WHERE payment_id='replica-intruso';" >/dev/null 2>&1
+psqlc -c "ALTER TABLE public.aportes DISABLE TRIGGER trg_aportes_normalizar;
+          UPDATE public.aportes SET monto = monto + 1 WHERE origen='manual' AND referencia_externa='replica-extracto:1';
+          ALTER TABLE public.aportes ENABLE TRIGGER trg_aportes_normalizar;" >/dev/null 2>&1
+psqlc -c "ALTER TABLE public.donations DISABLE TRIGGER USER; ALTER TABLE public.aportes DISABLE TRIGGER USER;
+          DELETE FROM public.aportes WHERE referencia_externa='replica-intruso';
+          DELETE FROM public.donations WHERE payment_id='replica-intruso';
+          ALTER TABLE public.donations ENABLE TRIGGER USER; ALTER TABLE public.aportes ENABLE TRIGGER USER;" >/dev/null 2>&1
 out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'manuales: se esperaban 135 por 1238997.77' \
   && ok "un importe manual distinto también hace FALLAR el pre chequeo" || mal "control negativo de importe: $out"

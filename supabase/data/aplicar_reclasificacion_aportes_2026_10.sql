@@ -17,9 +17,15 @@
 -- =====================================================================
 BEGIN;
 
-LOCK TABLE public.aportes   IN SHARE ROW EXCLUSIVE MODE;
-LOCK TABLE public.donations IN SHARE ROW EXCLUSIVE MODE;
+-- Mismo orden en que escribe el webhook (donations → memberships → aportes, por
+-- el trigger): tomarlos al revés puede trabar en deadlock un cobro que llega
+-- justo ahora, y que Postgres aborte el INSERT del cobro.
+SET LOCAL lock_timeout = '15s';
+LOCK TABLE public.donations, public.memberships, public.aportes IN SHARE ROW EXCLUSIVE MODE;
 
+-- >>> CUERPO-RECLASIFICACION-2026-10
+-- (lo que `tools/cuotas-2026-10.sh` toma tal cual para la aplicación atómica)
+SET client_min_messages = notice;
 -- >>> BLOQUE-VERIFICACION-2026-10
 -- ⚠️ Este bloque está COPIADO, idéntico, en el pre chequeo y en el script que
 -- aplica. `src/lib/reclasificacion-2026-10.test.js` falla si se separan.
@@ -210,5 +216,6 @@ BEGIN
 END $post$;
 
 ALTER TABLE public.aportes VALIDATE CONSTRAINT aportes_acceso_solo_cuotas_chk;
+-- <<< CUERPO-RECLASIFICACION-2026-10
 
 COMMIT;

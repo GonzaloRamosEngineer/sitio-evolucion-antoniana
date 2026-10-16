@@ -61,9 +61,12 @@ Rama local `feat/cuotas-concepto` (sitio, rebasada sobre la P0) + `feat/segurida
 producción, una donación compra meses y empuja las cuotas (período de UN día). El
 agujero de escritura de pagos ya lo cerró la P0 (abajo, y §16).
 
-**Procedimiento completo, con pre y post chequeos, ventanas y reversión:**
-[`docs/operacion-cuotas-2026-10.md`](docs/operacion-cuotas-2026-10.md). Orden fijo:
-**migraciones → frontend → webhook → Edge Function `club-generar-canje`**.
+**Runbook:** [`docs/operacion-cuotas-2026-10.md`](docs/operacion-cuotas-2026-10.md). La base
+se aplica **en una sola transacción** (`bash tools/cuotas-2026-10.sh aplicar`: esquema +
+funciones + reclasificación; sin ventana sin acceso), con simulación previa en producción
+(`simular`, ROLLBACK) y **reversión completa** de datos y lógica (`revertir`, generada desde
+producción). Orden fijo: **base → frontend → webhook → Edge Function**; para revertir, al
+revés. Ensayado sobre réplica: 30/30.
 
 **Pendiente de verificar con datos reales:** de qué campo de un `payment` de renovación
 sale el id del preapproval (el webhook prueba `metadata.preapproval_id`,

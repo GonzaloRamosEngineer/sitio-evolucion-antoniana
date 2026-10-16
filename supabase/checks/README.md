@@ -35,10 +35,12 @@ la base.
   membresía ni padrón) y **la seguridad**: ninguna sesión se inserta un cobro aprobado.
   Todo en una transacción con ROLLBACK.
 - **`reclasificacion-replica.sh`** — no es un `.sql`: levanta su PROPIO Postgres 15
-  (`pgreplica15`, puerto 55464), aplica las migraciones de antes de 2026-10-16, carga una
-  foto de producción (mismos IDs e importes, sin datos personales) y ensaya la
-  reclasificación histórica como se haría de verdad: pre chequeo, aplicar, re-aplicar,
-  revertir a la foto exacta y dos controles negativos. `RESULTADO: 0 falla/s`.
+  (`pgreplica15`, puerto 55464) con el esquema de producción (hasta la P0) y una foto de
+  datos con ids SINTÉTICOS, y recorre el runbook de `docs/operacion-cuotas-2026-10.md`:
+  pre chequeo, simulación atómica (no deja nada), aplicación atómica, re-aplicación,
+  reversión de datos, simulación y **reversión completa** (datos + lógica: la foto de lógica
+  vuelve a ser idéntica), **los checks de master sobre la base revertida**, y los controles
+  negativos. `RESULTADO: 0 falla/s`.
 - **`fondos-check.sql`** — fondos restringidos (`20260906120000`). Dos cosas distintas
   que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
   trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que
