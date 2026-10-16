@@ -23,6 +23,20 @@
 # Bloqueos: ACCESS EXCLUSIVE sobre donations → memberships → aportes, el mismo
 # orden en que escribe el webhook. Un aviso de Mercado Pago que llega durante
 # la transacción ESPERA (segundos) y entra después: no se pierde.
+#
+# LÍMITES, fijos y explícitos (no se configuran desde afuera a propósito):
+#   lock_timeout = 10s       si en 10 s no obtiene los bloqueos (alguien está
+#                            leyendo o escribiendo esas tablas), ABORTA;
+#   statement_timeout = 120s ninguna sentencia puede trabar las tablas más;
+#   idle_in_transaction_session_timeout = 60s  si el cliente se cuelga a mitad,
+#                            el servidor corta la sesión y descarta todo.
+# NO HAY REINTENTOS: ni este script ni tools/db.sh vuelven a intentar. Un
+# aborto deja la base como estaba; se decide a mano si y cuándo reintentar.
+#
+# HUELLA: después de los bloqueos y ANTES de la primera migración corre el
+# bloque HUELLA-BASE-REVERSION-2026-10 del pre chequeo (el mismo texto): si las
+# definiciones de producción no son la base desde la que se generó la
+# reversión, aborta sin tocar nada.
 # =============================================================================
 set -euo pipefail
 
@@ -31,11 +45,15 @@ VERIFICADO="${VERIFICADO:-$HOME/Documents/dev/BACKUPS/evolucion-antoniana/reclas
 MIG1="$RAIZ/supabase/migrations/20261016120000_cuotas_concepto_y_reintegros.sql"
 MIG2="$RAIZ/supabase/migrations/20261016120100_reclasificar_aportes_historicos.sql"
 APLICAR="$RAIZ/supabase/data/aplicar_reclasificacion_aportes_2026_10.sql"
+PRECHECK="$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql"
+LOCK_TIMEOUT='10s'
+STATEMENT_TIMEOUT='120s'
+IDLE_TIMEOUT='60s'
 REV_LOGICA="$RAIZ/supabase/data/revertir_logica_cuotas_2026_10.sql"
 WEBHOOK_HEALTH="https://mp-supabase-webhook.onrender.com/health"
 WEBHOOK_VIEJO="2026-08-31.consulta-mp"
 
-for f in "$MIG1" "$MIG2" "$APLICAR" "$REV_LOGICA"; do
+for f in "$MIG1" "$MIG2" "$APLICAR" "$PRECHECK" "$REV_LOGICA"; do
   [[ -f "$f" ]] || { echo "ERROR: falta $f" >&2; exit 1; }
 done
 
@@ -45,17 +63,28 @@ cuerpo_reclasificacion() {
   awk '/^-- >>> CUERPO-RECLASIFICACION-2026-10/{d=1} d{print} /^-- <<< CUERPO-RECLASIFICACION-2026-10/{d=0}' "$APLICAR"
 }
 
+huella_base() {
+  awk '/^-- >>> HUELLA-BASE-REVERSION-2026-10/{d=1} d{print} /^-- <<< HUELLA-BASE-REVERSION-2026-10/{d=0}' "$PRECHECK"
+}
+
 cabecera() {
   echo '\set ON_ERROR_STOP on'
   echo 'BEGIN;'
-  echo "SET LOCAL lock_timeout = '15s';"
+  echo "SET LOCAL lock_timeout = '$LOCK_TIMEOUT';"
+  echo "SET LOCAL statement_timeout = '$STATEMENT_TIMEOUT';"
+  echo "SET LOCAL idle_in_transaction_session_timeout = '$IDLE_TIMEOUT';"
+  echo "\\echo '== bloqueos: donations → memberships → aportes (lock_timeout $LOCK_TIMEOUT; si no se obtienen, ABORTA sin reintentar)'"
   echo 'LOCK TABLE public.donations, public.memberships, public.aportes IN ACCESS EXCLUSIVE MODE;'
+  echo "\\echo '== bloqueos obtenidos'"
 }
 
 emitir_aplicar() {  # $1 = COMMIT | ROLLBACK
   [[ -f "$VERIFICADO" ]] || { echo "ERROR: falta lo verificado ($VERIFICADO)." >&2; exit 1; }
   cat "$VERIFICADO"
   cabecera
+  echo "\\echo '== 0/3 huella de la base de la reversión'"
+  echo "SET client_min_messages = notice;"
+  huella_base
   echo "\\echo '== 1/3 migración 20261016120000 (esquema y reglas)'"
   cat "$MIG1"
   echo "\\echo '== 2/3 migración 20261016120100 (función de reclasificación)'"
@@ -125,7 +154,12 @@ exigir_webhook_viejo() {
   fi
 }
 
-correr() { bash "$RAIZ/tools/db.sh" sql; }
+correr() {
+  if ! bash "$RAIZ/tools/db.sh" sql; then
+    echo "ABORTADO: la transacción se descartó y la base quedó como estaba. No se reintenta automáticamente." >&2
+    return 1
+  fi
+}
 
 case "${1:-}" in
   emitir)

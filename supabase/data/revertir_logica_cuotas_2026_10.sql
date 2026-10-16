@@ -5,6 +5,14 @@
 -- permiso y comentario de abajo es `pg_get_functiondef` / `pg_get_triggerdef` /
 -- `proacl` / `obj_description` del estado de producción con la P0 aplicada y
 -- SIN la regla de cuotas. No se reconstruyó a mano: es lo que estaba.
+--
+-- HUELLA-BASE: 4b1fbf1568b28b97c3f71934dd2856be
+-- (calculada SIN los \r: en producción 35 funciones tienen fines de línea CRLF
+-- porque se cargaron pegando SQL en el editor; este archivo quedó en LF. Es la
+-- misma función: se verificó con un lexer que ninguna de las restauradas tiene
+-- un texto entre comillas de varias líneas, donde el \r sí sería parte del valor.)
+-- (la calcula el pre chequeo sobre la base viva; si difiere, ABORTA: ver
+-- HUELLA-BASE-REVERSION-2026-10 en precheck_reclasificacion_aportes_2026_10.sql)
 -- Ensayado: aplicar la regla y después esto deja la "foto de lógica"
 -- (`supabase/data/foto_logica_aportes.sql`) idéntica a la de antes, salvo lo
 -- que se conserva a propósito (abajo).

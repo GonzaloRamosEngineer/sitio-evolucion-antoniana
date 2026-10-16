@@ -56,6 +56,34 @@ después: no se pierde.
 Las migraciones no abren ni cierran transacciones propias, y el cuerpo es el mismo texto
 que usa la aplicación suelta. Las dos cosas las fija `src/lib/tools-cuotas.test.js`.
 
+**Límites, fijos y explícitos.** La transacción fija tres:
+
+| Límite | Valor | Qué hace |
+|---|---|---|
+| `lock_timeout` | 10s | si en 10 s no consigue los bloqueos (alguien está usando esas tablas), **aborta** |
+| `statement_timeout` | 120s | ninguna sentencia puede trabar las tablas más que eso |
+| `idle_in_transaction_session_timeout` | 60s | si el cliente se cuelga a mitad de camino, el servidor corta la sesión y descarta todo |
+
+**No hay reintentos automáticos** ni en la herramienta ni en `tools/db.sh`. Un aborto
+muestra `ABORTADO: … No se reintenta automáticamente.` y deja la base como estaba. Si se
+reintenta, y cuándo, se decide a mano.
+
+**Huella de la base de la reversión.** La reversión de lógica se generó desde las
+definiciones de producción del 2026-10-16. El pre chequeo y la herramienta, esta última
+**después de tomar los bloqueos y antes de la primera migración**, calculan una huella de
+todo lo que la reversión restaura:
+- las 11 funciones, con sus permisos y comentarios;
+- los triggers y las restricciones de `donations`, `memberships` y `aportes`;
+- el comentario de `aportes.equivale_a`.
+
+Si la huella no es `4b1fbf1568b28b97c3f71934dd2856be`, **aborta**: alguien cambió
+producción después de generar la reversión, y revertir dejaría la lógica de ese día. Las
+definiciones se comparan sin los `\r`, porque en producción 35 funciones tienen fines de
+línea CRLF (se cargaron pegando SQL en el editor) y el repo tiene LF. Se verificó con un
+lexer que ninguna de las restauradas tiene un texto entre comillas de varias líneas.
+Normalizada así, la huella de producción y la de la base construida desde el repo
+coinciden.
+
 **Lo verificado** (IDs de personas y de pagos) **no está en el repo**, que es público. Vive
 en `$D/reclasificacion-2026-10-verificado.psql` (0600) y las herramientas lo reciben por la
 entrada estándar. Sin ese archivo, el pre chequeo falla y `aplicar` no emite nada.
@@ -101,10 +129,16 @@ de minutos atrás, hay un aviso de Mercado Pago en curso: esperar.
 ```bash
 cat "$D/reclasificacion-2026-10-verificado.psql" supabase/data/precheck_reclasificacion_aportes_2026_10.sql | bash tools/db.sh sql
 ```
-✅ `verificado_cargado = t`, «todavía no está instalada» y `PRE CHEQUEO OK: 8 aportes
+✅ `HUELLA OK · … (4b1fbf1568b28b97c3f71934dd2856be)`, `verificado_cargado = t`,
+«todavía no está instalada» y `PRE CHEQUEO OK: 8 aportes
 automáticos y 8 cobros verificados; 135 manuales…`. ❌ `PRE CHEQUEO FALLÓ` → **parar**. Si
 entró un cobro real nuevo, la salida lo nombra: hay que actualizar lo verificado y volver a
 revisarlo.
+
+**Ventana sin cobros esperados.** No hay cobros programados hasta la renovación de ≈ 2/11.
+Las donaciones llegan sin aviso, pero son pocas (la última escritura del webhook fue el
+2026-10-12). Justo antes de A3, `p0_4_monitoreo.sql` no tiene que mostrar escrituras en
+las últimas horas.
 
 **A3. Simulación completa en producción**
 ```bash
@@ -113,7 +147,9 @@ bash tools/db.sh sql < supabase/data/foto_logica_aportes.sql > "$D/cuotas-foto-l
 diff "$D/cuotas-foto-logica-antes.txt" "$D/cuotas-foto-logica-post-simular.txt"     # vacío
 ```
 Corre **todo** contra la base real y termina en ROLLBACK. Toma los bloqueos unos segundos:
-los avisos del webhook esperan y entran después.
+los avisos del webhook esperan y entran después. Si en 10 s no consigue los bloqueos,
+termina con `ABORTADO … No se reintenta automáticamente`, sin cambios. Si la huella no
+coincide, termina en `HUELLA DISTINTA — ABORTA` antes de migrar nada.
 ✅ Los 8 `CAMBIO ESPERADO`:
 
 | Aporte | Cambio |

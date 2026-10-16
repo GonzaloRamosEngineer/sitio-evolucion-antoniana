@@ -9,13 +9,17 @@
 -- reversión dejó la lógica EXACTAMENTE como estaba: se toma antes de aplicar y
 -- después de revertir, y se comparan con `diff`.
 -- No imprime datos: solo nombres de objetos y huellas.
+--
+-- Las definiciones de funciones se comparan SIN los \r (fines de línea CRLF de
+-- lo que se cargó pegando SQL en el editor): es la misma función, y sin
+-- normalizar, revertir con el texto del repo (LF) parecería un cambio.
 -- =====================================================================
 BEGIN TRANSACTION READ ONLY;
 \pset footer off
 \pset tuples_only on
 \pset format unaligned
 
-SELECT 'funcion ' || p.oid::regprocedure::text || ' ' || md5(pg_get_functiondef(p.oid))
+SELECT 'funcion ' || p.oid::regprocedure::text || ' ' || md5(replace(pg_get_functiondef(p.oid), chr(13), ''))
   FROM pg_proc p
  WHERE p.pronamespace = 'public'::regnamespace AND p.prokind = 'f'
  ORDER BY 1;
@@ -53,7 +57,9 @@ SELECT 'permiso_tabla ' || c.relname || ' ' ||
    AND c.relname IN ('donations', 'memberships', 'aportes', 'aportes_correcciones')
  ORDER BY 1;
 
-SELECT 'policy ' || polrelid::regclass || ' ' || polname || ' ' || polcmd || ' ' ||
+-- `polcmd` es de tipo "char": sin el ::text, `text || "char"` es ambiguo y la
+-- consulta falla (pasó: la foto salía sin policies y con un ERROR intercalado).
+SELECT 'policy ' || polrelid::regclass::text || ' ' || polname || ' ' || polcmd::text || ' ' ||
        md5(COALESCE(pg_get_expr(polqual, polrelid), '') || '|' || COALESCE(pg_get_expr(polwithcheck, polrelid), ''))
   FROM pg_policy
  WHERE polrelid::regclass::text IN ('donations', 'memberships', 'aportes', 'aportes_correcciones')

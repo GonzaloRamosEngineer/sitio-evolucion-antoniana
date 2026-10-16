@@ -40,7 +40,9 @@ la base.
   pre chequeo, simulación atómica (no deja nada), aplicación atómica, re-aplicación,
   reversión de datos, simulación y **reversión completa** (datos + lógica: la foto de lógica
   vuelve a ser idéntica), **los checks de master sobre la base revertida**, y los controles
-  negativos. `RESULTADO: 0 falla/s`.
+  negativos, una **deriva** de definiciones (HUELLA DISTINTA: aborta antes de migrar) y
+  un **bloqueo** de otra sesión (aborta por `lock_timeout` en ~10 s, un solo intento). Deja
+  la salida cruda de cada paso en `$REPLICA_LOGS`. `RESULTADO: 0 falla/s`.
 - **`fondos-check.sql`** — fondos restringidos (`20260906120000`). Dos cosas distintas
   que no pueden fallar: que **el comprobante de un INGRESO no sea público** —un convenio
   trae firmas de terceros— y que **un fondo cerrado a aportes siga siendo rendible**, que

@@ -7,7 +7,7 @@
 // que la aplicación standalone. El ensayo de punta a punta, contra Postgres 15,
 // es `supabase/checks/reclasificacion-replica.sh`.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -62,7 +62,13 @@ describe('tools/cuotas-2026-10.sh', () => {
       "\\set verificado",
       '\\set ON_ERROR_STOP on',
       'BEGIN;',
+      "SET LOCAL lock_timeout = '10s';",
+      "SET LOCAL statement_timeout = '120s';",
+      "SET LOCAL idle_in_transaction_session_timeout = '60s';",
       'LOCK TABLE public.donations, public.memberships, public.aportes IN ACCESS EXCLUSIVE MODE;',
+      '-- >>> HUELLA-BASE-REVERSION-2026-10',   // la base de la reversión, ANTES de migrar
+      'HUELLA DISTINTA — ABORTA',
+      '-- <<< HUELLA-BASE-REVERSION-2026-10',
       MIG1.slice(0, 200),
       MIG2.slice(0, 200),
       cuerpo,
@@ -105,5 +111,38 @@ describe('tools/cuotas-2026-10.sh', () => {
     expect(rev).not.toMatch(/GRANT\s+(INSERT|UPDATE|DELETE|TRUNCATE|ALL)[^;]*ON\s+(TABLE\s+)?public\.(donations|memberships)/i);
     expect(rev).not.toMatch(/CREATE POLICY/i);
     expect(rev).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+  });
+
+  it('la huella que exige el pre chequeo es la de la base desde la que se generó la reversión', () => {
+    const pre = readFileSync(join(RAIZ, 'supabase/data/precheck_reclasificacion_aportes_2026_10.sql'), 'utf8');
+    const rev = readFileSync(join(RAIZ, 'supabase/data/revertir_logica_cuotas_2026_10.sql'), 'utf8');
+    const esperada = pre.match(/esperada\s+text := '([0-9a-f]{32})'/)?.[1];
+    const base = rev.match(/HUELLA-BASE: ([0-9a-f]{32})/)?.[1];
+    expect(esperada).toMatch(/^[0-9a-f]{32}$/);
+    expect(esperada).toBe(base);
+  });
+
+  it('si la base falla (p. ej. lock_timeout), aborta UNA vez y no reintenta', () => {
+    // Copia mínima del repo con un tools/db.sh falso que cuenta llamadas y falla.
+    const raiz = join(dir, 'repo');
+    for (const d of ['tools', 'supabase/migrations', 'supabase/data']) mkdirSync(join(raiz, d), { recursive: true });
+    for (const f of [
+      'tools/cuotas-2026-10.sh',
+      'supabase/migrations/20261016120000_cuotas_concepto_y_reintegros.sql',
+      'supabase/migrations/20261016120100_reclasificar_aportes_historicos.sql',
+      'supabase/data/aplicar_reclasificacion_aportes_2026_10.sql',
+      'supabase/data/precheck_reclasificacion_aportes_2026_10.sql',
+      'supabase/data/revertir_logica_cuotas_2026_10.sql',
+    ]) copyFileSync(join(RAIZ, f), join(raiz, f));
+    const contador = join(dir, 'llamadas');
+    writeFileSync(join(raiz, 'tools/db.sh'),
+      `cat > /dev/null; echo x >> "${contador}"; echo "ERROR:  canceling statement due to lock timeout" >&2; exit 3\n`);
+    const r = spawnSync('bash', [join(raiz, 'tools/cuotas-2026-10.sh'), 'simular'], {
+      encoding: 'utf8', env: { PATH: process.env.PATH, HOME: dir, VERIFICADO },
+    });
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toMatch(/ABORTADO: la transacción se descartó/);
+    expect(r.stderr).toMatch(/No se reintenta/);
+    expect(readFileSync(contador, 'utf8').trim().split('\n')).toHaveLength(1);   // un solo intento
   });
 });

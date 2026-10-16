@@ -12,6 +12,72 @@
 -- =====================================================================
 BEGIN TRANSACTION READ ONLY;
 
+-- >>> HUELLA-BASE-REVERSION-2026-10
+-- La reversión de lógica (revertir_logica_cuotas_2026_10.sql) se GENERÓ desde
+-- las definiciones de producción del 2026-10-16. Si producción cambió desde
+-- entonces (una función tocada a mano, un permiso, un trigger), revertir
+-- dejaría la lógica de ese día y no la de hoy. Esta huella lo detecta: cubre
+-- todo lo que la reversión restaura o da por sentado. Si difiere, ABORTA.
+-- `tools/cuotas-2026-10.sh` inyecta este mismo bloque ANTES de la primera
+-- migración, así que ni la simulación ni la aplicación avanzan con otra base.
+-- Una vez instalada la regla 2026-10 la huella cambia a propósito: ahí solo
+-- informa que ya se verificó antes de aplicar.
+--
+-- Las definiciones se comparan SIN los \r: 35 funciones de producción se
+-- cargaron pegando SQL en el editor y tienen fines de línea CRLF, y el repo
+-- tiene LF. Es la misma función (verificado: ningún texto entre comillas de
+-- varias líneas en las restauradas); sin normalizar, cada comparación entre
+-- producción y el repo sería una falsa alarma.
+DO $huella$
+DECLARE
+  esperada  text := '4b1fbf1568b28b97c3f71934dd2856be';  -- = HUELLA-BASE de revertir_logica_cuotas_2026_10.sql
+  actual    text;
+  instalada boolean := to_regprocedure('public.reclasificar_aportes_v2(boolean,text)') IS NOT NULL;
+BEGIN
+  IF instalada THEN
+    RAISE NOTICE 'HUELLA · la regla 2026-10 ya está instalada: la base de la reversión se verificó antes de aplicar.';
+    RETURN;
+  END IF;
+
+  SELECT md5(string_agg(x, E'\n' ORDER BY x)) INTO actual FROM (
+    SELECT 'f ' || p.oid::regprocedure::text || ' ' || md5(replace(pg_get_functiondef(p.oid), chr(13), '')) || ' ' ||
+           COALESCE((SELECT string_agg(a, ',' ORDER BY a) FROM unnest(p.proacl::text[]) a), 'DEFAULT') || ' ' ||
+           COALESCE(md5(replace(obj_description(p.oid, 'pg_proc'), chr(13), '')), '-')
+      FROM pg_proc p
+     WHERE p.oid IN (SELECT to_regprocedure(f) FROM unnest(ARRAY[
+             'public.aporte_desde_donacion()', 'public.aporte_desde_membresia()',
+             'public.acceso_vigente(uuid)', 'public.tiene_acceso(uuid)', 'public.tiene_acceso()',
+             'public.mi_acceso()', 'public.antiguedad_socio(uuid)', 'public.elegibilidad_club(uuid)',
+             'public.donaciones_reclamables()', 'public.reclamar_donaciones()',
+             'public.meses_por_donacion(numeric)']) f)
+    UNION ALL
+    SELECT 't ' || c.relname || ' ' || t.tgname || ' ' || md5(pg_get_triggerdef(t.oid))
+      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+     WHERE NOT t.tgisinternal
+       AND c.oid IN ('public.donations'::regclass, 'public.memberships'::regclass, 'public.aportes'::regclass)
+    UNION ALL
+    SELECT 'k ' || k.conrelid::regclass || ' ' || k.conname || ' ' || md5(pg_get_constraintdef(k.oid))
+      FROM pg_constraint k
+     WHERE k.conrelid IN ('public.donations'::regclass, 'public.memberships'::regclass, 'public.aportes'::regclass)
+       -- Los CHECK de las columnas nuevas: la reversión los CONSERVA a propósito
+       -- (con sus columnas). En la base de producción no existen, así que no
+       -- mueven la huella esperada; sin esta exclusión, volver a aplicar después
+       -- de revertir quedaría bloqueado por una diferencia que es intencional.
+       AND k.conname NOT IN ('aportes_concepto_chk', 'aportes_cuotas_chk', 'aportes_reintegro_chk',
+                             'aportes_anulado_chk', 'donations_monto_reintegrado_chk')
+    UNION ALL
+    SELECT 'c aportes.equivale_a ' || COALESCE(md5(col_description('public.aportes'::regclass,
+             (SELECT attnum FROM pg_attribute WHERE attrelid = 'public.aportes'::regclass AND attname = 'equivale_a'))), '-')
+  ) s(x);
+
+  IF actual IS DISTINCT FROM esperada THEN
+    RAISE EXCEPTION 'HUELLA DISTINTA — ABORTA: las definiciones actuales no son la base desde la que se generó la reversión (esperada %, actual %). Regenerar y revisar revertir_logica_cuotas_2026_10.sql antes de seguir.',
+      esperada, actual;
+  END IF;
+  RAISE NOTICE 'HUELLA OK · las definiciones actuales coinciden con la base de la reversión (%).', actual;
+END $huella$;
+-- <<< HUELLA-BASE-REVERSION-2026-10
+
 -- >>> BLOQUE-VERIFICACION-2026-10
 -- ⚠️ Este bloque está COPIADO, idéntico, en el pre chequeo y en el script que
 -- aplica. `src/lib/reclasificacion-2026-10.test.js` falla si se separan.

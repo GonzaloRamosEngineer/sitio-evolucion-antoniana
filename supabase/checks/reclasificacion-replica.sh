@@ -21,6 +21,13 @@
 #   9. los checks SQL de master, corridos sobre la base revertida, pasan igual
 #  10. aplicar atómico otra vez      -> mismo resultado que en 4
 #  11. controles NEGATIVOS: un aporte no verificado / un importe distinto
+#  y antes de simular:
+#   2c. DERIVA: una definición cambiada a mano -> HUELLA DISTINTA, aborta
+#   2d. BLOQUEO: otra sesión tiene las tablas -> lock_timeout, aborta, 1 intento
+#
+# Cada paso deja su salida CRUDA en $REPLICA_LOGS (por defecto, un directorio
+# temporal que se informa al final). Si algo falla, se guardan también los logs
+# del contenedor: una falla intermitente tiene que dejar evidencia.
 #
 # Los ids de la foto son SINTÉTICOS (el repo es público): mismas formas,
 # importes, fechas y períodos que producción, otros identificadores. Lo
@@ -35,13 +42,28 @@ set -uo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 C=pgreplica15
 FALLAS=0
-psqlc() { docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
+REPLICA_LOGS="${REPLICA_LOGS:-$(mktemp -d)}"; mkdir -p "$REPLICA_LOGS"
+# Todo `docker exec` deja constancia si no sale con 0: es la hipótesis de las
+# fallas intermitentes (una salida vacía o cortada del cliente, no de la base).
+psqlc() {
+  docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"
+  local rc=$?
+  [ $rc -ne 0 ] && echo "$(date -u +%H:%M:%S) psqlc rc=$rc args=$*" >> "$REPLICA_LOGS/psqlc-salidas-no-cero.log"
+  return $rc
+}
 VERIFICADO="$(mktemp)"; trap 'rm -f "$VERIFICADO"' EXIT
 cat > "$VERIFICADO" <<'JSON'
 \set verificado '{"aportes": [{"id": "5e5e000c-0000-4000-8000-00000000000c", "origen": "donacion", "monto": 75, "ref": "replica-pago-02", "donation_id": "5e5e0004-0000-4000-8000-000000000004", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000d-0000-4000-8000-00000000000d", "origen": "donacion", "monto": 1916, "ref": "replica-pago-03", "donation_id": "5e5e0005-0000-4000-8000-000000000005", "membership_id": null, "user_id": "5e5e0002-0000-4000-8000-000000000002", "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000e-0000-4000-8000-00000000000e", "origen": "donacion", "monto": 5000, "ref": "replica-pago-04", "donation_id": "5e5e0006-0000-4000-8000-000000000006", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000f-0000-4000-8000-00000000000f", "origen": "donacion", "monto": 150, "ref": "replica-pago-05", "donation_id": "5e5e0007-0000-4000-8000-000000000007", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0010-0000-4000-8000-000000000010", "origen": "donacion", "monto": 100, "ref": "replica-pago-06", "donation_id": "5e5e0008-0000-4000-8000-000000000008", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0011-0000-4000-8000-000000000011", "origen": "membresia", "monto": 5000, "ref": "replica-pago-07", "donation_id": "5e5e0009-0000-4000-8000-000000000009", "membership_id": "5e5e0003-0000-4000-8000-000000000003", "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "suscripción", "antes": ["2026-09-02", "2026-10-02"], "concepto": "cuota_mensual", "cuotas": 1, "despues": ["2026-09-02", "2026-10-01"]}, {"id": "5e5e0012-0000-4000-8000-000000000012", "origen": "donacion", "monto": 20000, "ref": "replica-pago-08", "donation_id": "5e5e000a-0000-4000-8000-00000000000a", "membership_id": null, "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "única", "antes": ["2026-10-03", "2027-02-03"], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0013-0000-4000-8000-000000000013", "origen": "membresia", "monto": 5000, "ref": "replica-pago-01", "donation_id": "5e5e000b-0000-4000-8000-00000000000b", "membership_id": "5e5e0003-0000-4000-8000-000000000003", "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "suscripción", "antes": ["2027-02-04", "2027-02-04"], "concepto": "cuota_mensual", "cuotas": 1, "despues": ["2026-10-02", "2026-11-01"]}], "manuales": {"cantidad": 135, "suma": 1238997.77}, "donaciones": 8, "cuenta_control": {"user_id": "5e5e0001-0000-4000-8000-000000000001", "cuotas": 2, "acumulado": 30000}}'
 JSON
 # Un script de supabase/data con lo verificado antepuesto.
-con_verificado() { cat "$VERIFICADO" "$RAIZ/supabase/data/$1" | psqlc 2>&1; }
+con_verificado() { cat "$VERIFICADO" "$RAIZ/supabase/data/$1" | psqlc 2>&1 | registrar "${1%%.sql}"; }
+# Guarda la salida cruda de cada paso: $1 = nombre, stdin = salida. El número
+# va en un ARCHIVO: registrar() corre dentro de un pipeline (un subshell) y una
+# variable no avanzaría — cada paso pisaría al anterior del mismo nombre.
+registrar() {
+  local n; n=$(( $(cat "$REPLICA_LOGS/.paso" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$REPLICA_LOGS/.paso"
+  tee "$REPLICA_LOGS/$(printf '%03d' "$n")-$1.log"
+}
 ok()    { echo "PASA  · $1"; }
 mal()   { echo "FALLA · $1"; FALLAS=$((FALLAS + 1)); }
 
@@ -120,6 +142,9 @@ ALTER TABLE public.aportes     ENABLE TRIGGER USER;
 SQL
 
 foto() {
+  _foto | registrar foto
+}
+_foto() {
   psqlc -At -c "select id, concepto_o_nada, cuotas, acceso_desde, acceso_hasta, anulado
                   from (select id, coalesce(to_jsonb(a)->>'concepto','-') concepto_o_nada,
                                coalesce(to_jsonb(a)->>'cuotas_cubiertas','0') cuotas,
@@ -130,20 +155,60 @@ foto() {
 FOTO_ORIGINAL=$(foto)
 
 # Lógica: funciones, triggers, permisos, restricciones, columnas, policies.
-foto_logica() { psqlc -q < "$RAIZ/supabase/data/foto_logica_aportes.sql" 2>&1; }
+# Solo stdout: un error por stderr se intercala en una posición que depende del
+# buffering, y eso volvía la comparación INTERMITENTE (causa de las fallas
+# esporádicas de 2026-10-16, no Docker). El stderr va aparte y se exige vacío.
+foto_logica() {
+  psqlc -q < "$RAIZ/supabase/data/foto_logica_aportes.sql" 2>>"$REPLICA_LOGS/foto-logica-stderr.log" | registrar foto-logica
+}
 LOGICA_ANTES=$(foto_logica)
-[ "$(echo "$LOGICA_ANTES" | grep -c '^funcion ')" -gt 50 ] && ok "foto de lógica tomada ($(echo "$LOGICA_ANTES" | wc -l | tr -d ' ') objetos)" || mal "foto de lógica vacía"
+[ "$(echo "$LOGICA_ANTES" | grep -c '^funcion ')" -gt 50 ] && [ "$(echo "$LOGICA_ANTES" | grep -c '^policy ')" -gt 0 ] \
+  && [ ! -s "$REPLICA_LOGS/foto-logica-stderr.log" ] \
+  && ok "foto de lógica tomada ($(echo "$LOGICA_ANTES" | wc -l | tr -d ' ') objetos, con policies, sin errores)" \
+  || mal "foto de lógica incompleta o con errores: $(head -2 "$REPLICA_LOGS/foto-logica-stderr.log" 2>/dev/null)"
 
 # La herramienta atómica, apuntada a ESTE contenedor (emitir no se conecta).
-atomico() { VERIFICADO="$VERIFICADO" bash "$RAIZ/tools/cuotas-2026-10.sh" emitir "$1" | psqlc 2>&1; }
+atomico() { { VERIFICADO="$VERIFICADO" bash "$RAIZ/tools/cuotas-2026-10.sh" emitir "$1" | psqlc; } 2>&1 | registrar "atomico-$1"; }
 
 # ---- 2. pre chequeo, fuera de la transacción ---------------------------------
 out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'PRE CHEQUEO OK' && echo "$out" | grep -q 'todavía no está instalada' \
-  && ok "pre chequeo sobre el esquema de hoy" || mal "pre chequeo: $out"
+  && echo "$out" | grep -q 'HUELLA OK' \
+  && ok "pre chequeo sobre el esquema de hoy (HUELLA OK: la réplica es la base de la reversión)" || mal "pre chequeo: $out"
 out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
 echo "$out" | grep -q 'falta lo verificado' && ! echo "$out" | grep -q 'PRE CHEQUEO OK' \
   && ok "sin el archivo de lo verificado, el pre chequeo FALLA" || mal "pre chequeo sin verificado: $out"
+
+# ---- 2c. DERIVA: alguien cambió una definición después de generar la reversión --
+psqlc -c "COMMENT ON FUNCTION public.elegibilidad_club(uuid) IS 'cambiado a mano';" >/dev/null
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
+echo "$out" | grep -q 'HUELLA DISTINTA' && ! echo "$out" | grep -q 'PRE CHEQUEO OK' \
+  && ok "deriva: el pre chequeo detecta la HUELLA DISTINTA y no aprueba" || mal "deriva no detectada en el pre chequeo"
+out=$(atomico simular)
+echo "$out" | grep -q 'HUELLA DISTINTA' && ! echo "$out" | grep -q '== 1/3' && ! echo "$out" | grep -q 'FIN:' \
+  && [ "$(foto)" == "$FOTO_ORIGINAL" ] && [ "$(foto_logica)" == "$LOGICA_ANTES" ] \
+  && ok "deriva: la simulación aborta ANTES de la primera migración y no deja nada" || mal "deriva no frenó la simulación"
+psqlc -c "COMMENT ON FUNCTION public.elegibilidad_club(uuid) IS NULL;" >/dev/null
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
+echo "$out" | grep -q 'HUELLA OK' && ok "deriva: al volver la definición, la huella vuelve a coincidir" || mal "la huella no volvió"
+
+# ---- 2d. BLOQUEO: otra sesión tiene una de las tablas ---------------------------
+docker exec "$C" psql -U postgres -d postgres -q -c \
+  "BEGIN; LOCK TABLE public.aportes IN ACCESS SHARE MODE; SELECT pg_sleep(45); COMMIT;" >/dev/null 2>&1 &
+BLOQUEADOR=$!
+sleep 2
+t0=$(date +%s)
+out=$(atomico simular)
+dt=$(( $(date +%s) - t0 ))
+if echo "$out" | grep -q 'lock timeout' && ! echo "$out" | grep -q 'bloqueos obtenidos' \
+   && [ "$(echo "$out" | grep -c '== bloqueos:')" == 1 ] && [ "$dt" -lt 30 ] \
+   && [ "$(foto)" == "$FOTO_ORIGINAL" ] && [ "$(foto_logica)" == "$LOGICA_ANTES" ]; then
+  ok "bloqueo: aborta por lock_timeout en ${dt}s, un solo intento, sin cambios"
+else
+  mal "bloqueo: no abortó como debía (${dt}s): $(echo "$out" | grep -iE 'error|lock' | head -3)"
+fi
+psqlc -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(45)%' AND pid <> pg_backend_pid();" >/dev/null 2>&1
+wait $BLOQUEADOR 2>/dev/null
 
 # ---- 3. simular: todo y ROLLBACK ---------------------------------------------
 out=$(atomico simular)
@@ -219,6 +284,10 @@ else
 fi
 r=$(psqlc -At -c "select has_table_privilege('authenticated','public.donations','INSERT')")
 [ "$r" == "f" ] && ok "la P0 sigue cerrada después de revertir" || mal "revertir reabrió la P0"
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
+echo "$out" | grep -q 'HUELLA OK' && echo "$out" | grep -q 'PRE CHEQUEO OK' \
+  && ok "tras revertir, la huella vuelve a ser la de la base (se puede volver a aplicar)" \
+  || mal "huella tras revertir: $(echo "$out" | grep -oE 'actual [0-9a-f]{32}|HUELLA [A-Z]+')"
 
 # ---- 9. los checks de MASTER sobre la base revertida ------------------------------
 MASTER_TMP=$(mktemp -d)
@@ -260,6 +329,13 @@ out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'manuales: se esperaban 135 por 1238997.77' \
   && ok "un importe manual distinto también hace FALLAR el pre chequeo" || mal "control negativo de importe: $out"
 
+[ ! -s "$REPLICA_LOGS/foto-logica-stderr.log" ] && ok "ninguna foto de lógica tuvo errores en toda la corrida" \
+  || mal "fotos de lógica con errores: $(sort -u "$REPLICA_LOGS/foto-logica-stderr.log" | head -2)"
+if [ "$FALLAS" -gt 0 ]; then
+  docker logs "$C" > "$REPLICA_LOGS/zz-contenedor.log" 2>&1
+  docker ps -a --format '{{.Names}} {{.Status}}' > "$REPLICA_LOGS/zz-docker-ps.log" 2>&1
+  echo "Salidas crudas de cada paso y logs del contenedor: $REPLICA_LOGS"
+fi
 docker rm -f "$C" >/dev/null 2>&1
 echo
 echo "RESULTADO: $FALLAS falla/s"
