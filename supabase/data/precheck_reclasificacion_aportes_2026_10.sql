@@ -16,30 +16,33 @@ BEGIN TRANSACTION READ ONLY;
 -- ⚠️ Este bloque está COPIADO, idéntico, en el pre chequeo y en el script que
 -- aplica. `src/lib/reclasificacion-2026-10.test.js` falla si se separan.
 --
+-- LO VERIFICADO NO ESTÁ EN ESTE ARCHIVO: el repo es público y son ids de
+-- personas y de pagos. Vive fuera del repo y se antepone por la entrada:
+--   cat "$D/reclasificacion-2026-10-verificado.psql" <este script> | bash tools/db.sh sql
+-- Sin él, el pre chequeo FALLA (no hay contra qué comparar).
+--
 -- Qué verifica, contra lo relevado en producción el 2026-10-15/16:
---   1. Los 8 aportes automáticos existen con el mismo origen, importe,
+--   1. Los aportes automáticos verificados existen con el mismo origen, importe,
 --      referencia de Mercado Pago, titular, vínculo a donación/membresía, y
 --      su cobro sigue `approved` con el mismo tipo.
 --   2. Cada uno está en su estado PREVIO o ya en el FINAL (re-correr es válido).
 --   3. No hay NINGÚN otro aporte automático.
---   4. Los manuales son exactamente 135 por $1.238.997,77, sin titular, sin
---      vínculo, sin período, sin cuotas y sin clasificar.
---   5. `donations` tiene exactamente esas 8 filas, todas approved.
+--   4. Los manuales son exactamente los verificados (cantidad y suma), sin
+--      titular, sin vínculo, sin período, sin cuotas y sin clasificar.
+--   5. `donations` tiene exactamente las filas verificadas, todas approved.
 --   6. Si la reclasificación ya está instalada, la SIMULACIÓN propone
 --      exactamente el estado final esperado, fila por fila.
 -- Cualquier diferencia ABORTA con la lista de motivos.
+\if :{?verificado}
+-- Solo informa SI se cargó: imprimir el valor mostraría ids de personas.
+SELECT set_config('reclasif.verificado', :'verificado', false) <> '' AS verificado_cargado;
+\else
+SELECT set_config('reclasif.verificado', '', false) <> '' AS verificado_cargado;
+\endif
 DO $verif$
 DECLARE
-  esperado jsonb := $json$[
-    {"id":"041cb69e-0930-4cc3-91f4-35be232a371f","origen":"donacion","monto":75,"ref":"130390758084","donation_id":"a6844bb5-e7bb-4e28-bee8-6ee8796d88fd","membership_id":null,"user_id":null,"tipo":"única","antes":[null,null],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"459310e8-f07e-4c42-ac93-b5567b3d8d21","origen":"donacion","monto":1916,"ref":"130390961370","donation_id":"5de9f6f1-675b-49f1-972f-f39d2b99534a","membership_id":null,"user_id":"20fa6658-37fd-49de-877d-84cb93d6483f","tipo":"única","antes":[null,null],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"e8b98821-3785-4280-a402-08ecb8c19095","origen":"donacion","monto":5000,"ref":"133434832051","donation_id":"6da6f87c-8c93-4e7b-ae9c-90d763a8d1b7","membership_id":null,"user_id":null,"tipo":"única","antes":[null,null],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"1c4d57c0-8376-40b4-9c9b-e2d0c61de267","origen":"donacion","monto":150,"ref":"141942388060","donation_id":"5ba013d6-7fda-43de-9737-cbd6b6f6cdfc","membership_id":null,"user_id":null,"tipo":"única","antes":[null,null],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"bde58fb8-5145-4d8b-a669-eb31cd4834e8","origen":"donacion","monto":100,"ref":"174204153506","donation_id":"ddf70dc1-713e-49d0-b5d3-0695c52edab2","membership_id":null,"user_id":null,"tipo":"única","antes":[null,null],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"394db8cc-25af-48dd-a12e-849833b1207e","origen":"membresia","monto":5000,"ref":"175967372005","donation_id":"53523291-4fdc-4c34-b15c-5c8aa2171686","membership_id":"d51fc640-317c-429f-8b9b-04a4cf10031a","user_id":"c3becdd9-5974-4735-8270-134cdbcd9d48","tipo":"suscripción","antes":["2026-09-02","2026-10-02"],"concepto":"cuota_mensual","cuotas":1,"despues":["2026-09-02","2026-10-01"]},
-    {"id":"f1be2fa3-a67d-40a0-ba62-7f143b92e4bd","origen":"donacion","monto":20000,"ref":"181921612108","donation_id":"726686ca-1635-4d39-8c89-cd7576f06985","membership_id":null,"user_id":"c3becdd9-5974-4735-8270-134cdbcd9d48","tipo":"única","antes":["2026-10-03","2027-02-03"],"concepto":"donacion_extraordinaria","cuotas":0,"despues":[null,null]},
-    {"id":"fc38049b-d97a-4db4-82cb-d746a84f7c1a","origen":"membresia","monto":5000,"ref":"181067329409","donation_id":"0ad914ed-a166-435b-ac8e-027c9673f9bc","membership_id":"d51fc640-317c-429f-8b9b-04a4cf10031a","user_id":"c3becdd9-5974-4735-8270-134cdbcd9d48","tipo":"suscripción","antes":["2027-02-04","2027-02-04"],"concepto":"cuota_mensual","cuotas":1,"despues":["2026-10-02","2026-11-01"]}
-  ]$json$;
+  verificado jsonb := NULLIF(current_setting('reclasif.verificado', true), '')::jsonb;
+  esperado jsonb;
   e        jsonb;
   a        jsonb;
   fallas   text[] := '{}';
@@ -49,6 +52,10 @@ DECLARE
   v_final  boolean;
   sim      record;
 BEGIN
+  IF verificado IS NULL THEN
+    RAISE EXCEPTION E'PRE CHEQUEO FALLÓ: falta lo verificado. Anteponer el archivo de fuera del repo:\n  cat "$D/reclasificacion-2026-10-verificado.psql" <script> | bash tools/db.sh sql';
+  END IF;
+  esperado := verificado->'aportes';
   -- 1 y 2
   FOR e IN SELECT * FROM jsonb_array_elements(esperado) LOOP
     SELECT to_jsonb(x) || jsonb_build_object('d_status', d.status, 'd_tipo', d.donation_type)
@@ -102,8 +109,9 @@ BEGIN
 
   -- 4
   SELECT count(*), COALESCE(sum(monto), 0) INTO v_n, v_suma FROM public.aportes WHERE origen = 'manual';
-  IF v_n <> 135 OR v_suma <> 1238997.77 THEN
-    fallas := fallas || format('manuales: se esperaban 135 por 1238997.77 y hay %s por %s', v_n, v_suma);
+  IF v_n <> (verificado->'manuales'->>'cantidad')::int OR v_suma <> (verificado->'manuales'->>'suma')::numeric THEN
+    fallas := fallas || format('manuales: se esperaban %s por %s y hay %s por %s',
+                               verificado->'manuales'->>'cantidad', verificado->'manuales'->>'suma', v_n, v_suma);
   END IF;
   SELECT count(*) INTO v_n FROM public.aportes x
    WHERE x.origen = 'manual'
@@ -117,8 +125,8 @@ BEGIN
 
   -- 5
   SELECT count(*) INTO v_n FROM public.donations;
-  IF v_n <> 8 THEN
-    fallas := fallas || format('donations: se esperaban 8 filas y hay %s', v_n);
+  IF v_n <> (verificado->>'donaciones')::int THEN
+    fallas := fallas || format('donations: se esperaban %s filas y hay %s', verificado->>'donaciones', v_n);
   END IF;
   SELECT count(*) INTO v_n FROM public.donations
    WHERE status IS DISTINCT FROM 'approved'
@@ -155,7 +163,8 @@ BEGIN
   IF array_length(fallas, 1) > 0 THEN
     RAISE EXCEPTION E'PRE CHEQUEO FALLÓ (% motivo/s):\n- %', array_length(fallas, 1), array_to_string(fallas, E'\n- ');
   END IF;
-  RAISE NOTICE 'PRE CHEQUEO OK: 8 aportes automáticos y 8 cobros verificados; 135 manuales sin clasificar y sin efecto de cuota.';
+  RAISE NOTICE 'PRE CHEQUEO OK: % aportes automáticos y % cobros verificados; % manuales sin clasificar y sin efecto de cuota.',
+    jsonb_array_length(esperado), verificado->>'donaciones', verificado->'manuales'->>'cantidad';
 END $verif$;
 -- <<< BLOQUE-VERIFICACION-2026-10
 

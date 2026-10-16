@@ -53,10 +53,14 @@ describe('reclasificación de aportes 2026-10', () => {
     expect([...orden].sort((a, b) => a - b)).toEqual(orden);
   });
 
-  it('la verificación fija los 8 aportes automáticos y los 135 manuales relevados', () => {
+  it('lo verificado NO está en el repo (es público): llega por la entrada y sin eso falla', () => {
     const b = bloque(precheck);
-    expect(b.match(/"id":"[0-9a-f-]{36}"/g)).toHaveLength(8);
-    expect(b).toMatch(/v_n <> 135 OR v_suma <> 1238997\.77/);
+    // Ni un uuid ni una referencia de Mercado Pago escritos en los scripts.
+    expect(precheck + aplicar).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+    expect(precheck + aplicar).not.toMatch(/'\d{11,12}'/);
+    expect(b).toMatch(/\\if :\{\?verificado\}/);
+    expect(b).toMatch(/falta lo verificado/);
+    expect(b).toMatch(/verificado->'manuales'->>'cantidad'/);
     expect(b).toMatch(/RAISE EXCEPTION E'PRE CHEQUEO FALLÓ/);
   });
 

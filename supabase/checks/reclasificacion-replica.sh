@@ -18,6 +18,11 @@
 #   7. aplicar otra vez                                 -> mismo resultado
 #   8. control NEGATIVO: un aporte no verificado        -> el pre chequeo FALLA
 #
+# Los ids de la foto son SINTÉTICOS (el repo es público): mismas formas,
+# importes, fechas y períodos que producción, otros identificadores. Lo
+# verificado se arma acá y se antepone por la entrada a los scripts, igual que
+# hace el operador con el archivo que vive fuera del repo.
+#
 # Uso:  supabase/checks/reclasificacion-replica.sh
 # Requiere Docker. Usa su propio contenedor (pgreplica15, puerto 55464).
 # =============================================================================
@@ -27,6 +32,12 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 C=pgreplica15
 FALLAS=0
 psqlc() { docker exec -i "$C" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
+VERIFICADO="$(mktemp)"; trap 'rm -f "$VERIFICADO"' EXIT
+cat > "$VERIFICADO" <<'JSON'
+\set verificado '{"aportes": [{"id": "5e5e000c-0000-4000-8000-00000000000c", "origen": "donacion", "monto": 75, "ref": "replica-pago-02", "donation_id": "5e5e0004-0000-4000-8000-000000000004", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000d-0000-4000-8000-00000000000d", "origen": "donacion", "monto": 1916, "ref": "replica-pago-03", "donation_id": "5e5e0005-0000-4000-8000-000000000005", "membership_id": null, "user_id": "5e5e0002-0000-4000-8000-000000000002", "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000e-0000-4000-8000-00000000000e", "origen": "donacion", "monto": 5000, "ref": "replica-pago-04", "donation_id": "5e5e0006-0000-4000-8000-000000000006", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e000f-0000-4000-8000-00000000000f", "origen": "donacion", "monto": 150, "ref": "replica-pago-05", "donation_id": "5e5e0007-0000-4000-8000-000000000007", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0010-0000-4000-8000-000000000010", "origen": "donacion", "monto": 100, "ref": "replica-pago-06", "donation_id": "5e5e0008-0000-4000-8000-000000000008", "membership_id": null, "user_id": null, "tipo": "única", "antes": [null, null], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0011-0000-4000-8000-000000000011", "origen": "membresia", "monto": 5000, "ref": "replica-pago-07", "donation_id": "5e5e0009-0000-4000-8000-000000000009", "membership_id": "5e5e0003-0000-4000-8000-000000000003", "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "suscripción", "antes": ["2026-09-02", "2026-10-02"], "concepto": "cuota_mensual", "cuotas": 1, "despues": ["2026-09-02", "2026-10-01"]}, {"id": "5e5e0012-0000-4000-8000-000000000012", "origen": "donacion", "monto": 20000, "ref": "replica-pago-08", "donation_id": "5e5e000a-0000-4000-8000-00000000000a", "membership_id": null, "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "única", "antes": ["2026-10-03", "2027-02-03"], "concepto": "donacion_extraordinaria", "cuotas": 0, "despues": [null, null]}, {"id": "5e5e0013-0000-4000-8000-000000000013", "origen": "membresia", "monto": 5000, "ref": "replica-pago-01", "donation_id": "5e5e000b-0000-4000-8000-00000000000b", "membership_id": "5e5e0003-0000-4000-8000-000000000003", "user_id": "5e5e0001-0000-4000-8000-000000000001", "tipo": "suscripción", "antes": ["2027-02-04", "2027-02-04"], "concepto": "cuota_mensual", "cuotas": 1, "despues": ["2026-10-02", "2026-11-01"]}], "manuales": {"cantidad": 135, "suma": 1238997.77}, "donaciones": 8, "cuenta_control": {"user_id": "5e5e0001-0000-4000-8000-000000000001", "cuotas": 2, "acumulado": 30000}}'
+JSON
+# Un script de supabase/data con lo verificado antepuesto.
+con_verificado() { cat "$VERIFICADO" "$RAIZ/supabase/data/$1" | psqlc 2>&1; }
 ok()    { echo "PASA  · $1"; }
 mal()   { echo "FALLA · $1"; FALLAS=$((FALLAS + 1)); }
 
@@ -45,8 +56,8 @@ psqlc -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA extensions;' \
 aplicar_migraciones() {  # $1 = filtro: "viejas" | "nuevas"
   for f in "$RAIZ"/supabase/migrations/*.sql; do
     n=$(basename "$f")
-    if [[ "$1" == viejas && "$n" > "20261016" ]]; then continue; fi
-    if [[ "$1" == nuevas && "$n" < "20261016" ]]; then continue; fi
+    if [[ "$1" == viejas && "$n" > "20261016120000" ]]; then continue; fi
+    if [[ "$1" == nuevas && "$n" < "20261016120000" ]]; then continue; fi
     out=$(psqlc < "$f" 2>&1) || {
       # pg_cron y el bucket de avatares no existen en un Postgres pelado (ver README).
       case "$n" in *club_cron_reaper*|*avatar_socio*) ;; *) mal "migración $n: $(echo "$out" | grep ERROR | head -1)";; esac; }
@@ -58,8 +69,8 @@ aplicar_migraciones viejas
 # ---- la foto -----------------------------------------------------------------
 psqlc <<'SQL' >/dev/null
 INSERT INTO auth.users (id, email, created_at, email_confirmed_at, raw_user_meta_data) VALUES
-  ('c3becdd9-5974-4735-8270-134cdbcd9d48','replica-cuenta-auditada@test.invalid', now(), now(), '{"name":"Replica Auditada"}'),
-  ('20fa6658-37fd-49de-877d-84cb93d6483f','replica-donante@test.invalid',        now(), now(), '{"name":"Replica Donante"}');
+  ('5e5e0001-0000-4000-8000-000000000001','replica-cuenta-auditada@test.invalid', now(), now(), '{"name":"Replica Auditada"}'),
+  ('5e5e0002-0000-4000-8000-000000000002','replica-donante@test.invalid',        now(), now(), '{"name":"Replica Donante"}');
 
 ALTER TABLE public.donations   DISABLE TRIGGER USER;
 ALTER TABLE public.memberships DISABLE TRIGGER USER;
@@ -67,30 +78,30 @@ ALTER TABLE public.aportes     DISABLE TRIGGER USER;
 
 INSERT INTO public.memberships (id, user_id, plan, amount, payment_method, status, preapproval_id,
                                 last_payment_id, last_payment_status, next_charge_date, external_reference)
-VALUES ('d51fc640-317c-429f-8b9b-04a4cf10031a','c3becdd9-5974-4735-8270-134cdbcd9d48','Replica',5000,
-        'mercadopago','active','replica-preapproval','181067329409','approved','2026-10-02',
-        'user:c3becdd9-5974-4735-8270-134cdbcd9d48:suscripcion');
+VALUES ('5e5e0003-0000-4000-8000-000000000003','5e5e0001-0000-4000-8000-000000000001','Replica',5000,
+        'mercadopago','active','replica-preapproval','replica-pago-01','approved','2026-10-02',
+        'user:5e5e0001-0000-4000-8000-000000000001:suscripcion');
 
 INSERT INTO public.donations (id, user_id, amount, donation_type, payment_id, status, created_at) VALUES
-  ('a6844bb5-e7bb-4e28-bee8-6ee8796d88fd', NULL, 75,'única','130390758084','approved','2025-10-01 12:00+00'),
-  ('5de9f6f1-675b-49f1-972f-f39d2b99534a','20fa6658-37fd-49de-877d-84cb93d6483f',1916,'única','130390961370','approved','2025-10-01 13:00+00'),
-  ('6da6f87c-8c93-4e7b-ae9c-90d763a8d1b7', NULL,5000,'única','133434832051','approved','2025-11-01 12:00+00'),
-  ('5ba013d6-7fda-43de-9737-cbd6b6f6cdfc', NULL, 150,'única','141942388060','approved','2026-01-10 12:00+00'),
-  ('ddf70dc1-713e-49d0-b5d3-0695c52edab2', NULL, 100,'única','174204153506','approved','2026-08-16 12:00+00'),
-  ('53523291-4fdc-4c34-b15c-5c8aa2171686','c3becdd9-5974-4735-8270-134cdbcd9d48',5000,'suscripción','175967372005','approved','2026-09-02 20:23:00+00'),
-  ('726686ca-1635-4d39-8c89-cd7576f06985','c3becdd9-5974-4735-8270-134cdbcd9d48',20000,'única','181921612108','approved','2026-10-02 00:50:51+00'),
-  ('0ad914ed-a166-435b-ac8e-027c9673f9bc','c3becdd9-5974-4735-8270-134cdbcd9d48',5000,'suscripción','181067329409','approved','2026-10-02 21:09:04+00');
+  ('5e5e0004-0000-4000-8000-000000000004', NULL, 75,'única','replica-pago-02','approved','2025-10-01 12:00+00'),
+  ('5e5e0005-0000-4000-8000-000000000005','5e5e0002-0000-4000-8000-000000000002',1916,'única','replica-pago-03','approved','2025-10-01 13:00+00'),
+  ('5e5e0006-0000-4000-8000-000000000006', NULL,5000,'única','replica-pago-04','approved','2025-11-01 12:00+00'),
+  ('5e5e0007-0000-4000-8000-000000000007', NULL, 150,'única','replica-pago-05','approved','2026-01-10 12:00+00'),
+  ('5e5e0008-0000-4000-8000-000000000008', NULL, 100,'única','replica-pago-06','approved','2026-08-16 12:00+00'),
+  ('5e5e0009-0000-4000-8000-000000000009','5e5e0001-0000-4000-8000-000000000001',5000,'suscripción','replica-pago-07','approved','2026-09-02 20:23:00+00'),
+  ('5e5e000a-0000-4000-8000-00000000000a','5e5e0001-0000-4000-8000-000000000001',20000,'única','replica-pago-08','approved','2026-10-02 00:50:51+00'),
+  ('5e5e000b-0000-4000-8000-00000000000b','5e5e0001-0000-4000-8000-000000000001',5000,'suscripción','replica-pago-01','approved','2026-10-02 21:09:04+00');
 
 INSERT INTO public.aportes (id, user_id, monto, fecha, destino_id, origen, donation_id, membership_id,
                             referencia_externa, acceso_desde, acceso_hasta) VALUES
-  ('041cb69e-0930-4cc3-91f4-35be232a371f', NULL, 75,'2025-10-01 12:00+00', public.destino_por_defecto(),'donacion','a6844bb5-e7bb-4e28-bee8-6ee8796d88fd',NULL,'130390758084',NULL,NULL),
-  ('459310e8-f07e-4c42-ac93-b5567b3d8d21','20fa6658-37fd-49de-877d-84cb93d6483f',1916,'2025-10-01 13:00+00', public.destino_por_defecto(),'donacion','5de9f6f1-675b-49f1-972f-f39d2b99534a',NULL,'130390961370',NULL,NULL),
-  ('e8b98821-3785-4280-a402-08ecb8c19095', NULL,5000,'2025-11-01 12:00+00', public.destino_por_defecto(),'donacion','6da6f87c-8c93-4e7b-ae9c-90d763a8d1b7',NULL,'133434832051',NULL,NULL),
-  ('1c4d57c0-8376-40b4-9c9b-e2d0c61de267', NULL, 150,'2026-01-10 12:00+00', public.destino_por_defecto(),'donacion','5ba013d6-7fda-43de-9737-cbd6b6f6cdfc',NULL,'141942388060',NULL,NULL),
-  ('bde58fb8-5145-4d8b-a669-eb31cd4834e8', NULL, 100,'2026-08-16 12:00+00', public.destino_por_defecto(),'donacion','ddf70dc1-713e-49d0-b5d3-0695c52edab2',NULL,'174204153506',NULL,NULL),
-  ('394db8cc-25af-48dd-a12e-849833b1207e','c3becdd9-5974-4735-8270-134cdbcd9d48',5000,'2026-09-02 20:23:00+00', public.destino_por_defecto(),'membresia','53523291-4fdc-4c34-b15c-5c8aa2171686','d51fc640-317c-429f-8b9b-04a4cf10031a','175967372005','2026-09-02','2026-10-02'),
-  ('f1be2fa3-a67d-40a0-ba62-7f143b92e4bd','c3becdd9-5974-4735-8270-134cdbcd9d48',20000,'2026-10-02 00:50:51+00', public.destino_por_defecto(),'donacion','726686ca-1635-4d39-8c89-cd7576f06985',NULL,'181921612108','2026-10-03','2027-02-03'),
-  ('fc38049b-d97a-4db4-82cb-d746a84f7c1a','c3becdd9-5974-4735-8270-134cdbcd9d48',5000,'2026-10-02 21:09:04+00', public.destino_por_defecto(),'membresia','0ad914ed-a166-435b-ac8e-027c9673f9bc','d51fc640-317c-429f-8b9b-04a4cf10031a','181067329409','2027-02-04','2027-02-04');
+  ('5e5e000c-0000-4000-8000-00000000000c', NULL, 75,'2025-10-01 12:00+00', public.destino_por_defecto(),'donacion','5e5e0004-0000-4000-8000-000000000004',NULL,'replica-pago-02',NULL,NULL),
+  ('5e5e000d-0000-4000-8000-00000000000d','5e5e0002-0000-4000-8000-000000000002',1916,'2025-10-01 13:00+00', public.destino_por_defecto(),'donacion','5e5e0005-0000-4000-8000-000000000005',NULL,'replica-pago-03',NULL,NULL),
+  ('5e5e000e-0000-4000-8000-00000000000e', NULL,5000,'2025-11-01 12:00+00', public.destino_por_defecto(),'donacion','5e5e0006-0000-4000-8000-000000000006',NULL,'replica-pago-04',NULL,NULL),
+  ('5e5e000f-0000-4000-8000-00000000000f', NULL, 150,'2026-01-10 12:00+00', public.destino_por_defecto(),'donacion','5e5e0007-0000-4000-8000-000000000007',NULL,'replica-pago-05',NULL,NULL),
+  ('5e5e0010-0000-4000-8000-000000000010', NULL, 100,'2026-08-16 12:00+00', public.destino_por_defecto(),'donacion','5e5e0008-0000-4000-8000-000000000008',NULL,'replica-pago-06',NULL,NULL),
+  ('5e5e0011-0000-4000-8000-000000000011','5e5e0001-0000-4000-8000-000000000001',5000,'2026-09-02 20:23:00+00', public.destino_por_defecto(),'membresia','5e5e0009-0000-4000-8000-000000000009','5e5e0003-0000-4000-8000-000000000003','replica-pago-07','2026-09-02','2026-10-02'),
+  ('5e5e0012-0000-4000-8000-000000000012','5e5e0001-0000-4000-8000-000000000001',20000,'2026-10-02 00:50:51+00', public.destino_por_defecto(),'donacion','5e5e000a-0000-4000-8000-00000000000a',NULL,'replica-pago-08','2026-10-03','2027-02-03'),
+  ('5e5e0013-0000-4000-8000-000000000013','5e5e0001-0000-4000-8000-000000000001',5000,'2026-10-02 21:09:04+00', public.destino_por_defecto(),'membresia','5e5e000b-0000-4000-8000-00000000000b','5e5e0003-0000-4000-8000-000000000003','replica-pago-01','2027-02-04','2027-02-04');
 
 -- 135 manuales por $1.238.997,77, como en producción: sin titular ni período.
 INSERT INTO public.aportes (monto, fecha, destino_id, origen, referencia_externa)
@@ -115,13 +126,18 @@ foto() {
 FOTO_ORIGINAL=$(foto)
 
 # ---- 2. pre chequeo antes de las migraciones nuevas ----------------------------
-out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'PRE CHEQUEO OK' && echo "$out" | grep -q 'todavía no está instalada' \
   && ok "pre chequeo sobre el esquema de hoy (antes de migrar)" || mal "pre chequeo antes de migrar: $out"
 
+# ---- 2b. sin lo verificado, el pre chequeo NO puede aprobar nada --------------
+out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
+echo "$out" | grep -q 'falta lo verificado' && ! echo "$out" | grep -q 'PRE CHEQUEO OK' \
+  && ok "sin el archivo de lo verificado, el pre chequeo FALLA" || mal "pre chequeo sin verificado: $out"
+
 # ---- 3. migraciones nuevas + pre chequeo ------------------------------------
 aplicar_migraciones nuevas
-out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 if echo "$out" | grep -q 'PRE CHEQUEO OK'; then
   ok "pre chequeo con la reclasificación instalada"
   echo "$out" | grep 'CAMBIO ESPERADO' | sed 's/^.*NOTICE: */      /'
@@ -131,11 +147,11 @@ else mal "pre chequeo después de migrar: $out"; fi
 FOTO_MIGRADA=$(foto)
 
 # ---- 4. aplicar --------------------------------------------------------------
-out=$(psqlc < "$RAIZ/supabase/data/aplicar_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'POST CHEQUEO OK' && ok "aplicar" || mal "aplicar: $out"
 
 r=$(psqlc -At -F'|' -c "select concepto, cuotas_cubiertas, acceso_desde, acceso_hasta from public.aportes where id in
-     ('394db8cc-25af-48dd-a12e-849833b1207e','f1be2fa3-a67d-40a0-ba62-7f143b92e4bd','fc38049b-d97a-4db4-82cb-d746a84f7c1a')
+     ('5e5e0011-0000-4000-8000-000000000011','5e5e0012-0000-4000-8000-000000000012','5e5e0013-0000-4000-8000-000000000013')
      order by fecha")
 esperado=$'cuota_mensual|1|2026-09-02|2026-10-01\ndonacion_extraordinaria|0||\ncuota_mensual|1|2026-10-02|2026-11-01'
 [ "$r" == "$esperado" ] && ok "cuenta auditada: 2/9–1/10, donación sin período, 2/10–1/11" || mal "cuenta auditada quedó: $r"
@@ -149,13 +165,13 @@ r=$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2
 r=$(psqlc -At -c "select convalidated from pg_constraint where conname='aportes_acceso_solo_cuotas_chk'")
 [ "$r" == "t" ] && ok "CHECK de períodos validado" || mal "CHECK sin validar"
 
-r=$(psqlc -At -F'|' -c "select meses_aportados, aporte_acumulado from public.elegibilidad_club('c3becdd9-5974-4735-8270-134cdbcd9d48')")
+r=$(psqlc -At -F'|' -c "select meses_aportados, aporte_acumulado from public.elegibilidad_club('5e5e0001-0000-4000-8000-000000000001')")
 [ "$r" == "2|30000" ] && ok "elegibilidad: 2 cuotas efectivas, \$30.000" || mal "elegibilidad: $r"
 
 FOTO_APLICADA=$(foto)
 
 # ---- 5. idempotencia ---------------------------------------------------------
-out=$(psqlc < "$RAIZ/supabase/data/aplicar_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] \
   && [ "$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2026-10-cuotas-v2'")" == "8" ] \
   && ok "re-aplicar no cambia nada" || mal "re-aplicar: $out"
@@ -169,17 +185,17 @@ r=$(psqlc -At -c "select count(*) from public.aportes_correcciones where lote='2
 [ "$r" == "16" ] && ok "revertir no borra: 8 reclasificaciones marcadas + 8 reversiones" || mal "correcciones tras revertir: $r"
 
 # ---- 7. aplicar otra vez -----------------------------------------------------
-out=$(psqlc < "$RAIZ/supabase/data/aplicar_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'POST CHEQUEO OK' && [ "$(foto)" == "$FOTO_APLICADA" ] \
   && ok "aplicar después de revertir da el mismo resultado" || mal "re-aplicar tras revertir: $out"
 
 # ---- 8. control negativo -----------------------------------------------------
 psqlc -c "INSERT INTO public.donations (id, user_id, amount, donation_type, payment_id, status)
           VALUES ('99999999-0000-0000-0000-000000000001', NULL, 777, 'única', 'replica-intruso', 'approved');" >/dev/null
-out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'PRE CHEQUEO FALLÓ' && echo "$out" | grep -q 'aporte automático NO verificado' \
   && ok "un aporte no verificado hace FALLAR el pre chequeo" || mal "control negativo no falló: $out"
-out=$(psqlc < "$RAIZ/supabase/data/aplicar_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado aplicar_reclasificacion_aportes_2026_10.sql)
 ANTES_INTRUSO=$(psqlc -At -c "select count(*) from public.aportes_correcciones")
 echo "$out" | grep -q 'PRE CHEQUEO FALLÓ' \
   && [ "$(psqlc -At -c "select count(*) from public.aportes_correcciones")" == "$ANTES_INTRUSO" ] \
@@ -188,7 +204,7 @@ echo "$out" | grep -q 'PRE CHEQUEO FALLÓ' \
 psqlc -c "UPDATE public.aportes SET monto = monto + 1 WHERE origen='manual' AND referencia_externa='replica-extracto:1';" >/dev/null 2>&1
 psqlc -c "DELETE FROM public.aportes WHERE referencia_externa='replica-intruso';" >/dev/null 2>&1
 psqlc -c "DELETE FROM public.donations WHERE payment_id='replica-intruso';" >/dev/null 2>&1
-out=$(psqlc < "$RAIZ/supabase/data/precheck_reclasificacion_aportes_2026_10.sql" 2>&1)
+out=$(con_verificado precheck_reclasificacion_aportes_2026_10.sql)
 echo "$out" | grep -q 'manuales: se esperaban 135 por 1238997.77' \
   && ok "un importe manual distinto también hace FALLAR el pre chequeo" || mal "control negativo de importe: $out"
 

@@ -19,7 +19,7 @@ describe('Historial del panel', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(5);
   });
   it('una cuenta que SOLO donó ve su historial aunque no tenga ninguna membresía', () => {
-    render(<AccountHistory donations={[{ id: 'd1', amount: 20000, status: 'approved', donation_type: 'única', payment_id: '181921612108', created_at: '2026-10-02' }]} memberships={[]} />);
+    render(<AccountHistory donations={[{ id: 'd1', amount: 20000, status: 'approved', donation_type: 'única', payment_id: 'pago-de-prueba-1', created_at: '2026-10-02' }]} memberships={[]} />);
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByText('Donación extraordinaria')).toBeInTheDocument();
     expect(screen.getByText('Validado')).toBeInTheDocument();
