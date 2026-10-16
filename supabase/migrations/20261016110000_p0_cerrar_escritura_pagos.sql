@@ -35,6 +35,12 @@
 -- del panel sigue funcionando. Tampoco toca conceptos, períodos, triggers,
 -- datos ni frontend: es solo el cierre de permisos.
 --
+-- ⚠️ ESTA MIGRACIÓN NO MODIFICA EL SELECT DE `anon` SOBRE `donations` (ni
+-- sobre `memberships`). anon conserva ese GRANT, y la policy
+-- `donations_admin_select_all` (`auth.uid() = user_id OR check_is_admin()`)
+-- hoy le devuelve 0 filas (verificado en producción el 2026-10-16). Si ese
+-- SELECT debe revocarse se decide en una revisión SEPARADA: no entra acá.
+--
 -- Trae su pre chequeo (informa y exige las condiciones de partida) y su post
 -- chequeo (falla y revierte si queda cualquier escritura abierta, o si el
 -- webhook pierde la suya). La prueba funcional —un usuario real intentando

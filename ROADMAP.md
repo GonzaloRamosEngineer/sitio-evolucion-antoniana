@@ -65,7 +65,12 @@ defensa en profundidad), conserva SELECT (el historial) y la escritura de `servi
 Prueba funcional: `supabase/checks/pagos-escritura-check.sql` (19 PASA; sin la migración
 da FALLA). Ninguna pantalla escribe esas tablas: lo fija `src/lib/escrituras-pagos.test.js`.
 **Es independiente del trabajo de cuotas** (`feat/cuotas-concepto`) y no necesita
-desplegar frontend ni webhook.
+desplegar frontend ni webhook. **Procedimiento paso a paso:**
+[`docs/operacion-p0-escritura-pagos.md`](docs/operacion-p0-escritura-pagos.md) — respaldo,
+foto, pre chequeo, aplicación con `bash tools/db.sh apply` (NO `supabase db push`: en
+producción no hay historial de migraciones y correría las 33), post chequeo, monitoreo y
+reversión de emergencia. ⚠️ **No modifica el SELECT de `anon` sobre `donations`** (hoy ve 0
+filas por RLS); se revisa aparte.
 
 **Estado en una línea:** el circuito de ingresos está cerrado, §10 está cerrado desde el
 2026-09-05, §14 se cerró el 2026-09-06 y **§12 se cerró como módulo el 2026-09-06**. Lo
