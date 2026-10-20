@@ -60,6 +60,13 @@ describe('Carnet', () => {
     expect(screen.getByText('$30.000')).toBeInTheDocument();
     expect(screen.queryByText('Tiempo aportado')).not.toBeInTheDocument();
   });
+  it('no presenta una racha inexistente ni cuotas en cero mientras carga la antigüedad', () => {
+    useMiAntiguedad.mockReturnValue({ isPending: true });
+    show();
+    expect(screen.getByText('Cuotas pagadas').parentElement).toHaveTextContent('—');
+    expect(screen.getByText('Racha actual').parentElement).toHaveTextContent('—');
+    expect(screen.queryByText('0 cuotas')).not.toBeInTheDocument();
+  });
   it('una cuenta que SOLO donó se ve como Donante, sin membresía ni acceso', () => {
     useMiAcceso.mockReturnValue({ data: { tiene_acceso: false, vence_el: null, en_gracia: false, origen: null }, isPending: false });
     useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-10-02', meses_aportados: 0, racha_meses: 0 }, isPending: false });

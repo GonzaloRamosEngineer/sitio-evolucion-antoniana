@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, Lock, AlertTriangle, ArrowRight, ArrowLeft, CreditCard, Heart } from 'lucide-react';
+import { ShieldCheck, Clock, Lock, AlertTriangle, ArrowRight, ArrowLeft, CreditCard, Heart, ChevronDown, CalendarDays, Flame, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,13 +55,6 @@ const ESTADOS = {
     acento: 'text-brand-dark',
   },
 };
-
-const Dato = ({ etiqueta, valor }) => (
-  <div className="min-w-0 rounded-xl bg-brand-sand p-3 sm:p-4">
-    <dt className="text-sm text-gray-600 mb-1">{etiqueta}</dt>
-    <dd className="text-brand-dark font-semibold text-sm sm:text-base break-words">{valor}</dd>
-  </div>
-);
 
 const CarnetPage = () => {
   const { user } = useAuth();
@@ -218,103 +211,149 @@ const CarnetPage = () => {
             <ReclamarAportes userId={userId} />
 
             {/* --- CREDENCIAL --- */}
-            <div className="mt-5 rounded-2xl border border-brand-dark/10 bg-white overflow-hidden">
-              <div className="bg-brand-dark p-5 sm:p-6 flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-brand-gold"><CreditCard aria-hidden="true" className="h-5 w-5" /><span className="text-xs font-semibold tracking-wide">Credencial digital</span></div>
-                <div className="min-w-0">
-                  <span className="block text-xs font-medium text-white/75">
-                    Fundación Evolución Antoniana
-                  </span>
-                  <span className="block text-white font-poppins font-bold text-2xl sm:text-3xl mt-2 break-words">
-                    {user?.name || user?.email}
-                  </span>
-                </div>
-                {/* Dos etiquetas y no una, porque son dos cosas distintas
-                    (§10.2): arriba la CONDICIÓN institucional —que sale del
-                    vocabulario de la entidad, no de la palabra "socio" escrita
-                    a mano— y abajo el ACCESO a beneficios, que depende del
-                    aporte. Un padrino suspendido con la cuota al día tiene que
-                    poder ver las dos cosas a la vez. */}
-                <div className="flex flex-wrap gap-2">
-                  {etiquetaEstado(membresia) && (
-                    <span
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
-                        estadoMembresia(membresia) === 'activo'
-                          ? 'bg-white/15 text-brand-gold'
-                          : 'bg-white/10 text-white/90'
-                      }`}
-                    >
-                      {etiquetaEstado(membresia)}
+            <div className="mt-5 rounded-[1.75rem] border border-brand-dark/10 bg-white p-2 shadow-[0_18px_40px_-24px_rgba(14,42,72,0.65)]">
+              <div className="relative isolate overflow-hidden rounded-[1.35rem] bg-[linear-gradient(125deg,#102b4b_0%,#1d4779_58%,#102b4b_100%)] text-white">
+                <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 -z-10 h-64 w-64 rounded-full border-[32px] border-white/[0.06]" />
+                <div aria-hidden="true" className="pointer-events-none absolute -left-16 bottom-0 -z-10 h-40 w-40 rounded-full bg-brand-gold/10 blur-2xl" />
+                <div className="relative p-5 sm:p-7">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm">
+                        <img src="/img/logotransparente.webp" alt="" className="h-full w-full object-contain" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-brand-gold">Credencial digital</span>
+                        <span className="mt-0.5 block text-xs leading-snug text-white/80">Fundación Evolución Antoniana</span>
+                      </span>
+                    </div>
+                    <CreditCard aria-hidden="true" className="h-5 w-5 shrink-0 text-white/50" />
+                  </div>
+
+                  <div className="mt-9 sm:mt-12">
+                    <p className="text-xs font-medium uppercase tracking-widest text-white/70">Titular</p>
+                    <p className="mt-1 break-words font-poppins text-2xl font-bold leading-tight sm:text-3xl">
+                      {user?.name || user?.email}
+                    </p>
+                  </div>
+
+                  {/* La condición institucional y el acceso a beneficios son datos independientes. */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {etiquetaEstado(membresia) && (
+                      <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${estadoMembresia(membresia) === 'activo' ? 'border-brand-gold/50 bg-brand-gold/15 text-brand-gold' : 'border-white/25 bg-white/10 text-white'}`}>
+                        {etiquetaEstado(membresia)}
+                      </span>
+                    )}
+                    <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${acceso.tiene_acceso ? 'bg-brand-gold text-brand-dark' : 'bg-white/15 text-white'}`}>
+                      {estado === 'gracia' ? 'En tolerancia' : estado === 'vigente' ? 'Acceso vigente' : estado === 'vencido' ? 'Acceso vencido' : 'Sin acceso'}
                     </span>
+                  </div>
+
+                  {(membresia?.numero != null || acceso.vence_el) && (
+                    <dl className="mt-8 grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
+                      {membresia?.numero != null && (
+                        <div className="min-w-0">
+                          <dt className="text-[11px] uppercase tracking-wider text-white/70">{etiquetaNumero()}</dt>
+                          <dd className="mt-1 font-poppins text-base font-semibold tabular-nums">N° {membresia.numero}</dd>
+                        </div>
+                      )}
+                      {acceso.vence_el && (
+                        <div className="min-w-0">
+                          <dt className="text-[11px] uppercase tracking-wider text-white/70">Aporte cubierto hasta</dt>
+                          <dd className="mt-1 text-sm font-semibold leading-snug">{formatearFecha(acceso.vence_el)}</dd>
+                        </div>
+                      )}
+                    </dl>
                   )}
-                  <span
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
-                      acceso.tiene_acceso
-                        ? 'bg-brand-gold text-brand-dark'
-                        : 'bg-white/15 text-white/90'
-                    }`}
-                  >
-                    {estado === 'gracia' ? 'En tolerancia' : estado === 'vigente' ? 'Acceso vigente' : estado === 'vencido' ? 'Acceso vencido' : 'Sin acceso'}
-                  </span>
                 </div>
               </div>
 
-              <dl className="p-4 sm:p-6 grid grid-cols-2 gap-3">
-                {acceso.vence_el && <Dato etiqueta="Aporte vigente hasta" valor={formatearFecha(acceso.vence_el)} />}
-                {membresia?.numero != null && (
-                  <Dato etiqueta={etiquetaNumero()} valor={`N° ${membresia.numero}`} />
-                )}
-                {membresia?.categoria && <Dato etiqueta="Categoría" valor={membresia.categoria} />}
-                {user?.dni && <Dato etiqueta="Documento" valor={user.dni} />}
-              </dl>
+              {(membresia?.categoria || user?.dni) && (
+                <dl className="grid grid-cols-2 gap-4 px-4 py-4 sm:px-6">
+                  {membresia?.categoria && (
+                    <div className="min-w-0"><dt className="text-xs text-gray-500">Categoría</dt><dd className="mt-1 break-words text-sm font-semibold text-brand-dark">{membresia.categoria}</dd></div>
+                  )}
+                  {user?.dni && (
+                    <div className="min-w-0"><dt className="text-xs text-gray-500">Documento</dt><dd className="mt-1 break-words text-sm font-semibold tabular-nums text-brand-dark">{user.dni}</dd></div>
+                  )}
+                </dl>
+              )}
               {/* Reloj de referencia visual; el estado de acceso proviene de la consulta. */}
-              <div className="px-5 sm:px-6 py-4 bg-brand-sand border-t border-brand-dark/10 flex flex-wrap items-center justify-between gap-2">
+              <div className="mx-4 flex flex-wrap items-center justify-between gap-2 border-t border-brand-dark/10 px-0 py-3 sm:mx-6">
                 <span className="text-sm text-gray-600 font-medium">
-                  Hora actual
+                  Hora local
                 </span>
-                <time dateTime={ahora.toISOString()} className="font-mono text-sm text-brand-dark tabular-nums" aria-live="off">
-                  {ahora.toLocaleDateString('es-AR')} {ahora.toLocaleTimeString('es-AR')}
+                <time dateTime={ahora.toISOString()} className="font-mono text-sm text-brand-dark tabular-nums text-right" aria-live="off">
+                  <span className="whitespace-nowrap">{ahora.toLocaleDateString('es-AR')}</span>{' '}
+                  <span className="whitespace-nowrap">{ahora.toLocaleTimeString('es-AR')}</span>
                 </time>
               </div>
             </div>
 
-            <details className="mt-5 rounded-2xl border border-gray-200 bg-white">
-              <summary className="cursor-pointer p-5 sm:p-6 text-brand-dark font-semibold min-h-[56px]">Mi trayectoria y aportes</summary>
-              <dl className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-2 gap-3">
-                {antiguedad?.socio_desde && (
-                  <Dato etiqueta="Parte de la comunidad desde" valor={formatearFecha(antiguedad.socio_desde)} />
-                )}
-                {/* `meses_aportados` son CUOTAS EFECTIVAS desde la regla
-                    2026-10 (una donación no suma cuotas). La racha son cuotas
-                    seguidas, y una cuota cubre un mes. */}
-                {antiguedad && (
-                  <Dato
-                    etiqueta="Cuotas pagadas"
-                    valor={formatearCuotas(antiguedad.meses_aportados)}
-                  />
-                )}
-                {antiguedad?.racha_meses > 0 && (
-                  <Dato
-                    etiqueta="Racha actual"
-                    valor={formatearMeses(antiguedad.racha_meses)}
-                  />
-                )}
+            <details className="group mt-5 overflow-hidden rounded-[1.5rem] border border-brand-dark/10 bg-white shadow-[0_12px_32px_-26px_rgba(14,42,72,0.5)]">
+              <summary className="cursor-pointer list-none p-5 sm:p-6 [&::-webkit-details-marker]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-brand-primary">
+                <span className="flex items-center gap-3 text-brand-dark">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-gold/15 text-brand-dark"><Sparkles aria-hidden="true" className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1 font-poppins text-lg font-bold">Tu recorrido</span>
+                  <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-primary transition-transform group-open:rotate-180" />
+                </span>
+                <span className="mt-1 block pl-[52px] text-sm text-gray-600">
+                  {antiguedadQuery.isError ? 'No pudimos cargar tus cuotas y tu racha.' : 'Cada aporte cuenta en esta historia.'}
+                </span>
+                <span className="mt-5 grid grid-cols-2 gap-3">
+                  {/* `meses_aportados` son cuotas efectivamente pagadas; una donación no suma cuotas. */}
+                  <span className="min-w-0 rounded-2xl bg-brand-primary px-4 py-4 text-white">
+                    <span className="block text-xs font-medium text-white/75">Cuotas pagadas</span>
+                    <strong className="mt-2 block font-poppins text-xl leading-tight tabular-nums break-words">
+                      {antiguedadQuery.isPending || antiguedadQuery.isError ? '—' : formatearCuotas(antiguedad?.meses_aportados || 0)}
+                    </strong>
+                  </span>
+                  <span className="min-w-0 rounded-2xl bg-brand-gold/15 px-4 py-4 text-brand-dark">
+                    <span className="flex items-center gap-1.5 text-xs font-medium"><Flame aria-hidden="true" className="h-4 w-4" />Racha actual</span>
+                    <strong className="mt-2 block font-poppins text-xl leading-tight tabular-nums break-words">
+                      {antiguedadQuery.isPending || antiguedadQuery.isError ? '—' : antiguedad?.racha_meses > 0 ? formatearMeses(antiguedad.racha_meses) : 'Sin racha'}
+                    </strong>
+                  </span>
+                </span>
                 {Number(resumen.total_aportado) > 0 && (
-                  <Dato etiqueta="Total aportado" valor={formatearPesos(resumen.total_aportado)} />
+                  <span className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-brand-dark/10 px-4 py-3 text-sm text-brand-dark">
+                    <span className="text-gray-600">Total aportado</span>
+                    <strong className="font-poppins text-lg tabular-nums">{formatearPesos(resumen.total_aportado)}</strong>
+                  </span>
                 )}
-                {fuenteDelAcceso(acceso) && (
-                  <Dato etiqueta="Tu acceso viene de" valor={fuenteDelAcceso(acceso)} />
-                )}
-              </dl>
+                <span className="mt-3 block text-center text-xs font-semibold text-brand-primary group-open:hidden">Ver más de mi recorrido</span>
+              </summary>
+              <div className="mx-5 border-t border-brand-dark/10 pb-5 pt-4 sm:mx-6 sm:pb-6">
+                <dl className="space-y-3">
+                  {antiguedad?.socio_desde && (
+                    <div className="flex items-start gap-3">
+                      <CalendarDays aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                      <div><dt className="text-xs text-gray-500">Parte de la comunidad desde</dt><dd className="text-sm font-semibold text-brand-dark">{formatearFecha(antiguedad.socio_desde)}</dd></div>
+                    </div>
+                  )}
+                  {fuenteDelAcceso(acceso) && (
+                    <div className="flex items-start gap-3">
+                      <Heart aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-primary" />
+                      <div><dt className="text-xs text-gray-500">Tu acceso viene de</dt><dd className="text-sm font-semibold text-brand-dark">{fuenteDelAcceso(acceso)}</dd></div>
+                    </div>
+                  )}
+                </dl>
+              </div>
               {antiguedadQuery.isPending && <p role="status" className="px-5 pb-4 text-sm text-gray-600">Cargando tu antigüedad…</p>}
               {antiguedadQuery.isError && <div role="alert" className="px-5 pb-4 text-sm text-gray-600"><p>No pudimos cargar tu antigüedad.</p><button type="button" onClick={() => antiguedadQuery.refetch()} className="min-h-[44px] font-semibold text-brand-primary underline">Reintentar antigüedad</button></div>}
 
             </details>
 
-            <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-              <h2 className="text-lg font-bold text-brand-dark">Cómo usar tu carnet</h2>
-              <p className="mt-2 text-sm text-gray-600 leading-relaxed">Entrá al club, elegí un beneficio y seguí las indicaciones para generar tu código de canje. Tu credencial muestra el estado de tu acceso.</p>
-              <Button asChild className="mt-4 min-h-[48px] w-full sm:w-auto rounded-xl"><Link to="/club">Canjear un beneficio<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
+            <div className="mt-5 rounded-[1.5rem] border border-brand-dark/10 bg-white p-5 sm:p-6">
+              <h2 className="font-poppins text-lg font-bold text-brand-dark">Usá tu carnet en el club</h2>
+              <ol className="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-medium text-brand-dark">
+                {['Explorá', 'Elegí', 'Generá tu código'].map((paso, index) => (
+                  <li key={paso} className="min-w-0">
+                    <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-primary/10 font-poppins text-sm font-bold text-brand-primary">{index + 1}</span>
+                    <span className="block leading-tight">{paso}</span>
+                  </li>
+                ))}
+              </ol>
+              <Button asChild className="mt-5 min-h-[48px] w-full rounded-xl"><Link to="/club">Canjear un beneficio<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
             </div>
           </motion.div>
         )}
