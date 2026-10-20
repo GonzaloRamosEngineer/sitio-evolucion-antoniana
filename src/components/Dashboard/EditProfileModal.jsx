@@ -139,11 +139,11 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
         porque el resto de los diálogos tiene cabecera clara, y ahí el color
         oscuro es el correcto y no hay nada que lo tape.
       */}
-      <DialogContent className="sm:max-w-[550px] bg-white rounded-[2rem] shadow-2xl border-none p-0 overflow-hidden [&>button]:z-20 [&>button]:text-white [&>button]:opacity-80 [&>button]:hover:opacity-100 [&>button]:focus-visible:ring-white [&>button]:min-h-[44px] [&>button]:min-w-[44px] [&>button]:flex [&>button]:items-center [&>button]:justify-center">
-        <DialogHeader className="bg-brand-dark p-8 text-white relative">
+      <DialogContent className="flex w-[calc(100vw-24px)] max-w-[550px] max-h-[calc(100dvh-24px)] min-w-0 flex-col gap-0 overflow-hidden rounded-[1.25rem] border-none bg-white p-0 shadow-2xl sm:rounded-[2rem] [&>button]:z-20 [&>button]:text-white [&>button]:opacity-80 [&>button]:hover:opacity-100 [&>button]:focus-visible:ring-white [&>button]:min-h-[44px] [&>button]:min-w-[44px] [&>button]:flex [&>button]:items-center [&>button]:justify-center">
+        <DialogHeader className="relative shrink-0 bg-brand-dark px-5 py-6 pr-16 text-white sm:p-8">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
-          <DialogTitle className="text-2xl font-bold font-poppins relative z-10 flex items-center gap-3">
-            <ShieldCheck className="text-brand-gold" />
+          <DialogTitle className="relative z-10 flex items-center gap-3 font-poppins text-xl font-bold leading-tight sm:text-2xl">
+            <ShieldCheck className="shrink-0 text-brand-gold" />
             Configuración de Perfil
           </DialogTitle>
           <DialogDescription className="text-gray-400 relative z-10">
@@ -151,7 +151,7 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-8 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto p-5 custom-scrollbar sm:p-8">
           {/*
             La foto va PRIMERO y fuera del formulario, a propósito: se guarda
             sola (sube el archivo y actualiza la fila en el mismo paso), así que
@@ -169,16 +169,16 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
             <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
               <ShieldCheck size={12} /> Cuenta Vinculada (No editable)
             </Label>
-            <div className="flex items-center gap-2 text-brand-dark font-medium">
-                <User size={16} className="text-gray-400" />
-                {user?.email}
+            <div className="flex min-w-0 items-start gap-2 text-brand-dark font-medium">
+                <User size={16} className="mt-1 shrink-0 text-gray-400" />
+                <span className="min-w-0 break-all">{user?.email}</span>
             </div>
           </div>
 
           <div className="space-y-4">
             <SectionLabel icon={User} text="Identidad" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="name" className="text-xs font-bold text-brand-dark ml-1">Nombre Completo</Label>
                 <Input 
                   id="name" 
@@ -188,7 +188,7 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                   className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="dni" className="text-xs font-bold text-brand-dark ml-1">Documento (DNI)</Label>
                 <div className="relative">
                     <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -206,8 +206,8 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
 
           <div className="space-y-4">
             <SectionLabel icon={Phone} text="Contacto y Personal" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="phone" className="text-xs font-bold text-brand-dark ml-1">Teléfono</Label>
                 <Input 
                   id="phone" 
@@ -217,7 +217,7 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                   className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="birth_date" className="text-xs font-bold text-brand-dark ml-1">Fecha de Nacimiento</Label>
                 <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -227,7 +227,7 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
                       value={formData.birth_date} 
                       onChange={handleChange} 
                       disabled={!isEditing}
-                      className={`h-11 pl-10 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
+                      className={`h-11 min-w-0 pl-10 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                     />
                 </div>
               </div>
@@ -256,7 +256,7 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
           </div>
         </div>
 
-        <DialogFooter className="p-8 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
+        <DialogFooter className="flex shrink-0 flex-col gap-3 border-t border-gray-100 bg-gray-50 p-5 sm:flex-row sm:p-8">
           {!isEditing ? (
             <>
               <Button
