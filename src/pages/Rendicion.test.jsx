@@ -7,6 +7,7 @@ import Rendicion from './Rendicion';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
 vi.mock('@/hooks/useContentQueries', () => ({ useDestinosActivos: vi.fn(), useGastos: vi.fn() }));
 const show = () => render(<HelmetProvider><MemoryRouter><Rendicion /></MemoryRouter></HelmetProvider>);
+const abrirDestino = () => fireEvent.click(screen.getByText('Educación'));
 beforeEach(() => {
   useDestinosActivos.mockReturnValue({ data: [{ id: '1', nombre: 'Educación', monto_recaudado: 1000, monto_rendido: 200 }], isPending: false });
   useGastos.mockReturnValue({ data: [], isPending: false });
@@ -31,6 +32,7 @@ describe('Rendición pública', () => {
     const refetch = vi.fn();
     useGastos.mockReturnValue({ isError: true, refetch });
     show();
+    abrirDestino();
     expect(screen.getByRole('alert')).toHaveTextContent('No pudimos cargar el detalle');
     expect(screen.queryByText('Todavía no se publicaron gastos de este destino.')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar gastos' }));
@@ -40,9 +42,21 @@ describe('Rendición pública', () => {
     const concepto = 'Materiales educativos para el taller de acompañamiento deportivo';
     useGastos.mockReturnValue({ data: [{ id: 'g1', destino_id: '1', concepto, monto: 200, fecha: '2026-09-08', tiene_comprobante: false }], isPending: false });
     show();
+    expect(screen.getByText(concepto)).not.toBeVisible();
+    abrirDestino();
     expect(screen.getByText(concepto)).toBeVisible();
     expect(screen.getByText('Sin comprobante')).toBeVisible();
-    expect(screen.getAllByText('$800,00')).toHaveLength(2);
+    expect(screen.getByText('Saldo por rendir: $800,00')).toBeVisible();
+  });
+  it('muestra Todo rendido solo cuando hubo aportes y no queda saldo', () => {
+    useDestinosActivos.mockReturnValue({ data: [
+      { id: '1', nombre: 'Educación', monto_recaudado: 1000, monto_rendido: 1000 },
+      { id: '2', nombre: 'Sin actividad', monto_recaudado: 0, monto_rendido: 0 },
+    ], isPending: false });
+    show();
+    expect(screen.getByText('Todo rendido')).toBeVisible();
+    expect(screen.getByText('Sin aportes todavía')).toBeVisible();
+    expect(screen.getAllByText('Ver detalle y movimientos')).toHaveLength(2);
   });
 });
 
@@ -68,6 +82,7 @@ describe('Rendición pública — cómo se muestra el respaldo', () => {
   it('🔒 un comprobante DECLARADO no se muestra como «sin comprobante»', () => {
     conGasto({ tiene_comprobante: false, tipo_comprobante: 'extracto', comprobante_numero: '90165423466' });
     show();
+    abrirDestino();
     expect(screen.getByText(/Extracto de cuenta #90165423466/)).toBeVisible();
     expect(screen.queryByText('Sin comprobante')).not.toBeInTheDocument();
   });
@@ -94,12 +109,14 @@ describe('Rendición pública — cómo se muestra el respaldo', () => {
   it('con archivo adjunto no arrastra la aclaración', () => {
     conGasto({ tiene_comprobante: true, tipo_comprobante: 'factura', comprobante_numero: 'A-0001' });
     show();
+    abrirDestino();
     expect(screen.getByText(/Factura #A-0001/)).toBeVisible();
   });
 
   it('sin nada declarado ni adjunto sigue diciendo que no hay respaldo', () => {
     conGasto({ tiene_comprobante: false });
     show();
+    abrirDestino();
     expect(screen.getByText('Sin comprobante')).toBeVisible();
   });
 });

@@ -18,7 +18,7 @@ import React, { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ScrollText, FileX2, CheckCircle2, Info, ShieldCheck } from 'lucide-react';
+import { ScrollText, FileX2, CheckCircle2, Info, ShieldCheck, ChevronDown } from 'lucide-react';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Button } from '@/components/ui/button';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
@@ -162,40 +162,56 @@ const Rendicion = () => {
               destinos.map((d) => {
                 const balance = balanceDestino(d);
                 const suyos = gastosPorDestino.get(d.id) ?? [];
+                const sinSaldo = Math.abs(balance.saldo) < 0.005;
+                const estado = balance.recaudado === 0 && balance.rendido === 0
+                  ? 'Sin aportes todavía'
+                  : balance.rendidoDeMas > 0.005
+                    ? `Rendido de más: ${pesos(balance.rendidoDeMas)}`
+                    : sinSaldo
+                      ? 'Todo rendido'
+                      : `Saldo por rendir: ${pesos(balance.saldo)}`;
+                const estadoCompleto = sinSaldo && balance.recaudado > 0;
 
                 return (
-                  <div key={d.id} className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
-                    <div className="p-5 sm:p-6 border-b border-gray-100">
-                      <h3 className="font-poppins font-bold text-xl sm:text-2xl text-brand-dark break-words">{d.nombre}</h3>
-                      {d.descripcion && (d.descripcion.length > 240 ? (
-                        <details className="mt-2 text-sm text-gray-600">
-                          <summary className="min-h-[44px] py-3 cursor-pointer font-semibold text-brand-primary">Sobre este destino</summary>
-                          <p className="leading-relaxed pb-2">{d.descripcion}</p>
-                        </details>
-                      ) : <p className="mt-2 text-sm text-gray-600 leading-relaxed">{d.descripcion}</p>)}
-
-                      <dl className="mt-5 grid sm:grid-cols-3 gap-3 rounded-xl bg-brand-sand p-4 text-sm tabular-nums">
+                  <details key={d.id} className="group rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm open:border-brand-primary/30">
+                    <summary className="cursor-pointer list-none p-5 sm:p-6 [&::-webkit-details-marker]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-brand-primary">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="font-poppins font-bold text-lg sm:text-2xl text-brand-dark break-words">{d.nombre}</h3>
+                          <p className={`mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-xs sm:text-sm font-semibold break-words ${estadoCompleto ? 'bg-green-50 text-green-800' : balance.rendidoDeMas > 0 ? 'bg-blue-50 text-brand-primary' : 'bg-brand-sand text-brand-dark'}`}>
+                            {estadoCompleto && <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />}
+                            {estado}
+                          </p>
+                        </div>
+                        <ChevronDown aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-brand-primary transition-transform group-open:rotate-180" />
+                      </div>
+                      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm tabular-nums">
                         {[
                           ['Recaudado', balance.recaudado],
                           ['Rendido', balance.rendido],
-                          // La tercera cifra cambia de nombre cuando lo rendido
-                          // supera lo recaudado: ahí no queda nada por rendir, y
-                          // «Saldo por rendir: -$1.428,00» dice algo falso.
-                          balance.rendidoDeMas > 0
-                            ? ['Rendido de más', balance.rendidoDeMas]
-                            : ['Saldo por rendir', balance.saldo],
-                        ].map(([label, amount]) => <div key={label} className="min-w-0 flex justify-between gap-3 sm:block">
-                          <dt className="text-gray-600">{label}</dt>
-                          <dd className="font-bold text-brand-dark break-words sm:mt-1">{pesos(amount)}</dd>
+                        ].map(([label, amount]) => <div key={label} className="min-w-0">
+                          <dt className="text-xs text-gray-600">{label}</dt>
+                          <dd className="mt-0.5 font-bold text-brand-dark break-words">{pesos(amount)}</dd>
                         </div>)}
                       </dl>
-                      {Number(d.meta_monto) > 0 && <p className="mt-3 text-sm text-gray-600">Meta de recaudación: <strong className="text-brand-dark">{pesos(d.meta_monto)}</strong></p>}
+                      {balance.porcentajeRendido !== null && (
+                        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-valuenow={balance.porcentajeRendido} aria-valuemin={0} aria-valuemax={100} aria-label={`Porcentaje rendido de ${d.nombre}`}>
+                          <div className="h-full rounded-full bg-brand-primary" style={{ width: `${balance.porcentajeRendido}%` }} />
+                        </div>
+                      )}
+                      <span className="mt-3 block text-sm font-semibold text-brand-primary group-open:hidden">Ver detalle y movimientos</span>
+                      <span className="mt-3 hidden text-sm font-semibold text-brand-primary group-open:block">Ocultar detalle</span>
+                    </summary>
+
+                    <div className="border-t border-gray-100 p-5 sm:p-6 text-sm text-gray-600">
+                      {d.descripcion && <p className="leading-relaxed">{d.descripcion}</p>}
+                      {Number(d.meta_monto) > 0 && <p className="mt-3">Meta de recaudación: <strong className="text-brand-dark">{pesos(d.meta_monto)}</strong></p>}
 
                       {/* Explicar el exceso donde aparece. Sin esto, la cifra
                           queda pidiendo una explicación que está tres párrafos
                           arriba, en la descripción del destino. */}
                       {balance.rendidoDeMas > 0 && (
-                        <p className="mt-3 text-sm text-gray-600">
+                        <p className="mt-3">
                           Se rindió más de lo recaudado: la diferencia de{' '}
                           <strong className="text-brand-dark">{pesos(balance.rendidoDeMas)}</strong>{' '}
                           la cubrió la entidad con fondos propios.
@@ -215,26 +231,7 @@ const Rendicion = () => {
                         </p>
                       )}
 
-                      {balance.porcentajeRendido !== null && (
-                        <div className="mt-4">
-                          <div
-                            className="h-2 w-full overflow-hidden rounded-full bg-gray-100"
-                            role="progressbar"
-                            aria-valuenow={balance.porcentajeRendido}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label={`Porcentaje rendido de ${d.nombre}`}
-                          >
-                            <div
-                              className="h-full rounded-full bg-brand-primary"
-                              style={{ width: `${balance.porcentajeRendido}%` }}
-                            />
-                          </div>
-                          <p className="mt-1.5 text-sm text-gray-600">
-                            {balance.porcentajeRendido}% de lo recaudado ya tiene rendición publicada
-                          </p>
-                        </div>
-                      )}
+                      {balance.porcentajeRendido !== null && <p className="mt-3">{balance.porcentajeRendido}% de lo recaudado ya tiene rendición publicada.</p>}
                     </div>
 
                     {gastosQuery.isPending ? <p role="status" className="p-5 sm:p-6 text-sm text-gray-600">Cargando gastos publicados…</p> : gastosQuery.isError ? (
@@ -293,7 +290,7 @@ const Rendicion = () => {
                         </details>)}
                       </div>
                     )}
-                  </div>
+                  </details>
                 );
               })
             )}
