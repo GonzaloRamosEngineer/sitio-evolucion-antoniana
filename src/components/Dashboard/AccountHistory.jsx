@@ -27,9 +27,9 @@ export default function AccountHistory({ donations, memberships, loading, error,
         {visible.map(item => {
           const state = describirEstado(item.kind === 'membership' ? ESTADOS_MEMBRESIA : ESTADOS_HISTORIAL, item.status);
           return <li key={`${item.kind}-${item.id}`} className="p-5 sm:px-6">
-            <div className="flex justify-between items-start gap-3">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0"><p className="font-semibold text-brand-dark">{tituloMovimiento(item)}</p><p className="text-sm text-gray-600 mt-1">{item.created_at ? new Date(item.created_at).toLocaleDateString('es-AR') : 'Fecha no disponible'}</p></div>
-              <div className="text-right shrink-0"><p className="font-bold text-brand-dark">${Number(item.amount).toLocaleString('es-AR')} <span className="text-xs font-normal">ARS</span></p><span className={`inline-block mt-1 px-2 py-1 rounded-md text-xs font-semibold ${tones[state.tono]}`}>{state.label}</span>{item.status === 'approved' && Number(item.monto_reintegrado) > 0 && <p className="mt-1 text-xs text-gray-600">Reintegro parcial: ${Number(item.monto_reintegrado).toLocaleString('es-AR')}</p>}</div>
+              <div className="min-w-0 sm:shrink-0 sm:text-right"><p className="break-words font-bold text-brand-dark">${Number(item.amount).toLocaleString('es-AR')} <span className="text-xs font-normal">ARS</span></p><span className={`inline-block mt-1 px-2 py-1 rounded-md text-xs font-semibold ${tones[state.tono]}`}>{state.label}</span>{item.status === 'approved' && Number(item.monto_reintegrado) > 0 && <p className="mt-1 text-xs text-gray-600">Reintegro parcial: ${Number(item.monto_reintegrado).toLocaleString('es-AR')}</p>}</div>
             </div>
             <details className="mt-2 text-sm text-gray-600"><summary className="cursor-pointer min-h-[44px] flex items-center underline underline-offset-4">Ver referencia de pago</summary><p className="break-all pb-2">Mercado Pago: {item.payment_id || item.preapproval_id || 'Referencia pendiente'}</p></details>
           </li>;

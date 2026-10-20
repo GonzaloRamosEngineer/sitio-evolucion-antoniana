@@ -250,7 +250,7 @@ function App() {
 
           <div className="min-h-screen flex flex-col bg-brand-sand">
             <Header />
-            <main className="flex-1 font-inter pb-20 md:pb-0">
+            <main className="min-w-0 flex-1 font-inter pb-20 md:pb-0">
               <PageRoutes />
             </main>
             <Footer />

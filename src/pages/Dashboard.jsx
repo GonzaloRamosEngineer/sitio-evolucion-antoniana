@@ -153,7 +153,7 @@ const Dashboard = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-brand-sand pb-24 font-sans">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen min-w-0 max-w-full overflow-x-clip bg-brand-sand pb-24 font-sans">
       <Helmet>
         <title>Mi panel - Fundación Evolución Antoniana</title>
         <meta name="description" content="Panel personal de la Fundación Evolución Antoniana." />
@@ -183,7 +183,7 @@ const Dashboard = () => {
         */}
         <div className="absolute -top-24 -right-24 w-[600px] h-[600px] bg-brand-primary/10 blur-[150px] rounded-full" />
         
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-5 text-left">
+        <div className="relative z-10 mx-auto flex w-full min-w-0 max-w-7xl flex-col items-start justify-between gap-5 text-left md:flex-row md:items-center">
             {/*
               `w-full` ADEMÁS de `min-w-0`, y esto no es cinturón y tirantes: el
               contenedor de arriba es `flex ... items-center`, y `align-items:
@@ -208,17 +208,17 @@ const Dashboard = () => {
                 <h1 className="text-3xl md:text-5xl font-poppins font-black text-white tracking-tighter leading-none break-words">
                     Hola, {primerNombre(currentUser)}
                 </h1>
-                <p className="text-white/80 text-base max-w-xl">Tu carnet, tus aportes y actividades, en un solo lugar.</p>
+                <p className="max-w-xl text-base leading-relaxed text-white/80">Tu carnet, tus aportes y actividades, en un solo lugar.</p>
             </div>
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" onClick={handleLogout} className="h-14 px-8 rounded-2xl text-red-400 hover:bg-red-500/10 font-bold border border-red-500/20 backdrop-blur-sm">
+            <div className="flex w-full min-w-0 items-center md:w-auto">
+                <Button variant="ghost" onClick={handleLogout} className="h-11 px-5 rounded-xl text-red-300 hover:bg-red-500/10 font-semibold border border-red-500/20 md:h-14 md:px-8 md:font-bold">
                     Cerrar sesión
                 </Button>
             </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6 relative z-20">
+      <div className="relative z-20 mx-auto mt-6 w-full min-w-0 max-w-7xl px-4 sm:px-6">
         {/*
           `memberships` va por prop y no lo consulta la cabecera: esta
           página ya las tiene con `useUserMemberships` y había DOS
@@ -231,8 +231,8 @@ const Dashboard = () => {
           onUpdateSuccess={(data) => { setCurrentUser(data); setAuthUser(data); }}
         />
 
-        <nav aria-label="Secciones de mi panel" className="grid grid-cols-3 gap-2 mb-6">
-          {[['#suscripciones', 'Suscripciones'], ['#actividades', 'Actividades'], ['#historial', 'Historial']].map(([href, label]) => <a key={href} href={href} className="flex min-h-[48px] items-center justify-center rounded-xl border border-gray-200 bg-white text-brand-primary text-sm font-semibold">{label}</a>)}
+        <nav aria-label="Secciones de mi panel" className="mb-6 grid grid-cols-3 gap-2">
+          {[['#suscripciones', 'Aportes'], ['#actividades', 'Actividades'], ['#historial', 'Historial']].map(([href, label]) => <a key={href} href={href} className="flex min-h-[48px] min-w-0 items-center justify-center rounded-xl border border-gray-200 bg-white px-1 text-center text-xs font-semibold text-brand-primary sm:text-sm">{label}</a>)}
         </nav>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* BITÁCORA DE DONACIONES */}
@@ -251,7 +251,7 @@ const Dashboard = () => {
                         </div>
                         {statusBadge(m.status)}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {m.status === 'active' && m.preapproval_id && (
                           <Button size="sm" variant="outline" className="flex-1 rounded-xl font-bold border-amber-200 text-amber-700 h-11" onClick={() => performAction('pause', m.preapproval_id)} disabled={actionLoadingId === m.preapproval_id}>
                           {actionLoadingId === m.preapproval_id ? <Loader2 className="animate-spin h-4 w-4" /> : "Pausar"}

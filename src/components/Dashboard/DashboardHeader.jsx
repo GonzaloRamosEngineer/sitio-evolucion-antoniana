@@ -155,12 +155,12 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
       aria-label="Mi perfil y mis aportes"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+      className="mb-6 w-full min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
     >
       {/* ---------- QUIÉN SOS ---------- */}
       <div className="p-5 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
             {/*
               La foto se puede abrir en grande. Va como <button> y no como un
               <div> con onClick: se llega con Tab, se activa con Enter y el
@@ -208,24 +208,28 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               </Avatar>
             )}
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="break-words font-poppins text-xl font-bold leading-tight tracking-tight text-brand-dark sm:text-2xl">
                 {user?.name || user?.email?.split('@')[0] || 'Usuario'}
               </h2>
-              <p className="mt-1.5 flex items-center gap-2 break-all text-sm text-gray-600">
+              <p className="mt-1.5 flex min-w-0 items-start gap-2 text-sm text-gray-600">
                 <Mail aria-hidden="true" className="h-4 w-4 shrink-0 text-gray-400" />
-                {user?.email || 'Sin registrar'}
+                {user?.email ? (
+                  <a href={`mailto:${user.email}`} className="min-w-0 break-all text-gray-600 no-underline hover:text-brand-primary hover:underline">
+                    {user.email}
+                  </a>
+                ) : <span>Sin registrar</span>}
               </p>
             </div>
           </div>
 
-          <dl className="shrink-0 border-t border-gray-200 pt-4 lg:border-0 lg:pt-0">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 lg:block">
+          <dl className="min-w-0 border-t border-gray-200 pt-4 lg:shrink-0 lg:border-0 lg:pt-0">
+            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between lg:block">
               <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
                 <Fingerprint aria-hidden="true" className="h-3.5 w-3.5" />
                 Documento
               </dt>
-              <dd className="font-semibold text-brand-dark lg:mt-1">{user?.dni || 'Sin registrar'}</dd>
+              <dd className="break-words font-semibold text-brand-dark lg:mt-1">{user?.dni || 'Sin registrar'}</dd>
             </div>
           </dl>
         </div>

@@ -238,13 +238,13 @@ const Header = () => {
       onMouseLeave={() => setOpenDesk({})}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex min-w-0 items-center justify-between gap-2 h-20">
           {/* --- LOGO --- */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <Link to="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none">
             <motion.div
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+              className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
             >
               {/* Si tienes logo imagen, usa esto, sino la inicial */}
               <img
@@ -253,8 +253,8 @@ const Header = () => {
                 className="w-full h-full object-contain p-1"
               />
             </motion.div>
-            <div className="flex flex-col">
-              <span className="text-lg font-poppins font-bold text-brand-primary leading-none tracking-tight">
+            <div className="flex min-w-0 flex-col">
+              <span className="font-poppins text-base font-bold leading-tight tracking-tight text-brand-primary sm:text-lg">
                 {entidad.marcaLinea1} <span className="text-brand-action">{entidad.marcaLinea2}</span>
               </span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest leading-none mt-1">
@@ -300,7 +300,7 @@ const Header = () => {
           </div>
 
           {/* --- USUARIO / AUTH --- */}
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

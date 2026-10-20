@@ -58,6 +58,9 @@ const LoginPage = () => {
   const onSubmit = async (data) => {
     if (isSubmitting) return;
 
+    // En iPhone, el foco en un input pequeño puede dejar el viewport ampliado
+    // durante la navegación SPA al panel. Soltarlo antes de cambiar de ruta.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
