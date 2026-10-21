@@ -4,7 +4,8 @@
 //   1. Baja los logos (partners aprobados) desde Supabase.
 //   2. Recorta el aire de cada PNG (transparencia / fondo plano).
 //   3. Re-escala cada logo a una masa visual constante y lo centra en un
-//      lienzo transparente uniforme de 280x120 (se muestra a ~140x60).
+//      lienzo transparente Retina de 560x240 (se muestra como máximo a
+//      280x120 CSS; 2 píxeles físicos por cada píxel visual).
 //   4. Escribe public/img/partners/<slug>.png y el mapa id → ruta en
 //      src/data/partnerLogoOverrides.json (Home.jsx lo usa con fallback
 //      al logo_url crudo para partners sin normalizar).
@@ -12,18 +13,22 @@
 // Requiere `sharp` (no es dependencia del proyecto):
 //   npm exec --yes --package=sharp -- node tools/normalize-partner-logos.mjs
 // o correrlo desde una carpeta con sharp instalado.
-import sharp from 'sharp';
-import { mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+
+// `npm exec --package=sharp` no expone el paquete a imports ESM hechos desde
+// este repo. `SHARP_MODULE` permite apuntar a una instalación temporal sin
+// sumar una dependencia de producción solo para esta tarea editorial.
+const { default: sharp } = await import(process.env.SHARP_MODULE || 'sharp');
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SUPABASE_URL = 'https://lbtyxnbyetsvngsxczkt.supabase.co';
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxidHl4bmJ5ZXRzdm5nc3hjemt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NzkwOTMsImV4cCI6MjA2NDU1NTA5M30.5x5oYFyZbUxNAgPgbP4F3HeKemi8RBfv-3OKkDpeTz4';
 
-const BOX_W = 280;
-const BOX_H = 120;
+const BOX_W = 560;
+const BOX_H = 240;
 const TARGET_AREA = BOX_W * BOX_H * 0.34; // masa visual objetivo por logo
 const OUT_DIR = resolve(ROOT, 'public/img/partners');
 const OVERRIDES_PATH = resolve(ROOT, 'src/data/partnerLogoOverrides.json');
@@ -45,7 +50,12 @@ if (!res.ok) throw new Error(`No pude leer partners: HTTP ${res.status}`);
 const partners = (await res.json()).filter((p) => p.logo_url);
 
 mkdirSync(OUT_DIR, { recursive: true });
-const overrides = {};
+// Conserva nombres estables y también overrides locales que todavía no existen
+// en la base (por ejemplo, altas que se están previsualizando antes del deploy).
+const existingOverrides = existsSync(OVERRIDES_PATH)
+  ? JSON.parse(readFileSync(OVERRIDES_PATH, 'utf8'))
+  : {};
+const overrides = { ...existingOverrides };
 
 for (const partner of partners) {
   try {
@@ -63,7 +73,10 @@ for (const partner of partners) {
     const h = Math.max(1, Math.round(t.height * scale));
 
     const logo = await sharp(trimmed).resize(w, h).png().toBuffer();
-    const slug = slugify(partner.slug || partner.nombre);
+    const existingFile = existingOverrides[partner.id]?.split('/').pop();
+    const slug = existingFile
+      ? existingFile.replace(/\.[^.]+$/, '')
+      : slugify(partner.slug || partner.nombre);
     await sharp({
       create: { width: BOX_W, height: BOX_H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
     })

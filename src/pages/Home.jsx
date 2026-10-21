@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import PartnerLogo from "@/components/PartnerLogo";
 import {
   Heart,
   Users,
@@ -20,18 +21,6 @@ import {
   useNews,
   useApprovedPartners,
 } from "@/hooks/useContentQueries";
-// Logos normalizados (recorte de aire + masa visual pareja) generados con
-// tools/normalize-partner-logos.mjs; fallback al logo_url crudo si falta.
-import partnerLogoOverrides from "@/data/partnerLogoOverrides.json";
-
-const alliances = [
-  { name: "Google", detail: "for Nonprofits" },
-  { name: "Canva", detail: "for Nonprofits" },
-  { name: "Mercado Libre", detail: "Solidario" },
-  { name: "UBA", detail: "Ciencias Económicas" },
-  { name: "Ministerio de Educación", detail: "Provincia de Salta" },
-];
-
 const stats = [
   { number: "305", suffix: "+", label: "Almas impactadas", desc: "Beneficiarios directos de nuestros programas." },
   { number: "7", suffix: "", label: "Proyectos activos", desc: "Iniciativas tecnológicas y sociales en curso." },
@@ -292,23 +281,35 @@ const Home = () => {
             </motion.div>
           </div>
 
-          {/* Alianzas: una sola línea, en voz baja */}
-          <motion.div variants={rise} className="mt-14 lg:mt-20 pt-8 border-t border-white/15">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-white/50 font-medium mb-4">
-              En alianza con
-            </p>
-            <ul
-              aria-label="Alianzas estratégicas"
-              className="flex flex-wrap items-baseline gap-x-8 gap-y-3 text-sm"
-            >
-              {alliances.map((a) => (
-                <li key={a.name} className="flex items-baseline whitespace-nowrap">
-                  <span className="text-white/85 font-medium">{a.name}</span>
-                  <span className="ml-1.5 text-white/50 text-xs">{a.detail}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+          {/* La misma fuente y escala visual que usa la vidriera inferior. */}
+          {partners.length > 0 && (
+            <motion.div variants={rise} className="mt-14 border-t border-white/15 pt-8 lg:mt-20">
+              <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
+                En alianza con
+              </p>
+              <ul
+                aria-label="Alianzas estratégicas"
+                className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-9"
+              >
+                {partners.map((partner) => (
+                  <li key={partner.id}>
+                    <Link
+                      to={`/partners/${partner.slug || partner.id}`}
+                      title={partner.nombre}
+                      className="group flex h-14 items-center justify-center rounded-sm border border-white/10 bg-white/[0.04] px-1.5 transition-colors hover:bg-white/[0.09]"
+                    >
+                      <PartnerLogo
+                        partner={partner}
+                        className="h-12 w-28"
+                        imageClassName="brightness-0 invert opacity-65 transition-opacity group-hover:opacity-100"
+                        fallbackClassName="text-[10px] text-white/70"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
         </motion.div>
       </section>
 
@@ -579,30 +580,14 @@ const Home = () => {
                   <li key={partner.id}>
                     <Link
                       to={`/partners/${partner.slug || partner.id}`}
-                      className="flex items-center justify-center h-24 px-4 opacity-70 hover:opacity-100 transition-opacity"
+                      className="group flex h-24 items-center justify-center px-4 opacity-70 transition-opacity hover:opacity-100"
                       title={partner.nombre}
                     >
-                      {partnerLogoOverrides[partner.id] ? (
-                        <img
-                          src={partnerLogoOverrides[partner.id]}
-                          alt={partner.nombre}
-                          loading="lazy"
-                          width="280"
-                          height="120"
-                          className="h-[60px] w-auto grayscale hover:grayscale-0 transition-all duration-300"
-                        />
-                      ) : partner.logo_url ? (
-                        <img
-                          src={partner.logo_url}
-                          alt={partner.nombre}
-                          loading="lazy"
-                          className="max-h-11 max-w-[8.5rem] w-auto h-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
-                        />
-                      ) : (
-                        <span className="font-poppins font-semibold text-brand-dark text-center text-sm leading-snug">
-                          {partner.nombre}
-                        </span>
-                      )}
+                      <PartnerLogo
+                        partner={partner}
+                        className="h-[60px] w-[140px]"
+                        imageClassName="grayscale transition-all duration-300 group-hover:grayscale-0"
+                      />
                     </Link>
                   </li>
                 ))}

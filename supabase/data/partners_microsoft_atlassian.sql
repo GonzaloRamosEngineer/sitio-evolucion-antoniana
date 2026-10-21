@@ -25,8 +25,8 @@ VALUES
   (
     'cbc25402-ac08-45c6-ae11-e31fae1fc939',
     'Microsoft for Nonprofits',
-    'Microsoft for Nonprofits brinda a organizaciones elegibles acceso a donaciones y descuentos en herramientas de productividad, nube y colaboración.',
-    '<p>La Fundación Evolución Antoniana fue validada por Microsoft como organización sin fines de lucro el 11 de octubre de 2026.</p><p>Esta aprobación nos permite acceder a las ofertas de Microsoft for Nonprofits y fortalecer nuestra gestión con tecnología para la productividad, la colaboración y el trabajo en la nube. Cada producto o licencia se activa de acuerdo con su disponibilidad y sus condiciones específicas.</p>',
+    'Microsoft for Nonprofits impulsa a organizaciones sociales con herramientas de productividad, colaboración y nube que fortalecen su gestión y amplían su impacto.',
+    '<p>Microsoft for Nonprofits potencia la transformación digital de la Fundación y nos acerca herramientas que fortalecen nuestra capacidad de gestión.</p><p>Sus soluciones de productividad, colaboración y nube nos permiten organizar mejor el trabajo, resguardar la información y conectar a nuestros equipos, incluso cuando participan desde distintos lugares.</p><p>Esta alianza convierte la tecnología en una aliada de nuestra misión: optimizamos recursos, sostenemos proyectos con mayor eficiencia y podemos concentrar más energía en crear oportunidades para la comunidad.</p>',
     'admin@evolucionantoniana.com',
     'https://www.microsoft.com/nonprofits',
     '/img/partners/microsoft-for-nonprofits.svg',
@@ -36,8 +36,8 @@ VALUES
   (
     '2606f0fc-7349-40d8-8665-fab264ed8e32',
     'Atlassian Social Impact',
-    'La Social Impact License de Atlassian acerca herramientas de planificación, documentación y colaboración a organizaciones que trabajan por el impacto social.',
-    '<p>La Fundación Evolución Antoniana fue aprobada para la Social Impact License de Atlassian, validada a través de Goodstack.</p><p>El programa nos otorgó un descuento del 100% en la suscripción anual de Teamwork Collection Premium para el tramo de 16 a 25 usuarios, con vigencia hasta septiembre de 2027. La colección incluye Jira, Confluence y Loom.</p><p>Este beneficio nos ayuda a organizar proyectos, compartir conocimiento y coordinar el trabajo del equipo en un mismo entorno, destinando más tiempo y recursos a nuestra misión social.</p>',
+    'La Social Impact License de Atlassian acompaña a organizaciones sin fines de lucro con herramientas para planificar proyectos, compartir conocimiento y coordinar equipos.',
+    '<p>Atlassian Social Impact fortalece la manera en que transformamos ideas en proyectos concretos y sostenibles.</p><p>Con herramientas como Jira, Confluence y Loom podemos planificar iniciativas, coordinar responsabilidades y reunir en un mismo lugar la información y los aprendizajes de cada equipo.</p><p>Esta alianza aporta claridad, continuidad y colaboración a nuestro trabajo. Nos ayuda a acompañar mejor cada proyecto, preservar el conocimiento institucional y ampliar nuestro impacto sin perder de vista a las personas que están detrás de cada acción.</p>',
     'admin@evolucionantoniana.com',
     'https://www.atlassian.com/nonprofits',
     '/img/partners/atlassian-social-impact.svg',

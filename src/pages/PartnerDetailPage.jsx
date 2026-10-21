@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PartnerLogo from '@/components/PartnerLogo';
 import { SanitizedHtml } from '@/components/ui/sanitized-html';
 import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
 import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
@@ -107,12 +108,7 @@ const PartnerDetailPage = () => {
                     {/* Logo */}
                     {partner.logo_url && (
                         <div className="w-full rounded-sm bg-brand-sand/60 border border-brand-dark/10 flex items-center justify-center p-8 mb-6 h-48">
-                            <img
-                            src={partner.logo_url}
-                            alt={partner.nombre}
-                            className="w-full h-full object-contain"
-                            loading="lazy"
-                            />
+                            <PartnerLogo partner={partner} className="h-[120px] w-[280px]" />
                         </div>
                     )}
 
@@ -215,6 +211,7 @@ const PartnerDetailPage = () => {
                                 prose-a:text-brand-action hover:prose-a:underline
                                 prose-strong:text-brand-dark
                                 prose-li:marker:text-brand-gold
+                                [&_p]:mb-5 [&_p:last-child]:mb-0
                             "
                         />
                         ) : (
