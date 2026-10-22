@@ -35,7 +35,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { toast } from '@/components/ui/use-toast';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { postularComercio } from '@/api/clubApi';
-import { tituloPagina } from '@/config/entidad';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const urlOpcional = z
   .string()
@@ -133,7 +133,7 @@ const PostularComercioPage = () => {
             entidad, porque ahí se generan casi todos los conflictos de
             mostrador. Conviene decirlo desde el primer contacto. */}
         <Button asChild variant="outline" className="mt-8">
-          <Link to="/beneficios">Ver los beneficios del club</Link>
+          <Link to="/beneficios">Ver los beneficios de la comunidad</Link>
         </Button>
       </div>
     );
@@ -146,20 +146,20 @@ const PostularComercioPage = () => {
       className="mx-auto max-w-2xl px-4 py-10 sm:py-14"
     >
       <Helmet>
-        <title>{tituloPagina('Sumá tu comercio al club')}</title>
+        <title>{tituloPagina('Sumá tu comercio a la red')}</title>
         <meta
           name="description"
           content="Ofrecé un beneficio a quienes sostienen la fundación y llegá a nuevos clientes."
         />
       </Helmet>
 
-      <Eyebrow>Club de beneficios</Eyebrow>
+      <Eyebrow>{entidad.comunidadEvolucion.nombre}</Eyebrow>
       <h1 className="mt-3 text-3xl font-display font-bold text-brand-dark sm:text-4xl">
-        Sumá tu comercio al club
+        Sumá tu comercio a nuestra red
       </h1>
       <p className="mt-3 text-brand-dark/70">
         Ofrecés un descuento a quienes sostienen la fundación y, a cambio, te damos
-        difusión y los números de cuánta gente te trajo el club.
+        difusión y datos claros sobre cuántas personas llegaron a tu comercio a través de la red.
       </p>
 
       <div className="mt-6 flex items-start gap-3 rounded-sm border border-brand-dark/10 bg-brand-light/40 p-4">

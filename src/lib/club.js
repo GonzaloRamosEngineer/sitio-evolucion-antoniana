@@ -106,7 +106,7 @@ export const fraseBeneficio = ({ tipo, valor } = {}) => {
 const MENSAJES = {
   sesion: 'Iniciá sesión para usar tus beneficios.',
   config: 'El servicio no está disponible en este momento. Probá más tarde.',
-  sin_acceso: 'Este beneficio es para socios con acceso vigente.',
+  sin_acceso: 'Este beneficio requiere un aporte vigente.',
   // §12.11. La Edge Function manda el motivo ya redactado con los números
   // exactos ("te faltan 4 meses"); esto es solo la red si llegara sin texto.
   requisitos: 'Todavía no cumplís los requisitos de este beneficio.',
@@ -116,9 +116,9 @@ const MENSAJES = {
   formato: 'Ese código no tiene el formato correcto.',
   inexistente: 'No encontramos ese código.',
   ajeno: 'Ese código no es de este comercio.',
-  vencido: 'Ese código venció. Pedile al socio que genere uno nuevo.',
+  vencido: 'Ese código venció. Pedile a la persona que genere uno nuevo.',
   anulado: 'Ese canje fue anulado.',
-  reemplazado: 'El socio generó otro canje de este beneficio. Usá ese.',
+  reemplazado: 'La persona generó otro canje de este beneficio. Usá ese.',
   no_confirmado: 'Solo se anulan canjes confirmados.',
   monto_requerido: 'Falta el monto de la operación.',
   monto: 'El monto no es válido.',
@@ -400,7 +400,7 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
     return {
       estado: 'sin_sesion',
       puedeCanjear: false,
-      mensaje: 'Este beneficio es para socios con aporte vigente.',
+      mensaje: 'Este beneficio requiere un aporte vigente.',
       cta: { texto: 'Ingresar o asociarme', href: '/login' },
     };
   }

@@ -218,7 +218,7 @@ const PartnerDetailPage = () => {
                         <div className="text-center py-8">
                             <p className="text-gray-500 italic">
                                 {beneficiosDelAliado.length > 0
-                                    ? 'Esta alianza ya tiene beneficios activos en el club.'
+                                    ? 'Esta alianza ya ofrece beneficios en Comunidad Evolución.'
                                     : 'Próximamente compartiremos más información detallada sobre los beneficios de esta alianza.'}
                             </p>
                         </div>
@@ -234,11 +234,11 @@ const PartnerDetailPage = () => {
                             <div className="mt-8 pt-6 border-t border-gray-100">
                                 <h3 className="font-bold font-poppins text-brand-dark mb-1">
                                     {beneficiosDelAliado.length === 1
-                                        ? 'Su beneficio en el club'
-                                        : `Sus ${beneficiosDelAliado.length} beneficios en el club`}
+                                        ? 'El beneficio que ofrece'
+                                        : `Los ${beneficiosDelAliado.length} beneficios que ofrece`}
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-4">
-                                    Parte del club de beneficios para quienes sostienen la Fundación.
+                                    Parte de Comunidad Evolución, para quienes sostienen la Fundación.
                                 </p>
                                 <ul className="space-y-3">
                                     {beneficiosDelAliado.map((b) => (
@@ -254,7 +254,7 @@ const PartnerDetailPage = () => {
                                                     {b.requiere_acceso && (
                                                         <span className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                                                             <Lock aria-hidden="true" className="h-3 w-3" />
-                                                            Para socios con aporte vigente
+                                                            Para personas con aporte vigente
                                                         </span>
                                                     )}
                                                 </span>

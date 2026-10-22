@@ -1,6 +1,7 @@
 // src/api/clubApi.js
 //
-// Club de beneficios, fase 2 (ROADMAP §12). Contrato único `{ data, error }`,
+// Comunidad Evolución (nombre técnico heredado: club), fase 2 (ROADMAP §12).
+// Contrato único `{ data, error }`,
 // nunca lanza (ver `src/lib/dataResult.js`).
 //
 // LA DIFERENCIA CON EL RESTO DE `src/api/`: acá las ESCRITURAS no salen del

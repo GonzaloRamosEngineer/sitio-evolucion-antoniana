@@ -48,6 +48,17 @@ export const entidad = {
     'Organización sin fines de lucro legalmente constituida en Salta, Argentina. ' +
     'Impulsamos oportunidades y transformamos vidas a través de la tecnología y el deporte.',
 
+  // --- Programa de beneficios ------------------------------------------------
+  // El nombre público vive acá. `club`, `/club` y `club_*` siguen siendo nombres
+  // técnicos estables: no deben filtrarse a la comunicación ni cambiarse por un
+  // ajuste de marca.
+  comunidadEvolucion: {
+    nombre: 'Comunidad Evolución',
+    propuesta: 'Beneficios con propósito',
+    descripcion:
+      'Una red que conecta a quienes sostienen la Fundación con comercios comprometidos.',
+  },
+
   // --- Presencia -------------------------------------------------------------
   sitio: 'https://www.evolucionantoniana.com',
   logo: '/img/transparente.png',
@@ -119,7 +130,7 @@ export const entidad = {
 
       Pero no es gratis en el otro sentido: una transferencia **no pasa por el
       webhook**, así que no crea el aporte sola, no queda atada a la cuenta de
-      quien donó —no habilita el club de beneficios— y no trae a qué causa iba.
+      quien donó —no habilita el acceso a Comunidad Evolución— y no trae a qué causa iba.
       Se registra al importar el extracto, y asignarla es trabajo humano.
 
       Por eso el texto público invita a avisar por contacto: es lo único que

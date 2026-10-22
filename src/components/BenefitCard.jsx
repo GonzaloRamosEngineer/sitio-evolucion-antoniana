@@ -57,7 +57,7 @@ const BenefitCard = ({ benefit, index = 0, bloqueado = false }) => {
           <div className="absolute top-4 right-4">
             <span className="inline-flex items-center gap-1.5 bg-brand-dark/90 backdrop-blur-sm text-brand-gold text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
               <Lock className="h-3 w-3" />
-              Socios
+              Aporte vigente
             </span>
           </div>
         )}

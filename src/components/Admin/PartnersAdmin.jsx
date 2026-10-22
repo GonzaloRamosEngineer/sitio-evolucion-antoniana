@@ -51,7 +51,7 @@ const PartnersAdmin = () => {
   // `loadPartners`); ahora se dispara al pasar a estado de error.
   useEffect(() => {
     if (isError) {
-      toast({ variant: 'destructive', title: 'Error al cargar socios', description: 'No se pudieron obtener los socios.' });
+      toast({ variant: 'destructive', title: 'Error al cargar aliados', description: 'No se pudieron obtener los aliados.' });
     }
   }, [isError]);
 

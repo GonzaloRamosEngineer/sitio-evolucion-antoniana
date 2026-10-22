@@ -371,7 +371,7 @@ const Dashboard = () => {
                     <Heart size={20} /> Soporte
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                    ¿Dudas con tu membresía o registro? Contactanos vía WhatsApp al soporte exclusivo para padrinos y socios activos.
+                    ¿Dudas con tu membresía o registro? Contactanos vía WhatsApp al soporte para padrinos activos.
                 </p>
             </div>
         </motion.div>

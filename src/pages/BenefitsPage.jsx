@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useBeneficiosVidriera, useMiAcceso } from '@/hooks/useContentQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/acceso';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -66,10 +67,10 @@ const BenefitsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>Beneficios - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina(entidad.comunidadEvolucion.propuesta)}</title>
         <meta
           name="description"
-          content="Descubre beneficios exclusivos para miembros y colaboradores de la Fundación Evolución Antoniana"
+          content="Beneficios de comercios aliados para quienes sostienen la misión de la Fundación Evolución Antoniana."
         />
       </Helmet>
 
@@ -83,13 +84,13 @@ const BenefitsPage = () => {
           className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24"
         >
           <div className="mb-6">
-            <Eyebrow light>Comunidad</Eyebrow>
+            <Eyebrow light>{entidad.comunidadEvolucion.nombre}</Eyebrow>
           </div>
           <h1 className="font-poppins font-bold text-4xl sm:text-5xl lg:text-[3.5rem] tracking-tight text-white text-balance mb-6">
-            Club de beneficios
+            {entidad.comunidadEvolucion.propuesta}
           </h1>
           <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
-            Descuentos y ventajas pensadas para nuestra comunidad.
+            Descuentos y ventajas para quienes sostienen nuestra misión.
           </p>
         </motion.div>
       </section>
@@ -239,7 +240,7 @@ const BenefitsPage = () => {
             <Button asChild variant="outline" className="mt-4">
               <Link to="/club/postular">
                 <Store aria-hidden="true" className="mr-2 h-4 w-4" />
-                Sumá tu comercio al club
+                Sumá tu comercio a la red
               </Link>
             </Button>
           </div>

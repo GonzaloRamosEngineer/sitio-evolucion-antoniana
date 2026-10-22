@@ -1,6 +1,7 @@
 // src/api/clubAdminApi.js
 //
-// ABM del club de beneficios (ROADMAP §12). Contrato único `{ data, error }`,
+// ABM de Comunidad Evolución (nombre técnico heredado: club; ROADMAP §12).
+// Contrato único `{ data, error }`,
 // nunca lanza (ver `src/lib/dataResult.js`).
 //
 // POR QUÉ EXISTE ESTE ARCHIVO. §12.7 dice que el objetivo del módulo es

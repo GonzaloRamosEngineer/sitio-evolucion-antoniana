@@ -144,7 +144,7 @@ const PostulacionesAdmin = ({ onComercioCreado }) => {
       <EmptyState
         icon={Inbox}
         title="No hay postulaciones"
-        description="Cuando un comercio complete el formulario de /club/postular, va a aparecer acá."
+        description="Cuando un comercio solicite sumarse a la red, va a aparecer acá."
       />
     );
   }

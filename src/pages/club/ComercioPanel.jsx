@@ -225,7 +225,7 @@ const ComercioPanel = () => {
           Esta cuenta no tiene un comercio asociado
         </h1>
         <p className="mt-2 text-sm text-brand-dark/70">
-          Si tu comercio forma parte del club, pedile a la Fundación que asocie este usuario.
+          Si tu comercio forma parte de Comunidad Evolución, pedile a la Fundación que asocie este usuario.
         </p>
       </div>
     );
@@ -355,7 +355,7 @@ const ComercioPanel = () => {
       >
         <div>
           <Label htmlFor="codigo" className="text-brand-dark font-semibold">
-            Código del socio
+            Código de la persona
           </Label>
           <Input
             id="codigo"
@@ -387,7 +387,7 @@ const ComercioPanel = () => {
           {/* No se exige a propósito (12.9.2): si se pide de entrada, el cajero
               lo completa con cualquier número y el dato deja de servir. */}
           <p className="mt-1 text-xs text-brand-dark/60">
-            Sirve para el reporte que te muestra cuánta gente te trajo el club.
+            Sirve para el reporte que te muestra cuántas personas te acercó la red.
           </p>
         </div>
 
@@ -524,7 +524,7 @@ const ComercioPanel = () => {
             que el local no está usando el sistema (12.3). Se muestran a propósito. */}
         <p className="mt-4 flex items-start gap-2 text-xs text-brand-dark/50">
           <TriangleAlert aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
-          Los códigos que quedan en «pendiente» son los que el socio generó y nadie confirmó.
+          Los códigos que quedan en «pendiente» son los que una persona generó y nadie confirmó.
         </p>
       </section>
       </>

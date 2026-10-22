@@ -75,7 +75,7 @@ const COLOR = {
 const TARJETAS = {
   '/rendicion': { bajada: 'Cada peso que entra, cada peso que sale, con su respaldo.' },
   '/beneficios': { bajada: 'Descuentos reales en comercios de Salta para quienes sostienen la Fundación.' },
-  '/club': { bajada: 'Tu aporte, convertido en beneficios que se usan todos los días.' },
+  '/club': { bajada: 'Tu aporte sostiene una misión y te conecta con beneficios para todos los días.' },
   '/novedades': { bajada: 'Lo que está pasando en la Fundación, contado por nosotros.' },
   '/activities': { bajada: 'Talleres, torneos y encuentros abiertos a la comunidad.' },
   '/collaborate': { bajada: 'Como voluntario, aliado o donante: hay una forma para cada uno.' },
@@ -227,6 +227,12 @@ if (!chrome) {
   process.exit(1);
 }
 
+// En macOS, Chrome cuenta 87 px de marco aunque esté en headless: pedir 630
+// deja un viewport real de 543 y la captura rellena el resto con blanco. Se
+// pide el alto exterior corregido y luego se recorta desde arriba. En Linux y
+// Windows el tamaño pedido ya coincide con el viewport.
+const ALTO_VENTANA = process.platform === 'darwin' ? 717 : 630;
+
 /** Ancho y alto reales del PNG: bytes 16-23 de la cabecera, big-endian.
  *  Se verifica porque un `--window-size` que Chrome no respeta produce un PNG
  *  más chico y la tarjeta sale recortada sin que nada avise (ROADMAP §B). */
@@ -279,13 +285,21 @@ for (const [ruta, tarjeta] of Object.entries(TARJETAS)) {
       '--disable-gpu',
       '--hide-scrollbars',
       '--force-device-scale-factor=1',
-      '--window-size=1200,630',
+      `--window-size=1200,${ALTO_VENTANA}`,
       '--virtual-time-budget=3000',
       `--screenshot=${destino}`,
       `file:///${htmlTmp.replaceAll('\\', '/')}`,
     ],
     { stdio: 'ignore' }
   );
+
+  if (process.platform === 'darwin' && medidasPng(destino).alto === ALTO_VENTANA) {
+    execFileSync(
+      'sips',
+      ['--cropOffset', '1', '0', '--cropToHeightWidth', '630', '1200', destino],
+      { stdio: 'ignore' }
+    );
+  }
 
   const { ancho, alto } = medidasPng(destino);
   if (ancho !== 1200 || alto !== 630) {

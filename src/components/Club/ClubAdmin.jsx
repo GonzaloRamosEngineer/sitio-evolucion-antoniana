@@ -1,6 +1,7 @@
 // src/components/Club/ClubAdmin.jsx
 //
-// ABM del club de beneficios (ROADMAP §12). Es la pantalla que faltaba para que
+// ABM de Comunidad Evolución (nombre técnico heredado: club; ROADMAP §12).
+// Es la pantalla que faltaba para que
 // dar de alta un comercio no necesite un desarrollador — que era el hueco entre
 // lo que §12.7 promete (copiar el módulo a otro proyecto y que funcione) y lo
 // que §12.8 puso en las fases.
@@ -38,6 +39,7 @@ import {
   ESTADOS_COMERCIO, listComercios, createComercio, updateComercio,
   listPartnersAprobados, validarComercio, slugify,
 } from '@/api/clubAdminApi';
+import { entidad } from '@/config/entidad';
 
 const SIN_PARTNER = '__ninguno__';
 
@@ -157,7 +159,7 @@ const ClubAdmin = () => {
   return (
     <div>
       <SectionHeader
-        title="Club de beneficios"
+        title={entidad.comunidadEvolucion.nombre}
         description="Los comercios adheridos, sus sucursales, sus beneficios y quién valida en el mostrador."
         actions={
           <Button variant="action" onClick={abrirNuevo}>
@@ -173,7 +175,7 @@ const ClubAdmin = () => {
       <details className="mb-6 rounded-sm border border-brand-dark/10">
         <summary className="flex cursor-pointer items-center gap-2 p-4 font-semibold text-brand-dark">
           <Inbox aria-hidden="true" className="h-4 w-4 text-brand-dark/50" />
-          Solicitudes para entrar al club
+          Solicitudes para sumarse a la red
         </summary>
         <div className="border-t border-brand-dark/10 p-4">
           <PostulacionesAdmin onComercioCreado={cargar} />
@@ -228,7 +230,7 @@ const ClubAdmin = () => {
           <DialogHeader>
             <DialogTitle>{editando ? 'Editar comercio' : 'Nuevo comercio'}</DialogTitle>
             <DialogDescription>
-              Un comercio del club es distinto de un partner institucional: el partner es un
+              Un comercio de la red es distinto de un partner institucional: el partner es un
               logo en la Home, el comercio es una contraparte del mostrador. Pueden ser la
               misma empresa, y para eso está el campo de abajo.
             </DialogDescription>
@@ -354,7 +356,7 @@ const ClubAdmin = () => {
                 <ShieldAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" />
                 Dar de baja archiva la ficha y saca los beneficios del catálogo.
                 <strong className="font-semibold">Los canjes no se borran nunca</strong>: son el
-                libro contable del club.
+                historial contable de la red.
               </p>
             )}
           </div>

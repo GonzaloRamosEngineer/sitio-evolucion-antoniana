@@ -27,6 +27,7 @@ import ImportarMovimientos from '@/components/Admin/ImportarMovimientos';
 import ClubAdmin from '@/components/Club/ClubAdmin';
 import AportesAdmin from '@/components/Admin/AportesAdmin';
 import GastosAdmin from '@/components/Admin/GastosAdmin';
+import { entidad } from '@/config/entidad';
 
 const AdminPanel = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -95,7 +96,7 @@ const AdminPanel = () => {
         items: [
           { value: 'partners', label: 'Partners', icon: Handshake, badge: stats.pendingPartners },
           { value: 'benefits', label: 'Beneficios', icon: Gift },
-          { value: 'club', label: 'Club de beneficios', icon: Ticket },
+          { value: 'club', label: entidad.comunidadEvolucion.nombre, icon: Ticket },
         ],
       },
       {

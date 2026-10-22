@@ -226,7 +226,7 @@ const ReporteComercio = ({ comercioId }) => {
           {conMonto < confirmados && (
             <p className="text-xs text-brand-dark/60">
               El consumo sale del monto que se carga al confirmar, y es opcional. Cuantas más
-              veces lo cargues, más se parece este número a lo que el club realmente te movió.
+              veces lo cargues, más se parece este número a lo que la red realmente te acercó.
             </p>
           )}
         </>

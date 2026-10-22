@@ -344,7 +344,7 @@ const CarnetPage = () => {
             </details>
 
             <div className="mt-5 rounded-[1.5rem] border border-brand-dark/10 bg-white p-5 sm:p-6">
-              <h2 className="font-poppins text-lg font-bold text-brand-dark">Usá tu carnet en el club</h2>
+              <h2 className="font-poppins text-lg font-bold text-brand-dark">Disfrutá tus beneficios</h2>
               <ol className="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-medium text-brand-dark">
                 {['Explorá', 'Elegí', 'Generá tu código'].map((paso, index) => (
                   <li key={paso} className="min-w-0">

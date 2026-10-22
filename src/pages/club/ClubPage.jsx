@@ -39,6 +39,7 @@ import { useMiAcceso } from '@/hooks/useContentQueries';
 import { SIN_ACCESO } from '@/lib/acceso';
 import { agruparCodigo, etiquetaBeneficio } from '@/lib/club';
 import { getBeneficiosClub, getMisCanjes } from '@/api/clubApi';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const ClubPage = () => {
   const { user } = useAuth();
@@ -96,16 +97,16 @@ const ClubPage = () => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:py-16">
       <Helmet>
-        <title>Club de beneficios</title>
+        <title>{tituloPagina(`Tus beneficios — ${entidad.comunidadEvolucion.nombre}`)}</title>
         <meta
           name="description"
-          content="Beneficios de comercios adheridos para socios con aporte vigente."
+          content="Canjeá los beneficios de Comunidad Evolución con tu aporte vigente."
         />
       </Helmet>
 
-      <Eyebrow>Club de beneficios</Eyebrow>
+      <Eyebrow>{entidad.comunidadEvolucion.nombre}</Eyebrow>
       <h1 className="mt-3 text-3xl font-display font-bold text-brand-dark sm:text-4xl">
-        Beneficios para canjear
+        Tus beneficios
       </h1>
       <p className="mt-2 max-w-2xl text-brand-dark/70">
         Generá el código cuando ya estés en la caja y el comercio lo confirma en el momento.
@@ -123,8 +124,8 @@ const ClubPage = () => {
           <Lock aria-hidden="true" className="h-5 w-5 shrink-0 text-brand-gold" />
           <p className="min-w-0 flex-1 text-sm text-brand-dark">
             {bloqueados === 1
-              ? 'Hay 1 beneficio para socios con aporte vigente.'
-              : `Hay ${bloqueados} beneficios para socios con aporte vigente.`}
+              ? 'Hay 1 beneficio reservado para aportes vigentes.'
+              : `Hay ${bloqueados} beneficios reservados para aportes vigentes.`}
           </p>
           <Button variant="action" asChild>
             <Link to="/collaborate">Hacer mi aporte</Link>
@@ -207,7 +208,7 @@ const ClubPage = () => {
                   ) : b.requiere_acceso ? (
                     <span className="flex items-center gap-1.5 text-xs text-brand-dark/50">
                       <Lock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                      Para socios
+                      Aporte vigente
                     </span>
                   ) : null}
                 </div>

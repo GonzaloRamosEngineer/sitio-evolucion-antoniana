@@ -106,7 +106,7 @@ export const PAGINAS = {
   },
   "/beneficios": {
     imagen: "/img/og/beneficios-1200x630.png",
-    titulo: "Beneficios",
+    titulo: "Beneficios con propósito",
     descripcion:
       "Descubrí los beneficios exclusivos de los comercios adheridos para quienes sostienen la Fundación.",
   },
@@ -124,13 +124,13 @@ export const PAGINAS = {
   },
   "/club": {
     imagen: "/img/og/club-1200x630.png",
-    titulo: "Club de beneficios",
+    titulo: "Comunidad Evolución",
     descripcion:
-      "Beneficios de comercios adheridos para socios con aporte vigente.",
+      "Canjeá beneficios de comercios aliados con tu aporte vigente a la Fundación.",
   },
   "/club/postular": {
     imagen: "/img/og/club-postular-1200x630.png",
-    titulo: "Sumá tu comercio al club",
+    titulo: "Sumá tu comercio a la red",
     descripcion:
       "Ofrecé un beneficio a quienes sostienen la fundación y llegá a nuevos clientes.",
   },

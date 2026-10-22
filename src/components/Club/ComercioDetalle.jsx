@@ -343,7 +343,7 @@ const ComercioDetalle = ({ comercio }) => {
                   <Badge>{ESTADOS_BENEFICIO.find((e) => e.value === b.estado)?.label ?? b.estado}</Badge>
                   {b.requiere_acceso ? (
                     <span className="flex items-center gap-1 text-xs text-brand-dark/60">
-                      <Lock aria-hidden="true" className="h-3 w-3" /> Solo socios
+                      <Lock aria-hidden="true" className="h-3 w-3" /> Aporte vigente
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs text-brand-dark/60">
@@ -458,7 +458,7 @@ const ComercioDetalle = ({ comercio }) => {
           <DialogHeader>
             <DialogTitle>{benEditando ? 'Editar beneficio' : 'Nuevo beneficio'}</DialogTitle>
             <DialogDescription>
-              Los términos son lo que el socio lee antes de generar el código. Es donde se
+              Los términos son lo que la persona lee antes de generar el código. Es donde se
               evitan los conflictos de mostrador: escribilos con el comercio.
             </DialogDescription>
           </DialogHeader>
@@ -525,7 +525,7 @@ const ComercioDetalle = ({ comercio }) => {
                 onCheckedChange={(v) => setBenForm((f) => ({ ...f, requiere_acceso: Boolean(v) }))}
               />
               <span>
-                Solo para socios con aporte vigente
+                Solo para personas con aporte vigente
                 <span className="block text-xs text-brand-dark/60">
                   Si lo destildás, cualquiera puede canjearlo. Útil para probar el circuito.
                 </span>
@@ -587,7 +587,7 @@ const ComercioDetalle = ({ comercio }) => {
                   </Label>
                   <Textarea
                     id="b-instr" className="mt-1" rows={3}
-                    placeholder="Generá tu código desde el club y presentalo al contratar."
+                    placeholder="Generá tu código desde Comunidad Evolución y presentalo al contratar."
                     value={benForm.instrucciones}
                     onChange={(e) => setBenForm((f) => ({ ...f, instrucciones: e.target.value }))}
                   />

@@ -429,7 +429,7 @@ const Collaborate = () => {
 
           Pero una transferencia **no pasa por el webhook**: no crea el aporte
           sola, no queda atada a la cuenta de quien donó —así que no habilita el
-          club de beneficios— y no trae a qué causa iba. Se registra al importar
+          acceso a Comunidad Evolución— y no trae a qué causa iba. Se registra al importar
           el extracto, y asignarla es trabajo humano.
 
           Por eso el texto invita a avisar: es lo único que recupera el destino y
