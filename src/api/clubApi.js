@@ -157,7 +157,7 @@ export const anularCanje = async (codigo, motivo) =>
    ============================ */
 
 /**
- * ¿Esta persona opera algún comercio? De esto depende el acceso a `/comercio`.
+ * ¿Esta persona opera algún comercio? De esto depende el acceso a `/comercios/panel`.
  *
  * Se pregunta por RPC y no leyendo la tabla porque la pertenencia se resuelve
  * por `auth.uid()` dentro de la base: desde el browser no se puede preguntar

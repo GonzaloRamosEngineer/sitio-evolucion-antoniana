@@ -179,7 +179,7 @@ describe('DashboardHeader', () => {
 
     // Con acceso, el CTA lleva a la credencial y NO ofrece suscribirse.
     const carnet = screen.getByRole('link', { name: /VER MI CARNET/i });
-    expect(carnet.getAttribute('href')).toBe('/carnet');
+    expect(carnet.getAttribute('href')).toBe('/mi/carnet');
     expect(screen.queryByText(/ACTIVAR MEMBRES/i)).toBeNull();
   });
 

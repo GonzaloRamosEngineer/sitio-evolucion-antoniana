@@ -6,7 +6,7 @@
 // LA PARTE QUE MÁS IMPORTA ES «QUIÉN VALIDA», y es la menos obvia: NO se crea un
 // usuario «de tipo comercio», porque ese rol no existe. Se busca una cuenta que
 // ya existe en el sitio y se la ata a este comercio (§12.5). Esa fila es lo que
-// le abre `/comercio`. Se hizo así para que una persona pueda operar dos
+// le abre `/comercios/panel`. Se hizo así para que una persona pueda operar dos
 // comercios sin romper el modelo de roles de `users`.
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -381,7 +381,7 @@ const ComercioDetalle = ({ comercio }) => {
       <p className="flex items-start gap-2 py-3 text-xs text-brand-dark/60">
         <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
         No se crea un usuario «de comercio»: ese rol no existe. Se busca una cuenta que ya
-        exista en el sitio y se la ata acá. Esa fila es lo que le abre <code>/comercio</code>.
+        exista en el sitio y se la ata acá. Esa fila es lo que le abre <code>/comercios/panel</code>.
       </p>
 
       {operadores.length === 0 ? (

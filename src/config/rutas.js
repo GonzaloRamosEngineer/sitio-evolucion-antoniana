@@ -1,7 +1,7 @@
 // Fuente única de nombres y patrones de ruta.
 //
-// Etapa 3: primero centraliza las URLs ACTUALES sin renombrarlas. La migración
-// al español llega después y cambia valores acá, acompañada por redirects.
+// Cada etapa cambia valores aca y conserva los anteriores como aliases con
+// redirect. Ningun consumidor deberia inventar rutas fuera de este registro.
 
 export const ROUTE_PATHS = Object.freeze({
   INICIO: '/',
@@ -35,11 +35,11 @@ export const ROUTE_PATHS = Object.freeze({
   PREINSCRIPCION: '/educacion/preinscripcion',
   ADMIN_EDUCACION: '/admin/education',
   COMISION: '/comision',
-  CARNET: '/carnet',
-  CLUB: '/club',
-  POSTULAR_COMERCIO: '/club/postular',
-  COMERCIO: '/comercio',
-  CUENTA: '/dashboard',
+  CARNET: '/mi/carnet',
+  CLUB: '/mi/beneficios',
+  POSTULAR_COMERCIO: '/comercios/sumarse',
+  COMERCIO: '/comercios/panel',
+  CUENTA: '/mi/cuenta',
   ADMIN_ACTIVIDAD_NUEVA: '/admin/activities/new',
   ADMIN_ACTIVIDAD_EDITAR: '/admin/activities/edit/:id',
   ADMIN: '/admin/*',
@@ -54,6 +54,11 @@ export const ROUTE_PATHS = Object.freeze({
   ALIAS_ALIANZAS: '/partners',
   ALIAS_POSTULAR_ALIANZA: '/postular-partner',
   ALIAS_PREINSCRIPCION: '/preinscripcion',
+  ALIAS_CARNET: '/carnet',
+  ALIAS_CLUB: '/club',
+  ALIAS_POSTULAR_COMERCIO: '/club/postular',
+  ALIAS_COMERCIO: '/comercio',
+  ALIAS_CUENTA: '/dashboard',
   NO_ENCONTRADA: '*',
 });
 
@@ -108,6 +113,11 @@ const META = Object.freeze({
   ALIAS_ALIANZAS: ['compatibilidad-estatica', 'publico', 'redirect-noindex', 'redirect-308'],
   ALIAS_POSTULAR_ALIANZA: ['compatibilidad-estatica', 'publico', 'redirect-noindex', 'redirect-308'],
   ALIAS_PREINSCRIPCION: ['compatibilidad-estatica', 'publico', 'redirect-noindex', 'redirect-308'],
+  ALIAS_CARNET: ['compatibilidad-estatica', 'sesion', 'redirect-noindex', 'redirect-308'],
+  ALIAS_CLUB: ['compatibilidad-estatica', 'publico', 'redirect-noindex', 'redirect-308'],
+  ALIAS_POSTULAR_COMERCIO: ['compatibilidad-estatica', 'publico', 'redirect-noindex', 'redirect-308'],
+  ALIAS_COMERCIO: ['compatibilidad-estatica', 'sesion-y-pertenencia', 'redirect-noindex', 'redirect-308'],
+  ALIAS_CUENTA: ['compatibilidad-estatica', 'sesion', 'redirect-noindex', 'redirect-308'],
   NO_ENCONTRADA: ['fallback', 'publico', 'noindex', 'ninguno'],
 });
 
@@ -123,6 +133,11 @@ export const LEGACY_PUBLIC_REDIRECTS = Object.freeze({
   [ROUTE_PATHS.ALIAS_ALIANZAS]: ROUTE_PATHS.ALIANZAS,
   [ROUTE_PATHS.ALIAS_POSTULAR_ALIANZA]: ROUTE_PATHS.POSTULAR_ALIANZA,
   [ROUTE_PATHS.ALIAS_PREINSCRIPCION]: ROUTE_PATHS.PREINSCRIPCION,
+  [ROUTE_PATHS.ALIAS_CARNET]: ROUTE_PATHS.CARNET,
+  [ROUTE_PATHS.ALIAS_CLUB]: ROUTE_PATHS.CLUB,
+  [ROUTE_PATHS.ALIAS_POSTULAR_COMERCIO]: ROUTE_PATHS.POSTULAR_COMERCIO,
+  [ROUTE_PATHS.ALIAS_COMERCIO]: ROUTE_PATHS.COMERCIO,
+  [ROUTE_PATHS.ALIAS_CUENTA]: ROUTE_PATHS.CUENTA,
 });
 
 export const LEGACY_DYNAMIC_REDIRECTS = Object.freeze({

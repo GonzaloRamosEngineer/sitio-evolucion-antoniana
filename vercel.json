@@ -12,7 +12,12 @@
     { "source": "/partners", "destination": "/alianzas", "permanent": true },
     { "source": "/partners/:slug", "destination": "/alianzas/:slug", "permanent": true },
     { "source": "/postular-partner", "destination": "/alianzas/postularse", "permanent": true },
-    { "source": "/preinscripcion", "destination": "/educacion/preinscripcion", "permanent": true }
+    { "source": "/preinscripcion", "destination": "/educacion/preinscripcion", "permanent": true },
+    { "source": "/carnet", "destination": "/mi/carnet", "permanent": true },
+    { "source": "/club", "destination": "/mi/beneficios", "permanent": true },
+    { "source": "/club/postular", "destination": "/comercios/sumarse", "permanent": true },
+    { "source": "/comercio", "destination": "/comercios/panel", "permanent": true },
+    { "source": "/dashboard", "destination": "/mi/cuenta", "permanent": true }
   ],
   "rewrites": [
     {
@@ -192,7 +197,7 @@
       "destination": "/api/share/pagina?p=alianzas/postularse"
     },
     {
-      "source": "/club",
+      "source": "/mi/beneficios",
       "has": [
         {
           "type": "header",
@@ -200,10 +205,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=club"
+      "destination": "/api/share/pagina?p=mi/beneficios"
     },
     {
-      "source": "/club/postular",
+      "source": "/comercios/sumarse",
       "has": [
         {
           "type": "header",
@@ -211,7 +216,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=club/postular"
+      "destination": "/api/share/pagina?p=comercios/sumarse"
     },
     {
       "source": "/educacion/preinscripcion",

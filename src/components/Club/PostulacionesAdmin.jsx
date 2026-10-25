@@ -1,7 +1,7 @@
 // src/components/Club/PostulacionesAdmin.jsx
 //
 // La bandeja de entrada del club (§12.10.5). Lo que llega del formulario
-// público de `/club/postular` aterriza acá y no en el catálogo.
+// público de `/comercios/sumarse` aterriza acá y no en el catálogo.
 //
 // EL BOTÓN QUE IMPORTA ES «CREAR EL COMERCIO». Sin él, esta pantalla sería una
 // lista de correos que alguien tiene que volver a tipear en el ABM — y volver a

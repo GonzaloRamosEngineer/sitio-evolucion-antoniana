@@ -49,7 +49,7 @@ export const entidad = {
     'Impulsamos oportunidades y transformamos vidas a través de la tecnología y el deporte.',
 
   // --- Programa de beneficios ------------------------------------------------
-  // El nombre público vive acá. `club`, `/club` y `club_*` siguen siendo nombres
+  // El nombre público vive acá. `club` y `club_*` siguen siendo nombres
   // técnicos estables: no deben filtrarse a la comunicación ni cambiarse por un
   // ajuste de marca.
   comunidadEvolucion: {

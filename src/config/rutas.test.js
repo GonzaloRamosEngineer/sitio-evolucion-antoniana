@@ -10,8 +10,8 @@ import {
 
 describe('registro central de rutas', () => {
   it('declara una sola entrada por patrón y conserva la línea base completa', () => {
-    expect(ROUTE_MANIFEST).toHaveLength(51);
-    expect(new Set(ROUTE_MANIFEST.map(({ path }) => path)).size).toBe(51);
+    expect(ROUTE_MANIFEST).toHaveLength(56);
+    expect(new Set(ROUTE_MANIFEST.map(({ path }) => path)).size).toBe(56);
     expect(ROUTE_MANIFEST.map(({ path }) => path)).toEqual(Object.values(ROUTE_PATHS));
   });
 
@@ -22,8 +22,8 @@ describe('registro central de rutas', () => {
     });
   });
 
-  it('declara once aliases públicos sin cadenas de redirects', () => {
-    expect(Object.keys(LEGACY_PUBLIC_REDIRECTS)).toHaveLength(11);
+  it('declara dieciseis aliases públicos sin cadenas de redirects', () => {
+    expect(Object.keys(LEGACY_PUBLIC_REDIRECTS)).toHaveLength(16);
     expect(
       Object.values(LEGACY_PUBLIC_REDIRECTS).filter((destino) =>
         Object.prototype.hasOwnProperty.call(LEGACY_PUBLIC_REDIRECTS, destino),

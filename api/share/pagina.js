@@ -1,13 +1,13 @@
 // api/share/pagina.js
 // -----------------------------------------------------------------------------
 // OG dinámico para las páginas ESTÁTICAS del sitio (las que no salen de una
-// tabla): /transparencia, /beneficios, /club, /novedades, /nosotros, etc.
+// tabla): /transparencia, /beneficios, /mi/beneficios, /novedades, /nosotros, etc.
 //
 // POR QUÉ EXISTE. El sitio es una SPA: `index.html` trae UNA sola tanda de
 // metas OG —la institucional— y los `<Helmet>` de cada página los reescriben
 // EN EL NAVEGADOR. WhatsApp, Facebook y compañía no ejecutan JavaScript: leen
 // el HTML crudo y se van. Resultado hasta esta función: compartir /transparencia,
-// /beneficios o /club mostraba siempre la misma tarjeta genérica de la
+// /beneficios o /mi/beneficios mostraba siempre la misma tarjeta genérica de la
 // Fundación. Las páginas de detalle (novedades, beneficios, partners,
 // actividades) ya tenían su propio OG servido por `api/share/<recurso>/`; esto
 // cierra el hueco de las secciones.
@@ -60,7 +60,8 @@ const IMAGEN_POR_DEFECTO = "/img/og-image-1200x630.png";
  * IMAGEN_POR_DEFECTO.
  *
  * Lo que NO está acá es tan deliberado como lo que sí (ver `RUTAS_SIN_PREVIEW`
- * en `pagina.test.js`): nada detrás de sesión —/dashboard, /carnet, /comercio,
+ * en `pagina.test.js`): nada detrás de sesión —/mi/cuenta, /mi/carnet,
+ * /comercios/panel,
  * /comision, /admin/*—, nada de auth y nada que sea el final de un flujo
  * personal —/agradecimiento, /confirm-attendance—. Esas rutas caen al OG
  * institucional de `index.html`, que es exactamente lo que corresponde: no se

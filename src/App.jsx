@@ -141,6 +141,11 @@ const PageRoutes = () => {
         <Route path={ROUTE_PATHS.ALIAS_ALIANZAS} element={<LegacyRedirect to={ROUTE_PATHS.ALIANZAS} />} />
         <Route path={ROUTE_PATHS.ALIAS_POSTULAR_ALIANZA} element={<LegacyRedirect to={ROUTE_PATHS.POSTULAR_ALIANZA} />} />
         <Route path={ROUTE_PATHS.ALIAS_PREINSCRIPCION} element={<LegacyRedirect to={ROUTE_PATHS.PREINSCRIPCION} />} />
+        <Route path={ROUTE_PATHS.ALIAS_CARNET} element={<LegacyRedirect to={ROUTE_PATHS.CARNET} />} />
+        <Route path={ROUTE_PATHS.ALIAS_CLUB} element={<LegacyRedirect to={ROUTE_PATHS.CLUB} />} />
+        <Route path={ROUTE_PATHS.ALIAS_POSTULAR_COMERCIO} element={<LegacyRedirect to={ROUTE_PATHS.POSTULAR_COMERCIO} />} />
+        <Route path={ROUTE_PATHS.ALIAS_COMERCIO} element={<LegacyRedirect to={ROUTE_PATHS.COMERCIO} />} />
+        <Route path={ROUTE_PATHS.ALIAS_CUENTA} element={<LegacyRedirect to={ROUTE_PATHS.CUENTA} />} />
 
         {/* Áreas protegidas */}
 
@@ -171,17 +176,17 @@ const PageRoutes = () => {
           }
         />
 
-        {/* §12: `/beneficios` y `/club` leen la MISMA tabla y hacen trabajos
+        {/* §12: `/beneficios` y `/mi/beneficios` leen la MISMA tabla y hacen trabajos
             distintos, decidido el 2026-09-06 (§12.10.14 lo dejó abierto):
 
               /beneficios  la VIDRIERA. Pública, indexable, con slug propio y
                            previews de OG. Es a donde llega quien todavía no
                            aporta, y por eso está en el nav.
-              /club        el MOSTRADOR del socio: canjear y ver los canjes
-                           propios. Se llega desde el carnet, desde el
-                           dashboard y desde el CTA de un beneficio, no desde
-                           el nav público — mandar ahí a un visitante sería
-                           ofrecerle una pantalla que no puede usar.
+              /mi/beneficios  el MOSTRADOR del socio: canjear y ver los canjes
+                              propios. Se llega desde el carnet, desde la cuenta
+                              y desde el CTA de un beneficio, no desde el nav
+                              público — mandar ahí a un visitante sería ofrecerle
+                              una pantalla que no puede usar.
 
             Sigue siendo pública y no protegida a propósito: entrar por la URL
             y ver qué hay adentro no hace daño, y lo que exige sesión —generar

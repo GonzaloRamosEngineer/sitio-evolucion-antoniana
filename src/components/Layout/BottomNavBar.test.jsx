@@ -11,6 +11,6 @@ describe('Navegación mobile', () => {
     expect(donate).toHaveAttribute('href', '/colaborar');
     expect(donate).toHaveAttribute('aria-current', 'page');
     expect(donate).not.toHaveAttribute('target', '_blank');
-    expect(screen.getByRole('link', { name: 'Mi Perfil' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Mi Perfil' })).toHaveAttribute('href', '/mi/cuenta');
   });
 });

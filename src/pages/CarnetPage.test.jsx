@@ -46,7 +46,7 @@ describe('Carnet', () => {
   it('mantiene separadas la suspensión institucional y la vigencia del aporte', () => {
     useMiMembresia.mockReturnValue({ data: { estado: 'suspendido', numero: 5 } });
     show();
-    expect(screen.getByRole('link', { name: 'Canjear un beneficio' })).toHaveAttribute('href', '/club');
+    expect(screen.getByRole('link', { name: 'Canjear un beneficio' })).toHaveAttribute('href', '/mi/beneficios');
     expect(screen.getByText('Acceso vigente')).toBeInTheDocument();
     expect(screen.getByText(/No es un tema de pagos/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Consultar mi condición' })).toHaveAttribute('href', '/contacto');

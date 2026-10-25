@@ -39,7 +39,7 @@ const INDEX_HTML = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
 /**
  * Rutas que NO deben tener preview propia, y por qué. Esta lista es la mitad
  * importante del test: sin ella, "toda ruta necesita OG" mandaría a declarar
- * una tarjeta para /dashboard, y compartir un link privado no debería contar de
+ * una tarjeta para /mi/cuenta, y compartir un link privado no debería contar de
  * qué se trata la pantalla que hay detrás.
  */
 const RUTAS_SIN_PREVIEW = {
@@ -50,9 +50,9 @@ const RUTAS_SIN_PREVIEW = {
   '/update-password': 'auth, se llega con un token en la URL',
   '/agradecimiento': 'final del flujo de aporte, ya declarada noindex',
   '/confirm-attendance': 'link personal con token de asistencia',
-  '/dashboard': 'detrás de sesión',
-  '/carnet': 'detrás de sesión',
-  '/comercio': 'detrás de sesión (panel del comercio)',
+  '/mi/cuenta': 'detrás de sesión',
+  '/mi/carnet': 'detrás de sesión',
+  '/comercios/panel': 'detrás de sesión (panel del comercio)',
   '/comision': 'detrás de sesión (comisión directiva)',
   '/admin/education': 'detrás de sesión (admin)',
   '/admin/activities/new': 'detrás de sesión (admin)',
@@ -91,7 +91,7 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
     // "pase" revisando una lista vacía, que es peor que fallar.
     expect(rutasDeApp.length).toBeGreaterThanOrEqual(30);
     expect(rutasDeApp).toContain('/transparencia');
-    expect(rutasDeApp).toContain('/club/postular');
+    expect(rutasDeApp).toContain('/comercios/sumarse');
   });
 
   it('toda ruta de App.jsx está clasificada: página estática, detalle, o excluida con motivo', () => {
@@ -248,8 +248,8 @@ describe('el HTML que ve el bot', () => {
   });
 
   it('apunta el og:url y el canonical a la URL humana, nunca a /api/share/', async () => {
-    const res = await pedir({ p: 'club/postular' });
-    const esperada = 'https://www.evolucionantoniana.com/club/postular';
+    const res = await pedir({ p: 'comercios/sumarse' });
+    const esperada = 'https://www.evolucionantoniana.com/comercios/sumarse';
     expect(res.body).toContain(`<meta property="og:url" content="${esperada}" />`);
     expect(res.body).toContain(`<link rel="canonical" href="${esperada}" />`);
     expect(res.body).not.toContain('/api/share/');
@@ -339,7 +339,7 @@ describe('el HTML que ve el bot', () => {
   });
 
   it('no cachea, y declara que la respuesta varía por User-Agent', async () => {
-    const res = await pedir({ p: 'club' });
+    const res = await pedir({ p: 'mi/beneficios' });
     expect(res.headers['cache-control']).toContain('no-store');
     expect(res.headers.vary).toBe('User-Agent');
     expect(res.headers['content-type']).toContain('text/html');
@@ -366,7 +366,7 @@ describe('el HTML que ve el bot', () => {
     expect(resolverRuta('transparencia')).toBe('/transparencia');
     expect(resolverRuta('/transparencia')).toBe('/transparencia');
     expect(resolverRuta('/transparencia/')).toBe('/transparencia');
-    expect(resolverRuta('club/postular')).toBe('/club/postular');
+    expect(resolverRuta('comercios/sumarse')).toBe('/comercios/sumarse');
     expect(resolverRuta('constructor')).toBe(null);
     expect(resolverRuta(undefined)).toBe(null);
   });
@@ -393,7 +393,7 @@ describe('el HTML que ve el bot', () => {
       },
     };
     await handler(
-      { method: 'HEAD', headers: { host: 'x.test' }, query: { p: 'club' } },
+      { method: 'HEAD', headers: { host: 'x.test' }, query: { p: 'mi/beneficios' } },
       res
     );
     expect(res.statusCode).toBe(200);

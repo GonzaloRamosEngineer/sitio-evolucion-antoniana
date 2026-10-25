@@ -69,6 +69,7 @@ describe('sitemap.xml dinámico', () => {
     );
     expect(res.body).not.toContain('/login');
     expect(res.body).not.toContain('/dashboard');
+    expect(res.body).not.toContain('/mi/cuenta');
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 

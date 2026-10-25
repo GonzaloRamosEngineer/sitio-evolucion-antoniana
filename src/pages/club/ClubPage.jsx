@@ -13,7 +13,7 @@
 //   /beneficios  LA VIDRIERA. Pública e indexable, con slug propio y preview de
 //                OG. Es a donde llega alguien que todavía no aporta, y por eso
 //                es la que está en el nav. Su trabajo es convencer.
-//   /club        EL MOSTRADOR. Canjear, y ver los canjes propios. Su trabajo es
+//   /mi/beneficios EL MOSTRADOR. Canjear y ver los canjes propios. Su trabajo es
 //                que el socio use lo que ya pagó.
 //
 // De ahí sale que esta NO esté en el nav público: mandar a un visitante a una
@@ -66,7 +66,7 @@ const ClubPage = () => {
   // EL HISTORIAL PROPIO — `getMisCanjes()` existía desde la fase 2 y NO LA
   // LLAMABA NADIE. Es la regla 5 del ROADMAP en su versión chica: escribir la
   // función no es conectarla. Y su lugar natural es esta página, que es la del
-  // socio: el comercio ve los suyos en `/comercio` y la entidad todos en
+  // socio: el comercio ve los suyos en `/comercios/panel` y la entidad todos en
   // `/admin`, pero la persona no tenía dónde ver qué canjeó.
   React.useEffect(() => {
     if (!user) {

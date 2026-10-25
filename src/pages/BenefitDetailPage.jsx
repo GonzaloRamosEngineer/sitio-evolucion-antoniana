@@ -60,7 +60,7 @@ const BenefitDetailPage = () => {
   const bloqueado = beneficioBloqueado(benefit, acceso);
 
   // Qué se le ofrece a quien está mirando esto. La decisión NO se toma acá: vive
-  // en `src/lib/club.js` porque la comparten el listado, el detalle y /club, y
+  // en `src/lib/club.js` porque la comparten el listado, el detalle y /mi/beneficios, y
   // el bug de §12.10.13 fue justamente que dos pantallas del mismo beneficio
   // decidieran distinto.
   const { data: elegibilidad = null } = useMiElegibilidadClub(user?.id);
@@ -80,7 +80,7 @@ const BenefitDetailPage = () => {
 
   // Acá estaba `handleCopyCode`. Se fue con el bloque "Tu código": copiar al
   // portapapeles un texto fijo que ya era público no tiene a quién servirle
-  // (ROADMAP §12.10.13). El código del canje se copia en /club, donde además
+  // (ROADMAP §12.10.13). El código del canje se copia en /mi/beneficios, donde además
   // tiene un reloj que le da sentido.
 
   if (resolving || (Boolean(resolution?.resource_id) && loading)) {

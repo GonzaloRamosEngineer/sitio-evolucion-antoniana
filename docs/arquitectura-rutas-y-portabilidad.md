@@ -1,6 +1,6 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
-**Estado:** ejecución por etapas; Etapas 0–5 completas
+**Estado:** ejecución por etapas; Etapas 0–5 completas y Etapa 6 en curso
 **Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
@@ -15,7 +15,8 @@
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
-| 6–9 | Pendientes | Etapa 6 habilitada |
+| 6. Áreas personales, comercio y autenticación | En curso; Bloque 6A preparado | `docs/migracion-areas-personales-etapa-6.md` |
+| 7–9 | Pendientes | Requieren cerrar la Etapa 6 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -532,7 +533,7 @@ pertenecen a etapas posteriores permanecen visibles, pero no bloquean la migraci
 - [x] Confirmar `/transparencia` como destino canónico de la rendición.
 - [x] Confirmar `/alianzas` como término público en lugar de `/partners`.
 - [ ] Definir contenido y alcance de la futura landing `/comunidad` (Etapa 7).
-- [ ] Confirmar `/mi/beneficios` como reemplazo operativo de `/club` (Etapa 6).
+- [x] Confirmar `/mi/beneficios` como reemplazo operativo de `/club` (Etapa 6).
 - [x] Mantener técnicas las rutas administrativas en esta migración.
 - [x] Elegir tabla de aliases compartida para los recursos públicos (Etapa 5).
 - [ ] Definir fuente de métricas de rutas heredadas y 404.
@@ -548,6 +549,7 @@ La Etapa 5 está publicada y verificada. El gate comprobó que:
 4. las RLS siguen ocultando los recursos no públicos;
 5. redirects, navegador, previews OG y sitemap usan las nuevas rutas dinámicas en español.
 
-Queda habilitada la **Etapa 6 — Áreas personales, comercio y autenticación**. Su primer
-bloque debe volver a inventariar destinos post-login y callbacks antes de renombrar rutas
-protegidas.
+La **Etapa 6 — Áreas personales, comercio y autenticación** está en curso. El Bloque 6A
+normaliza `/mi/*` y `/comercios/*` sin modificar callbacks externos; su evidencia está en
+`docs/migracion-areas-personales-etapa-6.md`. El Bloque 6B queda reservado para auth y
+acciones con token, coordinado con la allowlist remota y las funciones emisoras.

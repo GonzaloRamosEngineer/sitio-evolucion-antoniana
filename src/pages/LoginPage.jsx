@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RUTAS } from '@/config/rutas';
+import { postLoginDestination } from '@/lib/authRedirect';
 
 const loginSchema = z.object({
   email: z.string().email('Ingresá un email válido'),
@@ -32,7 +33,6 @@ const LoginPage = () => {
   const location = useLocation();
   // Si llegó redirigido desde una página protegida, volvemos ahí. Si no, el
   // destino depende del rol: cada perfil aterriza en su portal.
-  const from = location.state?.from?.pathname;
 
   const {
     register,
@@ -45,16 +45,9 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isAuthenticated && !authProviderLoading) {
-      const role = user?.role;
-      const landingByRole =
-        role === 'comision_directiva' ? RUTAS.comision.inicio
-        : role === 'documentacion_lectura' ? RUTAS.comision.documentos
-        : role === 'educacion_manager' ? RUTAS.admin.educacion
-        : role === 'admin' ? RUTAS.admin.inicio
-        : RUTAS.mi.cuenta;
-      navigate(from || landingByRole, { replace: true });
+      navigate(postLoginDestination(location.state?.from, user?.role), { replace: true });
     }
-  }, [isAuthenticated, authProviderLoading, navigate, from, user]);
+  }, [isAuthenticated, authProviderLoading, navigate, location.state, user]);
 
   const onSubmit = async (data) => {
     if (isSubmitting) return;
