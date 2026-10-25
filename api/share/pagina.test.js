@@ -26,7 +26,10 @@ import { describe, expect, it } from 'vitest';
 
 import { PAGINAS, resolverRuta } from './pagina.js';
 import { extractAppRoutes } from '../../tools/route-audit-lib.mjs';
-import { LEGACY_PUBLIC_REDIRECTS } from '../../src/config/rutas.js';
+import {
+  LEGACY_DYNAMIC_REDIRECTS,
+  LEGACY_PUBLIC_REDIRECTS,
+} from '../../src/config/rutas.js';
 
 const RAIZ = path.resolve(__dirname, '../..');
 const APP_JSX = fs.readFileSync(path.join(RAIZ, 'src/App.jsx'), 'utf8');
@@ -65,8 +68,8 @@ const RUTAS_SIN_PREVIEW = {
 const RUTAS_DE_DETALLE = {
   '/novedades/:slug': '/api/share/news/slug',
   '/beneficios/:slug': '/api/share/benefits/slug',
-  '/partners/:slug': '/api/share/partners',
-  '/activities/:id': '/api/share/activities/slug',
+  '/alianzas/:slug': '/api/share/partners',
+  '/actividades/:slug': '/api/share/activities/slug',
   // Compatibilidad: las funciones detectan UUID y filtran por id.
   '/novedades/id/:id': '/api/share/news/slug',
   '/novedades/uuid/:id': '/api/share/news/slug',
@@ -97,13 +100,22 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
         !(ruta in PAGINAS) &&
         !(ruta in RUTAS_DE_DETALLE) &&
         !(ruta in RUTAS_SIN_PREVIEW) &&
-        !(ruta in LEGACY_PUBLIC_REDIRECTS)
+        !(ruta in LEGACY_PUBLIC_REDIRECTS) &&
+        !(ruta in LEGACY_DYNAMIC_REDIRECTS)
     );
     expect(
       sinClasificar,
       'Ruta nueva sin decidir su preview. Agregala a PAGINAS en api/share/pagina.js ' +
         '(con su rewrite en vercel.json) o a RUTAS_SIN_PREVIEW con el motivo.'
     ).toEqual([]);
+  });
+
+  it('cada alias dinamico redirige al patron canonico', () => {
+    for (const [source, destination] of Object.entries(LEGACY_DYNAMIC_REDIRECTS)) {
+      expect(rutasDeApp, `${source} no existe como fallback client-side`).toContain(source);
+      expect(redirectDe(source)).toEqual({ source, destination, permanent: true });
+      expect(rewriteDe(source), `${source} no debe conservar OG propio`).toBeUndefined();
+    }
   });
 
   it('cada alias público tiene un único redirect permanente hacia su canónica', () => {

@@ -1,15 +1,12 @@
 // api/share/activities/slug.js
 // Share endpoint para previews (WhatsApp/Facebook/LinkedIn/etc.):
 // - Lo invocan SOLO los bots de redes sociales vía rewrite condicional por
-//   User-Agent en vercel.json: /activities/<slug> -> /api/share/activities/slug?slug=<slug>
+//   User-Agent en vercel.json: /actividades/<slug> -> /api/share/activities/slug?slug=<slug>
 // - También responde al path explícito /api/share/activities/<slug> (backward compat).
-// - Devuelve HTML con Open Graph dinámico y redirige a humanos a /activities/:slug
+// - Devuelve HTML con Open Graph dinámico y redirige a humanos a /actividades/:slug
 // Mismo patrón que api/share/news/slug.js (mantener en sincronía).
 
-const isUuid = (v = "") =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    v
-  );
+import { resolvePublicSlug } from '../../_slug-resolver.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -73,13 +70,20 @@ export default async function handler(req, res) {
     const host = req.headers["x-forwarded-host"] || req.headers.host;
     const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim() || "https";
 
-    const filter = isUuid(slug)
-      ? `id=eq.${encodeURIComponent(slug)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const resolution = await resolvePublicSlug({
+      supabaseUrl: SUPABASE_URL,
+      anonKey: SUPABASE_ANON_KEY,
+      resourceType: 'activity',
+      lookup: slug,
+    });
+    if (!resolution) {
+      res.status(404).send("Not found");
+      return;
+    }
 
     // select=* (en vez de columnas explícitas) para no romper si la columna `slug`
     // aún no existe en la BD: item.slug queda undefined y se cae al UUID.
-    const apiUrl = `${SUPABASE_URL}/rest/v1/activities?select=*&${filter}`;
+    const apiUrl = `${SUPABASE_URL}/rest/v1/activities?select=*&id=eq.${encodeURIComponent(resolution.resource_id)}`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -104,7 +108,7 @@ export default async function handler(req, res) {
     const slugOrId = item.slug || item.id;
 
     // URL humana real (SPA) — es también la que se comparte y la canónica.
-    const humanUrl = `${proto}://${host}/activities/${encodeURIComponent(slugOrId)}`;
+    const humanUrl = `${proto}://${host}/actividades/${encodeURIComponent(slugOrId)}`;
 
     // Imagen absoluta con fallback (el detalle usa image_detail_url o image_url)
     let image = item.image_detail_url || item.image_url || "/og-default.png";

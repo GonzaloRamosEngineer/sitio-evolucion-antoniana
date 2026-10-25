@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+import { PUBLIC_RESOURCE_TYPES, resolvePublicSlug } from '@/lib/slugResolver';
 
 // Migración incremental a TanStack Query (ROADMAP 4.2): la **lectura** de
 // actividades de las páginas públicas ya sale de `useActivitiesQuery`, mientras
@@ -54,27 +55,26 @@ export const useActivities = () => {
     loadActivities();
   }, [loadActivities]);
 
-  // Acepta un UUID o un slug. Los links viejos (/activities/<uuid>) siguen
-  // funcionando; los nuevos usan slug. Detecta el formato y filtra por la
-  // columna correcta (no se puede filtrar por `id` con un valor no-UUID: Postgres
-  // rechaza la sintaxis).
+  // Acepta UUID, slug canonico o alias historico. La base devuelve el UUID
+  // estable y la segunda consulta trae la fila bajo las RLS habituales.
   const getActivityById = useCallback(async (idOrSlug) => {
     setLoading(true);
     setError(null);
     try {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idOrSlug || '');
+      const resolution = await resolvePublicSlug(PUBLIC_RESOURCE_TYPES.ACTIVIDAD, idOrSlug);
+      if (resolution.error) throw resolution.error;
+      if (!resolution.data) throw new Error('Actividad no encontrada.');
+
       const { data, error: dbError } = await supabase
         .from('activities')
         .select('*')
-        .eq(isUuid ? 'id' : 'slug', idOrSlug)
-        .single();
+        .eq('id', resolution.data.resource_id)
+        .maybeSingle();
 
       if (dbError) {
-        if (dbError.code === 'PGRST116') {
-          throw new Error('Actividad no encontrada.');
-        }
         throw dbError;
       }
+      if (!data) throw new Error('Actividad no encontrada.');
       return data;
     } catch (e) {
       setError(handleSupabaseError(e, `obtener actividad ${idOrSlug}`));

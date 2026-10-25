@@ -71,9 +71,9 @@ export default async function handler(req, res) {
     ]);
 
     const dynamicPaths = [
-      ...activities.map(({ slug }) => `/activities/${encodeURIComponent(slug)}`),
+      ...activities.map(({ slug }) => `/actividades/${encodeURIComponent(slug)}`),
       ...news.map(({ slug }) => `/novedades/${encodeURIComponent(slug)}`),
-      ...partners.map(({ slug }) => `/partners/${encodeURIComponent(slug)}`),
+      ...partners.map(({ slug }) => `/alianzas/${encodeURIComponent(slug)}`),
       ...benefits.map(({ slug }) => `/beneficios/${encodeURIComponent(slug)}`),
     ];
 

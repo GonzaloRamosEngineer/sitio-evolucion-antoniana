@@ -7,30 +7,18 @@ import { Button } from '@/components/ui/button';
 import PartnerLogo from '@/components/PartnerLogo';
 import { SanitizedHtml } from '@/components/ui/sanitized-html';
 import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
-import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
+import { usePartnerItem, useBeneficiosVidriera } from '@/hooks/useContentQueries';
 import { cn, palabraMasLarga } from '@/lib/utils';
 import { canonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
-
-const slugify = (s = '') =>
-  s
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '');
 
 const PartnerDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
 
-  // Reusa la caché del listado: si venís de /partners, el detalle abre sin
-  // ninguna consulta nueva. El `select` resuelve el slug sobre el dato cacheado.
-  // Sin filtrar por estado a propósito: para el anon la RLS ya devuelve solo los
-  // aprobados, y así un admin puede previsualizar el detalle de uno pendiente.
-  const { data: partner = null, isPending: loading } = useAllPartners({
-    select: (rows) =>
-      rows.find((p) => p.slug === slug || slugify(p.nombre) === slug) ?? null,
-  });
+  // El resolutor de base acepta UUID, slug actual o alias anterior y conserva
+  // las RLS: una alianza pendiente sigue sin ser visible para anon.
+  const { data: partner = null, isPending: loading } = usePartnerItem(slug);
 
   /*
     Los beneficios que este aliado ofrece en el club, si ofrece alguno.
@@ -105,7 +93,7 @@ const PartnerDetailPage = () => {
             className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-action transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Volver a partners
+            Volver a alianzas
           </Link>
         </div>
 
@@ -244,7 +232,7 @@ const PartnerDetailPage = () => {
                         {/*
                           El camino de vuelta: del aliado a lo que ofrece. Sin
                           esto, quien llega al perfil desde el footer o desde
-                          /partners no tiene forma de enterarse de que hay un
+                          /alianzas no tiene forma de enterarse de que hay un
                           beneficio, aunque esté publicado.
                         */}
                         {beneficiosDelAliado.length > 0 && (

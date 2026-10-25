@@ -7,7 +7,13 @@
 // Los filtros van acá y no en cada página: antes cada consumidor repetía el
 // mismo `.filter(estado === 'aprobado')`, con el riesgo de que se desincronizaran.
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getNews, getNewsById, getNewsBySlug, getPartners, getBenefits } from '@/lib/storage';
+import {
+  getNews,
+  getNewsByRouteParam,
+  getPartnerByRouteParam,
+  getPartners,
+  getBenefits,
+} from '@/lib/storage';
 import { getPreinscriptions } from '@/api/educationApi';
 import { getUserRegistrations, getMiPrecioActividad } from '@/api/activitiesApi';
 import { getUserMemberships } from '@/api/membershipApi';
@@ -31,6 +37,7 @@ import { listResult, rowResult } from '@/lib/dataResult';
 import { unwrap, queryKeys } from '@/lib/queryClient';
 import { getBeneficiosVidriera, getMiElegibilidadClub } from '@/api/clubApi';
 import { mapearABeneficio } from '@/lib/club';
+import { resolvePublicSlug } from '@/lib/slugResolver';
 
 /**
  * Compone el `select` propio del hook con el que pase el caller.
@@ -42,10 +49,6 @@ import { mapearABeneficio } from '@/lib/club';
  */
 const composeSelect = (builtIn, callerSelect) =>
   callerSelect ? (raw) => callerSelect(builtIn(raw)) : builtIn;
-
-/** Las rutas de detalle aceptan UUID (links viejos) o slug. */
-const isUuid = (value = '') =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 export const useNews = ({ select, ...options } = {}) =>
   useQuery({
@@ -63,8 +66,26 @@ export const useNews = ({ select, ...options } = {}) =>
 export const useNewsItem = (routeParam, options = {}) =>
   useQuery({
     queryKey: queryKeys.newsItem(routeParam),
-    queryFn: () => unwrap(isUuid(routeParam) ? getNewsById(routeParam) : getNewsBySlug(routeParam)),
+    queryFn: () => unwrap(getNewsByRouteParam(routeParam)),
     enabled: Boolean(routeParam),
+    ...options,
+  });
+
+/** Un partner por UUID, slug canonico o alias historico. */
+export const usePartnerItem = (routeParam, options = {}) =>
+  useQuery({
+    queryKey: ['partners', 'item', routeParam],
+    queryFn: () => unwrap(getPartnerByRouteParam(routeParam)),
+    enabled: Boolean(routeParam),
+    ...options,
+  });
+
+/** Resolucion liviana para vistas que ya tienen el listado del recurso en cache. */
+export const usePublicSlugResolution = (resourceType, routeParam, options = {}) =>
+  useQuery({
+    queryKey: ['public-slug', resourceType, routeParam],
+    queryFn: () => unwrap(resolvePublicSlug(resourceType, routeParam)),
+    enabled: Boolean(resourceType && routeParam),
     ...options,
   });
 

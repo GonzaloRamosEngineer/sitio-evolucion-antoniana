@@ -2,6 +2,7 @@
   "redirects": [
     { "source": "/about", "destination": "/nosotros", "permanent": true },
     { "source": "/activities", "destination": "/actividades", "permanent": true },
+    { "source": "/activities/:id", "destination": "/actividades/:id", "permanent": true },
     { "source": "/collaborate", "destination": "/colaborar", "permanent": true },
     { "source": "/rendicion", "destination": "/transparencia", "permanent": true },
     { "source": "/contact", "destination": "/contacto", "permanent": true },
@@ -9,6 +10,7 @@
     { "source": "/privacy", "destination": "/privacidad", "permanent": true },
     { "source": "/terms", "destination": "/terminos", "permanent": true },
     { "source": "/partners", "destination": "/alianzas", "permanent": true },
+    { "source": "/partners/:slug", "destination": "/alianzas/:slug", "permanent": true },
     { "source": "/postular-partner", "destination": "/alianzas/postularse", "permanent": true },
     { "source": "/preinscripcion", "destination": "/educacion/preinscripcion", "permanent": true }
   ],
@@ -36,7 +38,7 @@
       "destination": "/api/share/benefits/slug?slug=:slug"
     },
     {
-      "source": "/partners/:slug",
+      "source": "/alianzas/:slug",
       "has": [
         {
           "type": "header",
@@ -47,7 +49,7 @@
       "destination": "/api/share/partners/slug?slug=:slug"
     },
     {
-      "source": "/activities/:id",
+      "source": "/actividades/:slug",
       "has": [
         {
           "type": "header",
@@ -55,7 +57,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/activities/slug?slug=:id"
+      "destination": "/api/share/activities/slug?slug=:slug"
     },
     {
       "source": "/novedades/id/:id",

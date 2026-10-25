@@ -7,7 +7,8 @@ export const ROUTE_PATHS = Object.freeze({
   INICIO: '/',
   NOSOTROS: '/nosotros',
   ACTIVIDADES: '/actividades',
-  ACTIVIDAD_DETALLE: '/activities/:id',
+  ACTIVIDAD_DETALLE: '/actividades/:slug',
+  ACTIVIDAD_COMPATIBILIDAD: '/activities/:id',
   CONFIRMAR_ASISTENCIA: '/confirm-attendance',
   COLABORAR: '/colaborar',
   RENDICION: '/transparencia',
@@ -21,7 +22,8 @@ export const ROUTE_PATHS = Object.freeze({
   PRIVACIDAD: '/privacidad',
   TERMINOS: '/terminos',
   ALIANZAS: '/alianzas',
-  ALIANZA_DETALLE: '/partners/:slug',
+  ALIANZA_DETALLE: '/alianzas/:slug',
+  ALIANZA_COMPATIBILIDAD: '/partners/:slug',
   BENEFICIOS: '/beneficios',
   BENEFICIO_DETALLE: '/beneficios/:slug',
   BENEFICIO_POR_ID: '/beneficios/id/:id',
@@ -60,6 +62,7 @@ const META = Object.freeze({
   NOSOTROS: ['publica', 'publico', 'indexable', 'estatico'],
   ACTIVIDADES: ['publica', 'publico', 'indexable', 'estatico'],
   ACTIVIDAD_DETALLE: ['detalle', 'publico', 'indexable', 'dinamico'],
+  ACTIVIDAD_COMPATIBILIDAD: ['compatibilidad', 'publico', 'redirect-noindex', 'redirect-308'],
   CONFIRMAR_ASISTENCIA: ['accion', 'publico-con-token', 'noindex', 'ninguno'],
   COLABORAR: ['publica', 'publico', 'indexable', 'estatico'],
   RENDICION: ['publica', 'publico', 'indexable', 'estatico'],
@@ -74,6 +77,7 @@ const META = Object.freeze({
   TERMINOS: ['legal', 'publico', 'indexable', 'estatico'],
   ALIANZAS: ['publica', 'publico', 'indexable', 'estatico'],
   ALIANZA_DETALLE: ['detalle', 'publico', 'indexable', 'dinamico'],
+  ALIANZA_COMPATIBILIDAD: ['compatibilidad', 'publico', 'redirect-noindex', 'redirect-308'],
   BENEFICIOS: ['publica', 'publico', 'indexable', 'estatico'],
   BENEFICIO_DETALLE: ['detalle', 'publico', 'indexable', 'dinamico'],
   BENEFICIO_POR_ID: ['compatibilidad', 'publico', 'alias-noindex', 'dinamico'],
@@ -121,6 +125,11 @@ export const LEGACY_PUBLIC_REDIRECTS = Object.freeze({
   [ROUTE_PATHS.ALIAS_PREINSCRIPCION]: ROUTE_PATHS.PREINSCRIPCION,
 });
 
+export const LEGACY_DYNAMIC_REDIRECTS = Object.freeze({
+  [ROUTE_PATHS.ACTIVIDAD_COMPATIBILIDAD]: '/actividades/:id',
+  [ROUTE_PATHS.ALIANZA_COMPATIBILIDAD]: ROUTE_PATHS.ALIANZA_DETALLE,
+});
+
 export const ROUTE_MANIFEST = Object.freeze(
   Object.entries(ROUTE_PATHS).map(([key, path]) => {
     const [surface, access, seo, preview] = META[key];
@@ -152,7 +161,7 @@ export const RUTAS = Object.freeze({
   nosotros: ROUTE_PATHS.NOSOTROS,
   actividades: Object.freeze({
     lista: ROUTE_PATHS.ACTIVIDADES,
-    detalle: (id) => buildPath(ROUTE_PATHS.ACTIVIDAD_DETALLE, { id }),
+    detalle: (slug) => buildPath(ROUTE_PATHS.ACTIVIDAD_DETALLE, { slug }),
     confirmarAsistencia: ROUTE_PATHS.CONFIRMAR_ASISTENCIA,
   }),
   colaborar: ROUTE_PATHS.COLABORAR,

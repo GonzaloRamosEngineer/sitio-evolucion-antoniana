@@ -4,6 +4,7 @@
 // Contrato único: todas las funciones devuelven `{ data, error }` y no lanzan.
 // Ver `src/lib/dataResult.js` para el detalle del contrato (ROADMAP 4.1).
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_RESOURCE_TYPES, resolvePublicSlug } from '@/lib/slugResolver';
 import { listResult, rowResult, voidResult } from '@/lib/dataResult';
 
 const PARTNER_FIELDS =
@@ -84,13 +85,19 @@ export const getPartnerBySlug = async (slug) => {
   );
 };
 
+export const getPartnerByRouteParam = async (lookup) => {
+  const resolution = await resolvePublicSlug(PUBLIC_RESOURCE_TYPES.ALIANZA, lookup);
+  if (resolution.error || !resolution.data) return resolution;
+  return getPartnerById(resolution.data.resource_id);
+};
+
 // Usado por detalle de beneficio
 export const getPartnerById = async (id) => {
   if (!id) return { data: null, error: null };
   return rowResult(
     await supabase
       .from('partners')
-      .select('id, nombre, logo_url, sitio_web, slug, estado, orden')
+      .select(PARTNER_FIELDS)
       .eq('id', id)
       .maybeSingle(),
     'getPartnerById'
@@ -157,6 +164,12 @@ export const getNewsBySlug = async (slug) => {
     await supabase.from('news').select(NEWS_FIELDS).eq('slug', slug).maybeSingle(),
     'getNewsBySlug'
   );
+};
+
+export const getNewsByRouteParam = async (lookup) => {
+  const resolution = await resolvePublicSlug(PUBLIC_RESOURCE_TYPES.NOVEDAD, lookup);
+  if (resolution.error || !resolution.data) return resolution;
+  return getNewsById(resolution.data.resource_id);
 };
 
 export const addNews = async (newsItem) =>

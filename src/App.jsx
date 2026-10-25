@@ -85,6 +85,7 @@ const PageRoutes = () => {
         <Route path={ROUTE_PATHS.NOSOTROS} element={<About />} />
         <Route path={ROUTE_PATHS.ACTIVIDADES} element={<Activities />} />
         <Route path={ROUTE_PATHS.ACTIVIDAD_DETALLE} element={<ActivityDetailPage />} />
+        <Route path={ROUTE_PATHS.ACTIVIDAD_COMPATIBILIDAD} element={<ActivityDetailPage />} />
         <Route path={ROUTE_PATHS.CONFIRMAR_ASISTENCIA} element={<ConfirmAttendancePage />} />
         <Route path={ROUTE_PATHS.COLABORAR} element={<Collaborate />} />
         <Route path={ROUTE_PATHS.RENDICION} element={<Rendicion />} />
@@ -108,6 +109,7 @@ const PageRoutes = () => {
         {/* Partners / Beneficios */}
         <Route path={ROUTE_PATHS.ALIANZAS} element={<PartnersPage />} />
         <Route path={ROUTE_PATHS.ALIANZA_DETALLE} element={<PartnerDetailPage />} />
+        <Route path={ROUTE_PATHS.ALIANZA_COMPATIBILIDAD} element={<PartnerDetailPage />} />
 
         <Route path={ROUTE_PATHS.BENEFICIOS} element={<BenefitsPage />} />
         {/* Ruta canónica por slug */}

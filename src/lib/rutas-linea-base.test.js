@@ -10,7 +10,7 @@ describe('línea base ejecutable de rutas', () => {
   const report = auditRoutes();
 
   it('cruza exactamente las rutas del router con el registro central', () => {
-    expect(report.appRoutes).toHaveLength(49);
+    expect(report.appRoutes).toHaveLength(51);
     expect(report.missingFromBaseline).toEqual([]);
     expect(report.missingFromApp).toEqual([]);
     expect(report.duplicateAppRoutes).toEqual([]);
@@ -50,10 +50,14 @@ describe('línea base ejecutable de rutas', () => {
       ({ surface }) => surface === 'compatibilidad',
     );
     expect(compatibilityRoutes.map(({ path }) => path)).toEqual([
+      '/activities/:id',
+      '/partners/:slug',
       '/beneficios/id/:id',
       '/novedades/id/:id',
       '/novedades/uuid/:id',
     ]);
-    expect(compatibilityRoutes.every(({ seo }) => seo === 'alias-noindex')).toBe(true);
+    expect(
+      compatibilityRoutes.every(({ seo }) => ['alias-noindex', 'redirect-noindex'].includes(seo)),
+    ).toBe(true);
   });
 });

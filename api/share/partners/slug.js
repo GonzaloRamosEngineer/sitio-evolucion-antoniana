@@ -17,10 +17,7 @@
 // producción tres veces; ser el único distinto era el problema.
 // -----------------------------------------------------------------------------
 
-const isUuid = (v = "") =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    v
-  );
+import { resolvePublicSlug } from '../../_slug-resolver.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -70,13 +67,20 @@ export default async function handler(req, res) {
         .split(",")[0]
         .trim() || "https";
 
-    const filter = isUuid(slug)
-      ? `id=eq.${encodeURIComponent(slug)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const resolution = await resolvePublicSlug({
+      supabaseUrl: SUPABASE_URL,
+      anonKey: SUPABASE_ANON_KEY,
+      resourceType: 'partner',
+      lookup: slug,
+    });
+    if (!resolution) {
+      res.status(404).send("Not found");
+      return;
+    }
 
     // `select=*` por el criterio del resto de `api/share/`: que una columna
     // nueva o renombrada no tumbe la preview.
-    const apiUrl = `${SUPABASE_URL}/rest/v1/partners?select=*&${filter}&limit=1`;
+    const apiUrl = `${SUPABASE_URL}/rest/v1/partners?select=*&id=eq.${encodeURIComponent(resolution.resource_id)}&limit=1`;
 
     const r = await fetch(apiUrl, {
       headers: {
@@ -103,7 +107,7 @@ export default async function handler(req, res) {
     // URL humana real (SPA): es la que se comparte y la canónica. El bot llega
     // acá por el rewrite condicional de vercel.json, así que el OG apunta a la
     // URL limpia y nunca a /api/share/.
-    const humanUrl = `${proto}://${host}/partners/${encodeURIComponent(slugOrId)}`;
+    const humanUrl = `${proto}://${host}/alianzas/${encodeURIComponent(slugOrId)}`;
 
     // El logo del partner es la mejor imagen disponible; si no tiene, la tarjeta
     // de la SECCIÓN partners, que al menos nombra de qué se trata.

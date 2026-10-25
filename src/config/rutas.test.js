@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  LEGACY_DYNAMIC_REDIRECTS,
   LEGACY_PUBLIC_REDIRECTS,
   ROUTE_MANIFEST,
   ROUTE_PATHS,
@@ -9,9 +10,16 @@ import {
 
 describe('registro central de rutas', () => {
   it('declara una sola entrada por patrón y conserva la línea base completa', () => {
-    expect(ROUTE_MANIFEST).toHaveLength(49);
-    expect(new Set(ROUTE_MANIFEST.map(({ path }) => path)).size).toBe(49);
+    expect(ROUTE_MANIFEST).toHaveLength(51);
+    expect(new Set(ROUTE_MANIFEST.map(({ path }) => path)).size).toBe(51);
     expect(ROUTE_MANIFEST.map(({ path }) => path)).toEqual(Object.values(ROUTE_PATHS));
+  });
+
+  it('declara los dos aliases dinamicos de la etapa 5', () => {
+    expect(LEGACY_DYNAMIC_REDIRECTS).toEqual({
+      '/activities/:id': '/actividades/:id',
+      '/partners/:slug': '/alianzas/:slug',
+    });
   });
 
   it('declara once aliases públicos sin cadenas de redirects', () => {
@@ -24,8 +32,8 @@ describe('registro central de rutas', () => {
   });
 
   it('construye detalles escapando slugs e IDs', () => {
-    expect(RUTAS.actividades.detalle('actividad uno')).toBe('/activities/actividad%20uno');
-    expect(RUTAS.alianzas.detalle('aliado/extra')).toBe('/partners/aliado%2Fextra');
+    expect(RUTAS.actividades.detalle('actividad uno')).toBe('/actividades/actividad%20uno');
+    expect(RUTAS.alianzas.detalle('aliado/extra')).toBe('/alianzas/aliado%2Fextra');
     expect(RUTAS.beneficios.porId('abc-123')).toBe('/beneficios/id/abc-123');
     expect(RUTAS.admin.actividadEditar('uuid')).toBe('/admin/activities/edit/uuid');
   });

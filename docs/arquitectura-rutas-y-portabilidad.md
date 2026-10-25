@@ -1,6 +1,6 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
-**Estado:** ejecución por etapas; Etapas 0–3 completas
+**Estado:** ejecución por etapas; Etapas 0–4 completas y Etapa 5 preparada
 **Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
@@ -14,7 +14,8 @@
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
-| 5–9 | Pendientes | Etapa 5 habilitada |
+| 5. Slugs y aliases dinámicos | Preparada; pendiente de publicación | `docs/migracion-slugs-etapa-5.md` |
+| 6–9 | Pendientes | Requieren cerrar el gate de Etapa 5 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -533,18 +534,15 @@ pertenecen a etapas posteriores permanecen visibles, pero no bloquean la migraci
 - [ ] Definir contenido y alcance de la futura landing `/comunidad` (Etapa 7).
 - [ ] Confirmar `/mi/beneficios` como reemplazo operativo de `/club` (Etapa 6).
 - [x] Mantener técnicas las rutas administrativas en esta migración.
-- [ ] Elegir tabla de aliases compartida o historial por recurso (Etapa 5).
+- [x] Elegir tabla de aliases compartida para los recursos públicos (Etapa 5).
 - [ ] Definir fuente de métricas de rutas heredadas y 404.
 - [x] Inventariar callbacks externos antes de migrar autenticación (Etapa 1).
 
 ## 13. Próximo incremento
 
-La Etapa 4 está publicada y verificada. El gate comprobó que:
+La Etapa 5 está preparada con auditoría read-only, migración transaccional, historial
+compartido, resolutor bajo RLS y compatibilidad de rollout. El informe y el gate operativo
+están en `docs/migracion-slugs-etapa-5.md`.
 
-1. cada URL anterior devuelve un único 308;
-2. cada destino canónico responde 200;
-3. query strings se preservan;
-4. sitemap, canonical y OG usan solamente las URLs nuevas;
-5. ninguna ruta dinámica fue alterada antes de la Etapa 5.
-
-Con el gate de producción cerrado queda habilitada la **Etapa 5 — Slugs y aliases dinámicos**.
+El siguiente incremento es publicar el código, aplicar la migración versionada y cerrar las
+verificaciones de producción. La Etapa 6 no comienza hasta completar ese gate.

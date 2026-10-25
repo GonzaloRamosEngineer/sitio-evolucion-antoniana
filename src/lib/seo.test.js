@@ -12,8 +12,8 @@ describe('higiene SEO de rutas', () => {
     expect(canonicalUrl('/beneficios')).toBe(
       'https://www.evolucionantoniana.com/beneficios',
     );
-    expect(canonicalUrl('partners/ejemplo/')).toBe(
-      'https://www.evolucionantoniana.com/partners/ejemplo',
+    expect(canonicalUrl('alianzas/ejemplo/')).toBe(
+      'https://www.evolucionantoniana.com/alianzas/ejemplo',
     );
   });
 

@@ -20,6 +20,7 @@ import {
   useAllPartners,
   useMiAcceso,
   useMiElegibilidadClub,
+  usePublicSlugResolution,
 } from "@/hooks/useContentQueries";
 import { useAuth } from "@/hooks/useAuth";
 import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
@@ -27,14 +28,7 @@ import { accionVidriera } from "@/lib/club";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 import { canonicalUrl } from "@/lib/seo";
 import { RUTAS } from "@/config/rutas";
-
-// Util para comparar slugs
-const slugify = (s = "") =>
-  s
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w-]+/g, "");
+import { PUBLIC_RESOURCE_TYPES } from "@/lib/slugResolver";
 
 const fmt = (d) => new Date(d).toLocaleDateString('es-AR', { dateStyle: 'long' });
 
@@ -42,15 +36,16 @@ const BenefitDetailPage = () => {
   const params = useParams();
   const navigate = useNavigate();
   const lookup = params.slug ?? params.id ?? "";
+  const { data: resolution = null, isPending: resolving } = usePublicSlugResolution(
+    PUBLIC_RESOURCE_TYPES.BENEFICIO,
+    lookup,
+  );
 
-  // Reusa la caché del listado y resuelve el beneficio sobre el dato cacheado.
+  // El RPC resuelve UUID, slug canonico o alias. El listado conserva la unica
+  // consulta de contenido y se selecciona por el UUID estable.
   const { data: benefit = null, isPending: loading } = useBeneficiosVidriera({
-    select: (all) =>
-      // 1) por ID exacto, 2) por slug guardado, 3) fallback slugify(titulo)
-      all.find((b) => String(b.id) === String(lookup)) ??
-      all.find((b) => b.slug && b.slug === lookup) ??
-      all.find((b) => slugify(b.titulo) === lookup) ??
-      null,
+    enabled: Boolean(resolution?.resource_id),
+    select: (all) => all.find((b) => b.id === resolution?.resource_id) ?? null,
   });
 
   // El partner del beneficio sale de la misma caché de partners que usa el resto
@@ -88,7 +83,7 @@ const BenefitDetailPage = () => {
   // (ROADMAP §12.10.13). El código del canje se copia en /club, donde además
   // tiene un reloj que le da sentido.
 
-  if (loading) {
+  if (resolving || (Boolean(resolution?.resource_id) && loading)) {
     return <ResourceLoading title="Cargando beneficio… – Fundación Evolución Antoniana" />;
   }
 

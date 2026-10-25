@@ -12,8 +12,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/lib/storage', () => ({
   getNews: vi.fn(),
-  getNewsById: vi.fn(),
-  getNewsBySlug: vi.fn(),
+  getNewsByRouteParam: vi.fn(),
+  getPartnerByRouteParam: vi.fn(),
   getPartners: vi.fn(),
   getBenefits: vi.fn(),
 }));
@@ -23,7 +23,7 @@ vi.mock('@/api/activitiesApi', () => ({ getUserRegistrations: vi.fn() }));
 vi.mock('@/api/membershipApi', () => ({ getUserMemberships: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 
-const { getPartners, getBenefits, getNews, getNewsById, getNewsBySlug } = await import(
+const { getPartners, getBenefits, getNews, getNewsByRouteParam } = await import(
   '@/lib/storage'
 );
 const { getUserRegistrations } = await import('@/api/activitiesApi');
@@ -161,24 +161,23 @@ describe('useNews', () => {
 describe('useNewsItem', () => {
   const UUID = '3f1a2b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
 
-  it('resuelve por id cuando el parámetro es un UUID', async () => {
-    getNewsById.mockResolvedValue({ data: { id: UUID }, error: null });
+  it('delega UUID, slug o alias al resolutor comun', async () => {
+    getNewsByRouteParam.mockResolvedValue({ data: { id: UUID }, error: null });
 
     const { result } = renderHook(() => useNewsItem(UUID), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(getNewsById).toHaveBeenCalledWith(UUID);
-    expect(getNewsBySlug).not.toHaveBeenCalled();
+    expect(getNewsByRouteParam).toHaveBeenCalledWith(UUID);
   });
 
-  it('resuelve por slug cuando no lo es', async () => {
-    getNewsBySlug.mockResolvedValue({ data: { slug: 'una-noticia' }, error: null });
+  it('resuelve tambien un slug historico', async () => {
+    getNewsByRouteParam.mockResolvedValue({ data: { slug: 'slug-actual' }, error: null });
 
-    const { result } = renderHook(() => useNewsItem('una-noticia'), { wrapper });
+    const { result } = renderHook(() => useNewsItem('slug-anterior'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(getNewsBySlug).toHaveBeenCalledWith('una-noticia');
-    expect(getNewsById).not.toHaveBeenCalled();
+    expect(getNewsByRouteParam).toHaveBeenCalledWith('slug-anterior');
+    expect(result.current.data).toMatchObject({ slug: 'slug-actual' });
   });
 
   it('no consulta nada sin parámetro de ruta', async () => {
@@ -186,8 +185,7 @@ describe('useNewsItem', () => {
 
     // Un `await` para darle la chance de disparar si el `enabled` estuviera mal.
     await new Promise((r) => setTimeout(r, 20));
-    expect(getNewsById).not.toHaveBeenCalled();
-    expect(getNewsBySlug).not.toHaveBeenCalled();
+    expect(getNewsByRouteParam).not.toHaveBeenCalled();
   });
 });
 

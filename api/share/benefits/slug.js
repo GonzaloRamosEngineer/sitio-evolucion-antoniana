@@ -6,10 +6,7 @@
 // - Devuelve HTML con Open Graph dinámico y redirige a humanos a /beneficios/:slug
 // Mismo patrón que api/share/news/slug.js (mantener en sincronía).
 
-const isUuid = (v = "") =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    v
-  );
+import { resolvePublicSlug } from '../../_slug-resolver.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -58,9 +55,16 @@ export default async function handler(req, res) {
     const host = req.headers["x-forwarded-host"] || req.headers.host;
     const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim() || "https";
 
-    const filter = isUuid(slug)
-      ? `id=eq.${encodeURIComponent(slug)}`
-      : `slug=eq.${encodeURIComponent(slug)}`;
+    const resolution = await resolvePublicSlug({
+      supabaseUrl: SUPABASE_URL,
+      anonKey: SUPABASE_ANON_KEY,
+      resourceType: 'benefit',
+      lookup: slug,
+    });
+    if (!resolution) {
+      res.status(404).send("Not found");
+      return;
+    }
 
     // ⚠️ LA TABLA ES `club_beneficios`, NO `benefits`.
     //
@@ -78,7 +82,7 @@ export default async function handler(req, res) {
     //
     // Las RLS ya filtran a los beneficios activos de comercios activos (§12.5):
     // uno despublicado da 404, que es lo correcto.
-    const apiUrl = `${SUPABASE_URL}/rest/v1/club_beneficios?select=*&${filter}`;
+    const apiUrl = `${SUPABASE_URL}/rest/v1/club_beneficios?select=*&id=eq.${encodeURIComponent(resolution.resource_id)}`;
 
     const r = await fetch(apiUrl, {
       headers: {

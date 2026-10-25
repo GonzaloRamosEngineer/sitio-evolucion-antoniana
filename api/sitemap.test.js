@@ -56,13 +56,13 @@ describe('sitemap.xml dinámico', () => {
     expect(res.body).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
     expect(res.body).toContain('<loc>https://www.evolucionantoniana.com/</loc>');
     expect(res.body).toContain(
-      '<loc>https://www.evolucionantoniana.com/activities/actividad-ejemplo</loc>',
+      '<loc>https://www.evolucionantoniana.com/actividades/actividad-ejemplo</loc>',
     );
     expect(res.body).toContain(
       '<loc>https://www.evolucionantoniana.com/novedades/novedad-ejemplo</loc>',
     );
     expect(res.body).toContain(
-      '<loc>https://www.evolucionantoniana.com/partners/alianza-ejemplo</loc>',
+      '<loc>https://www.evolucionantoniana.com/alianzas/alianza-ejemplo</loc>',
     );
     expect(res.body).toContain(
       '<loc>https://www.evolucionantoniana.com/beneficios/beneficio-ejemplo</loc>',

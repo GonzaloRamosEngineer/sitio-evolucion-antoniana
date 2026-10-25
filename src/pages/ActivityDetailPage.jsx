@@ -59,7 +59,8 @@ const getCyclePill = (cycleCode) => cycleMeta[cycleCode] ?? {
 };
 
 const ActivityDetailPage = () => {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.slug ?? params.id;
   const { getActivityById, registerForActivity, refreshActivities: globalRefreshActivities } = useActivities();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
