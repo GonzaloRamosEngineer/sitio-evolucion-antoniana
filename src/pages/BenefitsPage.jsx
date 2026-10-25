@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/acceso';
 import { entidad, tituloPagina } from '@/config/entidad';
 import { canonicalUrl } from '@/lib/seo';
+import { RUTAS } from '@/config/rutas';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -73,7 +74,7 @@ const BenefitsPage = () => {
           name="description"
           content="Beneficios de comercios aliados para quienes sostienen la misión de la Fundación Evolución Antoniana."
         />
-        <link rel="canonical" href={canonicalUrl('/beneficios')} />
+        <link rel="canonical" href={canonicalUrl(RUTAS.beneficios.lista)} />
       </Helmet>
 
       {/* --- HERO (lenguaje editorial, patrón de Contact) --- */}
@@ -148,7 +149,7 @@ const BenefitsPage = () => {
               sostienen la Fundación con su cuota o una donación.
             </p>
             <Link
-              to="/collaborate"
+              to={RUTAS.colaborar}
               className="font-bold text-brand-gold hover:text-white underline underline-offset-4 transition-colors"
             >
               Quiero acceder
@@ -166,7 +167,7 @@ const BenefitsPage = () => {
               <strong>{Math.max(diasDeGracia ?? 0, 0) + 30} días</strong> de tolerancia.
               Regularizá la cuota para no perderlo.
             </p>
-            <Link to="/collaborate" className="font-bold underline underline-offset-4">
+            <Link to={RUTAS.colaborar} className="font-bold underline underline-offset-4">
               Regularizar
             </Link>
           </div>
@@ -178,7 +179,7 @@ const BenefitsPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 text-sm text-brand-dark/80">
             <ShieldCheck className="h-4 w-4 text-brand-primary flex-shrink-0" />
             <p className="flex-1">Tu acceso está vigente. Podés usar todos los beneficios.</p>
-            <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
+            <Link to={RUTAS.mi.carnet} className="font-bold text-brand-primary underline underline-offset-4">
               Ver mi carnet
             </Link>
           </div>
@@ -240,7 +241,7 @@ const BenefitsPage = () => {
               ¿Tenés un comercio y querés ofrecer un beneficio?
             </p>
             <Button asChild variant="outline" className="mt-4">
-              <Link to="/club/postular">
+              <Link to={RUTAS.comunidad.postularComercio}>
                 <Store aria-hidden="true" className="mr-2 h-4 w-4" />
                 Sumá tu comercio a la red
               </Link>

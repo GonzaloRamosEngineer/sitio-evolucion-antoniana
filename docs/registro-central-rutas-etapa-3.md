@@ -1,6 +1,7 @@
 # Registro central de rutas — Etapa 3
 
 **Fecha:** 2026-10-24
+**Última actualización:** 2026-10-25
 **Estado:** en ejecución
 **Restricción:** no cambia ninguna URL pública
 
@@ -42,6 +43,23 @@ Este incremento centraliza la definición y los consumidores transversales de ma
 Los links propios de cada página quedan deliberadamente para el siguiente bloque: así el
 cambio puede revisarse en lotes pequeños sin mezclar navegación global y decenas de CTAs.
 
+## Segundo incremento migrado
+
+Se centralizó la navegación de toda la superficie pública y de Comunidad Evolución:
+
+- inicio, actividades y detalles de actividad;
+- novedades y detalles de novedad;
+- beneficios, cards y detalles de beneficio;
+- alianzas, perfiles y postulación de aliados;
+- vidriera, mostrador, postulación y canje de Comunidad Evolución;
+- colaboración, transparencia, documentación legal y páginas legales;
+- página de agradecimiento y página no encontrada;
+- redirects canónicos, retornos post-login y URLs canónicas de esas superficies.
+
+La auditoría bajó de 90 a 39 destinos internos escritos como literales. Los restantes están
+clasificados y concentrados en autenticación, área personal, comisión y administración; no
+quedaron literales de navegación en la superficie pública migrada.
+
 ## Garantías
 
 - Cambiar un patrón en el manifiesto cambia el router que lo registra.
@@ -58,10 +76,13 @@ cambio puede revisarse en lotes pequeños sin mezclar navegación global y decen
 - [x] migrar guards y aterrizajes por rol;
 - [x] conectar sitemap y previews estáticas;
 - [x] adaptar herramientas y pruebas que leían literales de `App.jsx`;
-- [ ] migrar CTAs y links internos de páginas de mayor tráfico;
-- [ ] medir literales internos restantes y clasificarlos;
-- [x] auditoría de rutas correcta: 38 rutas y 90 destinos estáticos verificados;
-- [x] suite completa correcta: 58 archivos y 659 pruebas;
+- [x] migrar CTAs y links internos de páginas públicas y de mayor tráfico;
+- [x] medir literales internos restantes y clasificarlos;
+- [ ] migrar autenticación y acciones con retorno protegido;
+- [ ] migrar área personal y componentes de dashboard;
+- [ ] migrar comisión y administración;
+- [x] auditoría de rutas correcta: 38 rutas y 39 destinos estáticos verificados;
+- [x] suite completa correcta: 58 archivos y 658 pruebas;
 - [x] lint sin errores (37 advertencias preexistentes);
 - [x] build de producción correcto.
 
@@ -71,14 +92,14 @@ mismos valores.
 
 ## Gate del primer incremento
 
-Validado localmente el 2026-10-24:
+Validado localmente nuevamente el 2026-10-25:
 
 | Control | Resultado |
 |---|---|
 | `npm run audit:routes` | Correcto; sin destinos estáticos huérfanos |
-| `npm test -- --run` | 58 archivos, 659 pruebas correctas |
+| `npm test -- --run` | 58 archivos, 658 pruebas correctas |
 | `npm run lint` | 0 errores; 37 advertencias preexistentes |
 | `npm run build` | Correcto |
 
-Este gate valida el núcleo, pero no cierra la Etapa 3. Para cerrarla se deben migrar los CTAs
-por dominio funcional, medir los literales restantes y repetir estos cuatro controles.
+Este gate valida el núcleo y la superficie pública, pero no cierra la Etapa 3. Para cerrarla
+se deben migrar los grupos protegidos ya identificados y repetir estos cuatro controles.

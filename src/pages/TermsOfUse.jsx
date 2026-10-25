@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Scale, ExternalLink, AlertCircle, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const TermsOfUse = () => {
   return (
@@ -14,7 +16,7 @@ const TermsOfUse = () => {
           name="description"
           content="Términos y Condiciones de uso del sitio web de la Fundación Evolución Antoniana."
         />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/terms" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.legal.terminos)} />
       </Helmet>
 
       {/* --- HERO HEADER --- */}
@@ -95,7 +97,7 @@ const TermsOfUse = () => {
              <p className="text-sm text-gray-400 font-medium">
                 Vigente desde: Octubre 2025
              </p>
-             <Link to="/">
+             <Link to={RUTAS.inicio}>
                 <Button variant="ghost" className="text-brand-primary hover:text-brand-dark hover:bg-brand-sand">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Volver al Inicio

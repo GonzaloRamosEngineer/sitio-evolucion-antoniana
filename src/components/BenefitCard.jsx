@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Tag, Gift, Lock } from 'lucide-react';
+import { RUTAS } from '@/config/rutas';
 
 const slugify = (s = '') =>
   s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -26,7 +27,7 @@ const BenefitCard = ({ benefit, index = 0, bloqueado = false }) => {
       className="bg-white rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col h-full"
     >
       {/* --- IMAGEN --- */}
-      <Link to={`/beneficios/${slug}`} className="relative h-52 overflow-hidden block">
+      <Link to={RUTAS.beneficios.detalle(slug)} className="relative h-52 overflow-hidden block">
         {benefit.imagen_url ? (
           <img
             src={benefit.imagen_url}
@@ -66,7 +67,7 @@ const BenefitCard = ({ benefit, index = 0, bloqueado = false }) => {
       {/* --- CONTENIDO --- */}
       <div className="p-6 flex flex-col flex-1">
         <h3 className="text-xl font-bold font-poppins text-brand-dark mb-3 leading-tight group-hover:text-brand-action transition-colors">
-          <Link to={`/beneficios/${slug}`}>
+          <Link to={RUTAS.beneficios.detalle(slug)}>
             {benefit.titulo}
           </Link>
         </h3>
@@ -83,7 +84,7 @@ const BenefitCard = ({ benefit, index = 0, bloqueado = false }) => {
            )}
            
            <Link
-            to={`/beneficios/${slug}`}
+            to={RUTAS.beneficios.detalle(slug)}
             className="inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:text-brand-action transition-colors ml-auto group/link"
           >
             {bloqueado ? 'Cómo obtenerlo' : 'Ver detalle'}

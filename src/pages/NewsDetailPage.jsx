@@ -19,6 +19,7 @@ import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-stat
 import { useNewsItem } from "@/hooks/useContentQueries";
 import { logger } from '@/lib/logger';
 import { canonicalUrl as buildCanonicalUrl } from '@/lib/seo';
+import { RUTAS } from '@/config/rutas';
 
 const toPlainText = (value = "") => {
   // Limpia saltos y espacios raros para que description quede linda
@@ -52,13 +53,13 @@ const NewsDetailPage = () => {
   // URL real (la de tu SPA) — es también la que se comparte.
   // Los bots de redes reciben el OG dinámico vía rewrite condicional por
   // User-Agent en vercel.json, así que ya no hace falta compartir /api/share/.
-  const canonicalUrl = buildCanonicalUrl(`/novedades/${encodeURIComponent(slugOrId)}`);
+  const canonicalUrl = buildCanonicalUrl(RUTAS.novedades.detalle(slugOrId));
 
   const shareUrl = canonicalUrl;
 
   useEffect(() => {
     if (item?.slug && routeParam !== item.slug) {
-      navigate(`/novedades/${item.slug}`, { replace: true });
+      navigate(RUTAS.novedades.detalle(item.slug), { replace: true });
     }
   }, [item?.slug, navigate, routeParam]);
 
@@ -121,7 +122,7 @@ const NewsDetailPage = () => {
         icon={Newspaper}
         title="Noticia no encontrada"
         description="La noticia que buscás no existe o fue eliminada."
-        backTo="/novedades"
+        backTo={RUTAS.novedades.lista}
         backLabel="Volver a novedades"
       />
     );
@@ -140,7 +141,7 @@ const NewsDetailPage = () => {
         <div className="max-w-4xl mx-auto">
           {/* Navegación Back */}
           <Link
-            to="/novedades"
+            to={RUTAS.novedades.lista}
             className="inline-flex items-center gap-2 text-gray-500 hover:text-brand-action transition-colors mb-8 font-medium text-sm group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />

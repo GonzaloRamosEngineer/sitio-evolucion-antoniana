@@ -26,6 +26,7 @@ import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
 import { accionVidriera } from "@/lib/club";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 import { canonicalUrl } from "@/lib/seo";
+import { RUTAS } from "@/config/rutas";
 
 // Util para comparar slugs
 const slugify = (s = "") =>
@@ -78,7 +79,7 @@ const BenefitDetailPage = () => {
   const canonicalSlug = benefit?.slug || benefit?.id;
   React.useEffect(() => {
     if (canonicalSlug && lookup !== String(canonicalSlug)) {
-      navigate(`/beneficios/${canonicalSlug}`, { replace: true });
+      navigate(RUTAS.beneficios.detalle(canonicalSlug), { replace: true });
     }
   }, [canonicalSlug, lookup, navigate]);
 
@@ -97,7 +98,7 @@ const BenefitDetailPage = () => {
         icon={Tag}
         title="Beneficio no encontrado"
         description="El beneficio que buscás no existe o fue eliminado."
-        backTo="/beneficios"
+        backTo={RUTAS.beneficios.lista}
         backLabel="Volver a beneficios"
       />
     );
@@ -110,7 +111,7 @@ const BenefitDetailPage = () => {
         <meta name="description" content={benefit.descripcion} />
         <link
           rel="canonical"
-          href={canonicalUrl(`/beneficios/${encodeURIComponent(canonicalSlug)}`)}
+          href={canonicalUrl(RUTAS.beneficios.detalle(canonicalSlug))}
         />
         {params.id && <meta name="robots" content="noindex, follow" />}
       </Helmet>
@@ -120,7 +121,7 @@ const BenefitDetailPage = () => {
           {/* Navegación Back */}
           <div className="mb-8">
             <Link
-                to="/beneficios"
+                to={RUTAS.beneficios.lista}
                 className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-action transition-colors group"
             >
                 <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -178,7 +179,7 @@ const BenefitDetailPage = () => {
                                 <div>
                                     <span className="text-xs text-gray-500 block uppercase tracking-wide font-bold">Ofrecido por</span>
                                     <Link
-                                        to={`/partners/${partner.slug}`}
+                                        to={RUTAS.alianzas.detalle(partner.slug)}
                                         className="font-bold text-brand-primary hover:underline inline-flex items-center"
                                     >
                                         {partner.nombre} <ArrowRight className="h-3 w-3 ml-1" />
@@ -246,7 +247,7 @@ const BenefitDetailPage = () => {
                                     Este beneficio es para quienes sostienen la Fundación. Se accede con
                                     la cuota social al día o con una donación desde el valor de una cuota.
                                 </p>
-                                <Link to="/collaborate" className="block">
+                                <Link to={RUTAS.colaborar} className="block">
                                     <Button variant="action" className="w-full">
                                         Quiero acceder
                                     </Button>
@@ -254,7 +255,7 @@ const BenefitDetailPage = () => {
                                 {!user && (
                                     <p className="text-xs text-white/60 mt-3 text-center">
                                         ¿Ya aportás?{' '}
-                                        <Link to="/login" className="underline underline-offset-2 text-brand-gold">
+                                        <Link to={RUTAS.auth.ingresar} className="underline underline-offset-2 text-brand-gold">
                                             Iniciá sesión
                                         </Link>
                                     </p>
@@ -306,7 +307,7 @@ const BenefitDetailPage = () => {
                                 >
                                     {/* Sin acceso se lo manda a aportar; con acceso, al
                                         mostrador. Nunca a un callejón sin salida. */}
-                                    <Link to={accion.cta.href ?? "/club"}>{accion.cta.texto}</Link>
+                                    <Link to={accion.cta.href ?? RUTAS.comunidad.mostrador}>{accion.cta.texto}</Link>
                                 </Button>
                             )}
                         </div>
@@ -374,7 +375,7 @@ const BenefitDetailPage = () => {
                     </div>
 
                     {partner?.slug && (
-                        <Link to={`/partners/${partner.slug}`} className="block mt-6">
+                        <Link to={RUTAS.alianzas.detalle(partner.slug)} className="block mt-6">
                             <Button className="w-full bg-brand-dark hover:bg-brand-primary text-white font-bold">
                                 Ver perfil del aliado
                             </Button>

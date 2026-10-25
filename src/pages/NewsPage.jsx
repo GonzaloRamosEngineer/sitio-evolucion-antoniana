@@ -7,6 +7,8 @@ import { Calendar, ArrowRight, Newspaper, Loader2, AlertTriangle } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useNews } from '@/hooks/useContentQueries';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const NewsPage = () => {
   // Antes: useState(news/loading/error) + useEffect + fetchData manual.
@@ -21,7 +23,7 @@ const NewsPage = () => {
           name="description"
           content="Mantenete al día con las últimas noticias y actividades de la Fundación."
         />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/novedades" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.novedades.lista)} />
       </Helmet>
 
       {/* ============ HERO ============ */}
@@ -83,7 +85,7 @@ const NewsPage = () => {
                   >
                     {/* Imagen Card */}
                     <Link
-                      to={`/novedades/${slugOrId}`}
+                      to={RUTAS.novedades.detalle(slugOrId)}
                       className="block h-56 overflow-hidden relative"
                     >
                       {newsItem.image_url ? (
@@ -113,7 +115,7 @@ const NewsPage = () => {
                       </div>
                       
                       <h3 className="text-xl font-bold font-poppins text-brand-dark mb-3 leading-tight group-hover:text-brand-action transition-colors">
-                        <Link to={`/novedades/${slugOrId}`}>
+                        <Link to={RUTAS.novedades.detalle(slugOrId)}>
                           {newsItem.title}
                         </Link>
                       </h3>
@@ -123,7 +125,7 @@ const NewsPage = () => {
                       </p>
                       
                       <Link
-                        to={`/novedades/${slugOrId}`}
+                        to={RUTAS.novedades.detalle(slugOrId)}
                         className="mt-auto self-start text-sm font-bold text-brand-action hover:text-brand-primary transition-colors flex items-center gap-2 group/link"
                       >
                         Leer noticia completa 

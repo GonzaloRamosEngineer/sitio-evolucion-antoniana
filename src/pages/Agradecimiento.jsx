@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, PartyPopper, Gift, Home as HomeIcon, XCircle, Clock, HeartHandshake } from 'lucide-react';
 import ReactConfetti from 'react-confetti';
+import { RUTAS } from '@/config/rutas';
 
 const Agradecimiento = () => {
   const location = useLocation();
@@ -163,7 +164,7 @@ const Agradecimiento = () => {
                     size="lg" 
                     className="w-full sm:w-auto bg-brand-primary text-white hover:bg-brand-dark transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl h-12 px-8 font-semibold"
                   >
-                    <Link to="/">
+                    <Link to={RUTAS.inicio}>
                       <HomeIcon className="mr-2 h-5 w-5" />
                       Volver al Inicio
                     </Link>

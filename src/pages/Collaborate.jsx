@@ -13,6 +13,8 @@ import SelectorDestino from '@/components/Collaborate/SelectorDestino';
 import AvisoSesion from '@/components/Collaborate/AvisoSesion';
 import { Link } from 'react-router-dom';
 import { entidad } from '@/config/entidad';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 // ⬇️ usamos el microservicio en Render vía membershipApi
@@ -314,7 +316,7 @@ const Collaborate = () => {
       <Helmet>
         <title>Colaborá - Fundación Evolución Antoniana</title>
         <meta name="description" content="Sumate como voluntario, aliado o donante y ayudá a transformar realidades con la Fundación Evolución Antoniana." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/collaborate" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.colaborar)} />
       </Helmet>
 
       {/* Estilo para evitar el fondo amarillo del autofill de Chrome */}
@@ -404,7 +406,7 @@ const Collaborate = () => {
                           </p>
                           {option.id === 'subscription' && (
                             <p className="pl-6">
-                              Podés pausar o cancelar desde <Link to="/dashboard" className="font-semibold text-brand-primary underline underline-offset-2">Mi panel</Link> si aportás con tu cuenta. Si aportás sin cuenta, <Link to="/contact" className="font-semibold text-brand-primary underline underline-offset-2">escribinos</Link> para gestionarlo.
+                              Podés pausar o cancelar desde <Link to={RUTAS.mi.cuenta} className="font-semibold text-brand-primary underline underline-offset-2">Mi panel</Link> si aportás con tu cuenta. Si aportás sin cuenta, <Link to={RUTAS.contacto} className="font-semibold text-brand-primary underline underline-offset-2">escribinos</Link> para gestionarlo.
                             </p>
                           )}
                         </div>
@@ -510,7 +512,7 @@ const Collaborate = () => {
                 </p>
 
                 <Button variant="link" className="text-brand-action font-bold p-0 h-auto mt-2" asChild>
-                  <Link to="/contact">Avisar de una transferencia →</Link>
+                  <Link to={RUTAS.contacto}>Avisar de una transferencia →</Link>
                 </Button>
               </div>
             </details>
@@ -541,7 +543,7 @@ const Collaborate = () => {
                 </li>
               </ul>
               <div className="mt-6">
-                <Link to="/rendicion" className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-brand-action underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-action">
+                <Link to={RUTAS.transparencia.rendicion} className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-brand-action underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-action">
                   Mirá la rendición de cuentas
                   <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>

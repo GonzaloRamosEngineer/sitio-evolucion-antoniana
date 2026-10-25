@@ -22,6 +22,8 @@ import { ScrollText, FileX2, CheckCircle2, Info, ShieldCheck, ChevronDown } from
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { Button } from '@/components/ui/button';
 import { useDestinosActivos, useGastos } from '@/hooks/useContentQueries';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 import { balanceDestino } from '@/api/gastosApi';
 import { respaldoDe } from '@/lib/comprobantes';
 import { entidad, tituloPagina } from '@/config/entidad';
@@ -90,7 +92,7 @@ const Rendicion = () => {
           name="description"
           content={`En qué se usó cada aporte recibido por ${entidad.nombre}: lo recaudado, lo gastado y el respaldo de cada gasto.`}
         />
-        <link rel="canonical" href={`${entidad.sitio}/rendicion`} />
+        <link rel="canonical" href={canonicalUrl(RUTAS.transparencia.rendicion)} />
       </Helmet>
 
       <div className="min-h-screen bg-brand-sand font-sans">
@@ -344,10 +346,10 @@ const Rendicion = () => {
 
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
                 <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto whitespace-normal text-left" asChild>
-                  <Link to="/legal-documents">Ver los estados contables →</Link>
+                  <Link to={RUTAS.transparencia.documentacion}>Ver los estados contables →</Link>
                 </Button>
                 <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto whitespace-normal text-left" asChild>
-                  <Link to="/contact">Pedir el detalle de un gasto →</Link>
+                  <Link to={RUTAS.contacto}>Pedir el detalle de un gasto →</Link>
                 </Button>
               </div>
             </div>
@@ -362,7 +364,7 @@ const Rendicion = () => {
                 se publican aparte.
               </p>
               <Button variant="link" className="text-brand-primary font-semibold p-0 min-h-[44px] h-auto mt-3" asChild>
-                <Link to="/legal-documents">Ver la documentación oficial →</Link>
+                <Link to={RUTAS.transparencia.documentacion}>Ver la documentación oficial →</Link>
               </Button>
             </div>
 

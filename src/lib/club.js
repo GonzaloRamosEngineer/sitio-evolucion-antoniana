@@ -7,6 +7,8 @@
 // el contador o interpreta un error a su manera, el mostrador y el teléfono del
 // socio terminan diciendo cosas distintas del mismo canje.
 
+import { RUTAS } from '@/config/rutas';
+
 /** Segundos que faltan para que venza. Nunca negativo. */
 export const segundosRestantes = (expiraEn, ahora = new Date()) => {
   if (!expiraEn) return 0;
@@ -392,7 +394,7 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
         : 'Iniciá sesión para canjearlo: el código se emite a tu nombre.',
       cta: haySesion
         ? { texto: 'Generar mi código', href: null }
-        : { texto: 'Iniciar sesión', href: '/login' },
+        : { texto: 'Iniciar sesión', href: RUTAS.auth.ingresar },
     };
   }
 
@@ -401,7 +403,7 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
       estado: 'sin_sesion',
       puedeCanjear: false,
       mensaje: 'Este beneficio requiere un aporte vigente.',
-      cta: { texto: 'Ingresar o asociarme', href: '/login' },
+      cta: { texto: 'Ingresar o asociarme', href: RUTAS.auth.ingresar },
     };
   }
 
@@ -412,12 +414,9 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
       // Se dice qué falta y no "no tenés permiso": el que mira esto ya tiene
       // cuenta, así que está a un aporte de distancia y conviene que lo sepa.
       mensaje: 'Te falta un aporte vigente para canjear este beneficio.',
-      // ⚠️ '/collaborate', en inglés. NO '/colaborar': esa ruta no existe y
-      // renderiza el 404 — que mide 25.865 bytes y tiene <nav> y <footer>, así
-      // que no se ve roto. Es literalmente la trampa que documenta §11.4, y
-      // este archivo cayó en ella el 2026-09-02. Hay un test que ahora cruza
-      // cada href de acá contra las rutas reales de App.jsx.
-      cta: { texto: 'Quiero aportar', href: '/collaborate' },
+      // La ruta actual sigue en inglés hasta la etapa de redirects. Referenciar
+      // el registro evita traducir solo este CTA y terminar en el catch-all.
+      cta: { texto: 'Quiero aportar', href: RUTAS.colaborar },
     };
   }
 
@@ -432,7 +431,7 @@ export const accionVidriera = ({ beneficio, acceso, haySesion, elegibilidad } = 
       // Se dice el número exacto y no "no cumplís": alguien a un mes de
       // distancia se queda; alguien a quien le dicen "no podés", se va.
       mensaje: mensajeRequisitos(beneficio, elegibilidad),
-      cta: { texto: 'Ver mi carnet', href: '/carnet' },
+      cta: { texto: 'Ver mi carnet', href: RUTAS.mi.carnet },
       falta,
     };
   }

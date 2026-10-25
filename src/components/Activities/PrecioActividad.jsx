@@ -4,6 +4,7 @@ import { Ticket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMiPrecioActividad } from '@/hooks/useContentQueries';
 import { figura } from '@/lib/miembro';
+import { RUTAS } from '@/config/rutas';
 
 const pesos = (n) => `$${Number(n || 0).toLocaleString('es-AR')}`;
 
@@ -62,7 +63,7 @@ const PrecioActividad = ({ activityId, className = '' }) => {
             <p className="mt-3 text-sm text-brand-dark/60 leading-relaxed">
               Siendo {figura()} podés tener un precio menor.{' '}
               <Link
-                to="/collaborate"
+                to={RUTAS.colaborar}
                 className="font-bold text-brand-primary underline underline-offset-4"
               >
                 Ver cómo sumarte

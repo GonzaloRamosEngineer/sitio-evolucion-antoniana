@@ -22,6 +22,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { RUTAS } from '@/config/rutas';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -134,7 +135,7 @@ const PostularComercioPage = () => {
             entidad, porque ahí se generan casi todos los conflictos de
             mostrador. Conviene decirlo desde el primer contacto. */}
         <Button asChild variant="outline" className="mt-8">
-          <Link to="/beneficios">Ver los beneficios de la comunidad</Link>
+          <Link to={RUTAS.beneficios.lista}>Ver los beneficios de la comunidad</Link>
         </Button>
       </div>
     );
@@ -152,7 +153,7 @@ const PostularComercioPage = () => {
           name="description"
           content="Ofrecé un beneficio a quienes sostienen la fundación y llegá a nuevos clientes."
         />
-        <link rel="canonical" href={canonicalUrl('/club/postular')} />
+        <link rel="canonical" href={canonicalUrl(RUTAS.comunidad.postularComercio)} />
       </Helmet>
 
       <Eyebrow>{entidad.comunidadEvolucion.nombre}</Eyebrow>

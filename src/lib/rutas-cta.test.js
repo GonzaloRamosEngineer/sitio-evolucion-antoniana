@@ -8,23 +8,16 @@
 // de navegador apuntó a la misma ruta inexistente — y se repitió igual, porque
 // hasta hoy la única defensa era acordarse.
 //
-// LA DEFENSA REAL es esta: leer las rutas de `App.jsx` y cruzarlas contra cada
+// LA DEFENSA REAL es esta: leer el registro central y cruzarlo contra cada
 // `href` que las reglas de presentación pueden emitir. Si alguien agrega un CTA
 // a una ruta que no existe, o renombra una ruta y deja el CTA viejo, este test
 // falla antes del deploy.
 import { describe, it, expect } from 'vitest';
-import fs from 'node:fs';
-import path from 'node:path';
 import { accionVidriera } from '@/lib/club';
-import { extractAppRoutes } from '../../tools/route-audit-lib.mjs';
+import { ROUTE_PATHS, RUTAS } from '@/config/rutas';
 
-const RAIZ = process.cwd();
-
-/** Las rutas declaradas en App.jsx, que son la única fuente de verdad. */
-const rutasReales = () => {
-  const app = fs.readFileSync(path.join(RAIZ, 'src', 'App.jsx'), 'utf8');
-  return new Set(extractAppRoutes(app));
-};
+/** Los patrones del registro central, fuente única de verdad. */
+const rutasReales = () => new Set(Object.values(ROUTE_PATHS));
 
 /** Todos los hrefs que `accionVidriera` puede devolver, en todos sus estados. */
 const hrefsPosibles = () => {
@@ -49,7 +42,7 @@ const hrefsPosibles = () => {
 };
 
 describe('los CTA de la vidriera apuntan a rutas que existen', () => {
-  it('App.jsx se puede leer y declara rutas (si esto falla, el test de abajo miente)', () => {
+  it('el registro central declara rutas (si esto falla, el test de abajo miente)', () => {
     // Control POSITIVO. Sin esto, un `App.jsx` movido de lugar haría que
     // `rutasReales()` devuelva un Set vacío y el test de abajo pasaría por
     // vacuidad — el modo de falla de §11.4 metido en el propio test.
@@ -67,7 +60,7 @@ describe('los CTA de la vidriera apuntan a rutas que existen', () => {
   });
 
   // ---------------------------------------------------------------------
-  // §12.10.14 / §12.10.20 — los enlaces del club, cruzados contra App.jsx.
+  // §12.10.14 / §12.10.20 — los enlaces del club, cruzados contra el registro.
   //
   // Los dos hallazgos que motivan esto no los encontró ningún test: los
   // encontró NAVEGAR el sitio. `/club` existió como página huérfana —cero
@@ -81,43 +74,15 @@ describe('los CTA de la vidriera apuntan a rutas que existen', () => {
   // ---------------------------------------------------------------------
   it('las rutas del club que se enlazan entre sí existen todas', () => {
     const rutas = rutasReales();
-    const delClub = ['/club', '/club/postular', '/beneficios', '/comercio', '/carnet'];
+    const delClub = [
+      RUTAS.comunidad.mostrador,
+      RUTAS.comunidad.postularComercio,
+      RUTAS.beneficios.lista,
+      RUTAS.comunidad.panelComercio,
+      RUTAS.mi.carnet,
+    ];
     const inexistentes = delClub.filter((r) => !rutas.has(r));
     expect(inexistentes).toEqual([]);
-  });
-
-  it('cada `to="/..."` de las pantallas del club apunta a una ruta declarada', () => {
-    // Se leen los `to=` reales de los archivos, no una lista escrita a mano: un
-    // valor escrito a mano no puede detectar que el valor está mal — que es
-    // exactamente cómo el test de `/colaborar` pasaba en verde estando de
-    // acuerdo con el bug.
-    const rutas = rutasReales();
-    const archivos = [
-      'src/pages/club/ClubPage.jsx',
-      'src/pages/club/PostularComercioPage.jsx',
-      'src/pages/CarnetPage.jsx',
-      'src/pages/BenefitsPage.jsx',
-    ];
-
-    const encontrados = [];
-    for (const rel of archivos) {
-      const txt = fs.readFileSync(path.join(RAIZ, rel), 'utf8');
-      for (const m of txt.matchAll(/\sto=["'](\/[^"'{]*)["']/g)) {
-        encontrados.push({ rel, href: m[1] });
-      }
-    }
-
-    // Control POSITIVO: si los archivos se renombraran, esto sería 0 y el
-    // filtro de abajo pasaría por vacuidad.
-    expect(encontrados.length).toBeGreaterThan(3);
-
-    const rotos = encontrados.filter(({ href }) => {
-      // Las rutas con parámetro (`/beneficios/algo`) matchean por su padre
-      // declarado con `:slug`; acá solo se cruzan las estáticas.
-      const base = `/${href.split('/')[1] ?? ''}`;
-      return !rutas.has(href) && !rutas.has(`${base}/:slug`) && !rutas.has(base);
-    });
-    expect(rotos).toEqual([]);
   });
 
   it('control NEGATIVO: una ruta inventada se detecta como inexistente', () => {

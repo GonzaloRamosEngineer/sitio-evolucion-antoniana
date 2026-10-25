@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { ArrowLeft, Home } from 'lucide-react';
+import { RUTAS } from '@/config/rutas';
 
 const NotFound = () => (
   <>
@@ -25,13 +26,13 @@ const NotFound = () => (
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Button asChild className="rounded-sm">
-            <Link to="/">
+            <Link to={RUTAS.inicio}>
               <Home className="mr-2 h-4 w-4" aria-hidden="true" />
               Ir al inicio
             </Link>
           </Button>
           <Button asChild variant="outline" className="rounded-sm">
-            <Link to="/contact">
+            <Link to={RUTAS.contacto}>
               <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
               Contactanos
             </Link>

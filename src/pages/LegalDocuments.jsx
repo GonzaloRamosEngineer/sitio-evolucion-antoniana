@@ -11,6 +11,8 @@ import {
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const LegalDocuments = () => {
   const [documents, setDocuments] = useState([]);
@@ -75,7 +77,7 @@ const LegalDocuments = () => {
       <Helmet>
         <title>Documentación Oficial - Fundación Evolución Antoniana</title>
         <meta name="description" content="Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/legal-documents" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.transparencia.documentacion)} />
       </Helmet>
 
       <section className="relative overflow-hidden border-t-2 border-brand-gold bg-brand-primary text-white">
@@ -197,7 +199,7 @@ const LegalDocuments = () => {
               <Scale className="h-6 w-6 text-brand-primary" />
               <h2 className="mt-4 font-poppins text-xl font-bold text-brand-dark">Rendición de cuentas</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">Consultá los aportes recibidos, gastos registrados y sus comprobantes.</p>
-              <Link to="/rendicion" className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-brand-primary hover:underline">Ver la rendición <ArrowRight className="h-4 w-4" /></Link>
+              <Link to={RUTAS.transparencia.rendicion} className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-brand-primary hover:underline">Ver la rendición <ArrowRight className="h-4 w-4" /></Link>
             </div>
           </aside>
         </motion.div>

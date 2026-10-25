@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import PartnerLogo from '@/components/PartnerLogo';
 import { useApprovedPartners } from '@/hooks/useContentQueries';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const impactAreas = [
   {
@@ -82,7 +84,7 @@ const PartnerCard = ({ partner, className }) => (
         {partner.descripcion}
       </p>
       <Link
-        to={`/partners/${partner.slug || partner.id}`}
+        to={RUTAS.alianzas.detalle(partner.slug || partner.id)}
         className="mt-auto flex items-center justify-between rounded-md border border-gray-200 bg-brand-sand px-4 py-2.5 text-sm font-semibold text-brand-dark transition-colors hover:border-brand-primary hover:text-brand-primary"
       >
         Conocer vínculo
@@ -115,7 +117,7 @@ const PartnersPage = () => {
           name="description"
           content="Conocé a nuestras marcas aliadas y los beneficios que ofrecen"
         />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/partners" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.alianzas.lista)} />
       </Helmet>
 
       <section className="relative overflow-hidden border-t-2 border-brand-gold bg-brand-primary text-white">
@@ -133,7 +135,7 @@ const PartnersPage = () => {
             <p className="mb-8 max-w-[36rem] text-lg leading-relaxed text-white/75">
               Organizaciones líderes comprometidas con el desarrollo tecnológico y social de nuestra comunidad.
             </p>
-            <Link to="/postular-partner">
+            <Link to={RUTAS.alianzas.postularse}>
               <Button variant="action" size="lg">
                 <Plus className="mr-2 h-5 w-5" />
                 Sumar mi organización
@@ -164,7 +166,7 @@ const PartnersPage = () => {
               <p className="mb-6 text-xl font-medium text-gray-500">
                 Aún no hay marcas aliadas visibles. ¡Sé el primero en unirte a la evolución!
               </p>
-              <Link to="/postular-partner">
+              <Link to={RUTAS.alianzas.postularse}>
                 <Button variant="outline" className="border-brand-action font-bold text-brand-action hover:bg-brand-action hover:text-white">
                   Postularse ahora
                 </Button>

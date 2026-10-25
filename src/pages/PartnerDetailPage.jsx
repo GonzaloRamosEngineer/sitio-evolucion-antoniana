@@ -10,6 +10,7 @@ import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-stat
 import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
 import { cn, palabraMasLarga } from '@/lib/utils';
 import { canonicalUrl } from '@/lib/seo';
+import { RUTAS } from '@/config/rutas';
 
 const slugify = (s = '') =>
   s
@@ -59,7 +60,7 @@ const PartnerDetailPage = () => {
 
   React.useEffect(() => {
     if (partner?.slug && slug !== partner.slug) {
-      navigate(`/partners/${partner.slug}`, { replace: true });
+      navigate(RUTAS.alianzas.detalle(partner.slug), { replace: true });
     }
   }, [navigate, partner?.slug, slug]);
 
@@ -73,7 +74,7 @@ const PartnerDetailPage = () => {
         icon={Info}
         title="Alianza no encontrada"
         description="Es posible que el vínculo haya cambiado o que el enlace no sea correcto."
-        backTo="/partners"
+        backTo={RUTAS.alianzas.lista}
         backLabel="Volver al listado"
       />
     );
@@ -92,7 +93,7 @@ const PartnerDetailPage = () => {
         />
         <link
           rel="canonical"
-          href={canonicalUrl(`/partners/${encodeURIComponent(partner.slug || slug)}`)}
+          href={canonicalUrl(RUTAS.alianzas.detalle(partner.slug || slug))}
         />
       </Helmet>
 
@@ -100,7 +101,7 @@ const PartnerDetailPage = () => {
         {/* Back link */}
         <div className="mb-8">
           <Link
-            to="/partners"
+            to={RUTAS.alianzas.lista}
             className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-action transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -294,7 +295,7 @@ const PartnerDetailPage = () => {
                         <h3 className="font-bold font-poppins text-lg">¿Tu organización quiere sumarse?</h3>
                         <p className="text-white/75 text-sm">Sé parte de la red de impacto de Evolución Antoniana.</p>
                     </div>
-                    <Link to="/postular-partner">
+                    <Link to={RUTAS.alianzas.postularse}>
                          <Button className="bg-white text-brand-primary hover:bg-brand-sand font-bold whitespace-nowrap">
                             Postular mi empresa
                          </Button>

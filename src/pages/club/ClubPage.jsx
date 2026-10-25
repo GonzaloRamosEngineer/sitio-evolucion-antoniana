@@ -40,6 +40,7 @@ import { SIN_ACCESO } from '@/lib/acceso';
 import { agruparCodigo, etiquetaBeneficio } from '@/lib/club';
 import { getBeneficiosClub, getMisCanjes } from '@/api/clubApi';
 import { entidad, tituloPagina } from '@/config/entidad';
+import { RUTAS } from '@/config/rutas';
 
 const ClubPage = () => {
   const { user } = useAuth();
@@ -112,7 +113,7 @@ const ClubPage = () => {
       <p className="mt-2 max-w-2xl text-brand-dark/70">
         Generá el código cuando ya estés en la caja y el comercio lo confirma en el momento.
         {' '}
-        <Link to="/beneficios" className="font-semibold underline underline-offset-4">
+        <Link to={RUTAS.beneficios.lista} className="font-semibold underline underline-offset-4">
           Ver todos los beneficios
         </Link>
         .
@@ -129,7 +130,7 @@ const ClubPage = () => {
               : `Hay ${bloqueados} beneficios reservados para aportes vigentes.`}
           </p>
           <Button variant="action" asChild>
-            <Link to="/collaborate">Hacer mi aporte</Link>
+            <Link to={RUTAS.colaborar}>Hacer mi aporte</Link>
           </Button>
         </div>
       )}
@@ -141,7 +142,7 @@ const ClubPage = () => {
             Iniciá sesión para canjear: el código se emite a tu nombre.
           </p>
           <Button variant="action" asChild className="shrink-0">
-            <Link to="/login" state={{ from: { pathname: '/club' } }}>Iniciar sesión</Link>
+            <Link to={RUTAS.auth.ingresar} state={{ from: { pathname: RUTAS.comunidad.mostrador } }}>Iniciar sesión</Link>
           </Button>
         </div>
       )}

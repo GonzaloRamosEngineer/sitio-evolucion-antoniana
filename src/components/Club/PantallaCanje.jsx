@@ -23,6 +23,7 @@ import { CheckCircle2, Clock, Loader2, LogIn, QrCode, TriangleAlert } from 'luci
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { generarCanje } from '@/api/clubApi';
+import { RUTAS } from '@/config/rutas';
 import {
   agruparCodigo,
   estadoCanje,
@@ -133,7 +134,7 @@ const PantallaCanje = ({ beneficio, comercio, sucursalId = null, onCerrar }) => 
           {/* Sesión vencida: la salida es iniciar sesión, no reintentar. */}
           {errorCodigo === 'sesion' ? (
             <Button variant="action" asChild>
-              <Link to="/login" state={{ from: { pathname: '/club' } }}>
+              <Link to={RUTAS.auth.ingresar} state={{ from: { pathname: RUTAS.comunidad.mostrador } }}>
                 <LogIn aria-hidden="true" className="mr-2 h-4 w-4" />
                 Iniciar sesión
               </Link>

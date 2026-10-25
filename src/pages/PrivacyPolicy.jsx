@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Lock, Eye, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const PrivacyPolicy = () => {
   return (
@@ -14,7 +16,7 @@ const PrivacyPolicy = () => {
           name="description"
           content="Política de Privacidad de la Fundación Evolución Antoniana. Conocé cómo protegemos tus datos personales."
         />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/privacy" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.legal.privacidad)} />
       </Helmet>
 
       {/* --- HERO HEADER --- */}
@@ -110,7 +112,7 @@ const PrivacyPolicy = () => {
              <p className="text-sm text-gray-400 font-medium">
                 Última actualización: Octubre 2025
              </p>
-             <Link to="/">
+             <Link to={RUTAS.inicio}>
                 <Button variant="ghost" className="text-brand-primary hover:text-brand-dark hover:bg-brand-sand">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Volver al Inicio

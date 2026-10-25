@@ -21,6 +21,8 @@ import {
   useNews,
   useApprovedPartners,
 } from "@/hooks/useContentQueries";
+import { RUTAS } from "@/config/rutas";
+import { canonicalUrl } from "@/lib/seo";
 const stats = [
   { number: "305", suffix: "+", label: "Almas impactadas", desc: "Beneficiarios directos de nuestros programas." },
   { number: "7", suffix: "", label: "Proyectos activos", desc: "Iniciativas tecnológicas y sociales en curso." },
@@ -204,7 +206,7 @@ const Home = () => {
       <Helmet>
         <title>Fundación Evolución Antoniana | Educación, Deporte y Tecnología para Transformar Realidades</title>
         <meta name="description" content="Impulsamos oportunidades reales a través de la educación, el deporte, la inclusión y la tecnología, desarrollando proyectos que transforman realidades." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.inicio)} />
       </Helmet>
 
       {/* ============ HERO ============ */}
@@ -246,7 +248,7 @@ const Home = () => {
                   className="bg-white text-brand-dark font-semibold hover:bg-brand-sand shadow-none"
                   asChild
                 >
-                  <Link to="/collaborate">
+                  <Link to={RUTAS.colaborar}>
                     Sostener cada mes
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -257,7 +259,7 @@ const Home = () => {
                   className="border-white/40 text-white bg-transparent hover:bg-white/10 hover:text-white font-medium shadow-none"
                   asChild
                 >
-                  <Link to="/activities">Conocé nuestras actividades</Link>
+                  <Link to={RUTAS.actividades.lista}>Conocé nuestras actividades</Link>
                 </Button>
               </motion.div>
             </div>
@@ -294,7 +296,7 @@ const Home = () => {
                 {partners.map((partner) => (
                   <li key={partner.id}>
                     <Link
-                      to={`/partners/${partner.slug || partner.id}`}
+                      to={RUTAS.alianzas.detalle(partner.slug || partner.id)}
                       title={partner.nombre}
                       className="group flex h-14 items-center justify-center rounded-sm border border-white/10 bg-white/[0.04] px-1.5 transition-colors hover:bg-white/[0.09]"
                     >
@@ -428,7 +430,7 @@ const Home = () => {
                       {...inView({ transition: { duration: 0.6, delay: reduceMotion ? 0 : index * 0.08 } })}
                     >
                       <Link
-                        to={`/activities/${activity.slug || activity.id}`}
+                        to={RUTAS.actividades.detalle(activity.slug || activity.id)}
                         className="group block border border-brand-dark/10 rounded-sm overflow-hidden bg-white hover:border-brand-primary/40 transition-colors h-full"
                       >
                         <div className="relative aspect-[16/10] overflow-hidden bg-brand-primary">
@@ -507,7 +509,7 @@ const Home = () => {
                       {...inView({ transition: { duration: 0.6, delay: reduceMotion ? 0 : index * 0.08 } })}
                     >
                       <Link
-                        to={`/novedades/${item.slug || item.id}`}
+                        to={RUTAS.novedades.detalle(item.slug || item.id)}
                         className="group block border border-brand-dark/10 rounded-sm overflow-hidden bg-white hover:border-brand-primary/40 transition-colors h-full"
                       >
                         {item.image_url && (
@@ -556,14 +558,14 @@ const Home = () => {
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-2">
                   <Link
-                    to="/beneficios"
+                    to={RUTAS.beneficios.lista}
                     className="group inline-flex items-center gap-2 text-sm font-semibold text-brand-action hover:text-brand-dark transition-colors"
                   >
                     Ver beneficios
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                   <Link
-                    to="/postular-partner"
+                    to={RUTAS.alianzas.postularse}
                     className="group inline-flex items-center gap-2 text-sm font-semibold text-brand-primary hover:text-brand-dark transition-colors"
                   >
                     Sumá tu empresa
@@ -579,7 +581,7 @@ const Home = () => {
                 {partners.map((partner) => (
                   <li key={partner.id}>
                     <Link
-                      to={`/partners/${partner.slug || partner.id}`}
+                      to={RUTAS.alianzas.detalle(partner.slug || partner.id)}
                       className="group flex h-24 items-center justify-center px-4 opacity-70 transition-opacity hover:opacity-100"
                       title={partner.nombre}
                     >
@@ -620,7 +622,7 @@ const Home = () => {
                 className="h-12 px-8 bg-brand-gold text-brand-dark font-semibold hover:bg-brand-gold/90 shadow-none"
                 asChild
               >
-                <Link to="/collaborate">
+                <Link to={RUTAS.colaborar}>
                   <Heart className="mr-2 h-4 w-4" />
                   Quiero colaborar
                 </Link>

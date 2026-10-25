@@ -4,6 +4,7 @@ import { UserCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { esEmailPlausible } from '@/lib/aportante';
+import { RUTAS } from '@/config/rutas';
 
 /**
  * "Aportá con tu cuenta" — ROADMAP §10.18 punto 2.
@@ -60,7 +61,7 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
             <p className="text-sm leading-relaxed text-brand-dark/75">
               Vas a aportar como <span className="font-semibold text-brand-dark">{user.name || user.email}</span>.
               Tu aporte queda registrado a tu nombre y suma para{' '}
-              <Link to="/carnet" className="font-bold text-brand-primary underline underline-offset-4">
+              <Link to={RUTAS.mi.carnet} className="font-bold text-brand-primary underline underline-offset-4">
                 tu carnet
               </Link>
               .
@@ -147,11 +148,11 @@ const AvisoSesion = ({ user, email, onEmailChange }) => {
       )}
       <p className="mt-3 text-sm text-gray-600">
         ¿Ya tenés cuenta?{' '}
-        <Link to="/login" state={{ from: { pathname: '/collaborate' } }} className="font-semibold text-brand-primary underline underline-offset-4">
+        <Link to={RUTAS.auth.ingresar} state={{ from: { pathname: RUTAS.colaborar } }} className="font-semibold text-brand-primary underline underline-offset-4">
           Iniciá sesión
         </Link>
         {' · '}
-        <Link to="/register" className="font-semibold text-brand-primary underline underline-offset-4">
+        <Link to={RUTAS.auth.registrarse} className="font-semibold text-brand-primary underline underline-offset-4">
           Crear una cuenta
         </Link>
       </p>

@@ -1,7 +1,7 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
 **Estado:** ejecución por etapas; Etapas 0–2 completas y Etapa 3 en curso
-**Última actualización:** 2026-10-24
+**Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
 
@@ -12,13 +12,13 @@
 | 0. Estándar y mapa | Completa | Este documento |
 | 1. Línea base y red de seguridad | Completa | `docs/linea-base-rutas-etapa-1.md` |
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
-| 3. Registro central de rutas | En ejecución; primer incremento validado localmente | `docs/registro-central-rutas-etapa-3.md` |
+| 3. Registro central de rutas | En ejecución; segundo incremento validado localmente | `docs/registro-central-rutas-etapa-3.md` |
 | 4–9 | Pendientes | Se inician únicamente al cerrar el gate anterior |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
-la navegación global, los guards, el sitemap, las previews estáticas y las herramientas de
-auditoría ya consumen el registro común. Queda migrar por grupos los enlaces internos de las
-páginas y volver a ejecutar el gate antes de publicar este bloque.
+la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
+auditoría y toda la navegación pública ya consumen el registro común. Quedan los flujos de
+autenticación, área personal, comisión y administración antes de cerrar la etapa.
 
 ## 1. Objetivo
 

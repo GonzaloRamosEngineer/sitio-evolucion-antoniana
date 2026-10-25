@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import PrecioActividad from '@/components/Activities/PrecioActividad';
 import { canonicalUrl } from '@/lib/seo';
+import { RUTAS } from '@/config/rutas';
 
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -90,7 +91,7 @@ const ActivityDetailPage = () => {
 
   useEffect(() => {
     if (activity?.slug && id !== activity.slug) {
-      navigate(`/activities/${activity.slug}`, { replace: true });
+      navigate(RUTAS.actividades.detalle(activity.slug), { replace: true });
     }
   }, [activity?.slug, id, navigate]);
 
@@ -102,9 +103,9 @@ const ActivityDetailPage = () => {
         title: "Inicio de Sesión Requerido",
         description: "Debes iniciar sesión para inscribirte en esta actividad.",
         variant: "destructive",
-        action: <Button variant="outline" size="sm" onClick={() => navigate('/login', { state: { from: location } })}>Iniciar Sesión</Button>
+        action: <Button variant="outline" size="sm" onClick={() => navigate(RUTAS.auth.ingresar, { state: { from: location } })}>Iniciar Sesión</Button>
       });
-      navigate('/login', { state: { from: location } });
+      navigate(RUTAS.auth.ingresar, { state: { from: location } });
       return;
     }
 
@@ -180,7 +181,7 @@ const ActivityDetailPage = () => {
         <h2 className="text-3xl font-poppins text-brand-dark mb-3">No pudimos cargar la actividad</h2>
         <p className="text-gray-600 mb-8 max-w-md">{error}</p>
         <Button variant="outline" asChild>
-          <Link to="/activities">Volver a actividades</Link>
+          <Link to={RUTAS.actividades.lista}>Volver a actividades</Link>
         </Button>
       </div>
     );
@@ -193,7 +194,7 @@ const ActivityDetailPage = () => {
         <h2 className="text-3xl font-poppins text-brand-dark mb-3">Actividad no encontrada</h2>
         <p className="text-gray-600 mb-8 max-w-md">La actividad que buscás no existe o fue eliminada.</p>
         <Button variant="outline" asChild>
-          <Link to="/activities">Volver a actividades</Link>
+          <Link to={RUTAS.actividades.lista}>Volver a actividades</Link>
         </Button>
       </div>
     );
@@ -221,13 +222,13 @@ const ActivityDetailPage = () => {
         <meta name="description" content={descBody || activity?.description || 'Actividad de la Fundación Evolución Antoniana.'} />
         <link
           rel="canonical"
-          href={canonicalUrl(`/activities/${encodeURIComponent(activity.slug || activity.id)}`)}
+          href={canonicalUrl(RUTAS.actividades.detalle(activity.slug || activity.id))}
         />
       </Helmet>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <Link to="/activities" className="inline-flex items-center text-gray-500 hover:text-brand-primary transition-colors font-medium group">
+          <Link to={RUTAS.actividades.lista} className="inline-flex items-center text-gray-500 hover:text-brand-primary transition-colors font-medium group">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Volver al listado
           </Link>
