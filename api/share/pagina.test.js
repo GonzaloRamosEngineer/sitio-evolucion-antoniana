@@ -76,6 +76,10 @@ const RUTAS_DE_DETALLE = {
   '/beneficios/id/:id': '/api/share/benefits/slug',
 };
 
+// La acción con token vive bajo /actividades, pero nunca debe caer en el OG
+// dinámico de un contenido. Vercel admite regex por parámetro en rewrites.
+const REWRITE_DETALLE_ACTIVIDAD = '/actividades/:slug((?!confirmar-asistencia$)[^/]+)';
+
 /** Todas las rutas declaradas en App.jsx, tal cual están escritas. */
 const rutasDeApp = extractAppRoutes(APP_JSX);
 
@@ -149,10 +153,17 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
 
   it('cada ruta de detalle tiene su rewrite apuntando a la función de su recurso', () => {
     for (const [ruta, fn] of Object.entries(RUTAS_DE_DETALLE)) {
-      const rw = rewriteDe(ruta);
+      const source = ruta === '/actividades/:slug' ? REWRITE_DETALLE_ACTIVIDAD : ruta;
+      const rw = rewriteDe(source);
       expect(rw, `Falta el rewrite de bot para ${ruta}`).toBeDefined();
       expect(rw.destination.startsWith(fn)).toBe(true);
     }
+  });
+
+  it('el preview de detalle de actividad excluye la acción personal con token', () => {
+    expect(rewriteDe('/actividades/:slug')).toBeUndefined();
+    expect(rewriteDe(REWRITE_DETALLE_ACTIVIDAD)).toBeDefined();
+    expect(rewriteDe('/actividades/confirmar-asistencia')).toBeUndefined();
   });
 
   it('las rutas privadas no tienen rewrite de preview', () => {
@@ -165,9 +176,12 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
   });
 
   it('no hay rewrites de bot huérfanos', () => {
+    const fuentesDeDetalle = Object.keys(RUTAS_DE_DETALLE).map((ruta) =>
+      ruta === '/actividades/:slug' ? REWRITE_DETALLE_ACTIVIDAD : ruta
+    );
     const declaradas = new Set([
       ...Object.keys(PAGINAS),
-      ...Object.keys(RUTAS_DE_DETALLE),
+      ...fuentesDeDetalle,
     ]);
     const huerfanos = rewritesDeBot
       .map((r) => r.source)

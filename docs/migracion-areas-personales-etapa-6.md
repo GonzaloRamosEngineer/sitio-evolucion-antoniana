@@ -116,8 +116,9 @@ El gate del Bloque 6A queda cerrado. No se modificaron Supabase, RLS ni funcione
 - [x] aliases viejos de auth excluidos como retornos post-login;
 - [x] emisores y Edge Functions todavía sin cambios;
 - [x] allowlist nueva preparada localmente, sin `config push` remoto;
-- [x] suite completa: 61 archivos y 685 pruebas aprobadas;
+- [x] suite completa: 61 archivos y 686 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y auditoría de 62 rutas correctos;
+- [x] preview dinámico de actividades excluye explícitamente la acción personal con token;
 - [ ] deploy de Vercel completado;
 - [ ] seis rutas nuevas y seis redirects verificados en producción;
 - [ ] sitemap y previews verificados.

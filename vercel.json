@@ -60,7 +60,7 @@
       "destination": "/api/share/partners/slug?slug=:slug"
     },
     {
-      "source": "/actividades/:slug",
+      "source": "/actividades/:slug((?!confirmar-asistencia$)[^/]+)",
       "has": [
         {
           "type": "header",
