@@ -1,0 +1,19 @@
+import { describe, expect, it } from 'vitest';
+
+import { auditLanguage } from '../../tools/language-audit-lib.mjs';
+
+describe('línea base ejecutable de lenguaje', () => {
+  const report = auditLanguage();
+
+  it('no incorpora marca o dominio literal fuera de la deuda inventariada', () => {
+    expect(report.unexpectedBrandFiles).toEqual([]);
+  });
+
+  it('no amplía las páginas que conservan Partner(s) en la fuente', () => {
+    expect(report.unexpectedPartnerFiles).toEqual([]);
+  });
+
+  it('mantiene “Club de beneficios” fuera de todo runtime', () => {
+    expect(report.clubDeBeneficiosFiles).toEqual([]);
+  });
+});

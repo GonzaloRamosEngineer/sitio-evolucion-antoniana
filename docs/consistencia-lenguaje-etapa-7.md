@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloque 7A — inventario y criterio de migración completos
+**Estado:** Bloques 7A y 7B completos; Bloque 7C pendiente
 
 ## 1. Objetivo
 
@@ -25,12 +25,15 @@ Barrido sobre código ejecutable, excluyendo pruebas y archivos minificados:
 
 | Superficie | Archivos con marca o dominio literal | Tratamiento |
 |---|---:|---|
-| Frontend, fuera de `src/config/entidad.js` | 30 | migrar títulos, metadatos y copy visible |
+| Frontend, fuera de `src/config/entidad.js` | 31 | migrar títulos, metadatos y copy visible |
 | Endpoints Vercel de previews | 6 | darles configuración server-side compartida |
 | Edge Functions | 4 | separar remitente, dominio y nombre institucional |
 | `index.html` y estáticos públicos | 3 | generar o sincronizar desde configuración |
 | Páginas con `Partner(s)` en fuente | 7 | clasificar texto visible frente a identificador técnico |
 | Literal público “Club de beneficios” | 0 | mantener en cero |
+
+La auditoría consolidada registra 44 archivos runtime con marca o dominio literal: los 31 del
+frontend, 6 endpoints, 4 funciones y 3 estáticos.
 
 La existencia de `src/config/entidad.js` es una buena base, pero hoy no gobierna todas las
 superficies. En especial, Vercel API y Deno no deberían importar a ciegas un módulo pensado
@@ -73,10 +76,20 @@ contacto, sitio, marca y nombre del programa deben tener una fuente identificabl
 
 ### Bloque 7B — contrato y red de seguridad
 
-- definir el contrato mínimo de identidad y vocabulario compartido;
-- agregar una auditoría ejecutable que impida nuevas cadenas institucionales fuera de las
-  excepciones documentadas;
-- fijar pruebas para títulos, metadatos, previews y emails antes de cambiar consumidores.
+- [x] contrato v1 con 23 campos requeridos de identidad, programa, contacto y vocabulario;
+- [x] validación inmediata de URL, email, logo y campos obligatorios;
+- [x] prueba de configuración incompleta con mensajes accionables;
+- [x] línea base explícita de archivos con marca o dominio literal;
+- [x] línea base explícita de páginas con `Partner(s)` por clasificar;
+- [x] auditoría `npm run audit:language` incorporada;
+- [x] prueba que impide nueva deuda fuera de la línea base;
+- [x] “Club de beneficios” tratado como error sin excepciones;
+- [x] suite completa: 64 archivos y 694 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y auditoría de rutas correctos.
+
+La línea base es decreciente: una migración puede eliminar archivos de las listas sin fallar,
+pero cualquier archivo nuevo con deuda institucional rompe la auditoría. Después de cada bloque
+se recorta la allowlist para que la deuda eliminada no pueda reaparecer.
 
 ### Bloque 7C — frontend público
 

@@ -16,7 +16,7 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; Bloque 7A completo | `docs/consistencia-lenguaje-etapa-7.md` |
+| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A y 7B completos | `docs/consistencia-lenguaje-etapa-7.md` |
 | 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -559,6 +559,7 @@ La **Etapa 6** quedó completa: el emisor web se validó con una recuperación r
 Edge Functions se desplegaron individualmente y mantienen su frontera JWT. Los próximos usos
 reales actúan como canaries no bloqueantes y los aliases se conservan como rollback.
 
-La **Etapa 7 — Consistencia transversal de lenguaje** comenzó con el Bloque 7A. Su inventario,
-criterios y secuencia están en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento
-seguro es el Bloque 7B: contrato compartido y auditoría ejecutable antes de cambiar textos.
+La **Etapa 7 — Consistencia transversal de lenguaje** ya completó inventario, contrato v1 y
+auditoría ejecutable. Su evidencia está en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente
+incremento seguro es el Bloque 7C: migrar marca, SEO y vocabulario del frontend público con la
+red de seguridad ya activa.

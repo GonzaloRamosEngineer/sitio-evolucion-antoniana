@@ -24,6 +24,63 @@
 // tocarlo sin poder verificarlo. Es el próximo paso de esta refactorización.
 // =============================================================================
 
+export const CONTRATO_ENTIDAD_VERSION = 1;
+
+export const CAMPOS_ENTIDAD_REQUERIDOS = Object.freeze([
+  'nombre',
+  'nombreCorto',
+  'marcaLinea1',
+  'marcaLinea2',
+  'tipo',
+  'tipoDisplay',
+  'descripcionCorta',
+  'comunidadEvolucion.nombre',
+  'comunidadEvolucion.propuesta',
+  'comunidadEvolucion.descripcion',
+  'sitio',
+  'logo',
+  'ubicacion.display',
+  'contacto.email',
+  'contacto.telefono',
+  'contacto.telefonoE164',
+  'contacto.whatsappMensaje',
+  'vocabulario.aportante',
+  'vocabulario.aportantePlural',
+  'vocabulario.padrinable',
+  'vocabulario.padrinablePlural',
+  'vocabulario.apadrinar',
+  'vocabulario.cuotaSocial',
+]);
+
+const valorEn = (objeto, ruta) =>
+  ruta.split('.').reduce((valor, segmento) => valor?.[segmento], objeto);
+
+export const validarContratoEntidad = (configuracion) => {
+  const errores = CAMPOS_ENTIDAD_REQUERIDOS
+    .filter((ruta) => {
+      const valor = valorEn(configuracion, ruta);
+      return typeof valor !== 'string' || valor.trim() === '';
+    })
+    .map((ruta) => `Falta entidad.${ruta}`);
+
+  if (configuracion?.sitio) {
+    try {
+      const sitio = new URL(configuracion.sitio);
+      if (!['http:', 'https:'].includes(sitio.protocol)) errores.push('entidad.sitio debe ser HTTP(S)');
+    } catch {
+      errores.push('entidad.sitio debe ser una URL absoluta');
+    }
+  }
+  if (configuracion?.contacto?.email && !configuracion.contacto.email.includes('@')) {
+    errores.push('entidad.contacto.email no es válido');
+  }
+  if (configuracion?.logo && !configuracion.logo.startsWith('/')) {
+    errores.push('entidad.logo debe ser una ruta pública absoluta');
+  }
+
+  return errores;
+};
+
 export const entidad = {
   // --- Identidad -------------------------------------------------------------
   nombre: 'Fundación Evolución Antoniana',
@@ -174,6 +231,11 @@ export const entidad = {
     x: 'https://x.com/evoluantoniana',
   },
 };
+
+const erroresDeConfiguracion = validarContratoEntidad(entidad);
+if (erroresDeConfiguracion.length > 0) {
+  throw new Error(`Configuración de entidad inválida:\n${erroresDeConfiguracion.join('\n')}`);
+}
 
 // --- Derivados ---------------------------------------------------------------
 // Se calculan una sola vez acá para que ningún componente arme estas URLs a
