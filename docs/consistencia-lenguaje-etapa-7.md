@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A y 7B completos; Bloque 7C1 preparado para publicación
+**Estado:** Bloques 7A, 7B y 7C1 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -110,14 +110,22 @@ se recorta la allowlist para que la deuda eliminada no pueda reaparecer.
 - [x] auditoría refinada para medir frases públicas, sin confundir rutas, archivos ni código;
 - [x] deuda de marca o dominio reducida de 44 a 37 archivos;
 - [x] términos públicos `Partner(s)` y “Club de beneficios” en cero;
-- [x] suite completa: 64 archivos y 695 pruebas aprobadas;
+- [x] suite completa: 64 archivos y 696 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
-- [ ] deploy de Vercel y verificación de páginas y previews en producción.
+- [x] deploy de Vercel completado (`e3f32e0d`);
+- [x] portada, `/alianzas`, `/alianzas/postularse`, preview dinámico y ambas imágenes OG
+  responden 200 en producción;
+- [x] títulos, descripciones, canonicals y `og:site_name` verificados con User-Agent de
+  WhatsApp, sin `Partner(s)` visible.
 
 La cifra inicial de siete páginas con `Partner(s)` se obtuvo con una expresión deliberadamente
 amplia y también incluía identificadores o comentarios. Desde 7C1 la auditoría controla frases
 que podrían llegar a la interfaz y exige cero coincidencias. Esto permite conservar el dominio
 técnico estable sin ocultar deuda de comunicación pública.
+
+La verificación de producción detectó que el rewrite dinámico `/alianzas/:slug` capturaba la
+palabra reservada `postularse` antes que su preview estático. El patrón ahora la excluye de forma
+explícita y una prueba de regresión protege esa precedencia.
 
 El próximo incremento, 7C2, migrará la marca y el SEO literal que todavía queda en otras páginas
 del frontend público. Contacto, servidor, Edge Functions y estáticos se mantienen para los
