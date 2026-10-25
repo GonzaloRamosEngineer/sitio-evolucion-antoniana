@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase'; // Importar supabase para manejar el evento de recuperación
+import { RUTAS } from '@/config/rutas';
 
 const UpdatePasswordForm = () => {
   const [password, setPassword] = useState('');
@@ -80,7 +81,7 @@ const UpdatePasswordForm = () => {
         description: "El enlace para reestablecer contraseña es inválido o ha expirado. Por favor, solicita uno nuevo.",
         variant: "destructive"
       });
-      navigate('/request-password-reset', { replace: true });
+      navigate(RUTAS.auth.solicitarRecuperacion, { replace: true });
     }
   }, [tokenStatus, authHookLoading, navigate, toast]);
 
@@ -112,7 +113,7 @@ const UpdatePasswordForm = () => {
         description: "Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.",
         className: "bg-brand-primary/10 border-brand-primary text-brand-primary"
       });
-      navigate('/login', { replace: true });
+      navigate(RUTAS.auth.ingresar, { replace: true });
     } catch (error) {
       toast({
         title: "Error al Actualizar",
@@ -120,7 +121,7 @@ const UpdatePasswordForm = () => {
         variant: "destructive",
       });
       // Considerar redirigir a request-password-reset si el error es por token expirado
-      // navigate('/request-password-reset', { replace: true });
+      // navigate(RUTAS.auth.solicitarRecuperacion, { replace: true });
     } finally {
       setFormLoading(false);
     }

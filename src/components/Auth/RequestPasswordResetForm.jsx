@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { RUTAS } from '@/config/rutas';
 
 const RequestPasswordResetForm = () => {
   const [email, setEmail] = useState('');
@@ -94,7 +95,7 @@ const RequestPasswordResetForm = () => {
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8 text-center">
             <Link
-              to="/login"
+              to={RUTAS.auth.ingresar}
               className="text-sm font-medium text-brand-primary hover:underline inline-flex items-center"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />

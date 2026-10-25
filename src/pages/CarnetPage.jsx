@@ -15,6 +15,7 @@ import {
 import {
   SIN_MEMBRESIA, estadoMembresia, etiquetaEstado, fraseEstado, etiquetaNumero,
 } from '@/lib/miembro';
+import { RUTAS } from '@/config/rutas';
 
 /**
  * Presentación de cada estado. Vive en un objeto y no en cadenas de ternarios
@@ -109,7 +110,7 @@ const CarnetPage = () => {
       </section>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        <Link to="/dashboard" className="inline-flex items-center gap-2 min-h-[44px] mb-3 text-sm font-semibold text-brand-primary"><ArrowLeft aria-hidden="true" className="w-4 h-4" />Volver a mi panel</Link>
+        <Link to={RUTAS.mi.cuenta} className="inline-flex items-center gap-2 min-h-[44px] mb-3 text-sm font-semibold text-brand-primary"><ArrowLeft aria-hidden="true" className="w-4 h-4" />Volver a mi panel</Link>
         {accesoQuery.isError || membresiaQuery.isError ? (
           <div role="alert" className="rounded-2xl border border-amber-200 bg-white p-5 sm:p-6">
             <h2 className="text-xl font-bold text-brand-dark">No pudimos verificar tu carnet</h2>
@@ -176,7 +177,7 @@ const CarnetPage = () => {
               {estado !== 'vigente' && (
                 <div className="mt-4">
                   <Button variant="action" asChild className="w-full sm:w-auto min-h-[48px]">
-                    <Link to="/collaborate">
+                    <Link to={RUTAS.colaborar}>
                       {estado === 'sin_aportes' ? 'Quiero ser parte'
                         : estado === 'donante' ? 'Sumarme con la cuota mensual'
                         : 'Regularizar mi aporte'}
@@ -199,7 +200,7 @@ const CarnetPage = () => {
                   {etiquetaEstado(membresia)}
                 </h2>
                 <p className="mt-2 text-sm text-gray-600 leading-relaxed">{fraseEstado(membresia)}</p>
-                <Link to="/contact" className="inline-flex items-center min-h-[44px] mt-2 text-sm font-semibold text-brand-primary underline underline-offset-4">Consultar mi condición</Link>
+                <Link to={RUTAS.contacto} className="inline-flex items-center min-h-[44px] mt-2 text-sm font-semibold text-brand-primary underline underline-offset-4">Consultar mi condición</Link>
               </div>
             )}
 
@@ -353,7 +354,7 @@ const CarnetPage = () => {
                   </li>
                 ))}
               </ol>
-              <Button asChild className="mt-5 min-h-[48px] w-full rounded-xl"><Link to="/club">Canjear un beneficio<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
+              <Button asChild className="mt-5 min-h-[48px] w-full rounded-xl"><Link to={RUTAS.comunidad.mostrador}>Canjear un beneficio<ArrowRight aria-hidden="true" className="ml-2 h-4 w-4" /></Link></Button>
             </div>
           </motion.div>
         )}

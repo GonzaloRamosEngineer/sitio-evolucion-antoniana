@@ -60,6 +60,21 @@ La auditoría bajó de 90 a 39 destinos internos escritos como literales. Los re
 clasificados y concentrados en autenticación, área personal, comisión y administración; no
 quedaron literales de navegación en la superficie pública migrada.
 
+## Tercer incremento migrado
+
+Se centralizaron los flujos que dependen de sesión o retorno seguro:
+
+- registro, recuperación y actualización de contraseña;
+- confirmación de asistencia y su regreso al panel;
+- dashboard y enlaces a actividades registradas;
+- carnet, acceso a beneficios y contacto;
+- cabecera del área personal.
+
+La auditoría bajó de 39 a 18 destinos internos literales. Los restantes están limitados a
+comisión y administración. También se corrigió el control positivo de la auditoría: ya no
+exige conservar una cantidad mínima de literales, sino que demuestra con un destino sintético
+inválido que la detección de enlaces rotos continúa activa.
+
 ## Garantías
 
 - Cambiar un patrón en el manifiesto cambia el router que lo registra.
@@ -78,10 +93,10 @@ quedaron literales de navegación en la superficie pública migrada.
 - [x] adaptar herramientas y pruebas que leían literales de `App.jsx`;
 - [x] migrar CTAs y links internos de páginas públicas y de mayor tráfico;
 - [x] medir literales internos restantes y clasificarlos;
-- [ ] migrar autenticación y acciones con retorno protegido;
-- [ ] migrar área personal y componentes de dashboard;
+- [x] migrar autenticación y acciones con retorno protegido;
+- [x] migrar área personal y componentes de dashboard;
 - [ ] migrar comisión y administración;
-- [x] auditoría de rutas correcta: 38 rutas y 39 destinos estáticos verificados;
+- [x] auditoría de rutas correcta: 38 rutas y 18 destinos estáticos verificados;
 - [x] suite completa correcta: 58 archivos y 658 pruebas;
 - [x] lint sin errores (37 advertencias preexistentes);
 - [x] build de producción correcto.

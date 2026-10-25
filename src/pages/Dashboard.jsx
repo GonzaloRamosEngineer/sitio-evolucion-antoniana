@@ -26,6 +26,7 @@ import AccountHistory from '@/components/Dashboard/AccountHistory';
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
 import { ESTADOS_MEMBRESIA, describirEstado } from '@/lib/estadosPago';
+import { RUTAS } from '@/config/rutas';
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -84,7 +85,7 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate(RUTAS.inicio);
   };
 
   const formatDate = (dateString) => {
@@ -271,7 +272,7 @@ const Dashboard = () => {
             ) : (
                 <div className="text-center py-16 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
                 <Heart className="w-12 h-12 text-gray-100 mx-auto mb-4" />
-                <Button className="bg-brand-primary text-white font-black rounded-xl h-12 px-8" asChild><Link to="/collaborate">SER PADRINO</Link></Button>
+                <Button className="bg-brand-primary text-white font-black rounded-xl h-12 px-8" asChild><Link to={RUTAS.colaborar}>SER PADRINO</Link></Button>
                 </div>
             )}
             {userMemberships.some(m => ['cancelled', 'expired'].includes(m.status)) && <button type="button" aria-expanded={showClosedMemberships} onClick={() => setShowClosedMemberships(!showClosedMemberships)} className="min-h-[44px] w-full text-sm font-semibold text-brand-primary underline underline-offset-4">{showClosedMemberships ? 'Ocultar suscripciones finalizadas' : 'Ver suscripciones finalizadas'}</button>}
@@ -307,7 +308,7 @@ const Dashboard = () => {
                                       </Badge>
                                       <span className="text-[10px] font-bold text-gray-300 uppercase italic">ID: #{reg.id.slice(0,8)}</span>
                                   </div>
-                                  <Link to={`/activities/${reg.activity.slug || reg.activity.id}`}>
+                                  <Link to={RUTAS.actividades.detalle(reg.activity.slug || reg.activity.id)}>
                                       <h3 className="text-xl font-bold text-brand-dark leading-tight group-hover:text-brand-primary transition-colors pr-6">{reg.activity.title}</h3>
                                   </Link>
                                   <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-50">
@@ -335,7 +336,7 @@ const Dashboard = () => {
                         <p className="text-gray-600 text-sm">Encontrá tu próxima actividad y sumate.</p>
                     </div>
                     <Button className="h-14 px-10 bg-brand-dark hover:bg-brand-primary text-white font-black rounded-2xl shadow-xl transition-all" asChild>
-                        <Link to="/activities">Explorar actividades</Link>
+                        <Link to={RUTAS.actividades.lista}>Explorar actividades</Link>
                     </Button>
                 </div>
               )}

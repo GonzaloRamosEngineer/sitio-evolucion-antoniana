@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { motion } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import { logger } from '@/lib/logger';
+import { RUTAS } from '@/config/rutas';
 
 const ConfirmAttendancePage = () => {
   const [searchParams] = useSearchParams();
@@ -43,14 +44,14 @@ const ConfirmAttendancePage = () => {
         if (data?.message?.toLowerCase().includes('exitosamente')) {
           setStatus('success');
           setMessage(data.message);
-          setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
+          setTimeout(() => navigate(RUTAS.mi.cuenta, { replace: true }), 4000);
           return;
         }
 
         if (data?.message?.toLowerCase().includes('ya ha sido confirmada')) {
           setStatus('already_confirmed');
           setMessage(data.message);
-          setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
+          setTimeout(() => navigate(RUTAS.mi.cuenta, { replace: true }), 4000);
           return;
         }
 
@@ -66,7 +67,7 @@ const ConfirmAttendancePage = () => {
         // Fallback exitoso
         setStatus('success'); 
         setMessage(data?.message || 'Tu asistencia ha sido confirmada correctamente.');
-        setTimeout(() => navigate('/dashboard', { replace: true }), 4000);
+        setTimeout(() => navigate(RUTAS.mi.cuenta, { replace: true }), 4000);
 
       } catch (e) {
         logger.error('Excepción al confirmar:', e);
@@ -142,7 +143,7 @@ const ConfirmAttendancePage = () => {
                 asChild 
                 className="w-full bg-brand-primary text-white hover:bg-brand-dark font-bold rounded-xl h-12 shadow-lg hover:shadow-xl transition-all"
               >
-                <Link to="/dashboard" replace>Ir a Mi Panel</Link>
+                <Link to={RUTAS.mi.cuenta} replace>Ir a Mi Panel</Link>
               </Button>
             ) : (
                 status !== 'loading' && (
@@ -151,7 +152,7 @@ const ConfirmAttendancePage = () => {
                         variant="outline" 
                         className="w-full border-brand-primary text-brand-primary hover:bg-brand-sand font-bold rounded-xl h-12"
                     >
-                        <Link to="/">Volver al Inicio</Link>
+                        <Link to={RUTAS.inicio}>Volver al Inicio</Link>
                     </Button>
                 )
             )}

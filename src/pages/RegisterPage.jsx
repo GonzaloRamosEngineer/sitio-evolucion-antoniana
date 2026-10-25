@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { RUTAS } from '@/config/rutas';
 
 const registerSchema = z
   .object({
@@ -48,7 +49,7 @@ const RegisterPage = () => {
   });
 
   useEffect(() => {
-    if (user) { navigate('/dashboard', { replace: true }); }
+    if (user) { navigate(RUTAS.mi.cuenta, { replace: true }); }
   }, [user, navigate]);
 
   const onSubmit = async (data) => {
@@ -75,7 +76,7 @@ const RegisterPage = () => {
         description: 'Verificá tu email para activar la cuenta.',
         className: 'bg-brand-dark text-white border-none',
       });
-      navigate('/login');
+      navigate(RUTAS.auth.ingresar);
     } catch (error) {
       // Manejo inteligente del Rate Limit y otros errores
       let errorMsg = error.message || 'Error en el servidor.';
@@ -280,7 +281,7 @@ const RegisterPage = () => {
             <p className="text-sm text-gray-600">
               ¿Ya tenés una cuenta?{' '}
               <Link
-                to="/login"
+                to={RUTAS.auth.ingresar}
                 className="font-semibold text-brand-action hover:underline underline-offset-4"
               >
                 Iniciá sesión acá

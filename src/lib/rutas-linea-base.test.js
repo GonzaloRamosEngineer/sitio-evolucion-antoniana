@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   auditRoutes,
   CURRENT_ROUTE_BASELINE,
+  findBrokenStaticTargets,
   routePatternMatches,
 } from '../../tools/route-audit-lib.mjs';
 
 describe('línea base ejecutable de rutas', () => {
   const report = auditRoutes();
 
-  it('clasifica exactamente todas las rutas actuales de App.jsx', () => {
+  it('cruza exactamente las rutas del router con el registro central', () => {
     expect(report.appRoutes).toHaveLength(38);
     expect(report.missingFromBaseline).toEqual([]);
     expect(report.missingFromApp).toEqual([]);
@@ -28,9 +29,13 @@ describe('línea base ejecutable de rutas', () => {
   it('ningún destino interno estático apunta al catch-all', () => {
     // El catch-all se excluye deliberadamente del matcher: si contara como una
     // ruta válida, cualquier typo pasaría esta prueba y terminaría en el 404.
-    expect(report.staticTargets.length).toBeGreaterThan(20);
     expect(report.brokenTargets).toEqual([]);
     expect(routePatternMatches('*', '/ruta-inventada')).toBe(false);
+    expect(
+      findBrokenStaticTargets(report.appRoutes, [
+        { file: 'control.jsx', kind: 'to', target: '/ruta-inventada' },
+      ]),
+    ).toHaveLength(1);
   });
 
   it('el matcher entiende parámetros, query strings y el splat de admin', () => {

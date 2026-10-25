@@ -2,11 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROUTE_MANIFEST, ROUTE_PATHS } from '../src/config/rutas.js';
 
-/**
- * Línea base de Etapa 1. Es deliberadamente externa al runtime: todavía no es
- * el registro central de rutas de la Etapa 3. Su trabajo es detectar cambios
- * accidentales en App.jsx antes de iniciar la migración.
- */
+/** Registro central compartido por runtime, funciones, scripts y pruebas. */
 export const CURRENT_ROUTE_BASELINE = ROUTE_MANIFEST;
 
 export const extractAppRoutes = (source) =>

@@ -13,6 +13,7 @@ import {
   SIN_ACCESO, SIN_RESUMEN, etiquetaEstado, claseEstado, estadoAcceso, fuenteDelAcceso, formatearCuotas,
   formatearFecha,
 } from '@/lib/acceso';
+import { RUTAS } from '@/config/rutas';
 
 /*
   QUÉ CAMBIÓ ACÁ Y POR QUÉ (§10.23, 2026-09-02)
@@ -344,7 +345,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
             */}
             {esSocio ? (
               <Button asChild className="mt-6 min-h-[48px] w-full rounded-xl bg-brand-primary font-bold text-white hover:bg-brand-dark lg:w-auto lg:px-8">
-                <Link to="/carnet">
+                <Link to={RUTAS.mi.carnet}>
                   <IdCard aria-hidden="true" className="mr-2 h-4 w-4" />
                   Ver mi carnet
                 </Link>
@@ -358,7 +359,7 @@ const DashboardHeader = ({ user, onUpdateSuccess, memberships = [] }) => {
               </div>
             ) : (
               <Button asChild className="mt-6 min-h-[48px] w-full rounded-xl bg-brand-primary font-bold text-white hover:bg-brand-dark lg:w-auto lg:px-8">
-                <Link to="/collaborate">
+                <Link to={RUTAS.colaborar}>
                   <Star aria-hidden="true" className="mr-2 h-4 w-4 fill-brand-gold text-brand-gold" />
                   {esDonante ? 'Sumarme con la cuota mensual' : 'Activar membresía'}
                 </Link>
