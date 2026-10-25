@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-10-24
 **Última actualización:** 2026-10-25
-**Estado:** completa y validada localmente
+**Estado:** completa, publicada y verificada
 **Restricción:** no cambia ninguna URL pública
 
 ## Objetivo
@@ -133,3 +133,19 @@ Validado localmente nuevamente el 2026-10-25:
 
 Este gate cierra la Etapa 3. La publicación y la comprobación en producción deben hacerse como
 un paso separado antes de iniciar cambios visibles de URLs en la etapa siguiente.
+
+## Verificación en producción
+
+Publicación funcional: commit `3891a86a`, deploy de Vercel completado correctamente el
+2026-10-25.
+
+Comprobaciones sobre `https://www.evolucionantoniana.com`:
+
+- bundle publicado: `index-DmmpcBms.js`, coincidente con el build local validado;
+- `/`, `/activities`, `/beneficios`, `/partners` y `/login`: HTTP 200;
+- `/dashboard`, `/carnet`, `/comision` y `/admin`: HTTP 200 antes de aplicar los guards del cliente;
+- `/api/sitemap` y `/robots.txt`: HTTP 200;
+- sitemap generado con las rutas actuales y detalles dinámicos;
+- Vercel informó `Deployment has completed` para el commit de cierre.
+
+El gate local y el gate de producción quedan cerrados. La Etapa 4 está habilitada.

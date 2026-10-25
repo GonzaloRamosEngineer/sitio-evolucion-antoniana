@@ -12,8 +12,8 @@
 | 0. Estándar y mapa | Completa | Este documento |
 | 1. Línea base y red de seguridad | Completa | `docs/linea-base-rutas-etapa-1.md` |
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
-| 3. Registro central de rutas | Completa y validada localmente | `docs/registro-central-rutas-etapa-3.md` |
-| 4–9 | Pendientes | Etapa 4 habilitada después de publicar y verificar este cierre |
+| 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
+| 4–9 | Pendientes | Etapa 4 habilitada |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
