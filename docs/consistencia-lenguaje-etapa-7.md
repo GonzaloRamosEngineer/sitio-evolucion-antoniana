@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A, 7B y 7C1 completos; Bloque 7C2 preparado para publicación
+**Estado:** Bloques 7A–7C2 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -140,7 +140,11 @@ explícita y una prueba de regresión protege esa precedencia.
 - [x] términos públicos `Partner(s)` y “Club de beneficios” en cero;
 - [x] suite completa: 64 archivos y 696 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
-- [ ] deploy de Vercel y verificación de navegación, páginas y metadatos en producción.
+- [x] deploy de Vercel completado (`a71a77c1`);
+- [x] nueve rutas representativas responden 200 en producción;
+- [x] títulos configurados verificados en navegador real para Nosotros, Contacto, Privacidad,
+  Términos, Novedades, Documentación oficial y Preinscripción;
+- [x] teléfono y contenido institucional configurados verificados visualmente.
 
 Los 21 archivos restantes están delimitados: cinco endpoints de previews, tres estáticos, nueve
 pantallas de autenticación, áreas privadas o administración, y cuatro Edge Functions. El próximo
