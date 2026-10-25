@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloque 6A preparado; pendiente de publicación y verificación
+**Estado:** Bloque 6A completo, publicado y verificado; Bloque 6B pendiente
 
 ## 1. Estrategia de despliegue
 
@@ -79,8 +79,13 @@ funciones, probar enlaces reales y conservar aliases anteriores.
 - [x] RLS, tablas y Edge Functions sin cambios;
 - [x] suite completa: 61 archivos y 685 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y auditoría de 56 rutas correctos;
-- [ ] deploy de Vercel completado;
-- [ ] rutas nuevas y anteriores verificadas en producción.
+- [x] deploy de Vercel completado (`75d2347e`);
+- [x] cinco rutas nuevas responden y cinco aliases entregan un único 308;
+- [x] query string preservada por el redirect de cuenta;
+- [x] previews de `/mi/beneficios` y `/comercios/sumarse` usan su canonical nueva;
+- [x] sitemap incluye `/comercios/sumarse` y excluye los aliases.
+
+El gate del Bloque 6A queda cerrado. No se modificaron Supabase, RLS ni funciones desplegadas.
 
 ## 6. Rollback
 
