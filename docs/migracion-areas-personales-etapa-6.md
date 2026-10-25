@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloque 6A completo, publicado y verificado; Bloque 6B pendiente
+**Estado:** Bloque 6A completo; Bloque 6B1 preparado para publicación; Bloque 6B2 pendiente
 
 ## 1. Estrategia de despliegue
 
@@ -10,8 +10,10 @@ La etapa se divide para no mezclar rutas internas con callbacks emitidos por Sup
 
 1. **Bloque 6A — namespaces personales y de comercios.** No cambia proveedores, RLS,
    tablas ni Edge Functions.
-2. **Bloque 6B — autenticación y acciones con token.** Se coordina con la allowlist remota
-   de Supabase y con las funciones que emiten enlaces.
+2. **Bloque 6B1 — destinos de autenticación y acciones con token.** Publica primero las
+   rutas canónicas y sus aliases, sin cambiar ningún emisor externo.
+3. **Bloque 6B2 — proveedores y emisores.** Amplía la allowlist remota de Supabase y recién
+   después cambia y despliega las funciones que generan enlaces.
 
 Las funciones continúan generando temporalmente `/comercio`, `/update-password` y
 `/confirm-attendance`. Esos destinos siguen funcionando mediante un único 308; no se cambia
@@ -55,7 +57,26 @@ El operador de comercio no es un valor de `users.role`: su autoridad proviene de
 con el comercio. Una invitación sigue aterrizando inicialmente en el alias `/comercio`, que
 redirige a `/comercios/panel`; el Bloque 6B actualizará el emisor.
 
-## 4. Callbacks reservados para el Bloque 6B
+## 4. Mapa del Bloque 6B1
+
+| Ruta anterior | Ruta canónica | Condición preservada |
+|---|---|---|
+| `/login` | `/ingresar` | retorno post-login interno y validado |
+| `/register` | `/registrarse` | acceso anónimo |
+| `/request-password-reset` | `/recuperar-acceso` | acceso anónimo |
+| `/update-password` | `/actualizar-clave` | query/hash de recuperación |
+| `/confirm-attendance` | `/actividades/confirmar-asistencia` | token de asistencia |
+| `/agradecimiento` | `/aportes/gracias` | página final no indexable |
+
+Cada ruta anterior queda como alias con un único redirect permanente y fallback client-side.
+Las rutas de autenticación anteriores también se bloquean como posibles destinos post-login
+para impedir bucles desde marcadores o estados de navegación viejos.
+
+`supabase/config.toml` incorpora los destinos de `/actualizar-clave` para el dominio con y sin
+`www`, conservando los anteriores. Este archivo local **no se empuja en 6B1**: la CLI enlazada
+no ofrece una lectura o diff remoto previo y `config push` reemplaza la configuración completa.
+
+## 5. Emisores reservados para el Bloque 6B2
 
 | Flujo | Emisor actual | Alias todavía emitido |
 |---|---|---|
@@ -65,10 +86,10 @@ redirige a `/comercios/panel`; el Bloque 6B actualizará el emisor.
 | Invitación a comercio | `club-invitar-operador` | `/comercio` |
 | Confirmación de asistencia | `send-activity-confirmation` | `/confirm-attendance` |
 
-Orden del Bloque 6B: publicar destinos nuevos, ampliar allowlist, cambiar emisores, desplegar
-funciones, probar enlaces reales y conservar aliases anteriores.
+Orden del Bloque 6B2: verificar y ampliar la allowlist, cambiar emisores, desplegar funciones,
+probar enlaces reales y conservar aliases anteriores.
 
-## 5. Gate del Bloque 6A
+## 6. Gate del Bloque 6A
 
 - [x] cinco rutas canónicas declaradas en el registro central;
 - [x] cinco aliases con redirect permanente y fallback client-side;
@@ -87,7 +108,21 @@ funciones, probar enlaces reales y conservar aliases anteriores.
 
 El gate del Bloque 6A queda cerrado. No se modificaron Supabase, RLS ni funciones desplegadas.
 
-## 6. Rollback
+## 7. Gate del Bloque 6B1
+
+- [x] seis rutas canónicas declaradas en el registro central;
+- [x] seis aliases con redirect permanente y fallback client-side;
+- [x] query string y hash preservados por el mecanismo de compatibilidad;
+- [x] aliases viejos de auth excluidos como retornos post-login;
+- [x] emisores y Edge Functions todavía sin cambios;
+- [x] allowlist nueva preparada localmente, sin `config push` remoto;
+- [x] suite completa: 61 archivos y 685 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y auditoría de 62 rutas correctos;
+- [ ] deploy de Vercel completado;
+- [ ] seis rutas nuevas y seis redirects verificados en producción;
+- [ ] sitemap y previews verificados.
+
+## 8. Rollback
 
 Revertir los valores canónicos en `src/config/rutas.js` y conservar las rutas nuevas como
 aliases temporales. No hay rollback de base de datos porque este bloque no modifica datos,

@@ -10,6 +10,8 @@ site_url = "https://www.evolucionantoniana.com"
 additional_redirect_urls = [
   "https://www.evolucionantoniana.com/update-password",
   "https://evolucionantoniana.com/update-password",
+  "https://www.evolucionantoniana.com/actualizar-clave",
+  "https://evolucionantoniana.com/actualizar-clave",
 ]
 
 [auth.mfa]

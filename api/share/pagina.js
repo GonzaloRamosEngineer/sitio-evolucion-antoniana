@@ -63,7 +63,7 @@ const IMAGEN_POR_DEFECTO = "/img/og-image-1200x630.png";
  * en `pagina.test.js`): nada detrás de sesión —/mi/cuenta, /mi/carnet,
  * /comercios/panel,
  * /comision, /admin/*—, nada de auth y nada que sea el final de un flujo
- * personal —/agradecimiento, /confirm-attendance—. Esas rutas caen al OG
+ * personal —/aportes/gracias, /actividades/confirmar-asistencia—. Esas rutas caen al OG
  * institucional de `index.html`, que es exactamente lo que corresponde: no se
  * comparten, y si alguien las comparte no debe filtrar de qué se trata.
  *

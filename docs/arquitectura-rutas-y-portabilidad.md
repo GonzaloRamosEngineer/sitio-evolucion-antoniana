@@ -15,7 +15,7 @@
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
-| 6. Áreas personales, comercio y autenticación | En curso; Bloque 6A publicado y verificado | `docs/migracion-areas-personales-etapa-6.md` |
+| 6. Áreas personales, comercio y autenticación | En curso; 6A completo y 6B1 preparado | `docs/migracion-areas-personales-etapa-6.md` |
 | 7–9 | Pendientes | Requieren cerrar la Etapa 6 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -550,6 +550,8 @@ La Etapa 5 está publicada y verificada. El gate comprobó que:
 5. redirects, navegador, previews OG y sitemap usan las nuevas rutas dinámicas en español.
 
 La **Etapa 6 — Áreas personales, comercio y autenticación** está en curso. El Bloque 6A
-normalizó y verificó `/mi/*` y `/comercios/*` sin modificar callbacks externos; su evidencia
-está en `docs/migracion-areas-personales-etapa-6.md`. El siguiente incremento es el Bloque
-6B: auth y acciones con token, coordinado con la allowlist remota y las funciones emisoras.
+normalizó y verificó `/mi/*` y `/comercios/*` sin modificar callbacks externos. El Bloque 6B1
+publica los destinos en español y sus aliases antes de tocar proveedores. Su evidencia está en
+`docs/migracion-areas-personales-etapa-6.md`. El siguiente incremento seguro será el Bloque
+6B2: verificar la allowlist remota, actualizar emisores y probar enlaces reales de extremo a
+extremo.

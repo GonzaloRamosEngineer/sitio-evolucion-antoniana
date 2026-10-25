@@ -48,14 +48,14 @@ describe('UpdatePasswordForm', () => {
   });
 
   it('acepta el enlace PKCE actual de Supabase para poder elegir una contraseña', async () => {
-    mount('/update-password?code=codigo-de-recuperacion');
+    mount('/actualizar-clave?code=codigo-de-recuperacion');
 
     expect(await screen.findByRole('heading', { name: /Ingresá tu nueva contraseña/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Actualizar Contraseña/i })).toBeEnabled();
   });
 
   it('también habilita el formulario cuando Supabase confirma la recuperación', async () => {
-    mount('/update-password');
+    mount('/actualizar-clave');
     await act(async () => {
       onAuthStateChange('PASSWORD_RECOVERY', { user: { id: 'persona-1' } });
     });

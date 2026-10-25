@@ -68,6 +68,7 @@ describe('sitemap.xml dinámico', () => {
       '<loc>https://www.evolucionantoniana.com/beneficios/beneficio-ejemplo</loc>',
     );
     expect(res.body).not.toContain('/login');
+    expect(res.body).not.toContain('/ingresar');
     expect(res.body).not.toContain('/dashboard');
     expect(res.body).not.toContain('/mi/cuenta');
     expect(fetch).toHaveBeenCalledTimes(4);

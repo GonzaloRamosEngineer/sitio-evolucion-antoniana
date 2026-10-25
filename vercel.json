@@ -17,7 +17,13 @@
     { "source": "/club", "destination": "/mi/beneficios", "permanent": true },
     { "source": "/club/postular", "destination": "/comercios/sumarse", "permanent": true },
     { "source": "/comercio", "destination": "/comercios/panel", "permanent": true },
-    { "source": "/dashboard", "destination": "/mi/cuenta", "permanent": true }
+    { "source": "/dashboard", "destination": "/mi/cuenta", "permanent": true },
+    { "source": "/confirm-attendance", "destination": "/actividades/confirmar-asistencia", "permanent": true },
+    { "source": "/agradecimiento", "destination": "/aportes/gracias", "permanent": true },
+    { "source": "/login", "destination": "/ingresar", "permanent": true },
+    { "source": "/register", "destination": "/registrarse", "permanent": true },
+    { "source": "/request-password-reset", "destination": "/recuperar-acceso", "permanent": true },
+    { "source": "/update-password", "destination": "/actualizar-clave", "permanent": true }
   ],
   "rewrites": [
     {

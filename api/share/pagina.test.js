@@ -44,12 +44,12 @@ const INDEX_HTML = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
  */
 const RUTAS_SIN_PREVIEW = {
   '/': 'el OG institucional ya está en index.html, estático y correcto',
-  '/login': 'auth',
-  '/register': 'auth',
-  '/request-password-reset': 'auth',
-  '/update-password': 'auth, se llega con un token en la URL',
-  '/agradecimiento': 'final del flujo de aporte, ya declarada noindex',
-  '/confirm-attendance': 'link personal con token de asistencia',
+  '/ingresar': 'auth',
+  '/registrarse': 'auth',
+  '/recuperar-acceso': 'auth',
+  '/actualizar-clave': 'auth, se llega con un token en la URL',
+  '/aportes/gracias': 'final del flujo de aporte, ya declarada noindex',
+  '/actividades/confirmar-asistencia': 'link personal con token de asistencia',
   '/mi/cuenta': 'detrás de sesión',
   '/mi/carnet': 'detrás de sesión',
   '/comercios/panel': 'detrás de sesión (panel del comercio)',

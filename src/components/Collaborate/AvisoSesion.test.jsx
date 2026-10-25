@@ -29,11 +29,11 @@ describe('AvisoSesion — sin sesión', () => {
     expect(screen.getByRole('link', { name: /Crear una cuenta/i })).toBeInTheDocument();
   });
 
-  it('el link apunta a /login', () => {
+  it('el link apunta a /ingresar', () => {
     enRouter(<AvisoSesion {...props()} />);
     // El <Link> envuelve al botón; se busca el ancla más cercana.
     const enlace = screen.getByRole('link', { name: /Iniciá sesión/i });
-    expect(enlace).toHaveAttribute('href', '/login');
+    expect(enlace).toHaveAttribute('href', '/ingresar');
   });
 
   it('🔑 y lleva el `state.from` que hace volver a /collaborate', () => {
@@ -51,7 +51,7 @@ describe('AvisoSesion — sin sesión', () => {
       <MemoryRouter initialEntries={['/colaborar']}>
         <Routes>
           <Route path="/colaborar" element={<AvisoSesion {...props()} />} />
-          <Route path="/login" element={<MostrarState />} />
+          <Route path="/ingresar" element={<MostrarState />} />
         </Routes>
       </MemoryRouter>
     );

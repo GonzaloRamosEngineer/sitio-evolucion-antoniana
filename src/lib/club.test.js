@@ -391,7 +391,7 @@ describe('accionVidriera', () => {
     const a = accionVidriera({ beneficio: exclusivo, acceso: sinAcceso, haySesion: false });
     expect(a.estado).toBe('sin_sesion');
     expect(a.puedeCanjear).toBe(false);
-    expect(a.cta.href).toBe('/login');
+    expect(a.cta.href).toBe('/ingresar');
   });
 
   it('con sesión pero sin aporte: se le dice QUÉ falta y adónde ir', () => {

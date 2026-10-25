@@ -1,4 +1,4 @@
-import { RUTAS } from '@/config/rutas';
+import { ROUTE_PATHS, RUTAS } from '@/config/rutas';
 
 const hasControlCharacters = (value = '') =>
   [...value].some((character) => {
@@ -45,6 +45,12 @@ export const landingForRole = (role) =>
 export const postLoginDestination = (locationLike, role) => {
   const safeReturnTo = safeInternalReturnTo(locationLike);
   const pathname = safeReturnTo?.split(/[?#]/, 1)[0];
-  const authPaths = new Set(Object.values(RUTAS.auth));
+  const authPaths = new Set([
+    ...Object.values(RUTAS.auth),
+    ROUTE_PATHS.ALIAS_INGRESAR,
+    ROUTE_PATHS.ALIAS_REGISTRARSE,
+    ROUTE_PATHS.ALIAS_SOLICITAR_RECUPERACION,
+    ROUTE_PATHS.ALIAS_ACTUALIZAR_CLAVE,
+  ]);
   return safeReturnTo && !authPaths.has(pathname) ? safeReturnTo : landingForRole(role);
 };

@@ -146,6 +146,12 @@ const PageRoutes = () => {
         <Route path={ROUTE_PATHS.ALIAS_POSTULAR_COMERCIO} element={<LegacyRedirect to={ROUTE_PATHS.POSTULAR_COMERCIO} />} />
         <Route path={ROUTE_PATHS.ALIAS_COMERCIO} element={<LegacyRedirect to={ROUTE_PATHS.COMERCIO} />} />
         <Route path={ROUTE_PATHS.ALIAS_CUENTA} element={<LegacyRedirect to={ROUTE_PATHS.CUENTA} />} />
+        <Route path={ROUTE_PATHS.ALIAS_CONFIRMAR_ASISTENCIA} element={<LegacyRedirect to={ROUTE_PATHS.CONFIRMAR_ASISTENCIA} />} />
+        <Route path={ROUTE_PATHS.ALIAS_AGRADECIMIENTO} element={<LegacyRedirect to={ROUTE_PATHS.AGRADECIMIENTO} />} />
+        <Route path={ROUTE_PATHS.ALIAS_INGRESAR} element={<LegacyRedirect to={ROUTE_PATHS.INGRESAR} />} />
+        <Route path={ROUTE_PATHS.ALIAS_REGISTRARSE} element={<LegacyRedirect to={ROUTE_PATHS.REGISTRARSE} />} />
+        <Route path={ROUTE_PATHS.ALIAS_SOLICITAR_RECUPERACION} element={<LegacyRedirect to={ROUTE_PATHS.SOLICITAR_RECUPERACION} />} />
+        <Route path={ROUTE_PATHS.ALIAS_ACTUALIZAR_CLAVE} element={<LegacyRedirect to={ROUTE_PATHS.ACTUALIZAR_CLAVE} />} />
 
         {/* Áreas protegidas */}
 
