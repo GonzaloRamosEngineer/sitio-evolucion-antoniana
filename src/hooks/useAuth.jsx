@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 import { COLUMNAS_PERFIL } from '@/api/userApi';
+import { RUTAS } from '@/config/rutas';
 
 const AuthContext = createContext();
 
@@ -248,7 +249,7 @@ export const AuthProvider = ({ children }) => {
   const sendPasswordResetEmail = async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: `${window.location.origin}${RUTAS.auth.actualizarClave}`,
       });
       if (error) throw error;
     } catch (error) {

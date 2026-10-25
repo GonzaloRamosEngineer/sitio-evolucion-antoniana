@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B pendiente
+**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B1 preparado
 
 ## 1. Estrategia de despliegue
 
@@ -145,7 +145,21 @@ acciones quedaron separadas deliberadamente para los subbloques siguientes.
 El gate del Bloque 6B2A queda cerrado. El rollback consiste en volver a enviar únicamente el
 valor anterior de `uri_allow_list`; no se modificaron usuarios, sesiones, tablas, RLS ni emails.
 
-## 9. Rollback de rutas
+## 9. Gate del Bloque 6B2B1 — emisor web
+
+- [x] `sendPasswordResetEmail` usa la ruta central `RUTAS.auth.actualizarClave`;
+- [x] prueba automática verifica el `redirectTo` canónico completo;
+- [x] suite completa: 61 archivos y 687 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes) y build correcto;
+- [ ] deploy de Vercel completado;
+- [ ] recuperación real recibida y abierta en `/actualizar-clave`;
+- [x] Edge Functions todavía sin cambios.
+
+No se migrarán `create-user`, `resend-verification` ni los emisores de comercio y asistencia
+hasta validar el flujo web con un correo real. El alias `/update-password` permanece operativo
+como rollback inmediato.
+
+## 10. Rollback de rutas
 
 Revertir los valores canónicos en `src/config/rutas.js` y conservar las rutas nuevas como
 aliases temporales. No hay rollback de base de datos porque este bloque no modifica datos,

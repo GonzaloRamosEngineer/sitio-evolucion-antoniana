@@ -15,13 +15,16 @@
 // `onAuthStateChange` emite eventos que no cambian la identidad de nadie.
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import { AuthProvider, useAuth } from './useAuth';
 
 // El callback que la app le pasa a `supabase.auth.onAuthStateChange`, para poder
 // dispararle los eventos que emite Supabase de verdad.
 let emitir;
 const perfilesLeidos = vi.fn();
+const { resetPasswordForEmail } = vi.hoisted(() => ({
+  resetPasswordForEmail: vi.fn(),
+}));
 
 const SESION = { user: { id: 'u1', email: 'admin@x.com' } };
 
@@ -37,6 +40,7 @@ vi.mock('@/lib/supabase', () => ({
         emitir = cb;
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
+      resetPasswordForEmail,
     },
     from: () => ({
       select: () => ({
@@ -95,7 +99,36 @@ const montar = () =>
 beforeEach(() => {
   montajes = 0;
   perfilesLeidos.mockClear();
+  resetPasswordForEmail.mockReset();
+  resetPasswordForEmail.mockResolvedValue({ error: null });
   emitir = undefined;
+});
+
+const RecuperarClave = () => {
+  const { sendPasswordResetEmail } = useAuth();
+  return (
+    <button type="button" onClick={() => sendPasswordResetEmail('persona@example.com')}>
+      recuperar
+    </button>
+  );
+};
+
+describe('AuthProvider — enlaces emitidos', () => {
+  it('envía la recuperación a la ruta canónica admitida por Supabase', async () => {
+    render(
+      <AuthProvider>
+        <RecuperarClave />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'recuperar' }));
+
+    await waitFor(() => {
+      expect(resetPasswordForEmail).toHaveBeenCalledWith('persona@example.com', {
+        redirectTo: `${window.location.origin}/actualizar-clave`,
+      });
+    });
+  });
 });
 
 describe('AuthProvider — `loading` solo se mueve si cambia la identidad', () => {
