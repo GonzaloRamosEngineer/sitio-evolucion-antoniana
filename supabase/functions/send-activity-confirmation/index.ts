@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from './cors.ts';
+import { RUTAS_EXTERNAS, urlDelSitio } from '../_shared/rutas.ts';
 // Cambiamos el nombre de la variable para que sea coherente, 
 // pero en Supabase podés seguir usando la misma KEY o crear una nueva RESEND_API_KEY
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || Deno.env.get('SENDGRID_API_KEY');
@@ -52,7 +53,7 @@ Deno.serve(async (req)=>{
     });
   }
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const confirmationUrl = `${SITE_URL}/confirm-attendance?token=${confirmation_token}`;
+  const confirmationUrl = `${urlDelSitio(SITE_URL, RUTAS_EXTERNAS.CONFIRMAR_ASISTENCIA)}?token=${confirmation_token}`;
   const subject = `Confirma tu inscripción: ${activity_title}`;
   // Estructura de HTML mantenida
   const emailHtml = `

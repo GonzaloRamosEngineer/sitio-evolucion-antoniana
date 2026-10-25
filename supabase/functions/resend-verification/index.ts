@@ -19,6 +19,7 @@
 // =============================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { RUTAS_EXTERNAS, urlDelSitio } from "../_shared/rutas.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://www.evolucionantoniana.com";
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -80,7 +82,7 @@ Deno.serve(async (req) => {
 
     const { error: inviteErr } = await supabaseAdmin.auth.resetPasswordForEmail(
       targetUser.email,
-      { redirectTo: "https://www.evolucionantoniana.com/update-password" },
+      { redirectTo: urlDelSitio(SITE_URL, RUTAS_EXTERNAS.ACTUALIZAR_CLAVE) },
     );
 
     if (inviteErr) {

@@ -27,6 +27,7 @@
 // =============================================================================
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { ErrorHttp, contextoDesde, esComision } from "../_shared/club-db.ts";
+import { RUTAS_EXTERNAS, urlDelSitio } from "../_shared/rutas.ts";
 
 const ROLES = ["dueno", "cajero"];
 
@@ -102,7 +103,9 @@ Deno.serve(async (req) => {
     // Supabase valida igual el destino contra su lista de redirects permitidos,
     // así que un Origin falseado no manda a nadie a ningún lado nuevo.
     const origen = req.headers.get("Origin") ?? Deno.env.get("SITE_URL") ?? "";
-    const redirectTo = origen ? `${origen.replace(/\/+$/, "")}/comercio` : undefined;
+    const redirectTo = origen
+      ? urlDelSitio(origen, RUTAS_EXTERNAS.PANEL_COMERCIO)
+      : undefined;
 
     let userId = existente?.id ?? null;
     let actionLink: string | null = null;

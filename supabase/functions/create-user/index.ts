@@ -16,6 +16,7 @@
 // =============================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { RUTAS_EXTERNAS, urlDelSitio } from "../_shared/rutas.ts";
 
 const VALID_ROLES = [
   "admin",
@@ -38,6 +39,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://www.evolucionantoniana.com";
 
     // 2) Validar que viene un JWT de usuario
     const authHeader = req.headers.get("Authorization");
@@ -129,10 +131,10 @@ Deno.serve(async (req) => {
     }
 
     // 7) Enviar el email de activación usando el SMTP configurado en Supabase.
-    // El enlace abre /update-password, que ya maneja sesiones de recovery y
+    // El enlace abre /actualizar-clave, que ya maneja sesiones de recovery y
     // deja a la persona elegir su contraseña sin conocer ninguna clave previa.
     const { error: inviteErr } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://www.evolucionantoniana.com/update-password",
+      redirectTo: urlDelSitio(SITE_URL, RUTAS_EXTERNAS.ACTUALIZAR_CLAVE),
     });
 
     if (inviteErr) {

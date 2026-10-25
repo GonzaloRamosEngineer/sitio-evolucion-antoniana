@@ -15,7 +15,7 @@
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
-| 6. Áreas personales, comercio y autenticación | En curso; 6B2A completo y emisor web publicado | `docs/migracion-areas-personales-etapa-6.md` |
+| 6. Áreas personales, comercio y autenticación | En curso; emisor web validado y emisores servidor preparados | `docs/migracion-areas-personales-etapa-6.md` |
 | 7–9 | Pendientes | Requieren cerrar la Etapa 6 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -554,5 +554,6 @@ normalizó y verificó `/mi/*` y `/comercios/*` sin modificar callbacks externos
 ya publicó y verificó los destinos en español y sus aliases antes de tocar proveedores. El
 Bloque 6B2A amplió solamente la allowlist remota, conservando los destinos anteriores y sin
 alterar el resto de Auth. Su evidencia está en `docs/migracion-areas-personales-etapa-6.md`.
-El siguiente incremento seguro es el Bloque 6B2B: migrar primero el emisor web, validar una
-recuperación real y luego actualizar las Edge Functions de forma gradual.
+El emisor web ya fue validado con una recuperación real. El siguiente incremento seguro es
+desplegar individualmente las Edge Functions ya preparadas, verificar autorización y conservar
+los aliases como rollback.

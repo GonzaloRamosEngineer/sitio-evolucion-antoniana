@@ -12,6 +12,10 @@ additional_redirect_urls = [
   "https://evolucionantoniana.com/update-password",
   "https://www.evolucionantoniana.com/actualizar-clave",
   "https://evolucionantoniana.com/actualizar-clave",
+  "https://www.evolucionantoniana.com/comercio",
+  "https://evolucionantoniana.com/comercio",
+  "https://www.evolucionantoniana.com/comercios/panel",
+  "https://evolucionantoniana.com/comercios/panel",
 ]
 
 [auth.mfa]

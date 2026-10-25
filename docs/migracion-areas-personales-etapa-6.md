@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B1 publicado, pendiente de prueba real
+**Estado:** Bloques 6A–6B2B1 completos; Bloque 6B2B2 preparado para desplegar
 
 ## 1. Estrategia de despliegue
 
@@ -138,9 +138,11 @@ acciones quedaron separadas deliberadamente para los subbloques siguientes.
 - [x] PATCH limitado a `uri_allow_list`, sin ejecutar `supabase config push`;
 - [x] URLs con y sin `www` de `/actualizar-clave` agregadas;
 - [x] URLs anteriores de `/update-password` conservadas para compatibilidad;
-- [x] lectura posterior confirmó la allowlist exacta de cuatro destinos;
+- [x] lectura posterior confirmó los cuatro destinos de recuperación;
+- [x] antes de migrar comercios se agregaron también `/comercio` y `/comercios/panel`,
+  con y sin `www`, sin retirar destinos existentes;
 - [x] altas, confirmaciones, cambio seguro de email y MFA permanecieron sin cambios;
-- [x] frontend y Edge Functions todavía no modificados.
+- [x] al cerrar este gate, frontend y Edge Functions todavía no habían sido modificados.
 
 El gate del Bloque 6B2A queda cerrado. El rollback consiste en volver a enviar únicamente el
 valor anterior de `uri_allow_list`; no se modificaron usuarios, sesiones, tablas, RLS ni emails.
@@ -149,18 +151,30 @@ valor anterior de `uri_allow_list`; no se modificaron usuarios, sesiones, tablas
 
 - [x] `sendPasswordResetEmail` usa la ruta central `RUTAS.auth.actualizarClave`;
 - [x] prueba automática verifica el `redirectTo` canónico completo;
-- [x] suite completa: 61 archivos y 687 pruebas aprobadas;
+- [x] suite completa de ese incremento: 61 archivos y 687 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes) y build correcto;
 - [x] deploy de Vercel completado (`07f5eb3e`);
 - [x] `/recuperar-acceso` responde y el bundle publicado contiene `/actualizar-clave`;
-- [ ] recuperación real recibida y abierta en `/actualizar-clave`;
+- [x] recuperación real recibida, abierta en `/actualizar-clave` y contraseña actualizada;
 - [x] Edge Functions todavía sin cambios.
 
-No se migrarán `create-user`, `resend-verification` ni los emisores de comercio y asistencia
-hasta validar el flujo web con un correo real. El alias `/update-password` permanece operativo
-como rollback inmediato.
+La prueba real habilita la migración de las funciones. El alias `/update-password` permanece
+operativo como rollback inmediato.
 
-## 10. Rollback de rutas
+## 10. Gate del Bloque 6B2B2 — emisores de servidor
+
+- [x] mapa compartido `supabase/functions/_shared/rutas.ts` creado;
+- [x] `create-user` y `resend-verification` apuntan a `/actualizar-clave`;
+- [x] `club-invitar-operador` apunta a `/comercios/panel`;
+- [x] `send-activity-confirmation` apunta a `/actividades/confirmar-asistencia`;
+- [x] `SITE_URL` gobierna los enlaces de recuperación, con fallback productivo actual;
+- [x] prueba contractual impide reintroducir literales heredados;
+- [x] suite completa: 62 archivos y 689 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y auditoría correctos;
+- [ ] commit y despliegue individual de las cuatro Edge Functions;
+- [ ] smoke tests de autorización y disponibilidad en producción.
+
+## 11. Rollback de rutas
 
 Revertir los valores canónicos en `src/config/rutas.js` y conservar las rutas nuevas como
 aliases temporales. No hay rollback de base de datos porque este bloque no modifica datos,
