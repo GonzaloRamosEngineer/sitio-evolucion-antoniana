@@ -22,6 +22,9 @@ describe('registro central de rutas', () => {
 
   it('centraliza query strings sin interpolación manual', () => {
     expect(RUTAS.comision.documentos).toBe('/comision?tab=documents');
+    expect(RUTAS.comision.tab('projects')).toBe('/comision?tab=projects');
+    expect(RUTAS.admin.actividades).toBe('/admin?tab=activities');
+    expect(RUTAS.admin.tab('legal_documents')).toBe('/admin?tab=legal_documents');
     expect(withQuery(RUTAS.comision.inicio, { tab: 'projects', filtro: 'en curso' })).toBe(
       '/comision?tab=projects&filtro=en+curso',
     );

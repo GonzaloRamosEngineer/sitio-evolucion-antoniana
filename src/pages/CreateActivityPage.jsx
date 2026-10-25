@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { RUTAS } from '@/config/rutas';
 
 const CreateActivityPage = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const CreateActivityPage = () => {
         description: `La actividad "${activityData.title}" está lista y publicada.`,
         className: "bg-green-600 text-white border-none",
       });
-      navigate('/admin?tab=activities');
+      navigate(RUTAS.admin.actividades);
     } catch (error) {
       toast({
         title: "Error al Crear",
@@ -50,7 +51,7 @@ const CreateActivityPage = () => {
         <div className="mb-8 flex items-center justify-between">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/admin?tab=activities')} 
+            onClick={() => navigate(RUTAS.admin.actividades)}
             className="text-gray-500 hover:text-brand-primary hover:bg-white/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -79,7 +80,7 @@ const CreateActivityPage = () => {
           <CardContent className="p-8">
             <ActivityForm 
               onSave={handleSave} 
-              onCancel={() => navigate('/admin?tab=activities')} 
+              onCancel={() => navigate(RUTAS.admin.actividades)}
               isLoading={loading}
             />
           </CardContent>

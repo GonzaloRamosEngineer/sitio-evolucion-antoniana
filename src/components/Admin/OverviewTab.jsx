@@ -9,6 +9,7 @@ import {
   Plus, Clock, ArrowRight, AlertTriangle, RefreshCw, Newspaper,
 } from 'lucide-react';
 import EmptyState from '@/components/Admin/shared/EmptyState';
+import { RUTAS } from '@/config/rutas';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Fecha no disponible';
@@ -166,7 +167,7 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
                 {recentActivities.map((activity) => (
                   <Link
                     key={activity.id}
-                    to={`/admin/activities/edit/${activity.id}`}
+                    to={RUTAS.admin.actividadEditar(activity.id)}
                     className="p-4 hover:bg-brand-sand/50 transition-colors flex items-center justify-between group"
                   >
                     <div className="min-w-0">
@@ -194,7 +195,7 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
                 icon={Calendar}
                 title="No hay actividades recientes"
                 action={
-                  <Link to="/admin/activities/new">
+                  <Link to={RUTAS.admin.actividadNueva}>
                     <Button variant="outline" size="sm" className="gap-2 text-brand-primary border-brand-primary/30">
                       <Plus className="w-4 h-4" /> Crear actividad
                     </Button>
@@ -213,7 +214,7 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 pt-0 space-y-2">
-            <Link to="/admin/activities/new" className="block">
+            <Link to={RUTAS.admin.actividadNueva} className="block">
               <Button variant="action" className="w-full justify-start gap-2 font-semibold">
                 <Plus className="w-4 h-4" /> Nueva actividad
               </Button>

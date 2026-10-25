@@ -28,6 +28,7 @@ import ClubAdmin from '@/components/Club/ClubAdmin';
 import AportesAdmin from '@/components/Admin/AportesAdmin';
 import GastosAdmin from '@/components/Admin/GastosAdmin';
 import { entidad } from '@/config/entidad';
+import { RUTAS } from '@/config/rutas';
 
 const AdminPanel = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -39,11 +40,11 @@ const AdminPanel = () => {
   useEffect(() => {
     if (!authLoading) {
       if (!isAdmin && user?.role === 'educacion_manager') {
-        navigate('/admin/education');
+        navigate(RUTAS.admin.educacion);
       } else if (!isAdmin && user?.role === 'comision_directiva') {
-        navigate('/comision');
+        navigate(RUTAS.comision.inicio);
       } else if (!isAdmin) {
-        navigate('/');
+        navigate(RUTAS.inicio);
       }
     }
   }, [isAdmin, user, authLoading, navigate]);
@@ -59,7 +60,7 @@ const AdminPanel = () => {
 
   const handleTabChange = (newTab) => {
     setActiveTab(newTab);
-    navigate(`/admin?tab=${newTab}`, { replace: true });
+    navigate(RUTAS.admin.tab(newTab), { replace: true });
     // Las métricas del resumen se refrescan al volver, para reflejar cambios hechos en otras secciones.
     if (newTab === 'overview') refresh();
   };
@@ -120,7 +121,7 @@ const AdminPanel = () => {
   const renderSection = () => {
     switch (activeTab) {
       case 'activities':
-        return <ActivityList onAddRequest={() => navigate('/admin/activities/new')} />;
+        return <ActivityList onAddRequest={() => navigate(RUTAS.admin.actividadNueva)} />;
       case 'pending':
         return <PendingConfirmationsList />;
       case 'users':
@@ -204,7 +205,7 @@ const AdminPanel = () => {
               </p>
             </div>
           </div>
-          <Link to="/" className="shrink-0">
+          <Link to={RUTAS.inicio} className="shrink-0">
             <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 hover:text-white gap-2 bg-transparent">
               <ExternalLink className="w-4 h-4" /> Ver sitio web
             </Button>

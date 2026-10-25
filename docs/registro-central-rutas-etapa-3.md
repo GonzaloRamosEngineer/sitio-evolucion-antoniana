@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-10-24
 **Última actualización:** 2026-10-25
-**Estado:** en ejecución
+**Estado:** completa y validada localmente
 **Restricción:** no cambia ninguna URL pública
 
 ## Objetivo
@@ -75,6 +75,21 @@ comisión y administración. También se corrigió el control positivo de la aud
 exige conservar una cantidad mínima de literales, sino que demuestra con un destino sintético
 inválido que la detección de enlaces rotos continúa activa.
 
+## Cuarto incremento y cierre
+
+Se centralizaron los últimos consumidores:
+
+- navegación por pestañas de comisión;
+- redirecciones por rol del panel administrativo;
+- navegación por pestañas de administración;
+- alta, edición y retorno del gestor de actividades;
+- accesos rápidos y enlaces dinámicos del resumen administrativo.
+
+El registro incorporó builders de pestañas para que los query strings privados tampoco se
+interpongan manualmente. El inventario terminó con 0 destinos internos literales en páginas y
+componentes: los 38 patrones, los destinos dinámicos y los estados de interfaz salen ahora de
+`src/config/rutas.js`.
+
 ## Garantías
 
 - Cambiar un patrón en el manifiesto cambia el router que lo registra.
@@ -95,8 +110,8 @@ inválido que la detección de enlaces rotos continúa activa.
 - [x] medir literales internos restantes y clasificarlos;
 - [x] migrar autenticación y acciones con retorno protegido;
 - [x] migrar área personal y componentes de dashboard;
-- [ ] migrar comisión y administración;
-- [x] auditoría de rutas correcta: 38 rutas y 18 destinos estáticos verificados;
+- [x] migrar comisión y administración;
+- [x] auditoría de rutas correcta: 38 rutas y 0 destinos internos literales restantes;
 - [x] suite completa correcta: 58 archivos y 658 pruebas;
 - [x] lint sin errores (37 advertencias preexistentes);
 - [x] build de producción correcto.
@@ -116,5 +131,5 @@ Validado localmente nuevamente el 2026-10-25:
 | `npm run lint` | 0 errores; 37 advertencias preexistentes |
 | `npm run build` | Correcto |
 
-Este gate valida el núcleo y la superficie pública, pero no cierra la Etapa 3. Para cerrarla
-se deben migrar los grupos protegidos ya identificados y repetir estos cuatro controles.
+Este gate cierra la Etapa 3. La publicación y la comprobación en producción deben hacerse como
+un paso separado antes de iniciar cambios visibles de URLs en la etapa siguiente.

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, Loader2, Edit3, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { RUTAS } from '@/config/rutas';
 
 const EditActivityPage = () => {
   const navigate = useNavigate();
@@ -27,11 +28,11 @@ const EditActivityPage = () => {
           setActivity(data);
         } else {
           toast({ title: "Error", description: "Actividad no encontrada.", variant: "destructive" });
-          navigate('/admin?tab=activities');
+          navigate(RUTAS.admin.actividades);
         }
       } catch (error) {
         toast({ title: "Error al cargar", description: error.message || "No se pudo cargar la actividad.", variant: "destructive" });
-        navigate('/admin?tab=activities');
+        navigate(RUTAS.admin.actividades);
       } finally {
         setPageLoading(false);
       }
@@ -50,7 +51,7 @@ const EditActivityPage = () => {
         description: `Los cambios en "${activityData.title}" se han guardado correctamente.`,
         className: "bg-blue-600 text-white border-none",
       });
-      navigate('/admin?tab=activities');
+      navigate(RUTAS.admin.actividades);
     } catch (error) {
       toast({
         title: "Error al Actualizar",
@@ -81,7 +82,7 @@ const EditActivityPage = () => {
         </div>
         <h2 className="text-xl font-bold text-gray-800 mb-2">No se encontró la actividad</h2>
         <p className="text-gray-500 mb-6">Es posible que haya sido eliminada o el enlace sea incorrecto.</p>
-        <Button onClick={() => navigate('/admin?tab=activities')} variant="outline">
+        <Button onClick={() => navigate(RUTAS.admin.actividades)} variant="outline">
             Volver al Panel
         </Button>
       </div>
@@ -106,7 +107,7 @@ const EditActivityPage = () => {
         <div className="mb-8 flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate('/admin?tab=activities')}
+            onClick={() => navigate(RUTAS.admin.actividades)}
             className="text-gray-500 hover:text-brand-primary hover:bg-white/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -135,7 +136,7 @@ const EditActivityPage = () => {
           <CardContent className="p-8">
             <ActivityForm 
               onSave={handleSave} 
-              onCancel={() => navigate('/admin?tab=activities')} 
+              onCancel={() => navigate(RUTAS.admin.actividades)}
               initialData={activity}
               isLoading={formLoading || activitiesHookLoading}
             />

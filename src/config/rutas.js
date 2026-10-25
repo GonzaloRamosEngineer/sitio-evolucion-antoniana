@@ -164,11 +164,14 @@ export const RUTAS = Object.freeze({
   }),
   comision: Object.freeze({
     inicio: ROUTE_PATHS.COMISION,
+    tab: (tab) => withQuery(ROUTE_PATHS.COMISION, { tab }),
     documentos: withQuery(ROUTE_PATHS.COMISION, { tab: 'documents' }),
   }),
   admin: Object.freeze({
     inicio: adminBase,
     patron: ROUTE_PATHS.ADMIN,
+    tab: (tab) => withQuery(adminBase, { tab }),
+    actividades: withQuery(adminBase, { tab: 'activities' }),
     educacion: ROUTE_PATHS.ADMIN_EDUCACION,
     actividadNueva: ROUTE_PATHS.ADMIN_ACTIVIDAD_NUEVA,
     actividadEditar: (id) => buildPath(ROUTE_PATHS.ADMIN_ACTIVIDAD_EDITAR, { id }),

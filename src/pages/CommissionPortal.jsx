@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import ProjectsManager from '@/components/Comision/ProjectsManager';
 import DocumentsManager from '@/components/Comision/DocumentsManager';
+import { RUTAS } from '@/config/rutas';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
@@ -36,7 +37,7 @@ const CommissionPortal = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    navigate(`/comision?tab=${tab}`, { replace: true });
+    navigate(RUTAS.comision.tab(tab), { replace: true });
   };
 
   if (authLoading) {
@@ -78,13 +79,13 @@ const CommissionPortal = () => {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isAdmin && (
-              <Link to="/admin">
+              <Link to={RUTAS.admin.inicio}>
                 <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 hover:text-white gap-2 bg-transparent">
                   Panel General
                 </Button>
               </Link>
             )}
-            <Link to="/">
+            <Link to={RUTAS.inicio}>
               <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 hover:text-white gap-2 bg-transparent">
                 <ExternalLink className="w-4 h-4" /> Ver sitio
               </Button>
