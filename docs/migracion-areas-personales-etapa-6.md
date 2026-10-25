@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A–6B2B1 completos; Bloque 6B2B2 desplegado y verificado técnicamente
+**Estado:** Completa, publicada y verificada; canaries operativos en observación
 
 ## 1. Estrategia de despliegue
 
@@ -183,7 +183,14 @@ La verificación operativa pendiente requiere destinatarios y registros reales; 
 usuarios, invitaciones ni correos de prueba automáticamente. Los aliases heredados permanecen
 activos durante esta observación.
 
-## 11. Rollback de rutas
+## 11. Cierre de la etapa
+
+La Etapa 6 queda cerrada técnicamente. La recuperación se validó de extremo a extremo y los
+restantes emisores comparten el mismo contrato, están activos y preservan su autorización. Sus
+próximos usos reales funcionan como canaries operativos no bloqueantes; cualquier enlace
+anterior conserva un destino compatible mediante aliases permanentes.
+
+## 12. Rollback de rutas
 
 Revertir los valores canónicos en `src/config/rutas.js` y conservar las rutas nuevas como
 aliases temporales. No hay rollback de base de datos porque este bloque no modifica datos,

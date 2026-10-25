@@ -1,6 +1,6 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
-**Estado:** ejecución por etapas; Etapas 0–5 completas y Etapa 6 en curso
+**Estado:** ejecución por etapas; Etapas 0–6 completas y Etapa 7 en curso
 **Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
@@ -15,8 +15,9 @@
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
-| 6. Áreas personales, comercio y autenticación | En curso; emisores desplegados, validación operativa pendiente | `docs/migracion-areas-personales-etapa-6.md` |
-| 7–9 | Pendientes | Requieren cerrar la Etapa 6 |
+| 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
+| 7. Consistencia transversal de lenguaje | En curso; Bloque 7A completo | `docs/consistencia-lenguaje-etapa-7.md` |
+| 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -554,7 +555,10 @@ normalizó y verificó `/mi/*` y `/comercios/*` sin modificar callbacks externos
 ya publicó y verificó los destinos en español y sus aliases antes de tocar proveedores. El
 Bloque 6B2A amplió solamente la allowlist remota, conservando los destinos anteriores y sin
 alterar el resto de Auth. Su evidencia está en `docs/migracion-areas-personales-etapa-6.md`.
-El emisor web ya fue validado con una recuperación real. Las cuatro Edge Functions fueron
-desplegadas individualmente y mantienen su frontera JWT. El siguiente incremento seguro es
-validar sus emails durante casos operativos reales, sin crear usuarios, invitaciones ni
-inscripciones artificiales; los aliases se conservan como rollback durante esa observación.
+La **Etapa 6** quedó completa: el emisor web se validó con una recuperación real, las cuatro
+Edge Functions se desplegaron individualmente y mantienen su frontera JWT. Los próximos usos
+reales actúan como canaries no bloqueantes y los aliases se conservan como rollback.
+
+La **Etapa 7 — Consistencia transversal de lenguaje** comenzó con el Bloque 7A. Su inventario,
+criterios y secuencia están en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento
+seguro es el Bloque 7B: contrato compartido y auditoría ejecutable antes de cambiar textos.
