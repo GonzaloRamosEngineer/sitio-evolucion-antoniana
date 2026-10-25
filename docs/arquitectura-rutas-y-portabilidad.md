@@ -15,7 +15,7 @@
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
-| 6. Áreas personales, comercio y autenticación | En curso; 6B2A completo y emisor web 6B2B1 preparado | `docs/migracion-areas-personales-etapa-6.md` |
+| 6. Áreas personales, comercio y autenticación | En curso; 6B2A completo y emisor web publicado | `docs/migracion-areas-personales-etapa-6.md` |
 | 7–9 | Pendientes | Requieren cerrar la Etapa 6 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,

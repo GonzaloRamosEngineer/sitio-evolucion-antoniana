@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B1 preparado
+**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B1 publicado, pendiente de prueba real
 
 ## 1. Estrategia de despliegue
 
@@ -151,7 +151,8 @@ valor anterior de `uri_allow_list`; no se modificaron usuarios, sesiones, tablas
 - [x] prueba automática verifica el `redirectTo` canónico completo;
 - [x] suite completa: 61 archivos y 687 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes) y build correcto;
-- [ ] deploy de Vercel completado;
+- [x] deploy de Vercel completado (`07f5eb3e`);
+- [x] `/recuperar-acceso` responde y el bundle publicado contiene `/actualizar-clave`;
 - [ ] recuperación real recibida y abierta en `/actualizar-clave`;
 - [x] Edge Functions todavía sin cambios.
 
