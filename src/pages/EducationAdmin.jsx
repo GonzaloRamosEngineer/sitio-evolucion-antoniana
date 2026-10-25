@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { updatePreinscriptionStatus } from "@/api/educationApi";
 import { usePreinscriptions } from "@/hooks/useContentQueries";
 import { queryKeys } from "@/lib/queryClient";
+import { tituloPagina } from "@/config/entidad";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -228,7 +229,7 @@ const EducationAdmin = () => {
   return (
     <div className="min-h-screen bg-brand-sand pt-32 pb-24 px-4 md:px-8">
       <Helmet>
-        <title>Gestión educativa - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Gestión educativa')}</title>
         <meta name="description" content="Panel de gestión educativa." />
         <meta name="robots" content="noindex" />
       </Helmet>

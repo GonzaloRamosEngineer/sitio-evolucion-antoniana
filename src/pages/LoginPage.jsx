@@ -14,6 +14,7 @@ import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RUTAS } from '@/config/rutas';
 import { postLoginDestination } from '@/lib/authRedirect';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const loginSchema = z.object({
   email: z.string().email('Ingresá un email válido'),
@@ -77,8 +78,8 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand p-4">
       <Helmet>
-        <title>Iniciar sesión - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Accedé a tu cuenta de la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Iniciar sesión')}</title>
+        <meta name="description" content={`Accedé a tu cuenta de ${entidad.nombre}.`} />
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -91,7 +92,7 @@ const LoginPage = () => {
           <div className="text-center mb-8">
             <img
               src="/img/logotransparente.webp"
-              alt="Logo Fundación Evolución Antoniana"
+              alt={`Logo de ${entidad.nombre}`}
               className="mx-auto w-20 h-20 object-contain mb-6"
               width="320"
               height="320"

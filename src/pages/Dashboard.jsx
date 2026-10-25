@@ -27,6 +27,7 @@ import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import { generateGoogleCalendarLink } from '@/lib/calendarUtils';
 import { ESTADOS_MEMBRESIA, describirEstado } from '@/lib/estadosPago';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -156,8 +157,8 @@ const Dashboard = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen min-w-0 max-w-full overflow-x-clip bg-brand-sand pb-24 font-sans">
       <Helmet>
-        <title>Mi panel - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Panel personal de la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Mi panel')}</title>
+        <meta name="description" content={`Panel personal de ${entidad.nombre}.`} />
         <meta name="robots" content="noindex" />
       </Helmet>
 

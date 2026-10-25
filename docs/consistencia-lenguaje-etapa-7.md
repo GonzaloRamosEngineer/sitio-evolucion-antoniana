@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7C2 completos, publicados y verificados
+**Estado:** Bloques 7A–7C2 completos; Bloque 7C3 preparado para publicación
 
 ## 1. Objetivo
 
@@ -146,10 +146,25 @@ explícita y una prueba de regresión protege esa precedencia.
   Términos, Novedades, Documentación oficial y Preinscripción;
 - [x] teléfono y contenido institucional configurados verificados visualmente.
 
-Los 21 archivos restantes están delimitados: cinco endpoints de previews, tres estáticos, nueve
-pantallas de autenticación, áreas privadas o administración, y cuatro Edge Functions. El próximo
-incremento seguro es 7C3, dedicado a las pantallas frontend no públicas. Servidor, estáticos y
-funciones remotas continúan separados para el Bloque 7D.
+#### Bloque 7C3 — autenticación, áreas privadas y administración
+
+- [x] nueve pantallas internas migradas a `entidad` y `tituloPagina`;
+- [x] login, registro, carnet, panel personal, comisión y administración sin marca literal;
+- [x] gestión interna normalizada de “Partners” a “alianzas” en métricas, estados, formularios y
+  avisos;
+- [x] identificadores técnicos `partners`, `partner_id` y nombres de componentes preservados;
+- [x] auditoría ampliada para impedir que el vocabulario interno visible vuelva a divergir;
+- [x] deuda de marca o dominio reducida de 21 a 12 archivos;
+- [x] frontend completo sin marca ni dominio literales fuera de `src/config/entidad.js`;
+- [x] términos visibles `Partner(s)` y “Club de beneficios” en cero;
+- [x] suite completa: 64 archivos y 696 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
+- [ ] deploy de Vercel y verificación de autenticación y accesos protegidos en producción.
+
+Los 12 archivos restantes pertenecen exclusivamente a los otros runtimes: cinco endpoints de
+previews, tres estáticos y cuatro Edge Functions. Con 7C3 se cierra el frontend del Bloque 7C. El
+próximo incremento seguro es 7D1, para compartir identidad con los previews de Vercel antes de
+modificar estáticos o correo.
 
 ### Bloque 7D — servidor y estáticos
 

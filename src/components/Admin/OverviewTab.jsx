@@ -39,7 +39,7 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
     { title: 'Actividades', value: stats.totalActivities, icon: Calendar, color: 'bg-purple-50 text-purple-600', tab: 'activities' },
     { title: 'Colaboraciones activas', value: stats.activeMemberships, icon: Heart, color: 'bg-red-50 text-red-600', tab: 'memberships' },
     { title: 'Donaciones', value: stats.totalDonations, icon: Gift, color: 'bg-green-50 text-green-600', tab: 'donations' },
-    { title: 'Partners aprobados', value: stats.approvedPartners, icon: Handshake, color: 'bg-cyan-50 text-cyan-600', tab: 'partners' },
+    { title: 'Alianzas aprobadas', value: stats.approvedPartners, icon: Handshake, color: 'bg-cyan-50 text-cyan-600', tab: 'partners' },
     { title: 'Beneficios activos', value: stats.activeBenefits, icon: Gift, color: 'bg-amber-50 text-amber-600', tab: 'benefits' },
     { title: 'Documentos legales', value: stats.totalLegalDocuments, icon: FileText, color: 'bg-gray-100 text-gray-600', tab: 'legal_documents' },
     { title: 'Administradores', value: stats.adminUsers, icon: UserCheck, color: 'bg-indigo-50 text-indigo-600', tab: 'users' },
@@ -56,8 +56,8 @@ const OverviewTab = ({ stats, recentActivities, loading, error, onNavigate, onRe
     stats.pendingPartners > 0 && {
       key: 'partners',
       icon: Handshake,
-      label: `${stats.pendingPartners} partner${stats.pendingPartners === 1 ? '' : 's'} esperando aprobación`,
-      cta: 'Revisar partners',
+      label: `${stats.pendingPartners} alianza${stats.pendingPartners === 1 ? '' : 's'} esperando aprobación`,
+      cta: 'Revisar alianzas',
       tab: 'partners',
     },
   ].filter(Boolean);

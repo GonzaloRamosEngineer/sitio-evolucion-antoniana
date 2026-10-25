@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Edit3, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const EditActivityPage = () => {
   const navigate = useNavigate();
@@ -92,7 +93,7 @@ const EditActivityPage = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans py-12 px-4">
       <Helmet>
-        <title>Editar actividad - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Editar actividad')}</title>
         <meta name="description" content="Editar una actividad existente." />
         <meta name="robots" content="noindex" />
       </Helmet>

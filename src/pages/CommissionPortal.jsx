@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import ProjectsManager from '@/components/Comision/ProjectsManager';
 import DocumentsManager from '@/components/Comision/DocumentsManager';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', icon: FolderKanban },
@@ -51,7 +52,7 @@ const CommissionPortal = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
-        <title>{isDocumentReader ? 'Documentación institucional' : 'Comisión Directiva'} - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina(isDocumentReader ? 'Documentación institucional' : 'Comisión Directiva')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

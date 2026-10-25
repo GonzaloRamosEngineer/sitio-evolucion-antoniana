@@ -90,8 +90,8 @@ const PartnersAdmin = () => {
 
     toast(
       editingPartner
-        ? { title: 'Partner actualizado ✅', description: 'Los datos se sincronizaron correctamente.' }
-        : { title: 'Partner creado ✅', description: 'El nuevo aliado ha sido registrado.' }
+        ? { title: 'Alianza actualizada ✅', description: 'Los datos se sincronizaron correctamente.' }
+        : { title: 'Alianza creada ✅', description: 'La nueva organización aliada fue registrada.' }
     );
     resetForm();
     loadPartners();
@@ -122,7 +122,7 @@ const PartnersAdmin = () => {
       return;
     }
     loadPartners();
-    toast({ title: 'Partner aprobado ✅', description: 'Ahora es visible en la sección de aliados.' });
+    toast({ title: 'Alianza aprobada ✅', description: 'Ahora es visible en la sección de alianzas.' });
   };
 
   const handleReject = async (id) => {
@@ -132,7 +132,7 @@ const PartnersAdmin = () => {
       return;
     }
     loadPartners();
-    toast({ title: 'Partner rechazado', description: 'El estado se ha actualizado a rechazado.', variant: 'destructive' });
+    toast({ title: 'Alianza rechazada', description: 'El estado se ha actualizado a rechazado.', variant: 'destructive' });
   };
 
   const handleDelete = async (id) => {
@@ -145,7 +145,7 @@ const PartnersAdmin = () => {
         return;
       }
       loadPartners();
-      toast({ title: 'Partner eliminado', description: 'El registro ha sido borrado.' });
+      toast({ title: 'Alianza eliminada', description: 'El registro ha sido borrado.' });
     }
   };
 
@@ -158,7 +158,7 @@ const PartnersAdmin = () => {
       <div className="space-y-6">
         <SectionHeader
           icon={Handshake}
-          title="Gestión de Partners"
+          title="Gestión de alianzas"
           description="Administra las empresas y organizaciones aliadas."
         />
         <ListSkeleton rows={6} />
@@ -170,12 +170,12 @@ const PartnersAdmin = () => {
     <div className="space-y-6">
       <SectionHeader
         icon={Handshake}
-        title="Gestión de Partners"
+        title="Gestión de alianzas"
         description="Administra las empresas y organizaciones aliadas."
         actions={
           <Button onClick={() => setIsDialogOpen(true)} variant="action">
             <Plus className="mr-2 h-4 w-4" />
-            Nuevo partner
+            Nueva alianza
           </Button>
         }
       />
@@ -185,7 +185,7 @@ const PartnersAdmin = () => {
         onChange={setQuery}
         placeholder="Buscar por nombre o email..."
         count={filteredPartners.length}
-        countLabel={filteredPartners.length === 1 ? 'partner' : 'partners'}
+        countLabel={filteredPartners.length === 1 ? 'alianza' : 'alianzas'}
       />
 
       <Dialog
@@ -198,7 +198,7 @@ const PartnersAdmin = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border-none p-0 bg-white shadow-2xl">
           <DialogHeader className="bg-brand-sand p-8 border-b border-gray-100">
             <DialogTitle className="text-2xl font-poppins font-bold text-brand-dark">
-              {editingPartner ? 'Editar Aliado' : 'Registrar Nuevo Aliado'}
+              {editingPartner ? 'Editar alianza' : 'Registrar nueva alianza'}
             </DialogTitle>
             <DialogDescription>
                 Información institucional y detalles de colaboración.
@@ -323,12 +323,12 @@ const PartnersAdmin = () => {
           {partners.length === 0 ? (
             <EmptyState
               icon={Handshake}
-              title="Todavía no hay partners registrados"
+              title="Todavía no hay alianzas registradas"
               description="Registrá la primera organización aliada para que aparezca en el sitio."
               action={
                 <Button onClick={() => setIsDialogOpen(true)} variant="action">
                   <Plus className="mr-2 h-4 w-4" />
-                  Nuevo partner
+                  Nueva alianza
                 </Button>
               }
             />
@@ -336,7 +336,7 @@ const PartnersAdmin = () => {
             <EmptyState
               icon={Search}
               title="Sin resultados"
-              description={`No se encontraron partners para "${query}". Probá con otro término.`}
+              description={`No se encontraron alianzas para "${query}". Probá con otro término.`}
             />
           )}
         </div>

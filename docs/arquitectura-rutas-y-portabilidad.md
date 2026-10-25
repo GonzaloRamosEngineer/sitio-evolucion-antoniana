@@ -16,7 +16,7 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A–7C2 publicados y verificados | `docs/consistencia-lenguaje-etapa-7.md` |
+| 7. Consistencia transversal de lenguaje | En curso; 7A–7C2 completos y 7C3 preparado | `docs/consistencia-lenguaje-etapa-7.md` |
 | 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -563,6 +563,8 @@ La **Etapa 7 — Consistencia transversal de lenguaje** ya completó inventario,
 auditoría ejecutable. El Bloque 7C1 normalizó el vocabulario público de alianzas, alineó su SEO y
 previews, redujo la deuda institucional de 44 a 37 archivos y dejó en cero las frases públicas
 con `Partner(s)`. El Bloque 7C2 migró las restantes páginas públicas de contenido y contacto al
-contrato de entidad, reduciendo la línea base a 21 archivos. Su evidencia está en
-`docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento seguro es 7C3: pantallas de
-autenticación, áreas privadas y administración, antes de entrar a los runtimes del Bloque 7D.
+contrato de entidad, reduciendo la línea base a 21 archivos. El Bloque 7C3 completó autenticación,
+áreas privadas y administración, normalizó también el vocabulario interno de alianzas y dejó la
+línea base en 12 archivos, todos fuera del frontend. Su evidencia está en
+`docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento seguro es 7D1: previews de
+Vercel, antes de sincronizar estáticos y Edge Functions.

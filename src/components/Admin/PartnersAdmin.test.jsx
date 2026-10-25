@@ -107,7 +107,7 @@ describe('PartnersAdmin — manejo de error de la capa de datos', () => {
     fireEvent.click(await screen.findByRole('button', { name: /aprobar acme/i }));
 
     await waitFor(() => expect(getPartners).toHaveBeenCalledTimes(2));
-    expect(successToasts().some((t) => /aprobado/i.test(t.title))).toBe(true);
+    expect(successToasts().some((t) => /alianza aprobada/i.test(t.title))).toBe(true);
     expect(destructiveToasts()).toHaveLength(0);
   });
 
@@ -122,7 +122,7 @@ describe('PartnersAdmin — manejo de error de la capa de datos', () => {
     await waitFor(() =>
       expect(toast.mock.calls.some(([a]) => /no se pudo rechazar/i.test(a?.title))).toBe(true)
     );
-    expect(toast.mock.calls.some(([a]) => /^partner rechazado/i.test(a?.title))).toBe(false);
+    expect(toast.mock.calls.some(([a]) => /^alianza rechazada/i.test(a?.title))).toBe(false);
   });
 
   it('NO muestra éxito si eliminar falla, y libera el spinner', async () => {
@@ -148,6 +148,6 @@ describe('PartnersAdmin — manejo de error de la capa de datos', () => {
     fireEvent.click(await screen.findByRole('button', { name: /eliminar acme/i }));
 
     await waitFor(() => expect(getPartners).toHaveBeenCalledTimes(2));
-    expect(successToasts().some((t) => /eliminado/i.test(t.title))).toBe(true);
+    expect(successToasts().some((t) => /alianza eliminada/i.test(t.title))).toBe(true);
   });
 });

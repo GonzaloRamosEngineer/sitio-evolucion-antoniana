@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const registerSchema = z
   .object({
@@ -97,8 +98,8 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand py-16 px-4">
       <Helmet>
-        <title>Crear cuenta - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Creá tu cuenta en la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Crear cuenta')}</title>
+        <meta name="description" content={`Creá tu cuenta en ${entidad.nombre}.`} />
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -111,7 +112,7 @@ const RegisterPage = () => {
           <div className="text-center mb-8">
             <img
               src="/img/logotransparente.webp"
-              alt="Logo Fundación Evolución Antoniana"
+              alt={`Logo de ${entidad.nombre}`}
               className="mx-auto w-20 h-20 object-contain mb-6"
               width="320"
               height="320"

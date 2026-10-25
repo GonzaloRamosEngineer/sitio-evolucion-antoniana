@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import { logger } from '@/lib/logger';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const ConfirmAttendancePage = () => {
   const [searchParams] = useSearchParams();
@@ -101,7 +102,7 @@ const ConfirmAttendancePage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-sand p-4 font-sans relative overflow-hidden">
         <Helmet>
-          <title>Confirmar asistencia - Fundación Evolución Antoniana</title>
+          <title>{tituloPagina('Confirmar asistencia')}</title>
           <meta name="description" content="Confirmá tu asistencia a la actividad." />
           <meta name="robots" content="noindex" />
         </Helmet>

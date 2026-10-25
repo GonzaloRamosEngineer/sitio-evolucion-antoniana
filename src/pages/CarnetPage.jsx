@@ -16,6 +16,7 @@ import {
   SIN_MEMBRESIA, estadoMembresia, etiquetaEstado, fraseEstado, etiquetaNumero,
 } from '@/lib/miembro';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 /**
  * Presentación de cada estado. Vive en un objeto y no en cadenas de ternarios
@@ -91,7 +92,7 @@ const CarnetPage = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
-        <title>Mi carnet - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Mi carnet')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -224,7 +225,7 @@ const CarnetPage = () => {
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-brand-gold">Credencial digital</span>
-                        <span className="mt-0.5 block text-xs leading-snug text-white/80">Fundación Evolución Antoniana</span>
+                        <span className="mt-0.5 block text-xs leading-snug text-white/80">{entidad.nombre}</span>
                       </span>
                     </div>
                     <CreditCard aria-hidden="true" className="h-5 w-5 shrink-0 text-white/50" />

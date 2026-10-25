@@ -9,6 +9,7 @@ import { ArrowLeft, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const CreateActivityPage = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const CreateActivityPage = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans py-12 px-4">
       <Helmet>
-        <title>Nueva actividad - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Nueva actividad')}</title>
         <meta name="description" content="Crear una nueva actividad." />
         <meta name="robots" content="noindex" />
       </Helmet>

@@ -230,7 +230,7 @@ const ClubAdmin = () => {
           <DialogHeader>
             <DialogTitle>{editando ? 'Editar comercio' : 'Nuevo comercio'}</DialogTitle>
             <DialogDescription>
-              Un comercio de la red es distinto de un partner institucional: el partner es un
+              Un comercio de la red es distinto de una alianza institucional: la alianza es un
               logo en la Home, el comercio es una contraparte del mostrador. Pueden ser la
               misma empresa, y para eso está el campo de abajo.
             </DialogDescription>
@@ -306,7 +306,7 @@ const ClubAdmin = () => {
             </div>
 
             <div>
-              <Label className="text-brand-dark font-semibold">Partner institucional (opcional)</Label>
+              <Label className="text-brand-dark font-semibold">Alianza institucional (opcional)</Label>
               <Select
                 value={form.partner_id}
                 onValueChange={(v) => setForm((f) => ({ ...f, partner_id: v }))}
@@ -322,7 +322,7 @@ const ClubAdmin = () => {
               <p className="mt-1 text-xs text-brand-dark/60">
                 {partnerElegido
                   ? `Se va a poder reusar el logo y los datos de ${partnerElegido.nombre}.`
-                  : 'Si el comercio ya es partner de la Fundación, elegilo y no hace falta duplicar datos.'}
+                  : 'Si el comercio ya integra una alianza institucional, elegilo y no hace falta duplicar datos.'}
               </p>
             </div>
 
