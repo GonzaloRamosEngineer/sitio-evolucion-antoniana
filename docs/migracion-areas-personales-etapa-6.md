@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloque 6A completo; Bloque 6B1 preparado para publicación; Bloque 6B2 pendiente
+**Estado:** Bloques 6A y 6B1 completos, publicados y verificados; Bloque 6B2 pendiente
 
 ## 1. Estrategia de despliegue
 
@@ -119,9 +119,15 @@ El gate del Bloque 6A queda cerrado. No se modificaron Supabase, RLS ni funcione
 - [x] suite completa: 61 archivos y 686 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y auditoría de 62 rutas correctos;
 - [x] preview dinámico de actividades excluye explícitamente la acción personal con token;
-- [ ] deploy de Vercel completado;
-- [ ] seis rutas nuevas y seis redirects verificados en producción;
-- [ ] sitemap y previews verificados.
+- [x] deploy de Vercel completado (`c33eda31`, corrección de preview `0959beef`);
+- [x] seis rutas nuevas responden 200 y seis aliases entregan un único 308 en producción;
+- [x] parámetros `code` y `token` preservados por los redirects;
+- [x] sitemap excluye rutas de auth, acciones, finales de flujo y aliases;
+- [x] la acción de asistencia sirve la SPA genérica a bots y las actividades públicas
+  conservan su preview dinámica.
+
+El gate del Bloque 6B1 queda cerrado. No se empujó configuración a Supabase ni se desplegaron
+Edge Functions; esos cambios permanecen reservados para el Bloque 6B2.
 
 ## 8. Rollback
 
