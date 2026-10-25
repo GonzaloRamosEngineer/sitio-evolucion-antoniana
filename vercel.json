@@ -275,12 +275,8 @@
       "destination": "/favicon.ico"
     },
     {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
-    },
-    {
       "source": "/sitemap.xml",
-      "destination": "/sitemap.xml"
+      "destination": "/api/sitemap"
     },
     {
       "source": "/(.*)",

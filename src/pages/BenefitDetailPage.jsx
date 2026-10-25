@@ -1,6 +1,6 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { beneficioBloqueado, SIN_ACCESO } from "@/lib/acceso";
 import { accionVidriera } from "@/lib/club";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
+import { canonicalUrl } from "@/lib/seo";
 
 // Util para comparar slugs
 const slugify = (s = "") =>
@@ -38,6 +39,7 @@ const fmt = (d) => new Date(d).toLocaleDateString('es-AR', { dateStyle: 'long' }
 
 const BenefitDetailPage = () => {
   const params = useParams();
+  const navigate = useNavigate();
   const lookup = params.slug ?? params.id ?? "";
 
   // Reusa la caché del listado y resuelve el beneficio sobre el dato cacheado.
@@ -73,6 +75,13 @@ const BenefitDetailPage = () => {
     elegibilidad,
   });
 
+  const canonicalSlug = benefit?.slug || benefit?.id;
+  React.useEffect(() => {
+    if (canonicalSlug && lookup !== String(canonicalSlug)) {
+      navigate(`/beneficios/${canonicalSlug}`, { replace: true });
+    }
+  }, [canonicalSlug, lookup, navigate]);
+
   // Acá estaba `handleCopyCode`. Se fue con el bloque "Tu código": copiar al
   // portapapeles un texto fijo que ya era público no tiene a quién servirle
   // (ROADMAP §12.10.13). El código del canje se copia en /club, donde además
@@ -99,6 +108,11 @@ const BenefitDetailPage = () => {
       <Helmet>
         <title>{benefit.titulo} - Fundación Evolución Antoniana</title>
         <meta name="description" content={benefit.descripcion} />
+        <link
+          rel="canonical"
+          href={canonicalUrl(`/beneficios/${encodeURIComponent(canonicalSlug)}`)}
+        />
+        {params.id && <meta name="robots" content="noindex, follow" />}
       </Helmet>
 
       <div className="flex-1 py-12 px-4">

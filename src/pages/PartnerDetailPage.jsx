@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Globe, Mail, Info, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { SanitizedHtml } from '@/components/ui/sanitized-html';
 import { ResourceLoading, ResourceNotFound } from '@/components/ui/resource-state';
 import { useAllPartners, useBeneficiosVidriera } from '@/hooks/useContentQueries';
 import { cn, palabraMasLarga } from '@/lib/utils';
+import { canonicalUrl } from '@/lib/seo';
 
 const slugify = (s = '') =>
   s
@@ -19,6 +20,7 @@ const slugify = (s = '') =>
 
 const PartnerDetailPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
 
   // Reusa la caché del listado: si venís de /partners, el detalle abre sin
   // ninguna consulta nueva. El `select` resuelve el slug sobre el dato cacheado.
@@ -55,6 +57,12 @@ const PartnerDetailPage = () => {
     ? `${partner.nombre} – Fundación Evolución Antoniana`
     : 'Alianzas estratégicas';
 
+  React.useEffect(() => {
+    if (partner?.slug && slug !== partner.slug) {
+      navigate(`/partners/${partner.slug}`, { replace: true });
+    }
+  }, [navigate, partner?.slug, slug]);
+
   if (loading) {
     return <ResourceLoading title="Cargando alianza… – Fundación Evolución Antoniana" />;
   }
@@ -78,6 +86,14 @@ const PartnerDetailPage = () => {
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
         <title>{pageTitle}</title>
+        <meta
+          name="description"
+          content={partner.descripcion || 'Conocé nuestras marcas aliadas y sus beneficios.'}
+        />
+        <link
+          rel="canonical"
+          href={canonicalUrl(`/partners/${encodeURIComponent(partner.slug || slug)}`)}
+        />
       </Helmet>
 
       <div className="max-w-5xl mx-auto px-4 py-12">

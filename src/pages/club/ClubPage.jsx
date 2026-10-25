@@ -102,6 +102,7 @@ const ClubPage = () => {
           name="description"
           content="Canjeá los beneficios de Comunidad Evolución con tu aporte vigente."
         />
+        <meta name="robots" content="noindex, follow" />
       </Helmet>
 
       <Eyebrow>{entidad.comunidadEvolucion.nombre}</Eyebrow>

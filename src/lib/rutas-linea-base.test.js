@@ -1,0 +1,54 @@
+import { describe, expect, it } from 'vitest';
+import {
+  auditRoutes,
+  CURRENT_ROUTE_BASELINE,
+  routePatternMatches,
+} from '../../tools/route-audit-lib.mjs';
+
+describe('línea base ejecutable de rutas', () => {
+  const report = auditRoutes();
+
+  it('clasifica exactamente todas las rutas actuales de App.jsx', () => {
+    expect(report.appRoutes).toHaveLength(38);
+    expect(report.missingFromBaseline).toEqual([]);
+    expect(report.missingFromApp).toEqual([]);
+    expect(report.duplicateAppRoutes).toEqual([]);
+    expect(report.duplicateBaselineRoutes).toEqual([]);
+  });
+
+  it('cada ruta tiene política de acceso, SEO y preview explícita', () => {
+    for (const route of CURRENT_ROUTE_BASELINE) {
+      expect(route.surface, route.path).toBeTruthy();
+      expect(route.access, route.path).toBeTruthy();
+      expect(route.seo, route.path).toBeTruthy();
+      expect(route.preview, route.path).toBeTruthy();
+    }
+  });
+
+  it('ningún destino interno estático apunta al catch-all', () => {
+    // El catch-all se excluye deliberadamente del matcher: si contara como una
+    // ruta válida, cualquier typo pasaría esta prueba y terminaría en el 404.
+    expect(report.staticTargets.length).toBeGreaterThan(20);
+    expect(report.brokenTargets).toEqual([]);
+    expect(routePatternMatches('*', '/ruta-inventada')).toBe(false);
+  });
+
+  it('el matcher entiende parámetros, query strings y el splat de admin', () => {
+    expect(routePatternMatches('/beneficios/:slug', '/beneficios/ejemplo')).toBe(true);
+    expect(routePatternMatches('/admin/*', '/admin?tab=users')).toBe(true);
+    expect(routePatternMatches('/admin/*', '/admin/otra-seccion')).toBe(true);
+    expect(routePatternMatches('/activities/:id', '/activities')).toBe(false);
+  });
+
+  it('toda ruta de compatibilidad está marcada como alias no indexable', () => {
+    const compatibilityRoutes = CURRENT_ROUTE_BASELINE.filter(
+      ({ surface }) => surface === 'compatibilidad',
+    );
+    expect(compatibilityRoutes.map(({ path }) => path)).toEqual([
+      '/beneficios/id/:id',
+      '/novedades/id/:id',
+      '/novedades/uuid/:id',
+    ]);
+    expect(compatibilityRoutes.every(({ seo }) => seo === 'alias-noindex')).toBe(true);
+  });
+});

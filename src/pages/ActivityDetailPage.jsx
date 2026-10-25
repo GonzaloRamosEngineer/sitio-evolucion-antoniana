@@ -14,6 +14,7 @@ import {
 import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import PrecioActividad from '@/components/Activities/PrecioActividad';
+import { canonicalUrl } from '@/lib/seo';
 
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -86,6 +87,12 @@ const ActivityDetailPage = () => {
   useEffect(() => {
     if (id) fetchActivityDetails();
   }, [id, fetchActivityDetails]);
+
+  useEffect(() => {
+    if (activity?.slug && id !== activity.slug) {
+      navigate(`/activities/${activity.slug}`, { replace: true });
+    }
+  }, [activity?.slug, id, navigate]);
 
   const handleUserRegister = async () => {
     if (!activity) return;
@@ -212,6 +219,10 @@ const ActivityDetailPage = () => {
       <Helmet>
         <title>{(cleanTitle || activity?.title) ? `${cleanTitle || activity.title} - Fundación Evolución Antoniana` : 'Actividad - Fundación Evolución Antoniana'}</title>
         <meta name="description" content={descBody || activity?.description || 'Actividad de la Fundación Evolución Antoniana.'} />
+        <link
+          rel="canonical"
+          href={canonicalUrl(`/activities/${encodeURIComponent(activity.slug || activity.id)}`)}
+        />
       </Helmet>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

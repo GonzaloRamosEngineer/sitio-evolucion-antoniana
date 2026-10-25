@@ -1,0 +1,143 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const route = (pathName, surface, access, seo, preview) => ({
+  path: pathName,
+  surface,
+  access,
+  seo,
+  preview,
+});
+
+/**
+ * Línea base de Etapa 1. Es deliberadamente externa al runtime: todavía no es
+ * el registro central de rutas de la Etapa 3. Su trabajo es detectar cambios
+ * accidentales en App.jsx antes de iniciar la migración.
+ */
+export const CURRENT_ROUTE_BASELINE = [
+  route('/', 'publica', 'publico', 'indexable', 'institucional'),
+  route('/about', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/activities', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/activities/:id', 'detalle', 'publico', 'indexable', 'dinamico'),
+  route('/confirm-attendance', 'accion', 'publico-con-token', 'noindex', 'ninguno'),
+  route('/collaborate', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/rendicion', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/contact', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/agradecimiento', 'accion', 'publico', 'noindex', 'ninguno'),
+  route('/login', 'auth', 'anonimo', 'noindex', 'ninguno'),
+  route('/register', 'auth', 'anonimo', 'noindex', 'ninguno'),
+  route('/request-password-reset', 'auth', 'anonimo', 'noindex', 'ninguno'),
+  route('/update-password', 'auth', 'publico-con-token', 'noindex', 'ninguno'),
+  route('/legal-documents', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/privacy', 'legal', 'publico', 'indexable', 'estatico'),
+  route('/terms', 'legal', 'publico', 'indexable', 'estatico'),
+  route('/partners', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/partners/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
+  route('/beneficios', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/beneficios/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
+  route('/beneficios/id/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
+  route('/postular-partner', 'accion', 'publico', 'indexable', 'estatico'),
+  route('/novedades', 'publica', 'publico', 'indexable', 'estatico'),
+  route('/novedades/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
+  route('/novedades/id/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
+  route('/novedades/uuid/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
+  route('/preinscripcion', 'accion', 'publico', 'indexable', 'estatico'),
+  route('/admin/education', 'administracion', 'admin-o-educacion', 'privado-noindex', 'ninguno'),
+  route('/comision', 'portal', 'comision-autorizada', 'privado-noindex', 'ninguno'),
+  route('/carnet', 'personal', 'sesion', 'privado-noindex', 'ninguno'),
+  route('/club', 'personal', 'publico-accion-protegida', 'noindex', 'estatico'),
+  route('/club/postular', 'accion', 'publico', 'indexable', 'estatico'),
+  route('/comercio', 'portal', 'sesion-y-pertenencia', 'privado-noindex', 'ninguno'),
+  route('/dashboard', 'personal', 'sesion', 'privado-noindex', 'ninguno'),
+  route('/admin/activities/new', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
+  route('/admin/activities/edit/:id', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
+  route('/admin/*', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
+  route('*', 'fallback', 'publico', 'noindex', 'ninguno'),
+];
+
+export const extractAppRoutes = (source) =>
+  [...source.matchAll(/<Route\s[^>]*?path=["']([^"']+)["']/gs)].map((match) => match[1]);
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export const routePatternMatches = (pattern, rawTarget) => {
+  if (!rawTarget?.startsWith('/') || pattern === '*') return false;
+  const target = rawTarget.split(/[?#]/, 1)[0] || '/';
+  if (pattern === target) return true;
+
+  const segments = pattern.split('/').filter(Boolean);
+  let expression = '^';
+  for (const segment of segments) {
+    if (segment === '*') {
+      expression += '(?:/.*)?';
+      continue;
+    }
+    expression += segment.startsWith(':') ? '/[^/]+' : `/${escapeRegex(segment)}`;
+  }
+  expression += '/?$';
+  return new RegExp(expression).test(target);
+};
+
+const walkSourceFiles = (directory) => {
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkSourceFiles(absolute));
+    } else if (/\.(?:js|jsx)$/.test(entry.name) && !/\.(?:test|spec)\./.test(entry.name)) {
+      files.push(absolute);
+    }
+  }
+  return files;
+};
+
+const STATIC_NAVIGATION_PATTERNS = [
+  { kind: 'to', regex: /\bto\s*=\s*["'](\/[^"']*)["']/g },
+  { kind: 'navigate', regex: /\bnavigate\s*\(\s*["'](\/[^"']*)["']/g },
+  { kind: 'href-object', regex: /\bhref\s*:\s*["'](\/[^"']*)["']/g },
+];
+
+/**
+ * Extrae solamente destinos internos estáticos. Las URLs armadas con template
+ * strings requieren pruebas específicas del módulo que las construye.
+ */
+export const collectStaticNavigationTargets = (sourceRoot) => {
+  const findings = [];
+  for (const absolute of walkSourceFiles(sourceRoot)) {
+    const source = fs.readFileSync(absolute, 'utf8');
+    for (const { kind, regex } of STATIC_NAVIGATION_PATTERNS) {
+      for (const match of source.matchAll(regex)) {
+        findings.push({
+          file: path.relative(process.cwd(), absolute),
+          kind,
+          target: match[1],
+        });
+      }
+    }
+  }
+  return findings;
+};
+
+export const findBrokenStaticTargets = (routes, targets) =>
+  targets.filter(({ target }) => !routes.some((pattern) => routePatternMatches(pattern, target)));
+
+export const auditRoutes = (root = process.cwd()) => {
+  const appSource = fs.readFileSync(path.join(root, 'src', 'App.jsx'), 'utf8');
+  const appRoutes = extractAppRoutes(appSource);
+  const baselineRoutes = CURRENT_ROUTE_BASELINE.map((entry) => entry.path);
+  const staticTargets = collectStaticNavigationTargets(path.join(root, 'src'));
+  const brokenTargets = findBrokenStaticTargets(appRoutes, staticTargets);
+
+  return {
+    appRoutes,
+    baselineRoutes,
+    missingFromBaseline: appRoutes.filter((routePath) => !baselineRoutes.includes(routePath)),
+    missingFromApp: baselineRoutes.filter((routePath) => !appRoutes.includes(routePath)),
+    duplicateAppRoutes: appRoutes.filter((routePath, index) => appRoutes.indexOf(routePath) !== index),
+    duplicateBaselineRoutes: baselineRoutes.filter(
+      (routePath, index) => baselineRoutes.indexOf(routePath) !== index,
+    ),
+    staticTargets,
+    brokenTargets,
+  };
+};

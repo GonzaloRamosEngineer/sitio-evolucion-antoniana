@@ -36,6 +36,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { postularComercio } from '@/api/clubApi';
 import { entidad, tituloPagina } from '@/config/entidad';
+import { canonicalUrl } from '@/lib/seo';
 
 const urlOpcional = z
   .string()
@@ -151,6 +152,7 @@ const PostularComercioPage = () => {
           name="description"
           content="Ofrecé un beneficio a quienes sostienen la fundación y llegá a nuevos clientes."
         />
+        <link rel="canonical" href={canonicalUrl('/club/postular')} />
       </Helmet>
 
       <Eyebrow>{entidad.comunidadEvolucion.nombre}</Eyebrow>

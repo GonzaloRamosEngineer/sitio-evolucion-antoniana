@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit:routes": "node tools/audit-routes.mjs",
     "test:integration": "node tools/run-integration-tests.mjs",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop"

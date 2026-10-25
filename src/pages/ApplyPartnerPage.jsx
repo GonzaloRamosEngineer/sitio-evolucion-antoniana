@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { addPartner } from '@/lib/storage';
 import { Honeypot } from '@/components/Forms/Honeypot';
+import { canonicalUrl } from '@/lib/seo';
 
 const urlSchema = z.string().url();
 
@@ -100,6 +101,7 @@ const ApplyPartnerPage = () => {
           name="description"
           content="Únete a nuestra red de partners y colabora con el desarrollo social de la comunidad"
         />
+        <link rel="canonical" href={canonicalUrl('/postular-partner')} />
       </Helmet>
 
       {/* Fix autofill colors */}

@@ -1,7 +1,7 @@
 // src/pages/NewsDetailPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -18,6 +18,7 @@ import { SanitizedHtml } from "@/components/ui/sanitized-html";
 import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-state";
 import { useNewsItem } from "@/hooks/useContentQueries";
 import { logger } from '@/lib/logger';
+import { canonicalUrl as buildCanonicalUrl } from '@/lib/seo';
 
 const toPlainText = (value = "") => {
   // Limpia saltos y espacios raros para que description quede linda
@@ -35,6 +36,7 @@ const truncate = (value = "", max = 180) => {
 const NewsDetailPage = () => {
   const params = useParams();
   const routeParam = params.slug ?? params.id;
+  const navigate = useNavigate();
 
   const [copied, setCopied] = useState(false);
 
@@ -47,15 +49,18 @@ const NewsDetailPage = () => {
 
   const slugOrId = useMemo(() => item?.slug || routeParam, [item, routeParam]);
 
-  const origin =
-    typeof window === "undefined" ? "" : window.location.origin;
-
   // URL real (la de tu SPA) — es también la que se comparte.
   // Los bots de redes reciben el OG dinámico vía rewrite condicional por
   // User-Agent en vercel.json, así que ya no hace falta compartir /api/share/.
-  const canonicalUrl = `${origin}/novedades/${slugOrId}`;
+  const canonicalUrl = buildCanonicalUrl(`/novedades/${encodeURIComponent(slugOrId)}`);
 
   const shareUrl = canonicalUrl;
+
+  useEffect(() => {
+    if (item?.slug && routeParam !== item.slug) {
+      navigate(`/novedades/${item.slug}`, { replace: true });
+    }
+  }, [item?.slug, navigate, routeParam]);
 
 
   // Datos para Helmet (esto no afecta WhatsApp, pero sí tu navegador/SEO básico)
@@ -128,6 +133,7 @@ const NewsDetailPage = () => {
         <title>{title} - Fundación Evolución Antoniana</title>
         <meta name="description" content={description} />
         <link rel="canonical" href={canonicalUrl} />
+        {params.id && <meta name="robots" content="noindex, follow" />}
       </Helmet>
 
       <div className="flex-1 py-12 px-4 md:px-6">

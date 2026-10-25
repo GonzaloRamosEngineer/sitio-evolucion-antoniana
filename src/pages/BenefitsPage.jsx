@@ -11,6 +11,7 @@ import { useBeneficiosVidriera, useMiAcceso } from '@/hooks/useContentQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/acceso';
 import { entidad, tituloPagina } from '@/config/entidad';
+import { canonicalUrl } from '@/lib/seo';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -72,6 +73,7 @@ const BenefitsPage = () => {
           name="description"
           content="Beneficios de comercios aliados para quienes sostienen la misión de la Fundación Evolución Antoniana."
         />
+        <link rel="canonical" href={canonicalUrl('/beneficios')} />
       </Helmet>
 
       {/* --- HERO (lenguaje editorial, patrón de Contact) --- */}

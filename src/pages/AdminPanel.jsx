@@ -179,6 +179,7 @@ const AdminPanel = () => {
           name="description"
           content="Gestión de actividades, usuarios, colaboraciones, donaciones, documentos legales, partners, beneficios y novedades."
         />
+        <meta name="robots" content="noindex" />
       </Helmet>
 
       {/* --- HEADER COMPACTO --- */}
