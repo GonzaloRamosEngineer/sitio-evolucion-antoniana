@@ -12,7 +12,7 @@ import ContactModal from '@/components/Collaborate/ContactModal';
 import SelectorDestino from '@/components/Collaborate/SelectorDestino';
 import AvisoSesion from '@/components/Collaborate/AvisoSesion';
 import { Link } from 'react-router-dom';
-import { entidad } from '@/config/entidad';
+import { entidad, tituloPagina } from '@/config/entidad';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
 import { useAuth } from '@/hooks/useAuth';
@@ -314,8 +314,8 @@ const Collaborate = () => {
   return (
     <>
       <Helmet>
-        <title>Colaborá - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Sumate como voluntario, aliado o donante y ayudá a transformar realidades con la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Colaborá')}</title>
+        <meta name="description" content={`Sumate como voluntario, aliado o donante y ayudá a transformar realidades con ${entidad.nombre}.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.colaborar)} />
       </Helmet>
 

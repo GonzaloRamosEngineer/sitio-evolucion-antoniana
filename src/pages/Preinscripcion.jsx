@@ -7,6 +7,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import EducationForm from '@/components/Forms/EducationForm';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const Preinscription = () => {
   const reduceMotion = useReducedMotion();
@@ -63,8 +64,8 @@ const Preinscription = () => {
   return (
     <div className="min-h-screen bg-brand-sand">
       <Helmet>
-        <title>Preinscripción - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Preinscribite a los programas educativos de la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Preinscripción')}</title>
+        <meta name="description" content={`Preinscribite a los programas educativos de ${entidad.nombre}.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.preinscripcion)} />
       </Helmet>
 

@@ -13,6 +13,7 @@ import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { Loader2, Send, User, Mail, MessageSquare } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { entidad } from '@/config/entidad';
 
 const collaborationSchema = z.object({
   name: z.string().trim().min(2, 'Ingresá tu nombre completo'),
@@ -70,7 +71,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          recipient_email: 'info@evolucionantoniana.com',
+          recipient_email: entidad.contacto.email,
           subject: `Interés de colaboración: ${collaborationType}`,
           text_content: emailBody,
           html_content:
@@ -108,7 +109,7 @@ const ContactModal = ({ open, onOpenChange, collaborationType }) => {
                 Hablemos
             </DialogTitle>
             <DialogDescription className="text-gray-600 text-base">
-                ¿Te interesa colaborar como {collaborationType?.toLowerCase() || 'partner'}? Dejanos tus datos y te contactamos.
+                ¿Te interesa colaborar como {collaborationType?.toLowerCase() || 'organización aliada'}? Dejanos tus datos y te contactamos.
             </DialogDescription>
             </DialogHeader>
         </div>

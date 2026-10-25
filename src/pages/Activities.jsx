@@ -11,6 +11,7 @@ import { useActivitiesQuery } from '@/hooks/useContentQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 import { canonicalUrl } from '@/lib/seo';
 import {
   Calendar,
@@ -347,8 +348,8 @@ const getCleanTitle = (title) => {
       className="min-h-screen bg-brand-sand font-sans"
     >
       <Helmet>
-        <title>Actividades - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Explorá las actividades, talleres y eventos de la Fundación Evolución Antoniana e inscribite." />
+        <title>{tituloPagina('Actividades')}</title>
+        <meta name="description" content={`Explorá las actividades, talleres y eventos de ${entidad.nombre} e inscribite.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.actividades.lista)} />
       </Helmet>
       {/* ============ HERO ============ */}

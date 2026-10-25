@@ -18,6 +18,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { escapeHtml, escapeHtmlMultiline } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { entidad, mailtoContacto, tituloPagina, whatsappUrl } from '@/config/entidad';
 
 const contactChannels = [
   {
@@ -25,8 +26,8 @@ const contactChannels = [
     title: 'WhatsApp oficial',
     lines: [
       {
-        text: '+54 387 213-1916',
-        href: 'https://wa.me/543872131916?text=Hola%2C%20quiero%20consultar%20sobre%20la%20Fundación',
+        text: entidad.contacto.telefono,
+        href: whatsappUrl,
       },
       { text: 'Lunes a viernes, 9:00 a 18:00' },
     ],
@@ -35,14 +36,14 @@ const contactChannels = [
     icon: Mail,
     title: 'Correo electrónico',
     lines: [
-      { text: 'info@evolucionantoniana.com', href: 'mailto:info@evolucionantoniana.com' },
+      { text: entidad.contacto.email, href: mailtoContacto },
       { text: 'Respuesta en 24 horas hábiles' },
     ],
   },
   {
     icon: MapPin,
     title: 'Ubicación',
-    lines: [{ text: 'Salta Capital, Argentina' }, { text: 'Visitas con cita previa' }],
+    lines: [{ text: entidad.ubicacion.display }, { text: 'Visitas con cita previa' }],
   },
   {
     icon: Clock,
@@ -120,7 +121,7 @@ const Contact = () => {
     try {
       const { error } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          recipient_email: 'info@evolucionantoniana.com',
+          recipient_email: entidad.contacto.email,
           subject: `Nuevo Mensaje de Contacto: ${data.subject}`,
           text_content: emailBody,
           html_content: `<p><strong>Nombre:</strong> ${escapeHtml(data.name)}</p>
@@ -159,8 +160,8 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-brand-sand">
       <Helmet>
-        <title>Contacto - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Comunicate con la Fundación Evolución Antoniana. Escribinos a info@evolucionantoniana.com." />
+        <title>{tituloPagina('Contacto')}</title>
+        <meta name="description" content={`Comunicate con ${entidad.nombre}. Escribinos a ${entidad.contacto.email}.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.contacto)} />
       </Helmet>
 

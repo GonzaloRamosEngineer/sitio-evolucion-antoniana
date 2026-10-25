@@ -6,15 +6,16 @@ import { ArrowLeft, ShieldCheck, Lock, Eye, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad, mailtoContacto, tituloPagina } from '@/config/entidad';
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>Política de Privacidad - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Política de privacidad')}</title>
         <meta
           name="description"
-          content="Política de Privacidad de la Fundación Evolución Antoniana. Conocé cómo protegemos tus datos personales."
+          content={`Política de privacidad de ${entidad.nombre}. Conocé cómo protegemos tus datos personales.`}
         />
         <link rel="canonical" href={canonicalUrl(RUTAS.legal.privacidad)} />
       </Helmet>
@@ -45,7 +46,7 @@ const PrivacyPolicy = () => {
         >
           <div className="prose prose-lg prose-headings:font-poppins prose-headings:text-brand-dark prose-p:text-gray-600 prose-strong:text-brand-primary max-w-none">
             <p className="lead text-xl text-gray-500 font-medium mb-8">
-              En la <strong>Fundación Evolución Antoniana</strong> respetamos tu privacidad y nos
+              En <strong>{entidad.nombre}</strong> respetamos tu privacidad y nos
               comprometemos a proteger la información personal que compartís con nosotros.
             </p>
 
@@ -94,8 +95,8 @@ const PrivacyPolicy = () => {
             <p>
               Podés solicitar el acceso, rectificación o eliminación de tus datos personales en cualquier
               momento escribiéndonos a{' '}
-              <a href="mailto:info@evolucionantoniana.com" className="text-brand-action font-bold no-underline hover:underline">
-                info@evolucionantoniana.com
+              <a href={mailtoContacto} className="text-brand-action font-bold no-underline hover:underline">
+                {entidad.contacto.email}
               </a>.
             </p>
 

@@ -6,15 +6,16 @@ import { ArrowLeft, Scale, ExternalLink, AlertCircle, FileCheck } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const TermsOfUse = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>Términos de Uso - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Términos de uso')}</title>
         <meta
           name="description"
-          content="Términos y Condiciones de uso del sitio web de la Fundación Evolución Antoniana."
+          content={`Términos y condiciones de uso del sitio web de ${entidad.nombre}.`}
         />
         <link rel="canonical" href={canonicalUrl(RUTAS.legal.terminos)} />
       </Helmet>
@@ -45,7 +46,7 @@ const TermsOfUse = () => {
         >
           <div className="prose prose-lg prose-headings:font-poppins prose-headings:text-brand-dark prose-p:text-gray-600 prose-strong:text-brand-primary max-w-none">
             <p className="lead text-xl text-gray-500 font-medium mb-8 border-l-4 border-brand-action pl-4">
-              Al acceder y utilizar el sitio web de la <strong>Fundación Evolución Antoniana</strong>,
+              Al acceder y utilizar el sitio web de <strong>{entidad.nombre}</strong>,
               aceptás los siguientes términos y condiciones. Si no estás de acuerdo, te solicitamos que
               no utilices este sitio.
             </p>

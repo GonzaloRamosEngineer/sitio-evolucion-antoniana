@@ -72,7 +72,7 @@ const BenefitsPage = () => {
         <title>{tituloPagina(entidad.comunidadEvolucion.propuesta)}</title>
         <meta
           name="description"
-          content="Beneficios de comercios aliados para quienes sostienen la misión de la Fundación Evolución Antoniana."
+          content={`Beneficios de comercios aliados para quienes sostienen la misión de ${entidad.nombre}.`}
         />
         <link rel="canonical" href={canonicalUrl(RUTAS.beneficios.lista)} />
       </Helmet>

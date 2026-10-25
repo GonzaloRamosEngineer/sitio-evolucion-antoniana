@@ -21,6 +21,8 @@ const PUBLIC_PARTNER_TERM = new RegExp(
     'Partners evolutivos',
     'Partner verificado',
     "label:\\s*['\"]Partners['\"]",
+    "name:\\s*['\"]Partners['\"]",
+    "\\|\\|\\s*['\"]partner['\"]",
     'documentos legales, partners, beneficios',
   ].join('|'),
   'i',
@@ -65,7 +67,7 @@ export const auditLanguage = (root = process.cwd()) => {
   const partnerFiles = filesMatching(
     root,
     PUBLIC_PARTNER_TERM,
-    (relative) => relative.startsWith('src/pages/'),
+    (relative) => relative.startsWith('src/pages/') || relative.startsWith('src/components/'),
   );
   const clubDeBeneficiosFiles = filesMatching(root, CLUB_DE_BENEFICIOS);
   const brandAllowlist = new Set(BRAND_LITERAL_ALLOWLIST);

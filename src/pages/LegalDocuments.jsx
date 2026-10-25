@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad, mailtoContacto, tituloPagina } from '@/config/entidad';
 
 const LegalDocuments = () => {
   const [documents, setDocuments] = useState([]);
@@ -75,8 +76,8 @@ const LegalDocuments = () => {
   return (
     <div className="min-h-screen bg-brand-sand">
       <Helmet>
-        <title>Documentación Oficial - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Documentación oficial')}</title>
+        <meta name="description" content={`Accedé a los estatutos, balances y reportes de gestión de ${entidad.nombre}.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.transparencia.documentacion)} />
       </Helmet>
 
@@ -115,7 +116,7 @@ const LegalDocuments = () => {
               </div>
             </div>
             <p className="mt-5 text-sm leading-relaxed text-white/75">
-              Documentación oficial de la Fundación Evolución Antoniana, con acceso abierto y verificable.
+              Documentación oficial de {entidad.nombre}, con acceso abierto y verificable.
             </p>
           </div>
         </motion.div>
@@ -192,7 +193,7 @@ const LegalDocuments = () => {
               <FileSearch className="h-6 w-6 text-brand-gold" />
               <h2 className="mt-4 font-poppins text-xl font-bold text-brand-dark">¿Necesitás más información?</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">Para solicitar documentación ampliada o información específica, escribinos formalmente.</p>
-              <a href="mailto:info@evolucionantoniana.com" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-action hover:underline"><Mail className="h-4 w-4" />info@evolucionantoniana.com</a>
+              <a href={mailtoContacto} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-brand-action hover:underline"><Mail className="h-4 w-4" />{entidad.contacto.email}</a>
             </div>
 
             <div className="rounded-3xl border border-brand-gold/25 bg-brand-gold/10 p-7">

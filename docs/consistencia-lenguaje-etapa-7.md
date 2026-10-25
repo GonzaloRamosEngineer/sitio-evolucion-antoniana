@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A, 7B y 7C1 completos, publicados y verificados
+**Estado:** Bloques 7A, 7B y 7C1 completos; Bloque 7C2 preparado para publicación
 
 ## 1. Objetivo
 
@@ -127,9 +127,25 @@ La verificación de producción detectó que el rewrite dinámico `/alianzas/:sl
 palabra reservada `postularse` antes que su preview estático. El patrón ahora la excluye de forma
 explícita y una prueba de regresión protege esa precedencia.
 
-El próximo incremento, 7C2, migrará la marca y el SEO literal que todavía queda en otras páginas
-del frontend público. Contacto, servidor, Edge Functions y estáticos se mantienen para los
-bloques posteriores, evitando mezclar runtimes en un mismo despliegue.
+#### Bloque 7C2 — contenido público y contacto
+
+- [x] catorce páginas públicas migradas a `entidad` y `tituloPagina`;
+- [x] formularios públicos de colaboración y educación conectados al contacto configurado;
+- [x] teléfono, WhatsApp, email y ubicación visibles derivados del contrato de entidad;
+- [x] navegación pública renombrada de “Partners” a “Alianzas”;
+- [x] fallback visible del modal de colaboración expresado como “organización aliada”;
+- [x] auditoría de vocabulario ampliada a componentes públicos;
+- [x] deuda de marca o dominio reducida de 37 a 21 archivos;
+- [x] frontend público de contenido sin marca ni dominio literales;
+- [x] términos públicos `Partner(s)` y “Club de beneficios” en cero;
+- [x] suite completa: 64 archivos y 696 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
+- [ ] deploy de Vercel y verificación de navegación, páginas y metadatos en producción.
+
+Los 21 archivos restantes están delimitados: cinco endpoints de previews, tres estáticos, nueve
+pantallas de autenticación, áreas privadas o administración, y cuatro Edge Functions. El próximo
+incremento seguro es 7C3, dedicado a las pantallas frontend no públicas. Servidor, estáticos y
+funciones remotas continúan separados para el Bloque 7D.
 
 ### Bloque 7D — servidor y estáticos
 

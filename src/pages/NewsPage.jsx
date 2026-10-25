@@ -9,6 +9,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { useNews } from '@/hooks/useContentQueries';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const NewsPage = () => {
   // Antes: useState(news/loading/error) + useEffect + fetchData manual.
@@ -18,7 +19,7 @@ const NewsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>Novedades - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Novedades')}</title>
         <meta
           name="description"
           content="Mantenete al día con las últimas noticias y actividades de la Fundación."
@@ -42,8 +43,7 @@ const NewsPage = () => {
             Novedades
           </h1>
           <p className="max-w-[36rem] text-lg leading-relaxed text-white/75">
-            Últimas noticias, avances de proyectos y actividades de la Fundación
-            Evolución Antoniana.
+            Últimas noticias, avances de proyectos y actividades de {entidad.nombre}.
           </p>
         </motion.div>
       </section>
@@ -97,7 +97,7 @@ const NewsPage = () => {
                       ) : (
                         <div className="w-full h-full bg-brand-dark flex flex-col items-center justify-center p-6">
                            <span className="text-brand-gold font-bold text-lg text-center">
-                             Evolución Antoniana
+                             {entidad.nombreCorto}
                            </span>
                         </div>
                       )}

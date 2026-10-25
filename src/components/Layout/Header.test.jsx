@@ -46,7 +46,7 @@ describe('Header — la navegación pública', () => {
 
     // Con el submenú cerrado, su contenido no está en el árbol.
     expect(screen.queryByRole('link', { name: /Documentación oficial/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /^Partners/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Alianzas/i })).toBeNull();
 
     fireEvent.mouseEnter(enlace('Transparencia').parentElement);
 
@@ -55,14 +55,14 @@ describe('Header — la navegación pública', () => {
       .toHaveAttribute('href', '/transparencia/documentacion');
     // ...y los de los otros grupos siguen cerrados. Este es el control que el
     // ternario de dos ramas no pasaba.
-    expect(screen.queryByRole('link', { name: /^Partners/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Alianzas/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Beneficios/i })).toBeNull();
   });
 
   it('los grupos que ya existían siguen abriendo el suyo', () => {
     montar();
     fireEvent.mouseEnter(enlace('Nosotros').parentElement);
-    expect(screen.getByRole('link', { name: /^Partners/i })).toHaveAttribute('href', '/alianzas');
+    expect(screen.getByRole('link', { name: /^Alianzas/i })).toHaveAttribute('href', '/alianzas');
     expect(screen.queryByRole('link', { name: /Documentación oficial/i })).toBeNull();
   });
 

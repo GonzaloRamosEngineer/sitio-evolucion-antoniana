@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { ArrowLeft, Home } from 'lucide-react';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const NotFound = () => (
   <>
     <Helmet>
-      <title>Página no encontrada — Fundación Evolución Antoniana</title>
+      <title>{tituloPagina('Página no encontrada')}</title>
       <meta name="robots" content="noindex" />
     </Helmet>
 

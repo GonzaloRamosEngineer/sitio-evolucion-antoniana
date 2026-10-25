@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { entidad } from '@/config/entidad';
 
 const educationSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -321,7 +322,7 @@ const EducationForm = ({ onSuccess }) => {
 
       <div className="flex items-center gap-3 text-xs text-gray-600 justify-center pt-4 border-t border-brand-dark/10">
         <ShieldCheck size={14} className="text-brand-gold" />
-        Registro seguro — Fundación Evolución Antoniana
+        Registro seguro — {entidad.nombre}
       </div>
     </form>
   );

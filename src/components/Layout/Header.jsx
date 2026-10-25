@@ -65,7 +65,7 @@ const Header = () => {
       name: "Nosotros",
       href: RUTAS.nosotros,
       key: "nosotros",
-      subitems: [{ name: "Partners", href: RUTAS.alianzas.lista }],
+      subitems: [{ name: "Alianzas", href: RUTAS.alianzas.lista }],
     },
     { name: "Actividades", href: RUTAS.actividades.lista },
     {

@@ -16,6 +16,7 @@ import { logger } from '@/lib/logger';
 import PrecioActividad from '@/components/Activities/PrecioActividad';
 import { canonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const parseCycleFromTitle = (title = '') => {
   const m = title.match(/^\[(Ciclo\s+[A-Z])\s*[·\-–]\s*([^\]]+)\]\s*[—\-–]\s*(.+)$/i);
@@ -219,8 +220,8 @@ const ActivityDetailPage = () => {
       className="min-h-screen bg-brand-sand font-sans py-12"
     >
       <Helmet>
-        <title>{(cleanTitle || activity?.title) ? `${cleanTitle || activity.title} - Fundación Evolución Antoniana` : 'Actividad - Fundación Evolución Antoniana'}</title>
-        <meta name="description" content={descBody || activity?.description || 'Actividad de la Fundación Evolución Antoniana.'} />
+        <title>{tituloPagina(cleanTitle || activity?.title || 'Actividad')}</title>
+        <meta name="description" content={descBody || activity?.description || `Actividad de ${entidad.nombre}.`} />
         <link
           rel="canonical"
           href={canonicalUrl(RUTAS.actividades.detalle(activity.slug || activity.id))}

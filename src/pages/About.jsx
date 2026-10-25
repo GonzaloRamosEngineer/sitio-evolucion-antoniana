@@ -3,6 +3,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 import { canonicalUrl } from '@/lib/seo';
 import {
   Heart,
@@ -113,8 +114,8 @@ const About = () => {
   return (
     <div className="min-h-screen bg-brand-sand">
       <Helmet>
-        <title>Quiénes somos - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Conocé la misión, los valores y el equipo de la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('Quiénes somos')}</title>
+        <meta name="description" content={`Conocé la misión, los valores y el equipo de ${entidad.nombre}.`} />
         <link rel="canonical" href={canonicalUrl(RUTAS.nosotros)} />
       </Helmet>
 
@@ -154,7 +155,7 @@ const About = () => {
 
               <div className="space-y-6 text-gray-600 text-lg leading-relaxed">
                 <p>
-                  La <strong className="text-brand-primary">Fundación Evolución Antoniana</strong> nació en Salta en 2020, fruto de la visión de un grupo de profesionales decididos a transformar la realidad social y deportiva de la región.
+                  La <strong className="text-brand-primary">{entidad.nombre}</strong> nació en Salta en 2020, fruto de la visión de un grupo de profesionales decididos a transformar la realidad social y deportiva de la región.
                 </p>
                 <p>
                   Desde nuestra constitución legal en 2022, hemos consolidado un modelo de gestión que une <span className="font-medium text-brand-dark">tradición y modernidad</span>. Promovemos la educación, el deporte y la innovación tecnológica como motores de cambio real.

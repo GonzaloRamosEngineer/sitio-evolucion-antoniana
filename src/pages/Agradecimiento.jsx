@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, PartyPopper, Gift, Home as HomeIcon, XCircle, Clock, HeartHandshake } from 'lucide-react';
 import ReactConfetti from 'react-confetti';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const Agradecimiento = () => {
   const location = useLocation();
@@ -114,8 +115,8 @@ const Agradecimiento = () => {
   return (
     <>
       <Helmet>
-        <title>¡Gracias! - Fundación Evolución Antoniana</title>
-        <meta name="description" content="Gracias por tu colaboración con la Fundación Evolución Antoniana." />
+        <title>{tituloPagina('¡Gracias!')}</title>
+        <meta name="description" content={`Gracias por tu colaboración con ${entidad.nombre}.`} />
         <meta name="robots" content="noindex" />
       </Helmet>
       {showConfetti && <ReactConfetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} colors={['#163A68', '#9C2A32', '#C98E2A', '#F9F7F5']} />}
@@ -176,7 +177,7 @@ const Agradecimiento = () => {
         </motion.div>
 
         <footer className="mt-12 text-center">
-           <p className="text-sm text-gray-400 font-medium">Fundación Evolución Antoniana</p>
+           <p className="text-sm text-gray-400 font-medium">{entidad.nombre}</p>
         </footer>
       </div>
     </>

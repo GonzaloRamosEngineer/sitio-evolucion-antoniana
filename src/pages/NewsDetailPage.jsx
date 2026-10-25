@@ -20,6 +20,7 @@ import { useNewsItem } from "@/hooks/useContentQueries";
 import { logger } from '@/lib/logger';
 import { canonicalUrl as buildCanonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const toPlainText = (value = "") => {
   // Limpia saltos y espacios raros para que description quede linda
@@ -65,7 +66,7 @@ const NewsDetailPage = () => {
 
 
   // Datos para Helmet (esto no afecta WhatsApp, pero sí tu navegador/SEO básico)
-  const title = item?.title || "Novedad - Fundación Evolución Antoniana";
+  const title = item?.title || "Novedad";
   const description = truncate(item?.content || "", 180);
 
   // Links de compartir
@@ -113,7 +114,7 @@ const NewsDetailPage = () => {
   };
 
   if (loading) {
-    return <ResourceLoading title="Cargando noticia… – Fundación Evolución Antoniana" />;
+    return <ResourceLoading title={tituloPagina('Cargando noticia…')} />;
   }
 
   if (!item) {
@@ -131,7 +132,7 @@ const NewsDetailPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>{title} - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina(title)}</title>
         <meta name="description" content={description} />
         <link rel="canonical" href={canonicalUrl} />
         {params.id && <meta name="robots" content="noindex, follow" />}
