@@ -1,7 +1,7 @@
 # Migración de rutas públicas estáticas — Etapa 4
 
 **Fecha:** 2026-10-25
-**Estado:** completa y validada localmente; pendiente de publicación
+**Estado:** completa, publicada y verificada
 **Alcance:** rutas públicas estáticas, navegación, canonical, sitemap y Open Graph
 
 ## Objetivo
@@ -77,15 +77,19 @@ Las pruebas verifican además que:
 - sitemap, canonical y OG utilizan las canónicas nuevas;
 - las rutas dinámicas permanecen sin cambios.
 
-## Gate de producción pendiente
+## Verificación en producción
 
-- [ ] deploy de Vercel correcto;
-- [ ] URL anterior responde 308 sin cadena;
-- [ ] URL canónica responde 200;
-- [ ] query string preservada;
-- [ ] navegación interna usa las canónicas;
-- [ ] sitemap contiene las canónicas y excluye los aliases;
-- [ ] OG de las canónicas responde correctamente;
-- [ ] rutas dinámicas continúan operativas.
+Publicación funcional: commit `1350205c`, deploy de Vercel completado correctamente el
+2026-10-25.
 
-La Etapa 5 no se inicia hasta completar estas verificaciones.
+- [x] deploy de Vercel correcto;
+- [x] las 11 URLs anteriores responden 308 sin cadena;
+- [x] las 11 URLs canónicas responden 200;
+- [x] query string preservada en el redirect;
+- [x] navegación interna usa las canónicas;
+- [x] sitemap contiene las canónicas y excluye los aliases;
+- [x] OG y canonical usan la URL nueva;
+- [x] el alias entrega 308 también a bots de preview;
+- [x] `/activities/:id` y `/partners/:slug` continúan respondiendo 200.
+
+Vercel informó `Deployment has completed`. La Etapa 5 queda habilitada.

@@ -13,8 +13,8 @@
 | 1. Línea base y red de seguridad | Completa | `docs/linea-base-rutas-etapa-1.md` |
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
-| 4. Migración de rutas públicas estáticas | Completa y validada localmente; pendiente de publicación | `docs/migracion-rutas-publicas-etapa-4.md` |
-| 5–9 | Pendientes | Se inician únicamente al cerrar el gate de producción anterior |
+| 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
+| 5–9 | Pendientes | Etapa 5 habilitada |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -539,7 +539,7 @@ pertenecen a etapas posteriores permanecen visibles, pero no bloquean la migraci
 
 ## 13. Próximo incremento
 
-La Etapa 4 está completa localmente. El siguiente paso seguro es publicarla y verificar:
+La Etapa 4 está publicada y verificada. El gate comprobó que:
 
 1. cada URL anterior devuelve un único 308;
 2. cada destino canónico responde 200;
@@ -547,5 +547,4 @@ La Etapa 4 está completa localmente. El siguiente paso seguro es publicarla y v
 4. sitemap, canonical y OG usan solamente las URLs nuevas;
 5. ninguna ruta dinámica fue alterada antes de la Etapa 5.
 
-Con ese gate de producción cerrado queda habilitada la **Etapa 5 — Slugs y aliases
-dinámicos**.
+Con el gate de producción cerrado queda habilitada la **Etapa 5 — Slugs y aliases dinámicos**.
