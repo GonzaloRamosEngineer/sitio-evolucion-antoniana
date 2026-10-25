@@ -1,7 +1,7 @@
 # Higiene SEO — Etapa 2
 
 **Fecha:** 2026-10-24
-**Estado:** completa; pendiente de publicación
+**Estado:** completa, publicada y verificada
 **Alcance:** corregir indexación y canonicals sin renombrar rutas
 
 ## Cambios
@@ -82,5 +82,20 @@ requieren aliases persistidos en base de datos.
 - [x] verificación local del build: `/robots.txt` respondió `200`,
   `Content-Type: text/plain` y el contenido esperado.
 
-El gate técnico queda cerrado. La publicación y la comprobación del dominio real son una
-acción separada: hasta entonces, producción conserva el comportamiento anterior.
+## Verificación en producción
+
+Publicación funcional: commit `8a71fa28`, deploy de Vercel completado correctamente el
+2026-10-24.
+
+- `/robots.txt`: `200`, `Content-Type: text/plain; charset=utf-8`, contenido correcto.
+- `/sitemap.xml`: `200`, `Content-Type: application/xml; charset=utf-8`.
+- Sitemap: 40 URLs; incluye páginas estáticas y contenidos publicados por slug.
+- Sitemap: no incluye login, dashboard, administración, comisión, carnet, comercio ni
+  rutas de compatibilidad por ID.
+- `/beneficios`: canonical renderizado sobre el dominio de producción.
+- Detalle de beneficio: título y contenido cargados en navegador real.
+- Preview social del beneficio: `og:url` y canonical coinciden con la URL humana.
+- `/club`: `noindex, follow` renderizado.
+- `/beneficios/id/:id`: resolvió el contenido y reemplazó la URL por su slug canónico.
+
+El gate técnico y el gate de producción quedan cerrados. La Etapa 3 está habilitada.

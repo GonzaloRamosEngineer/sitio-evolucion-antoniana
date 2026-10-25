@@ -11,8 +11,8 @@
 |---|---|---|
 | 0. Estándar y mapa | Completa | Este documento |
 | 1. Línea base y red de seguridad | Completa | `docs/linea-base-rutas-etapa-1.md` |
-| 2. Higiene SEO sin renombrar | Completa; pendiente de publicación | `docs/higiene-seo-etapa-2.md` |
-| 3–9 | Pendientes | La Etapa 3 se inicia después de publicar y verificar la Etapa 2 |
+| 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
+| 3–9 | Pendientes | La Etapa 3 es el próximo incremento habilitado |
 
 ## 1. Objetivo
 
