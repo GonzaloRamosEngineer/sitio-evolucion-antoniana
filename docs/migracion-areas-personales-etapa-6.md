@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A–6B2B1 completos; Bloque 6B2B2 preparado para desplegar
+**Estado:** Bloques 6A–6B2B1 completos; Bloque 6B2B2 desplegado y verificado técnicamente
 
 ## 1. Estrategia de despliegue
 
@@ -171,8 +171,17 @@ operativo como rollback inmediato.
 - [x] prueba contractual impide reintroducir literales heredados;
 - [x] suite completa: 62 archivos y 689 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y auditoría correctos;
-- [ ] commit y despliegue individual de las cuatro Edge Functions;
-- [ ] smoke tests de autorización y disponibilidad en producción.
+- [x] commit `e381464d` y despliegue individual de las cuatro Edge Functions;
+- [x] funciones activas: `create-user` v7, `resend-verification` v6,
+  `club-invitar-operador` v2 y `send-activity-confirmation` v17;
+- [x] preflight CORS responde 200 en las cuatro funciones;
+- [x] POST sin token responde 401 en las cuatro funciones, preservando `verify_jwt`;
+- [x] deploy de Vercel asociado completado;
+- [ ] validación operativa de emails de alta, reenvío, comercio y asistencia con casos reales.
+
+La verificación operativa pendiente requiere destinatarios y registros reales; no se generan
+usuarios, invitaciones ni correos de prueba automáticamente. Los aliases heredados permanecen
+activos durante esta observación.
 
 ## 11. Rollback de rutas
 
