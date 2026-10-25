@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { CalendarDays, User, Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { RUTAS } from '@/config/rutas';
 
 const BottomNavBar = () => {
   const { isAuthenticated } = useAuth();
@@ -20,20 +21,20 @@ const BottomNavBar = () => {
     },
     {
       name: 'Aportar',
-      href: '/collaborate',
+      href: RUTAS.colaborar,
       icon: Heart,
       isExternal: false,
       color: 'text-brand-action'
     },
     {
       name: 'Actividades',
-      href: '/activities',
+      href: RUTAS.actividades.lista,
       icon: CalendarDays,
       isExternal: false,
     },
     {
       name: 'Mi Perfil',
-      href: isAuthenticated ? '/dashboard' : '/login',
+      href: isAuthenticated ? RUTAS.mi.cuenta : RUTAS.auth.ingresar,
       icon: User,
       isExternal: false,
     },

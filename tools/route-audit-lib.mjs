@@ -1,62 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-const route = (pathName, surface, access, seo, preview) => ({
-  path: pathName,
-  surface,
-  access,
-  seo,
-  preview,
-});
+import { ROUTE_MANIFEST, ROUTE_PATHS } from '../src/config/rutas.js';
 
 /**
  * Línea base de Etapa 1. Es deliberadamente externa al runtime: todavía no es
  * el registro central de rutas de la Etapa 3. Su trabajo es detectar cambios
  * accidentales en App.jsx antes de iniciar la migración.
  */
-export const CURRENT_ROUTE_BASELINE = [
-  route('/', 'publica', 'publico', 'indexable', 'institucional'),
-  route('/about', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/activities', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/activities/:id', 'detalle', 'publico', 'indexable', 'dinamico'),
-  route('/confirm-attendance', 'accion', 'publico-con-token', 'noindex', 'ninguno'),
-  route('/collaborate', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/rendicion', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/contact', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/agradecimiento', 'accion', 'publico', 'noindex', 'ninguno'),
-  route('/login', 'auth', 'anonimo', 'noindex', 'ninguno'),
-  route('/register', 'auth', 'anonimo', 'noindex', 'ninguno'),
-  route('/request-password-reset', 'auth', 'anonimo', 'noindex', 'ninguno'),
-  route('/update-password', 'auth', 'publico-con-token', 'noindex', 'ninguno'),
-  route('/legal-documents', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/privacy', 'legal', 'publico', 'indexable', 'estatico'),
-  route('/terms', 'legal', 'publico', 'indexable', 'estatico'),
-  route('/partners', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/partners/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
-  route('/beneficios', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/beneficios/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
-  route('/beneficios/id/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
-  route('/postular-partner', 'accion', 'publico', 'indexable', 'estatico'),
-  route('/novedades', 'publica', 'publico', 'indexable', 'estatico'),
-  route('/novedades/:slug', 'detalle', 'publico', 'indexable', 'dinamico'),
-  route('/novedades/id/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
-  route('/novedades/uuid/:id', 'compatibilidad', 'publico', 'alias-noindex', 'dinamico'),
-  route('/preinscripcion', 'accion', 'publico', 'indexable', 'estatico'),
-  route('/admin/education', 'administracion', 'admin-o-educacion', 'privado-noindex', 'ninguno'),
-  route('/comision', 'portal', 'comision-autorizada', 'privado-noindex', 'ninguno'),
-  route('/carnet', 'personal', 'sesion', 'privado-noindex', 'ninguno'),
-  route('/club', 'personal', 'publico-accion-protegida', 'noindex', 'estatico'),
-  route('/club/postular', 'accion', 'publico', 'indexable', 'estatico'),
-  route('/comercio', 'portal', 'sesion-y-pertenencia', 'privado-noindex', 'ninguno'),
-  route('/dashboard', 'personal', 'sesion', 'privado-noindex', 'ninguno'),
-  route('/admin/activities/new', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
-  route('/admin/activities/edit/:id', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
-  route('/admin/*', 'administracion', 'admin', 'privado-noindex', 'ninguno'),
-  route('*', 'fallback', 'publico', 'noindex', 'ninguno'),
-];
+export const CURRENT_ROUTE_BASELINE = ROUTE_MANIFEST;
 
 export const extractAppRoutes = (source) =>
-  [...source.matchAll(/<Route\s[^>]*?path=["']([^"']+)["']/gs)].map((match) => match[1]);
+  [...source.matchAll(
+    /<Route\s[^>]*?path=(?:["']([^"']+)["']|\{ROUTE_PATHS\.([A-Z0-9_]+)\})/gs,
+  )].map((match) => match[1] ?? ROUTE_PATHS[match[2]]);
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

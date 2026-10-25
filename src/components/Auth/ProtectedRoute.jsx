@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { RUTAS } from '@/config/rutas';
 
 const ProtectedRoute = ({ children, requireAdmin = false, allowedRoles = null }) => {
   const { isAuthenticated, isAdmin, role, loading } = useAuth();
@@ -15,19 +16,19 @@ const ProtectedRoute = ({ children, requireAdmin = false, allowedRoles = null })
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={RUTAS.auth.ingresar} state={{ from: location }} replace />;
   }
 
   if (requireAdmin && !isAdmin) {
     // Si requiere admin y no lo es, redirigir a dashboard o a una página de "acceso denegado"
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
+    return <Navigate to={RUTAS.mi.cuenta} state={{ from: location }} replace />;
   }
 
   // Restricción por roles permitidos (ej: ["admin", "educacion_manager"]).
   // Los admin siempre pasan. OJO: esto es solo una barrera de UI;
   // la seguridad real debe estar en las políticas RLS de Supabase.
   if (allowedRoles && !isAdmin && !allowedRoles.includes(role)) {
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
+    return <Navigate to={RUTAS.mi.cuenta} state={{ from: location }} replace />;
   }
 
   return children;

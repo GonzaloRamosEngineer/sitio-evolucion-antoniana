@@ -1,21 +1,22 @@
 import { entidad } from '../src/config/entidad.js';
+import { ROUTE_PATHS } from '../src/config/rutas.js';
 
 const STATIC_PATHS = [
-  '/',
-  '/about',
-  '/activities',
-  '/collaborate',
-  '/rendicion',
-  '/contact',
-  '/legal-documents',
-  '/privacy',
-  '/terms',
-  '/partners',
-  '/postular-partner',
-  '/beneficios',
-  '/novedades',
-  '/preinscripcion',
-  '/club/postular',
+  ROUTE_PATHS.INICIO,
+  ROUTE_PATHS.NOSOTROS,
+  ROUTE_PATHS.ACTIVIDADES,
+  ROUTE_PATHS.COLABORAR,
+  ROUTE_PATHS.RENDICION,
+  ROUTE_PATHS.CONTACTO,
+  ROUTE_PATHS.DOCUMENTACION_LEGAL,
+  ROUTE_PATHS.PRIVACIDAD,
+  ROUTE_PATHS.TERMINOS,
+  ROUTE_PATHS.ALIANZAS,
+  ROUTE_PATHS.POSTULAR_ALIANZA,
+  ROUTE_PATHS.BENEFICIOS,
+  ROUTE_PATHS.NOVEDADES,
+  ROUTE_PATHS.PREINSCRIPCION,
+  ROUTE_PATHS.POSTULAR_COMERCIO,
 ];
 
 const escapeXml = (value = '') =>

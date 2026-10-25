@@ -13,6 +13,7 @@ import Footer from "@/components/Layout/Footer";
 import BottomNavBar from "@/components/Layout/BottomNavBar";
 import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { ROUTE_PATHS } from "@/config/rutas";
 
 // Shell siempre presente (no se hace lazy: layout + guards + helpers)
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
@@ -74,55 +75,55 @@ const PageRoutes = () => {
       <Suspense key={location.pathname} fallback={<PageLoader />}>
       <Routes location={location}>
         {/* Sitio */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/activities" element={<Activities />} />
-        <Route path="/activities/:id" element={<ActivityDetailPage />} />
-        <Route path="/confirm-attendance" element={<ConfirmAttendancePage />} />
-        <Route path="/collaborate" element={<Collaborate />} />
-        <Route path="/rendicion" element={<Rendicion />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/agradecimiento" element={<Agradecimiento />} />
+        <Route path={ROUTE_PATHS.INICIO} element={<Home />} />
+        <Route path={ROUTE_PATHS.NOSOTROS} element={<About />} />
+        <Route path={ROUTE_PATHS.ACTIVIDADES} element={<Activities />} />
+        <Route path={ROUTE_PATHS.ACTIVIDAD_DETALLE} element={<ActivityDetailPage />} />
+        <Route path={ROUTE_PATHS.CONFIRMAR_ASISTENCIA} element={<ConfirmAttendancePage />} />
+        <Route path={ROUTE_PATHS.COLABORAR} element={<Collaborate />} />
+        <Route path={ROUTE_PATHS.RENDICION} element={<Rendicion />} />
+        <Route path={ROUTE_PATHS.CONTACTO} element={<Contact />} />
+        <Route path={ROUTE_PATHS.AGRADECIMIENTO} element={<Agradecimiento />} />
 
         {/* Auth */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path={ROUTE_PATHS.INGRESAR} element={<LoginPage />} />
+        <Route path={ROUTE_PATHS.REGISTRARSE} element={<RegisterPage />} />
         <Route
-          path="/request-password-reset"
+          path={ROUTE_PATHS.SOLICITAR_RECUPERACION}
           element={<RequestPasswordResetForm />}
         />
-        <Route path="/update-password" element={<UpdatePasswordForm />} />
+        <Route path={ROUTE_PATHS.ACTUALIZAR_CLAVE} element={<UpdatePasswordForm />} />
 
         {/* Legal */}
-        <Route path="/legal-documents" element={<LegalDocuments />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfUse />} />
+        <Route path={ROUTE_PATHS.DOCUMENTACION_LEGAL} element={<LegalDocuments />} />
+        <Route path={ROUTE_PATHS.PRIVACIDAD} element={<PrivacyPolicy />} />
+        <Route path={ROUTE_PATHS.TERMINOS} element={<TermsOfUse />} />
 
         {/* Partners / Beneficios */}
-        <Route path="/partners" element={<PartnersPage />} />
-        <Route path="/partners/:slug" element={<PartnerDetailPage />} />
+        <Route path={ROUTE_PATHS.ALIANZAS} element={<PartnersPage />} />
+        <Route path={ROUTE_PATHS.ALIANZA_DETALLE} element={<PartnerDetailPage />} />
 
-        <Route path="/beneficios" element={<BenefitsPage />} />
+        <Route path={ROUTE_PATHS.BENEFICIOS} element={<BenefitsPage />} />
         {/* Ruta canónica por slug */}
-        <Route path="/beneficios/:slug" element={<BenefitDetailPage />} />
+        <Route path={ROUTE_PATHS.BENEFICIO_DETALLE} element={<BenefitDetailPage />} />
         {/* Compatibilidad por id -> el componente redirige a /beneficios/:slug */}
-        <Route path="/beneficios/id/:id" element={<BenefitDetailPage />} />
+        <Route path={ROUTE_PATHS.BENEFICIO_POR_ID} element={<BenefitDetailPage />} />
 
-        <Route path="/postular-partner" element={<ApplyPartnerPage />} />
+        <Route path={ROUTE_PATHS.POSTULAR_ALIANZA} element={<ApplyPartnerPage />} />
 
         {/* Novedades */}
-        <Route path="/novedades" element={<NewsPage />} />
-        <Route path="/novedades/:slug" element={<NewsDetailPage />} />
+        <Route path={ROUTE_PATHS.NOVEDADES} element={<NewsPage />} />
+        <Route path={ROUTE_PATHS.NOVEDAD_DETALLE} element={<NewsDetailPage />} />
         {/* Compatibilidad por id/uuid */}
-        <Route path="/novedades/id/:id" element={<NewsDetailPage />} />
-        <Route path="/novedades/uuid/:id" element={<NewsDetailPage />} />
+        <Route path={ROUTE_PATHS.NOVEDAD_POR_ID} element={<NewsDetailPage />} />
+        <Route path={ROUTE_PATHS.NOVEDAD_POR_UUID} element={<NewsDetailPage />} />
 
-        <Route path="/preinscripcion" element={<Preinscription />} />
+        <Route path={ROUTE_PATHS.PREINSCRIPCION} element={<Preinscription />} />
 
         {/* Áreas protegidas */}
 
         <Route
-          path="/admin/education"
+          path={ROUTE_PATHS.ADMIN_EDUCACION}
           element={
             <ProtectedRoute allowedRoles={["admin", "educacion_manager"]}>
               <EducationAdmin />
@@ -131,7 +132,7 @@ const PageRoutes = () => {
         />
 
         <Route
-          path="/comision"
+          path={ROUTE_PATHS.COMISION}
           element={
             <ProtectedRoute allowedRoles={["admin", "comision_directiva", "documentacion_lectura"]}>
               <CommissionPortal />
@@ -140,7 +141,7 @@ const PageRoutes = () => {
         />
 
         <Route
-          path="/carnet"
+          path={ROUTE_PATHS.CARNET}
           element={
             <ProtectedRoute>
               <CarnetPage />
@@ -163,19 +164,19 @@ const PageRoutes = () => {
             Sigue siendo pública y no protegida a propósito: entrar por la URL
             y ver qué hay adentro no hace daño, y lo que exige sesión —generar
             el canje— lo valida la Edge Function. */}
-        <Route path="/club" element={<ClubPage />} />
+        <Route path={ROUTE_PATHS.CLUB} element={<ClubPage />} />
 
         {/* §12.10.5 — por dónde pide entrar un comercio. Pública y sin sesión:
             un comercio que quiere sumarse no tiene por qué crearse una cuenta
             en el sitio para avisarlo. */}
-        <Route path="/club/postular" element={<PostularComercioPage />} />
+        <Route path={ROUTE_PATHS.POSTULAR_COMERCIO} element={<PostularComercioPage />} />
 
         {/* El mostrador. `ProtectedRoute` solo garantiza que haya sesión; QUIÉN
             puede validar lo resuelve `mis_comercios()` en la base, y las Edge
             Functions vuelven a comprobarlo antes de tocar un canje. Esta ruta es
             UX, no una frontera de seguridad (ver CLAUDE.md). */}
         <Route
-          path="/comercio"
+          path={ROUTE_PATHS.COMERCIO}
           element={
             <ProtectedRoute>
               <ComercioPanel />
@@ -184,7 +185,7 @@ const PageRoutes = () => {
         />
 
         <Route
-          path="/dashboard"
+          path={ROUTE_PATHS.CUENTA}
           element={
             <ProtectedRoute>
               <Dashboard />
@@ -203,7 +204,7 @@ const PageRoutes = () => {
             (`/admin/education` queda arriba, junto a `/comision`: se agrupa por
             rol, no por prefijo — es de `educacion_manager`, no de admin puro.) */}
         <Route
-          path="/admin/activities/new"
+          path={ROUTE_PATHS.ADMIN_ACTIVIDAD_NUEVA}
           element={
             <ProtectedRoute requireAdmin>
               <CreateActivityPage />
@@ -211,7 +212,7 @@ const PageRoutes = () => {
           }
         />
         <Route
-          path="/admin/activities/edit/:id"
+          path={ROUTE_PATHS.ADMIN_ACTIVIDAD_EDITAR}
           element={
             <ProtectedRoute requireAdmin>
               <EditActivityPage />
@@ -219,7 +220,7 @@ const PageRoutes = () => {
           }
         />
         <Route
-          path="/admin/*"
+          path={ROUTE_PATHS.ADMIN}
           element={
             <ProtectedRoute requireAdmin>
               <AdminPanel />
@@ -228,7 +229,7 @@ const PageRoutes = () => {
         />
 
         {/* Catch-all: 404 */}
-        <Route path="*" element={<NotFound />} />
+        <Route path={ROUTE_PATHS.NO_ENCONTRADA} element={<NotFound />} />
       </Routes>
       </Suspense>
     </AnimatePresence>

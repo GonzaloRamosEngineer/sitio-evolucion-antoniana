@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { RUTAS } from '@/config/rutas';
 
 const loginSchema = z.object({
   email: z.string().email('Ingresá un email válido'),
@@ -46,11 +47,11 @@ const LoginPage = () => {
     if (isAuthenticated && !authProviderLoading) {
       const role = user?.role;
       const landingByRole =
-        role === 'comision_directiva' ? '/comision'
-        : role === 'documentacion_lectura' ? '/comision?tab=documents'
-        : role === 'educacion_manager' ? '/admin/education'
-        : role === 'admin' ? '/admin'
-        : '/dashboard';
+        role === 'comision_directiva' ? RUTAS.comision.inicio
+        : role === 'documentacion_lectura' ? RUTAS.comision.documentos
+        : role === 'educacion_manager' ? RUTAS.admin.educacion
+        : role === 'admin' ? RUTAS.admin.inicio
+        : RUTAS.mi.cuenta;
       navigate(from || landingByRole, { replace: true });
     }
   }, [isAuthenticated, authProviderLoading, navigate, from, user]);
@@ -184,7 +185,7 @@ const LoginPage = () => {
               </Button>
               <div className="flex justify-center">
                 <Link
-                  to="/request-password-reset"
+                  to={RUTAS.auth.solicitarRecuperacion}
                   className="text-sm text-gray-600 hover:text-brand-primary transition-colors"
                 >
                   ¿Olvidaste tu contraseña? Recuperá tu cuenta
@@ -197,7 +198,7 @@ const LoginPage = () => {
             <p className="text-sm text-gray-600">
               ¿No tenés cuenta?{' '}
               <Link
-                to="/register"
+                to={RUTAS.auth.registrarse}
                 className="font-semibold text-brand-action hover:underline underline-offset-4"
               >
                 Registrate acá

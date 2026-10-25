@@ -22,12 +22,13 @@
 // primera edición. Acá la ruta llega por `?p=` y lo único que cambia por página
 // es la fila de PAGINAS.
 //
-// ⚠️ POR QUÉ LA MARCA ESTÁ HARDCODEADA. `src/config/entidad.js` declara esta
-// deuda a propósito: importar `src/` desde una función de Vercel obliga a
-// confiar en el bundling, y el OG solo se puede validar en producción real
-// (los preview deployments dan 401 — ver CLAUDE.md). Se mantiene el criterio de
-// las otras cuatro funciones de `api/share/`: autocontenida, cero imports.
+// ⚠️ POR QUÉ LA MARCA SIGUE HARDCODEADA. `src/config/entidad.js` incluye
+// recursos y configuración pensados para el cliente. En cambio, el registro de
+// rutas es un módulo puro y se comparte con esta función para evitar duplicar
+// URLs. La migración de marca queda como una decisión separada.
 // -----------------------------------------------------------------------------
+
+import { ROUTE_PATHS } from '../../src/config/rutas.js';
 
 const SITIO = "Fundación Evolución Antoniana";
 const MARCA_CORTA = "Evolución Antoniana";
@@ -69,72 +70,72 @@ const IMAGEN_POR_DEFECTO = "/img/og-image-1200x630.png";
  * aparece una ruta pública nueva y nadie la agrega acá, la suite falla.
  */
 export const PAGINAS = {
-  "/about": {
+  [ROUTE_PATHS.NOSOTROS]: {
     imagen: "/img/og/about-1200x630.png",
     titulo: "Quiénes somos",
     descripcion:
       "Conocé la misión, los valores y el equipo de la Fundación Evolución Antoniana.",
   },
-  "/activities": {
+  [ROUTE_PATHS.ACTIVIDADES]: {
     imagen: "/img/og/activities-1200x630.png",
     titulo: "Actividades",
     descripcion:
       "Explorá las actividades, talleres y eventos de la Fundación Evolución Antoniana e inscribite.",
   },
-  "/collaborate": {
+  [ROUTE_PATHS.COLABORAR]: {
     imagen: "/img/og/collaborate-1200x630.png",
     titulo: "Colaborá",
     descripcion:
       "Sumate como voluntario, aliado o donante y ayudá a transformar realidades con la Fundación Evolución Antoniana.",
   },
-  "/rendicion": {
+  [ROUTE_PATHS.RENDICION]: {
     imagen: "/img/og/rendicion-1200x630.png",
     titulo: "Rendición de cuentas",
     descripcion:
       "En qué se usó cada aporte recibido por la Fundación Evolución Antoniana: lo recaudado, lo gastado y el respaldo de cada gasto.",
   },
-  "/contact": {
+  [ROUTE_PATHS.CONTACTO]: {
     titulo: "Contacto",
     descripcion:
       "Comunicate con la Fundación Evolución Antoniana. Escribinos a info@evolucionantoniana.com.",
   },
-  "/novedades": {
+  [ROUTE_PATHS.NOVEDADES]: {
     imagen: "/img/og/novedades-1200x630.png",
     titulo: "Novedades",
     descripcion:
       "Mantenete al día con las últimas noticias y actividades de la Fundación.",
   },
-  "/beneficios": {
+  [ROUTE_PATHS.BENEFICIOS]: {
     imagen: "/img/og/beneficios-1200x630.png",
     titulo: "Beneficios con propósito",
     descripcion:
       "Descubrí los beneficios exclusivos de los comercios adheridos para quienes sostienen la Fundación.",
   },
-  "/partners": {
+  [ROUTE_PATHS.ALIANZAS]: {
     imagen: "/img/og/partners-1200x630.png",
     titulo: "Partners Evolutivos",
     descripcion:
       "Conocé a nuestras marcas aliadas y los beneficios que ofrecen.",
   },
-  "/postular-partner": {
+  [ROUTE_PATHS.POSTULAR_ALIANZA]: {
     imagen: "/img/og/postular-partner-1200x630.png",
     titulo: "Postulate como partner",
     descripcion:
       "Sumate a nuestra red de partners y colaborá con el desarrollo social de la comunidad.",
   },
-  "/club": {
+  [ROUTE_PATHS.CLUB]: {
     imagen: "/img/og/club-1200x630.png",
     titulo: "Comunidad Evolución",
     descripcion:
       "Canjeá beneficios de comercios aliados con tu aporte vigente a la Fundación.",
   },
-  "/club/postular": {
+  [ROUTE_PATHS.POSTULAR_COMERCIO]: {
     imagen: "/img/og/club-postular-1200x630.png",
     titulo: "Sumá tu comercio a la red",
     descripcion:
       "Ofrecé un beneficio a quienes sostienen la fundación y llegá a nuevos clientes.",
   },
-  "/preinscripcion": {
+  [ROUTE_PATHS.PREINSCRIPCION]: {
     imagen: "/img/og/preinscripcion-1200x630.png",
     // La copia larga viene de `api/share/preinscripcion.js`, que era la única
     // forma de compartir esta página con preview antes de esta función.
@@ -142,17 +143,17 @@ export const PAGINAS = {
     descripcion:
       "Iniciá o finalizá tus estudios en el Centro Juventud Antoniana. Preinscribite en el programa de Educación Permanente para Jóvenes y Adultos.",
   },
-  "/legal-documents": {
+  [ROUTE_PATHS.DOCUMENTACION_LEGAL]: {
     titulo: "Documentación oficial",
     descripcion:
       "Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana.",
   },
-  "/privacy": {
+  [ROUTE_PATHS.PRIVACIDAD]: {
     titulo: "Política de privacidad",
     descripcion:
       "Política de Privacidad de la Fundación Evolución Antoniana. Conocé cómo protegemos tus datos personales.",
   },
-  "/terms": {
+  [ROUTE_PATHS.TERMINOS]: {
     titulo: "Términos de uso",
     descripcion:
       "Términos y Condiciones de uso del sitio web de la Fundación Evolución Antoniana.",

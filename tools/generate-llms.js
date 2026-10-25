@@ -2,6 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { ROUTE_PATHS } from '../src/config/rutas.js';
 
 const CLEAN_CONTENT_REGEX = {
   comments: /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
@@ -20,6 +21,7 @@ const CLEAN_CONTENT_REGEX = {
 const EXTRACTION_REGEX = {
   route: /<Route\s+[^>]*>/g,
   path: /path=["']([^"']+)["']/,
+  pathReference: /path=\{ROUTE_PATHS\.([A-Z0-9_]+)\}/,
   element: /element=\{<(\w+)[^}]*\/?\s*>\}/,
   helmet: /<Helmet[^>]*?>([\s\S]*?)<\/Helmet>/i,
   helmetTest: /<Helmet[\s\S]*?<\/Helmet>/i,
@@ -58,6 +60,7 @@ function extractRoutes(appJsxPath) {
     for (const match of routeMatches) {
       const routeTag = match[0];
       const pathMatch = routeTag.match(EXTRACTION_REGEX.path);
+      const pathReferenceMatch = routeTag.match(EXTRACTION_REGEX.pathReference);
       const elementMatch = routeTag.match(EXTRACTION_REGEX.element);
       const isIndex = routeTag.includes('index');
       
@@ -69,6 +72,8 @@ function extractRoutes(appJsxPath) {
           routePath = '/';
         } else if (pathMatch) {
           routePath = pathMatch[1].startsWith('/') ? pathMatch[1] : `/${pathMatch[1]}`;
+        } else if (pathReferenceMatch) {
+          routePath = ROUTE_PATHS[pathReferenceMatch[1]];
         }
         
         routes.set(componentName, routePath);

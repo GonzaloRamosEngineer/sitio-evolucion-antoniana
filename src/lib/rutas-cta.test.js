@@ -16,15 +16,14 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { accionVidriera } from '@/lib/club';
+import { extractAppRoutes } from '../../tools/route-audit-lib.mjs';
 
 const RAIZ = process.cwd();
 
 /** Las rutas declaradas en App.jsx, que son la única fuente de verdad. */
 const rutasReales = () => {
   const app = fs.readFileSync(path.join(RAIZ, 'src', 'App.jsx'), 'utf8');
-  const rutas = new Set();
-  for (const m of app.matchAll(/path=["']([^"']+)["']/g)) rutas.add(m[1]);
-  return rutas;
+  return new Set(extractAppRoutes(app));
 };
 
 /** Todos los hrefs que `accionVidriera` puede devolver, en todos sus estados. */

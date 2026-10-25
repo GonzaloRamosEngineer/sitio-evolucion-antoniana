@@ -11,6 +11,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { entidad } from "@/config/entidad";
+import { RUTAS } from "@/config/rutas";
 import {
   Menu,
   X,
@@ -58,20 +59,20 @@ const Header = () => {
   const navigate = useNavigate();
 
   const navigation = [
-    { name: "Inicio", href: "/" },
-    { name: "Novedades", href: "/novedades" },
+    { name: "Inicio", href: RUTAS.inicio },
+    { name: "Novedades", href: RUTAS.novedades.lista },
     {
       name: "Nosotros",
-      href: "/about",
+      href: RUTAS.nosotros,
       key: "nosotros",
-      subitems: [{ name: "Partners", href: "/partners" }],
+      subitems: [{ name: "Partners", href: RUTAS.alianzas.lista }],
     },
-    { name: "Actividades", href: "/activities" },
+    { name: "Actividades", href: RUTAS.actividades.lista },
     {
       name: "Colaborá",
-      href: "/collaborate",
+      href: RUTAS.colaborar,
       key: "colabora",
-      subitems: [{ name: "Beneficios", href: "/beneficios" }],
+      subitems: [{ name: "Beneficios", href: RUTAS.beneficios.lista }],
     },
     {
       // ⚠️ El padre lleva a `/rendicion`, NO a `/legal-documents`, y el orden es
@@ -86,9 +87,9 @@ const Header = () => {
       //
       // Los papeles siguen a un clic, y las dos páginas se enlazan entre sí.
       name: "Transparencia",
-      href: "/rendicion",
+      href: RUTAS.transparencia.rendicion,
       key: "transparencia",
-      subitems: [{ name: "Documentación oficial", href: "/legal-documents" }],
+      subitems: [{ name: "Documentación oficial", href: RUTAS.transparencia.documentacion }],
     },
   ];
 
@@ -100,17 +101,17 @@ const Header = () => {
   const isGroupActive = (item) => {
     if (!item.subitems) return isActive(item.href);
     if (item.key === "nosotros") {
-      return ["/about", "/activities", "/partners"].some((p) =>
+      return [RUTAS.nosotros, RUTAS.actividades.lista, RUTAS.alianzas.lista].some((p) =>
         location.pathname.startsWith(p)
       );
     }
     if (item.key === "colabora") {
-      return ["/collaborate", "/beneficios"].some((p) =>
+      return [RUTAS.colaborar, RUTAS.beneficios.lista].some((p) =>
         location.pathname.startsWith(p)
       );
     }
     if (item.key === "transparencia") {
-      return ["/rendicion", "/legal-documents"].some((p) =>
+      return [RUTAS.transparencia.rendicion, RUTAS.transparencia.documentacion].some((p) =>
         location.pathname.startsWith(p)
       );
     }
@@ -120,7 +121,7 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
-    navigate("/");
+    navigate(RUTAS.inicio);
   };
 
   const initials = user?.name
@@ -240,7 +241,7 @@ const Header = () => {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center justify-between gap-2 h-20">
           {/* --- LOGO --- */}
-          <Link to="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none">
+          <Link to={RUTAS.inicio} className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none">
             <motion.div
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
@@ -339,7 +340,7 @@ const Header = () => {
                     className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                   >
                     <Link
-                      to="/dashboard"
+                      to={RUTAS.mi.cuenta}
                       className="flex items-center py-2.5 px-3"
                     >
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -365,7 +366,7 @@ const Header = () => {
                           className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                         >
                           <Link
-                            to="/admin/education"
+                            to={RUTAS.admin.educacion}
                             className="flex items-center py-2 px-3"
                           >
                             <GraduationCap className="mr-2 h-4 w-4" />
@@ -381,7 +382,7 @@ const Header = () => {
                           className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                         >
                           <Link
-                            to="/comision"
+                            to={RUTAS.comision.inicio}
                             className="flex items-center py-2 px-3"
                           >
                             <Briefcase className="mr-2 h-4 w-4" />
@@ -396,7 +397,7 @@ const Header = () => {
                           className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                         >
                           <Link
-                            to="/comision?tab=documents"
+                            to={RUTAS.comision.documentos}
                             className="flex items-center py-2 px-3"
                           >
                             <FileText className="mr-2 h-4 w-4" />
@@ -412,7 +413,7 @@ const Header = () => {
                           className="rounded-lg cursor-pointer focus:bg-brand-sand focus:text-brand-primary"
                         >
                           <Link
-                            to="/admin"
+                            to={RUTAS.admin.inicio}
                             className="flex items-center py-2 px-3"
                           >
                             <Settings className="mr-2 h-4 w-4" />
@@ -441,14 +442,14 @@ const Header = () => {
                   asChild
                   className="text-brand-dark hover:text-brand-action hover:bg-transparent font-medium"
                 >
-                  <Link to="/login">Ingresar</Link>
+                  <Link to={RUTAS.auth.ingresar}>Ingresar</Link>
                 </Button>
                 <Button
                   variant="action"
                   className="rounded-full px-5"
                   asChild
                 >
-                  <Link to="/register">Registrarse</Link>
+                  <Link to={RUTAS.auth.registrarse}>Registrarse</Link>
                 </Button>
               </div>
             )}
@@ -559,7 +560,7 @@ const Header = () => {
                       className="w-full border-gray-300 text-gray-700"
                       asChild
                     >
-                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                      <Link to={RUTAS.auth.ingresar} onClick={() => setIsMenuOpen(false)}>
                         Ingresar
                       </Link>
                     </Button>
@@ -568,7 +569,7 @@ const Header = () => {
                       className="w-full"
                       asChild
                     >
-                      <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                      <Link to={RUTAS.auth.registrarse} onClick={() => setIsMenuOpen(false)}>
                         Registrarse
                       </Link>
                     </Button>

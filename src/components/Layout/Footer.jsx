@@ -19,6 +19,7 @@ import {
   whatsappUrl,
   redesActivas,
 } from '@/config/entidad';
+import { RUTAS } from '@/config/rutas';
 
 // Mapa red -> ícono. Es lo único de las redes que es decisión de PRESENTACIÓN,
 // así que vive acá y no en la config: qué redes tiene la entidad es dato, con
@@ -42,25 +43,25 @@ const Footer = () => {
     {
       title: 'Navegación',
       links: [
-        { name: 'Inicio', href: '/' },
-        { name: 'Sobre Nosotros', href: '/about' },
-        { name: 'Actividades', href: '/activities' },
-        { name: 'Colaborá', href: '/collaborate' },
-        { name: 'Rendición de cuentas', href: '/rendicion' },
-        { name: 'Contacto', href: '/contact' },
+        { name: 'Inicio', href: RUTAS.inicio },
+        { name: 'Sobre Nosotros', href: RUTAS.nosotros },
+        { name: 'Actividades', href: RUTAS.actividades.lista },
+        { name: 'Colaborá', href: RUTAS.colaborar },
+        { name: 'Rendición de cuentas', href: RUTAS.transparencia.rendicion },
+        { name: 'Contacto', href: RUTAS.contacto },
       ],
     },
     {
       title: 'Legal',
       links: [
-        { name: 'Política de Privacidad', href: '/privacy' },
-        { name: 'Términos de Uso', href: '/terms' },
+        { name: 'Política de Privacidad', href: RUTAS.legal.privacidad },
+        { name: 'Términos de Uso', href: RUTAS.legal.terminos },
         // ⚠️ Decía «Transparencia» y apuntaba acá, mientras «Rendición de cuentas»
         // —arriba, en Navegación— apuntaba a otra página. Dos nombres distintos
         // para las dos mitades de lo mismo, y el nombre del paraguas puesto sobre
         // una sola. El paraguas ahora es el menú superior; acá va lo que la
         // página realmente es.
-        { name: 'Documentación oficial', href: '/legal-documents' },
+        { name: 'Documentación oficial', href: RUTAS.transparencia.documentacion },
       ],
     },
   ];

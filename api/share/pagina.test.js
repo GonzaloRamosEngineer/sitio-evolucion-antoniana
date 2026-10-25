@@ -25,6 +25,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { PAGINAS, resolverRuta } from './pagina.js';
+import { extractAppRoutes } from '../../tools/route-audit-lib.mjs';
 
 const RAIZ = path.resolve(__dirname, '../..');
 const APP_JSX = fs.readFileSync(path.join(RAIZ, 'src/App.jsx'), 'utf8');
@@ -72,9 +73,7 @@ const RUTAS_DE_DETALLE = {
 };
 
 /** Todas las rutas declaradas en App.jsx, tal cual están escritas. */
-const rutasDeApp = [...APP_JSX.matchAll(/<Route\s[^>]*?path="([^"]+)"/gs)].map(
-  (m) => m[1]
-);
+const rutasDeApp = extractAppRoutes(APP_JSX);
 
 /** Los rewrites que solo disparan para un bot de preview (los que tienen `has`). */
 const rewritesDeBot = VERCEL.rewrites.filter((r) => Array.isArray(r.has));
