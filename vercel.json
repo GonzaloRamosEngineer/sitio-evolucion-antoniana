@@ -49,7 +49,7 @@
       "destination": "/api/share/benefits/slug?slug=:slug"
     },
     {
-      "source": "/alianzas/:slug",
+      "source": "/alianzas/:slug((?!postularse$)[^/]+)",
       "has": [
         {
           "type": "header",

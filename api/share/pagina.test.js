@@ -79,6 +79,13 @@ const RUTAS_DE_DETALLE = {
 // La acción con token vive bajo /actividades, pero nunca debe caer en el OG
 // dinámico de un contenido. Vercel admite regex por parámetro en rewrites.
 const REWRITE_DETALLE_ACTIVIDAD = '/actividades/:slug((?!confirmar-asistencia$)[^/]+)';
+const REWRITE_DETALLE_ALIANZA = '/alianzas/:slug((?!postularse$)[^/]+)';
+
+const sourceDeDetalle = (ruta) => {
+  if (ruta === '/actividades/:slug') return REWRITE_DETALLE_ACTIVIDAD;
+  if (ruta === '/alianzas/:slug') return REWRITE_DETALLE_ALIANZA;
+  return ruta;
+};
 
 /** Todas las rutas declaradas en App.jsx, tal cual están escritas. */
 const rutasDeApp = extractAppRoutes(APP_JSX);
@@ -153,7 +160,7 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
 
   it('cada ruta de detalle tiene su rewrite apuntando a la función de su recurso', () => {
     for (const [ruta, fn] of Object.entries(RUTAS_DE_DETALLE)) {
-      const source = ruta === '/actividades/:slug' ? REWRITE_DETALLE_ACTIVIDAD : ruta;
+      const source = sourceDeDetalle(ruta);
       const rw = rewriteDe(source);
       expect(rw, `Falta el rewrite de bot para ${ruta}`).toBeDefined();
       expect(rw.destination.startsWith(fn)).toBe(true);
@@ -166,6 +173,14 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
     expect(rewriteDe('/actividades/confirmar-asistencia')).toBeUndefined();
   });
 
+  it('el preview de detalle de alianza excluye la página estática de postulación', () => {
+    expect(rewriteDe('/alianzas/:slug')).toBeUndefined();
+    expect(rewriteDe(REWRITE_DETALLE_ALIANZA)).toBeDefined();
+    expect(rewriteDe('/alianzas/postularse')?.destination).toBe(
+      '/api/share/pagina?p=alianzas/postularse'
+    );
+  });
+
   it('las rutas privadas no tienen rewrite de preview', () => {
     for (const ruta of Object.keys(RUTAS_SIN_PREVIEW)) {
       expect(
@@ -176,9 +191,7 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
   });
 
   it('no hay rewrites de bot huérfanos', () => {
-    const fuentesDeDetalle = Object.keys(RUTAS_DE_DETALLE).map((ruta) =>
-      ruta === '/actividades/:slug' ? REWRITE_DETALLE_ACTIVIDAD : ruta
-    );
+    const fuentesDeDetalle = Object.keys(RUTAS_DE_DETALLE).map(sourceDeDetalle);
     const declaradas = new Set([
       ...Object.keys(PAGINAS),
       ...fuentesDeDetalle,
