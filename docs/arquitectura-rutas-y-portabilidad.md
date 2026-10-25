@@ -1,6 +1,6 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
-**Estado:** ejecución por etapas; Etapas 0–4 completas y Etapa 5 preparada
+**Estado:** ejecución por etapas; Etapas 0–5 completas
 **Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
@@ -14,8 +14,8 @@
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
-| 5. Slugs y aliases dinámicos | Preparada; pendiente de publicación | `docs/migracion-slugs-etapa-5.md` |
-| 6–9 | Pendientes | Requieren cerrar el gate de Etapa 5 |
+| 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
+| 6–9 | Pendientes | Etapa 6 habilitada |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -540,9 +540,14 @@ pertenecen a etapas posteriores permanecen visibles, pero no bloquean la migraci
 
 ## 13. Próximo incremento
 
-La Etapa 5 está preparada con auditoría read-only, migración transaccional, historial
-compartido, resolutor bajo RLS y compatibilidad de rollout. El informe y el gate operativo
-están en `docs/migracion-slugs-etapa-5.md`.
+La Etapa 5 está publicada y verificada. El gate comprobó que:
 
-El siguiente incremento es publicar el código, aplicar la migración versionada y cerrar las
-verificaciones de producción. La Etapa 6 no comienza hasta completar ese gate.
+1. los 25 contenidos públicos auditados cumplen el contrato de slug;
+2. los dos valores anteriores quedaron preservados como aliases;
+3. UUID, slug actual y slug histórico convergen en una sola URL canónica;
+4. las RLS siguen ocultando los recursos no públicos;
+5. redirects, navegador, previews OG y sitemap usan las nuevas rutas dinámicas en español.
+
+Queda habilitada la **Etapa 6 — Áreas personales, comercio y autenticación**. Su primer
+bloque debe volver a inventariar destinos post-login y callbacks antes de renombrar rutas
+protegidas.

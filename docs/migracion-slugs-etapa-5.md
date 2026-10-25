@@ -2,7 +2,7 @@
 
 **Fecha de preparación:** 2026-10-25
 
-**Estado:** preparada y validada; pendiente de publicación y gate de producción
+**Estado:** completa, publicada y verificada
 
 **Migración:** `supabase/migrations/20261025120000_slugs_publicos_y_aliases.sql`
 
@@ -97,16 +97,22 @@ se ocultan.
 
 ## 6. Gate de producción
 
-- [ ] deploy de código completado;
-- [ ] nuevas URLs dinámicas responden antes del cambio de datos;
-- [ ] precheck repetido inmediatamente antes de migrar;
-- [ ] migración aplicada en una sola transacción;
-- [ ] todos los slugs canónicos cumplen el contrato;
-- [ ] los dos slugs anteriores resuelven al UUID original;
-- [ ] anon no resuelve alianzas pendientes ni beneficios inactivos;
-- [ ] `/activities/:id` y `/partners/:slug` entregan un único 308;
-- [ ] canonical, OG y sitemap publican solo `/actividades/:slug` y `/alianzas/:slug`;
-- [ ] no hay dos URLs indexables para el mismo contenido.
+- [x] deploy de código completado (`9fd92624`);
+- [x] nuevas URLs dinámicas respondieron antes del cambio de datos;
+- [x] precheck repetido inmediatamente antes de migrar;
+- [x] respaldo previo generado fuera del repositorio;
+- [x] migración aplicada en una sola transacción;
+- [x] todos los slugs canónicos cumplen el contrato;
+- [x] los dos slugs anteriores resuelven al UUID original;
+- [x] anon no resuelve aliases de alianzas pendientes;
+- [x] `/activities/:id` y `/partners/:slug` entregan un único 308;
+- [x] canonical, OG y sitemap publican solo `/actividades/:slug` y `/alianzas/:slug`;
+- [x] un navegador real reemplaza el alias por la URL canónica;
+- [x] no hay dos URLs indexables para el mismo contenido.
+
+La aplicación en producción modificó exactamente dos filas de `partners` y creó exactamente
+dos aliases. El postcheck volvió a informar 12 actividades, 3 novedades, 9 alianzas y 1
+beneficio, todos dentro del contrato, sin faltantes ni colisiones.
 
 ## 7. Rollback
 
