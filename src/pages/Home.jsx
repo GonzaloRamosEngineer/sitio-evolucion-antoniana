@@ -35,28 +35,28 @@ const areas = [
     title: "Educación",
     description:
       "Programa educativo con preinscripción abierta: talleres, cursos y formación continua para el crecimiento personal.",
-    to: "/preinscripcion",
+    to: RUTAS.preinscripcion,
     cta: "Preinscribite",
   },
   {
     title: "Deporte",
     description:
       "Becas de acompañamiento deportivo y experiencias que amplían la formación de los chicos, dentro y fuera de la cancha.",
-    to: "/collaborate",
+    to: RUTAS.colaborar,
     cta: "Conocé las becas",
   },
   {
     title: "Inclusión social",
     description:
       "Acciones solidarias y acompañamiento a instituciones de la comunidad salteña, con gestión transparente.",
-    to: "/about",
+    to: RUTAS.nosotros,
     cta: "Nuestra historia",
   },
   {
     title: "Tecnología",
     description:
       "Innovación digital aplicada al impacto social: alianzas, herramientas y beneficios para nuestra comunidad.",
-    to: "/beneficios",
+    to: RUTAS.beneficios.lista,
     cta: "Ver beneficios",
   },
 ];
@@ -416,7 +416,7 @@ const Home = () => {
               <SectionHeader
                 eyebrow="Agenda"
                 title="Próximas actividades"
-                linkTo="/activities"
+                linkTo={RUTAS.actividades.lista}
                 linkLabel="Ver todas las actividades"
               />
             </motion.div>

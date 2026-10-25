@@ -41,7 +41,7 @@ describe('Carnet', () => {
     show();
     expect(screen.getByText('En tolerancia')).toBeInTheDocument();
     expect(screen.queryByText('Acceso vigente')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Regularizar mi aporte' })).toHaveAttribute('href', '/collaborate');
+    expect(screen.getByRole('link', { name: 'Regularizar mi aporte' })).toHaveAttribute('href', '/colaborar');
   });
   it('mantiene separadas la suspensión institucional y la vigencia del aporte', () => {
     useMiMembresia.mockReturnValue({ data: { estado: 'suspendido', numero: 5 } });
@@ -49,7 +49,7 @@ describe('Carnet', () => {
     expect(screen.getByRole('link', { name: 'Canjear un beneficio' })).toHaveAttribute('href', '/club');
     expect(screen.getByText('Acceso vigente')).toBeInTheDocument();
     expect(screen.getByText(/No es un tema de pagos/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Consultar mi condición' })).toHaveAttribute('href', '/contact');
+    expect(screen.getByRole('link', { name: 'Consultar mi condición' })).toHaveAttribute('href', '/contacto');
   });
   it('muestra cuotas pagadas y total aportado, no "tiempo aportado"', () => {
     useMiAntiguedad.mockReturnValue({ data: { socio_desde: '2026-09-02', meses_aportados: 2, racha_meses: 2 }, isPending: false });
@@ -76,7 +76,7 @@ describe('Carnet', () => {
     expect(screen.getByText('Sos donante de la Fundación')).toBeInTheDocument();
     expect(screen.getByText(/tus donaciones suman \$20\.000/)).toBeInTheDocument();
     expect(screen.queryByText('Todavía no tenés acceso')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Sumarme con la cuota mensual/ })).toHaveAttribute('href', '/collaborate');
+    expect(screen.getByRole('link', { name: /Sumarme con la cuota mensual/ })).toHaveAttribute('href', '/colaborar');
   });
   it('mantiene el reloj en vivo sin anunciar cada segundo al lector de pantalla', () => {
     vi.useFakeTimers();

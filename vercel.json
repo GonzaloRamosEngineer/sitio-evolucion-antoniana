@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    { "source": "/about", "destination": "/nosotros", "permanent": true },
+    { "source": "/activities", "destination": "/actividades", "permanent": true },
+    { "source": "/collaborate", "destination": "/colaborar", "permanent": true },
+    { "source": "/rendicion", "destination": "/transparencia", "permanent": true },
+    { "source": "/contact", "destination": "/contacto", "permanent": true },
+    { "source": "/legal-documents", "destination": "/transparencia/documentacion", "permanent": true },
+    { "source": "/privacy", "destination": "/privacidad", "permanent": true },
+    { "source": "/terms", "destination": "/terminos", "permanent": true },
+    { "source": "/partners", "destination": "/alianzas", "permanent": true },
+    { "source": "/postular-partner", "destination": "/alianzas/postularse", "permanent": true },
+    { "source": "/preinscripcion", "destination": "/educacion/preinscripcion", "permanent": true }
+  ],
   "rewrites": [
     {
       "source": "/novedades/:slug",
@@ -78,7 +91,7 @@
       "destination": "/api/share/benefits/slug?slug=:id"
     },
     {
-      "source": "/about",
+      "source": "/nosotros",
       "has": [
         {
           "type": "header",
@@ -86,10 +99,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=about"
+      "destination": "/api/share/pagina?p=nosotros"
     },
     {
-      "source": "/activities",
+      "source": "/actividades",
       "has": [
         {
           "type": "header",
@@ -97,10 +110,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=activities"
+      "destination": "/api/share/pagina?p=actividades"
     },
     {
-      "source": "/collaborate",
+      "source": "/colaborar",
       "has": [
         {
           "type": "header",
@@ -108,10 +121,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=collaborate"
+      "destination": "/api/share/pagina?p=colaborar"
     },
     {
-      "source": "/rendicion",
+      "source": "/transparencia",
       "has": [
         {
           "type": "header",
@@ -119,10 +132,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=rendicion"
+      "destination": "/api/share/pagina?p=transparencia"
     },
     {
-      "source": "/contact",
+      "source": "/contacto",
       "has": [
         {
           "type": "header",
@@ -130,7 +143,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=contact"
+      "destination": "/api/share/pagina?p=contacto"
     },
     {
       "source": "/novedades",
@@ -155,7 +168,7 @@
       "destination": "/api/share/pagina?p=beneficios"
     },
     {
-      "source": "/partners",
+      "source": "/alianzas",
       "has": [
         {
           "type": "header",
@@ -163,10 +176,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=partners"
+      "destination": "/api/share/pagina?p=alianzas"
     },
     {
-      "source": "/postular-partner",
+      "source": "/alianzas/postularse",
       "has": [
         {
           "type": "header",
@@ -174,7 +187,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=postular-partner"
+      "destination": "/api/share/pagina?p=alianzas/postularse"
     },
     {
       "source": "/club",
@@ -199,7 +212,7 @@
       "destination": "/api/share/pagina?p=club/postular"
     },
     {
-      "source": "/preinscripcion",
+      "source": "/educacion/preinscripcion",
       "has": [
         {
           "type": "header",
@@ -207,10 +220,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=preinscripcion"
+      "destination": "/api/share/pagina?p=educacion/preinscripcion"
     },
     {
-      "source": "/legal-documents",
+      "source": "/transparencia/documentacion",
       "has": [
         {
           "type": "header",
@@ -218,10 +231,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=legal-documents"
+      "destination": "/api/share/pagina?p=transparencia/documentacion"
     },
     {
-      "source": "/privacy",
+      "source": "/privacidad",
       "has": [
         {
           "type": "header",
@@ -229,10 +242,10 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=privacy"
+      "destination": "/api/share/pagina?p=privacidad"
     },
     {
-      "source": "/terms",
+      "source": "/terminos",
       "has": [
         {
           "type": "header",
@@ -240,7 +253,7 @@
           "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|W3C_Validator|Embedly|Iframely|SkypeUriPreview).*"
         }
       ],
-      "destination": "/api/share/pagina?p=terms"
+      "destination": "/api/share/pagina?p=terminos"
     },
     {
       "source": "/api/share/news/(.*)",

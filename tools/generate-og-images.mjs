@@ -67,22 +67,23 @@ const COLOR = {
  * descripción de `PAGINAS` está escrita para el texto de la preview (hasta 180
  * caracteres) y a 34px en una tarjeta no entra ni se lee.
  *
- * Las que faltan —/contact, /privacy, /terms, /legal-documents— se quedan con la
+ * Las que faltan —/contacto, /privacidad, /terminos y
+ * /transparencia/documentacion— se quedan con la
  * tarjeta institucional a propósito: son utilitarias y legales, no las que se
  * comparten para invitar a alguien. Agregar una es agregar una fila acá y
  * `imagen:` en su fila de PAGINAS.
  */
 const TARJETAS = {
-  '/rendicion': { bajada: 'Cada peso que entra, cada peso que sale, con su respaldo.' },
+  '/transparencia': { bajada: 'Cada peso que entra, cada peso que sale, con su respaldo.' },
   '/beneficios': { bajada: 'Descuentos reales en comercios de Salta para quienes sostienen la Fundación.' },
   '/club': { bajada: 'Tu aporte sostiene una misión y te conecta con beneficios para todos los días.' },
   '/novedades': { bajada: 'Lo que está pasando en la Fundación, contado por nosotros.' },
-  '/activities': { bajada: 'Talleres, torneos y encuentros abiertos a la comunidad.' },
-  '/collaborate': { bajada: 'Como voluntario, aliado o donante: hay una forma para cada uno.' },
-  '/about': { bajada: 'Quiénes somos, de dónde venimos y para qué estamos.' },
-  '/preinscripcion': { bajada: 'Terminá el secundario en el Centro Juventud Antoniana.' },
-  '/partners': { bajada: 'Las marcas que eligen sostener el proyecto.' },
-  '/postular-partner': { bajada: 'Sumá tu marca a la red y llegá a nuestra comunidad.' },
+  '/actividades': { bajada: 'Talleres, torneos y encuentros abiertos a la comunidad.' },
+  '/colaborar': { bajada: 'Como voluntario, aliado o donante: hay una forma para cada uno.' },
+  '/nosotros': { bajada: 'Quiénes somos, de dónde venimos y para qué estamos.' },
+  '/educacion/preinscripcion': { bajada: 'Terminá el secundario en el Centro Juventud Antoniana.' },
+  '/alianzas': { bajada: 'Las marcas que eligen sostener el proyecto.' },
+  '/alianzas/postularse': { bajada: 'Sumá tu marca a la red y llegá a nuestra comunidad.' },
   '/club/postular': { bajada: 'Ofrecé un beneficio y llegá a clientes nuevos.' },
 };
 
@@ -255,7 +256,10 @@ console.log('Bajando/leyendo tipografías…');
 const fuentes = await fuentesEmbebidas();
 const logo = logoDataUri();
 
-const nombreArchivo = (ruta) => `${ruta.replace(/^\//, '').replaceAll('/', '-')}-1200x630.png`;
+// El nombre del asset es estable aunque cambie la URL pública. Renombrar la
+// ruta no obliga a invalidar imágenes ya cacheadas por redes sociales.
+const nombreArchivo = (ruta) =>
+  path.basename(PAGINAS[ruta]?.imagen || `${ruta.replace(/^\//, '').replaceAll('/', '-')}-1200x630.png`);
 
 let generadas = 0;
 const fallas = [];

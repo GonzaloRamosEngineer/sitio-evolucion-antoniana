@@ -38,7 +38,7 @@ const enlace = (nombre) =>
 describe('Header — la navegación pública', () => {
   it('🔒 «Transparencia» lleva a la rendición de cuentas', () => {
     montar();
-    expect(enlace('Transparencia')).toHaveAttribute('href', '/rendicion');
+    expect(enlace('Transparencia')).toHaveAttribute('href', '/transparencia');
   });
 
   it('🔒 abrir un grupo NO abre los otros', () => {
@@ -52,7 +52,7 @@ describe('Header — la navegación pública', () => {
 
     // El suyo se abre...
     expect(screen.getByRole('link', { name: /Documentación oficial/i }))
-      .toHaveAttribute('href', '/legal-documents');
+      .toHaveAttribute('href', '/transparencia/documentacion');
     // ...y los de los otros grupos siguen cerrados. Este es el control que el
     // ternario de dos ramas no pasaba.
     expect(screen.queryByRole('link', { name: /^Partners/i })).toBeNull();
@@ -62,7 +62,7 @@ describe('Header — la navegación pública', () => {
   it('los grupos que ya existían siguen abriendo el suyo', () => {
     montar();
     fireEvent.mouseEnter(enlace('Nosotros').parentElement);
-    expect(screen.getByRole('link', { name: /^Partners/i })).toHaveAttribute('href', '/partners');
+    expect(screen.getByRole('link', { name: /^Partners/i })).toHaveAttribute('href', '/alianzas');
     expect(screen.queryByRole('link', { name: /Documentación oficial/i })).toBeNull();
   });
 

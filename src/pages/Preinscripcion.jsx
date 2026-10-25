@@ -5,6 +5,8 @@ import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import EducationForm from '@/components/Forms/EducationForm';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const Preinscription = () => {
   const reduceMotion = useReducedMotion();
@@ -41,13 +43,13 @@ const Preinscription = () => {
             <Button
               variant="action"
               className="w-full h-12"
-              onClick={() => (window.location.href = '/')}
+              onClick={() => (window.location.href = RUTAS.inicio)}
             >
               Volver al inicio
             </Button>
 
             <button
-              onClick={() => window.open('https://www.evolucionantoniana.com/activities', '_blank')}
+              onClick={() => window.open(canonicalUrl(RUTAS.actividades.lista), '_blank')}
               className="text-sm font-semibold text-brand-primary hover:text-brand-action transition-colors"
             >
               Explorar otras actividades →
@@ -63,7 +65,7 @@ const Preinscription = () => {
       <Helmet>
         <title>Preinscripción - Fundación Evolución Antoniana</title>
         <meta name="description" content="Preinscribite a los programas educativos de la Fundación Evolución Antoniana." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/preinscripcion" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.preinscripcion)} />
       </Helmet>
 
       {/* ============ HERO ============ */}

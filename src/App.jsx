@@ -4,6 +4,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -68,6 +69,11 @@ const PageLoader = () => (
   </div>
 );
 
+const LegacyRedirect = ({ to }) => {
+  const { search, hash } = useLocation();
+  return <Navigate replace to={`${to}${search}${hash}`} />;
+};
+
 const PageRoutes = () => {
   const location = useLocation();
   return (
@@ -119,6 +125,20 @@ const PageRoutes = () => {
         <Route path={ROUTE_PATHS.NOVEDAD_POR_UUID} element={<NewsDetailPage />} />
 
         <Route path={ROUTE_PATHS.PREINSCRIPCION} element={<Preinscription />} />
+
+        {/* Compatibilidad local y client-side. En producción, Vercel responde
+            antes con un único 308; acá se preservan query string y hash. */}
+        <Route path={ROUTE_PATHS.ALIAS_NOSOTROS} element={<LegacyRedirect to={ROUTE_PATHS.NOSOTROS} />} />
+        <Route path={ROUTE_PATHS.ALIAS_ACTIVIDADES} element={<LegacyRedirect to={ROUTE_PATHS.ACTIVIDADES} />} />
+        <Route path={ROUTE_PATHS.ALIAS_COLABORAR} element={<LegacyRedirect to={ROUTE_PATHS.COLABORAR} />} />
+        <Route path={ROUTE_PATHS.ALIAS_RENDICION} element={<LegacyRedirect to={ROUTE_PATHS.RENDICION} />} />
+        <Route path={ROUTE_PATHS.ALIAS_CONTACTO} element={<LegacyRedirect to={ROUTE_PATHS.CONTACTO} />} />
+        <Route path={ROUTE_PATHS.ALIAS_DOCUMENTACION_LEGAL} element={<LegacyRedirect to={ROUTE_PATHS.DOCUMENTACION_LEGAL} />} />
+        <Route path={ROUTE_PATHS.ALIAS_PRIVACIDAD} element={<LegacyRedirect to={ROUTE_PATHS.PRIVACIDAD} />} />
+        <Route path={ROUTE_PATHS.ALIAS_TERMINOS} element={<LegacyRedirect to={ROUTE_PATHS.TERMINOS} />} />
+        <Route path={ROUTE_PATHS.ALIAS_ALIANZAS} element={<LegacyRedirect to={ROUTE_PATHS.ALIANZAS} />} />
+        <Route path={ROUTE_PATHS.ALIAS_POSTULAR_ALIANZA} element={<LegacyRedirect to={ROUTE_PATHS.POSTULAR_ALIANZA} />} />
+        <Route path={ROUTE_PATHS.ALIAS_PREINSCRIPCION} element={<LegacyRedirect to={ROUTE_PATHS.PREINSCRIPCION} />} />
 
         {/* Áreas protegidas */}
 

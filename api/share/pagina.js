@@ -1,12 +1,12 @@
 // api/share/pagina.js
 // -----------------------------------------------------------------------------
 // OG dinámico para las páginas ESTÁTICAS del sitio (las que no salen de una
-// tabla): /rendicion, /beneficios, /club, /novedades, /about, etc.
+// tabla): /transparencia, /beneficios, /club, /novedades, /nosotros, etc.
 //
 // POR QUÉ EXISTE. El sitio es una SPA: `index.html` trae UNA sola tanda de
 // metas OG —la institucional— y los `<Helmet>` de cada página los reescriben
 // EN EL NAVEGADOR. WhatsApp, Facebook y compañía no ejecutan JavaScript: leen
-// el HTML crudo y se van. Resultado hasta esta función: compartir /rendicion,
+// el HTML crudo y se van. Resultado hasta esta función: compartir /transparencia,
 // /beneficios o /club mostraba siempre la misma tarjeta genérica de la
 // Fundación. Las páginas de detalle (novedades, beneficios, partners,
 // actividades) ya tenían su propio OG servido por `api/share/<recurso>/`; esto
@@ -14,7 +14,7 @@
 //
 // CÓMO ENTRA. Igual que sus hermanas: `vercel.json` tiene un rewrite
 // condicional por User-Agent por cada ruta de PAGINAS. El bot de la red social
-// que pide /rendicion cae acá; el humano recibe la SPA normal. La URL
+// que pide /transparencia cae acá; el humano recibe la SPA normal. La URL
 // /api/share/ nunca se expone.
 //
 // UNA FUNCIÓN Y NO QUINCE. Cada archivo en `api/` es una Serverless Function y
@@ -179,7 +179,7 @@ function guessMimeFromUrl(u = "") {
 
 /**
  * Normaliza lo que llega por `?p=` a una clave de PAGINAS.
- * Acepta `rendicion`, `/rendicion` y `/rendicion/`: el rewrite manda la forma
+ * Acepta `transparencia`, `/transparencia` y `/transparencia/`: el rewrite manda la forma
  * sin barra inicial, pero un pedido a mano no tiene por qué saberlo.
  * @param {string} p
  * @returns {string|null} ruta canónica con barra inicial, o null si no es conocida

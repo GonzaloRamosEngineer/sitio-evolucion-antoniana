@@ -13,7 +13,8 @@
 | 1. Línea base y red de seguridad | Completa | `docs/linea-base-rutas-etapa-1.md` |
 | 2. Higiene SEO sin renombrar | Completa, publicada y verificada | `docs/higiene-seo-etapa-2.md` |
 | 3. Registro central de rutas | Completa, publicada y verificada | `docs/registro-central-rutas-etapa-3.md` |
-| 4–9 | Pendientes | Etapa 4 habilitada |
+| 4. Migración de rutas públicas estáticas | Completa y validada localmente; pendiente de publicación | `docs/migracion-rutas-publicas-etapa-4.md` |
+| 5–9 | Pendientes | Se inician únicamente al cerrar el gate de producción anterior |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -522,26 +523,29 @@ La migración se considera exitosa cuando:
 7. Multi-tenant implica aislamiento de datos, RLS por organización, roles por entidad,
    storage, dominios y operación compartida; no es solamente agregar `organization_id`.
 
-## 12. Registro inicial de decisiones pendientes
+## 12. Registro de decisiones
 
-Antes de la Etapa 4 deben cerrarse estas decisiones:
+Las decisiones aplicables a cada etapa se cierran antes de modificar comportamiento. Las que
+pertenecen a etapas posteriores permanecen visibles, pero no bloquean la migración estática.
 
-- [ ] Confirmar `/transparencia` como destino canónico de la rendición.
-- [ ] Confirmar `/alianzas` como término público en lugar de `/partners`.
-- [ ] Definir contenido y alcance de la futura landing `/comunidad`.
-- [ ] Confirmar `/mi/beneficios` como reemplazo operativo de `/club`.
-- [ ] Confirmar si las rutas administrativas se traducirán o quedarán técnicas.
-- [ ] Elegir tabla de aliases compartida o historial por recurso.
+- [x] Confirmar `/transparencia` como destino canónico de la rendición.
+- [x] Confirmar `/alianzas` como término público en lugar de `/partners`.
+- [ ] Definir contenido y alcance de la futura landing `/comunidad` (Etapa 7).
+- [ ] Confirmar `/mi/beneficios` como reemplazo operativo de `/club` (Etapa 6).
+- [x] Mantener técnicas las rutas administrativas en esta migración.
+- [ ] Elegir tabla de aliases compartida o historial por recurso (Etapa 5).
 - [ ] Definir fuente de métricas de rutas heredadas y 404.
-- [ ] Inventariar callbacks externos antes de migrar autenticación.
+- [x] Inventariar callbacks externos antes de migrar autenticación (Etapa 1).
 
 ## 13. Próximo incremento
 
-La siguiente unidad de trabajo es la **Etapa 1 — Línea base y red de seguridad**. No debe
-renombrar rutas. Su salida concreta será:
+La Etapa 4 está completa localmente. El siguiente paso seguro es publicarla y verificar:
 
-1. inventario ejecutable de rutas actuales;
-2. pruebas de resolución y navegación;
-3. matriz de roles y callbacks;
-4. checklist reproducible para preview y producción;
-5. reporte de gaps antes de iniciar la higiene SEO.
+1. cada URL anterior devuelve un único 308;
+2. cada destino canónico responde 200;
+3. query strings se preservan;
+4. sitemap, canonical y OG usan solamente las URLs nuevas;
+5. ninguna ruta dinámica fue alterada antes de la Etapa 5.
+
+Con ese gate de producción cerrado queda habilitada la **Etapa 5 — Slugs y aliases
+dinámicos**.

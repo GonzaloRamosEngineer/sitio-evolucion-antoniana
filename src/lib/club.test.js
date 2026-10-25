@@ -398,11 +398,9 @@ describe('accionVidriera', () => {
     const a = accionVidriera({ beneficio: exclusivo, acceso: sinAcceso, haySesion: true });
     expect(a.estado).toBe('sin_acceso');
     expect(a.puedeCanjear).toBe(false);
-    // '/collaborate', en ingles. Este assert decia '/colaborar' y por eso el
-    // test PASABA con el bug puesto: un valor escrito a mano no puede detectar
-    // que el valor esta mal. La defensa real es rutas-cta.test.js, que lo cruza
-    // contra App.jsx.
-    expect(a.cta.href).toBe('/collaborate');
+    // La URL sale del registro central; rutas-cta.test.js la cruza contra el
+    // manifiesto para que este CTA no vuelva a divergir de la ruta canónica.
+    expect(a.cta.href).toBe('/colaborar');
     expect(a.mensaje).toMatch(/aporte vigente/);
   });
 

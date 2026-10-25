@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PAGINAS, resolverRuta } from './pagina.js';
 import { extractAppRoutes } from '../../tools/route-audit-lib.mjs';
+import { LEGACY_PUBLIC_REDIRECTS } from '../../src/config/rutas.js';
 
 const RAIZ = path.resolve(__dirname, '../..');
 const APP_JSX = fs.readFileSync(path.join(RAIZ, 'src/App.jsx'), 'utf8');
@@ -79,13 +80,14 @@ const rutasDeApp = extractAppRoutes(APP_JSX);
 const rewritesDeBot = VERCEL.rewrites.filter((r) => Array.isArray(r.has));
 
 const rewriteDe = (source) => rewritesDeBot.find((r) => r.source === source);
+const redirectDe = (source) => VERCEL.redirects.find((r) => r.source === source);
 
 describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
   it('encuentra las rutas de App.jsx (si esto falla, cambió la forma de declararlas)', () => {
     // Guarda del propio parser: un `<Route>` escrito distinto haría que el test
     // "pase" revisando una lista vacía, que es peor que fallar.
     expect(rutasDeApp.length).toBeGreaterThanOrEqual(30);
-    expect(rutasDeApp).toContain('/rendicion');
+    expect(rutasDeApp).toContain('/transparencia');
     expect(rutasDeApp).toContain('/club/postular');
   });
 
@@ -94,13 +96,28 @@ describe('barrido de rutas: App.jsx ↔ PAGINAS ↔ vercel.json', () => {
       (ruta) =>
         !(ruta in PAGINAS) &&
         !(ruta in RUTAS_DE_DETALLE) &&
-        !(ruta in RUTAS_SIN_PREVIEW)
+        !(ruta in RUTAS_SIN_PREVIEW) &&
+        !(ruta in LEGACY_PUBLIC_REDIRECTS)
     );
     expect(
       sinClasificar,
       'Ruta nueva sin decidir su preview. Agregala a PAGINAS en api/share/pagina.js ' +
         '(con su rewrite en vercel.json) o a RUTAS_SIN_PREVIEW con el motivo.'
     ).toEqual([]);
+  });
+
+  it('cada alias público tiene un único redirect permanente hacia su canónica', () => {
+    for (const [source, destination] of Object.entries(LEGACY_PUBLIC_REDIRECTS)) {
+      expect(rutasDeApp, `${source} no existe como fallback client-side`).toContain(source);
+      expect(redirectDe(source)).toEqual({ source, destination, permanent: true });
+      expect(rewriteDe(source), `${source} no debe conservar OG propio`).toBeUndefined();
+    }
+  });
+
+  it('los redirects públicos no forman cadenas ni colisionan entre sí', () => {
+    const destinos = Object.values(LEGACY_PUBLIC_REDIRECTS);
+    expect(new Set(destinos).size).toBe(destinos.length);
+    expect(destinos.filter((ruta) => ruta in LEGACY_PUBLIC_REDIRECTS)).toEqual([]);
   });
 
   it('PAGINAS no declara páginas que no existen como ruta', () => {
@@ -208,7 +225,7 @@ describe('el HTML que ve el bot', () => {
   };
 
   it('devuelve el título y la descripción de la página pedida, no la institucional', async () => {
-    const res = await pedir({ p: 'rendicion' });
+    const res = await pedir({ p: 'transparencia' });
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain(
       '<meta property="og:title" content="Rendición de cuentas | Evolución Antoniana" />'
@@ -317,8 +334,8 @@ describe('el HTML que ve el bot', () => {
   });
 
   it('escapa el contenido en los atributos de las metas', async () => {
-    const res = await pedir({ p: 'contact' });
-    // La descripción de /contact trae un mail; ninguna meta debe quedar con un
+    const res = await pedir({ p: 'contacto' });
+    // La descripción de /contacto trae un mail; ninguna meta debe quedar con un
     // `"` crudo que corte el atributo.
     const metas = res.body.match(/<meta[^>]*>/g);
     for (const m of metas) {
@@ -334,9 +351,9 @@ describe('el HTML que ve el bot', () => {
   });
 
   it('resolverRuta tolera la barra inicial y la final', () => {
-    expect(resolverRuta('rendicion')).toBe('/rendicion');
-    expect(resolverRuta('/rendicion')).toBe('/rendicion');
-    expect(resolverRuta('/rendicion/')).toBe('/rendicion');
+    expect(resolverRuta('transparencia')).toBe('/transparencia');
+    expect(resolverRuta('/transparencia')).toBe('/transparencia');
+    expect(resolverRuta('/transparencia/')).toBe('/transparencia');
     expect(resolverRuta('club/postular')).toBe('/club/postular');
     expect(resolverRuta('constructor')).toBe(null);
     expect(resolverRuta(undefined)).toBe(null);

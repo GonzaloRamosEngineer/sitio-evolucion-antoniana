@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 
 const educationSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -289,7 +291,7 @@ const EducationForm = ({ onSuccess }) => {
           </div>
         </div>
         <a 
-          href="https://www.evolucionantoniana.com/activities" 
+          href={canonicalUrl(RUTAS.actividades.lista)}
           target="_blank" 
           rel="noopener noreferrer"
           className="bg-white text-brand-primary text-xs font-semibold px-4 py-2 rounded-sm shadow-sm hover:bg-brand-primary hover:text-white transition-all"

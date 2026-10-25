@@ -48,9 +48,9 @@ describe('AvisoSesion — sin sesión', () => {
     };
 
     render(
-      <MemoryRouter initialEntries={['/collaborate']}>
+      <MemoryRouter initialEntries={['/colaborar']}>
         <Routes>
-          <Route path="/collaborate" element={<AvisoSesion {...props()} />} />
+          <Route path="/colaborar" element={<AvisoSesion {...props()} />} />
           <Route path="/login" element={<MostrarState />} />
         </Routes>
       </MemoryRouter>
@@ -59,7 +59,7 @@ describe('AvisoSesion — sin sesión', () => {
     fireEvent.click(screen.getByRole('link', { name: /Iniciá sesión/i }));
 
     expect(JSON.parse(screen.getByTestId('state').textContent)).toEqual({
-      from: { pathname: '/collaborate' },
+      from: { pathname: '/colaborar' },
     });
   });
 

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
+import { RUTAS } from '@/config/rutas';
 
 export default function BackToTop({ threshold = 400, label = 'Volver arriba' }) {
   const [visible, setVisible] = useState(false);
@@ -30,7 +31,7 @@ export default function BackToTop({ threshold = 400, label = 'Volver arriba' }) 
           exit={{ opacity: 0, scale: 0.5, y: 20 }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className={`fixed bottom-[96px] right-6 z-[60] md:bottom-8 md:right-8 ${pathname === '/collaborate' ? 'hidden md:block' : ''}`}
+          className={`fixed bottom-[96px] right-6 z-[60] md:bottom-8 md:right-8 ${pathname === RUTAS.colaborar ? 'hidden md:block' : ''}`}
         >
           <Button
             onClick={toTop}

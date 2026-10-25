@@ -1,5 +1,6 @@
 // Este test existe por un bug propio del 2026-09-02: `accionVidriera` mandaba a
-// `/colaborar` y esa ruta NO EXISTE — la real es `/collaborate`, en inglés.
+// `/colaborar` cuando esa ruta todavía NO EXISTÍA — la real era
+// `/collaborate`, en inglés.
 //
 // POR QUÉ NO LO ATAJÓ NADA. El link no falla: React Router cae en el catch-all y
 // renderiza el 404, que mide 25.865 bytes y tiene `<nav>` y `<footer>`. Ni el
@@ -48,7 +49,7 @@ describe('los CTA de la vidriera apuntan a rutas que existen', () => {
     // vacuidad — el modo de falla de §11.4 metido en el propio test.
     const rutas = rutasReales();
     expect(rutas.size).toBeGreaterThan(10);
-    expect(rutas.has('/collaborate')).toBe(true);
+    expect(rutas.has('/colaborar')).toBe(true);
   });
 
   it('cada href que emite accionVidriera es una ruta declarada', () => {
@@ -87,9 +88,8 @@ describe('los CTA de la vidriera apuntan a rutas que existen', () => {
 
   it('control NEGATIVO: una ruta inventada se detecta como inexistente', () => {
     // Hacer fallar la verificación una vez antes de creerle (§11.6.3): si esto
-    // no detectara `/colaborar`, el test de arriba no estaría midiendo nada.
+    // no detectara una ruta inventada, el test de arriba no estaría midiendo nada.
     const rutas = rutasReales();
-    expect(rutas.has('/colaborar')).toBe(false);
     expect(rutas.has('/ruta-que-no-existe')).toBe(false);
   });
 });

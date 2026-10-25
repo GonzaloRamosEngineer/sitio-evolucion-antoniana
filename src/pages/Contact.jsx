@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
@@ -159,7 +161,7 @@ const Contact = () => {
       <Helmet>
         <title>Contacto - Fundación Evolución Antoniana</title>
         <meta name="description" content="Comunicate con la Fundación Evolución Antoniana. Escribinos a info@evolucionantoniana.com." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/contact" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.contacto)} />
       </Helmet>
 
       {/* ============ HERO ============ */}

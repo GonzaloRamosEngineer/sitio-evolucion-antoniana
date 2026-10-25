@@ -10,7 +10,7 @@ describe('línea base ejecutable de rutas', () => {
   const report = auditRoutes();
 
   it('cruza exactamente las rutas del router con el registro central', () => {
-    expect(report.appRoutes).toHaveLength(38);
+    expect(report.appRoutes).toHaveLength(49);
     expect(report.missingFromBaseline).toEqual([]);
     expect(report.missingFromApp).toEqual([]);
     expect(report.duplicateAppRoutes).toEqual([]);

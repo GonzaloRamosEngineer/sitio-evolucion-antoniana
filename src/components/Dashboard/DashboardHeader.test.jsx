@@ -204,7 +204,7 @@ describe('DashboardHeader', () => {
     const cta = screen.getByRole('link', { name: /ACTIVAR MEMBRES/i });
     // ⚠️ `/collaborate`, en inglés. `/colaborar` NO existe y ya se pagó una vez
     // (§11.4 y `rutas-cta.test.js`).
-    expect(cta.getAttribute('href')).toBe('/collaborate');
+    expect(cta.getAttribute('href')).toBe('/colaborar');
     // Sin antigüedad no se inventa un año: antes caía a un '2025' hardcodeado.
     expect(screen.queryByText(/2025/)).toBeNull();
   });
@@ -261,7 +261,7 @@ describe('DashboardHeader', () => {
     expect(screen.getByText('Donación extraordinaria')).toBeTruthy();
     expect(screen.getByText('0 cuotas')).toBeTruthy();
     const cta = screen.getByRole('link', { name: /Sumarme con la cuota mensual/i });
-    expect(cta.getAttribute('href')).toBe('/collaborate');
+    expect(cta.getAttribute('href')).toBe('/colaborar');
     expect(screen.queryByRole('link', { name: /VER MI CARNET/i })).toBeNull();
   });
 

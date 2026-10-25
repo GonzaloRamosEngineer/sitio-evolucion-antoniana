@@ -2,6 +2,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { RUTAS } from '@/config/rutas';
+import { canonicalUrl } from '@/lib/seo';
 import {
   Heart,
   Target,
@@ -113,7 +115,7 @@ const About = () => {
       <Helmet>
         <title>Quiénes somos - Fundación Evolución Antoniana</title>
         <meta name="description" content="Conocé la misión, los valores y el equipo de la Fundación Evolución Antoniana." />
-        <link rel="canonical" href="https://www.evolucionantoniana.com/about" />
+        <link rel="canonical" href={canonicalUrl(RUTAS.nosotros)} />
       </Helmet>
 
       {/* ============ HERO ============ */}
