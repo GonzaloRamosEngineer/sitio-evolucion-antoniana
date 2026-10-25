@@ -9,7 +9,8 @@ describe('línea base ejecutable de lenguaje', () => {
     expect(report.unexpectedBrandFiles).toEqual([]);
   });
 
-  it('no amplía las páginas que conservan Partner(s) en la fuente', () => {
+  it('elimina Partner(s) del lenguaje público inventariado', () => {
+    expect(report.partnerFiles).toEqual([]);
     expect(report.unexpectedPartnerFiles).toEqual([]);
   });
 

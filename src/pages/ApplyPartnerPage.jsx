@@ -16,6 +16,7 @@ import { addPartner } from '@/lib/storage';
 import { Honeypot } from '@/components/Forms/Honeypot';
 import { canonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
+import { tituloPagina } from '@/config/entidad';
 
 const urlSchema = z.string().url();
 
@@ -97,10 +98,10 @@ const ApplyPartnerPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>Postularse como Partner - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Postular una alianza')}</title>
         <meta
           name="description"
-          content="Únete a nuestra red de partners y colabora con el desarrollo social de la comunidad"
+          content="Sumá tu organización a nuestra red de alianzas y colaborá con el desarrollo social de la comunidad"
         />
         <link rel="canonical" href={canonicalUrl(RUTAS.alianzas.postularse)} />
       </Helmet>
@@ -138,7 +139,7 @@ const ApplyPartnerPage = () => {
                         <span className="text-brand-gold text-xs font-bold tracking-widest uppercase">Únete a la Red</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-poppins font-bold text-white mb-6">
-                        Postular como <span className="text-brand-gold">Partner</span>
+                        Proponer una <span className="text-brand-gold">alianza</span>
                     </h1>
                     <p className="text-xl text-gray-200 leading-relaxed max-w-2xl mx-auto">
                         Suma a tu organización a nuestra misión y colabora directamente con el desarrollo tecnológico y social de la comunidad.

@@ -22,6 +22,7 @@ import {
   useApprovedPartners,
 } from "@/hooks/useContentQueries";
 import { RUTAS } from "@/config/rutas";
+import { entidad } from "@/config/entidad";
 import { canonicalUrl } from "@/lib/seo";
 const stats = [
   { number: "305", suffix: "+", label: "Almas impactadas", desc: "Beneficiarios directos de nuestros programas." },
@@ -204,7 +205,7 @@ const Home = () => {
   return (
     <div className="bg-brand-sand">
       <Helmet>
-        <title>Fundación Evolución Antoniana | Educación, Deporte y Tecnología para Transformar Realidades</title>
+        <title>{entidad.nombre} | Educación, Deporte y Tecnología para Transformar Realidades</title>
         <meta name="description" content="Impulsamos oportunidades reales a través de la educación, el deporte, la inclusión y la tecnología, desarrollando proyectos que transforman realidades." />
         <link rel="canonical" href={canonicalUrl(RUTAS.inicio)} />
       </Helmet>
@@ -222,7 +223,7 @@ const Home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             <div className="lg:col-span-7">
               <motion.div variants={rise} className="mb-7">
-                <Eyebrow light>Fundación · Salta, Argentina</Eyebrow>
+                <Eyebrow light>{entidad.tipoDisplay} · {entidad.ubicacion.display}</Eyebrow>
               </motion.div>
 
               <motion.h1
@@ -553,7 +554,7 @@ const Home = () => {
                     <Eyebrow>Comunidad</Eyebrow>
                   </div>
                   <h2 className="font-poppins font-bold text-2xl lg:text-3xl tracking-tight text-brand-dark">
-                    Partners que nos acompañan
+                    Organizaciones que nos acompañan
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-2">
@@ -575,7 +576,7 @@ const Home = () => {
               </div>
 
               <ul
-                aria-label="Partners de la fundación"
+                aria-label={`Organizaciones aliadas de ${entidad.nombreCorto}`}
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-2"
               >
                 {partners.map((partner) => (
@@ -612,7 +613,7 @@ const Home = () => {
             </h2>
             <p className="text-lg text-white/70 leading-relaxed max-w-[36rem] mb-10">
               Unite a nuestra comunidad: accedé a beneficios exclusivos de
-              nuestros partners y contribuí al desarrollo social y tecnológico
+              nuestras organizaciones aliadas y contribuí al desarrollo social y tecnológico
               de Salta.
             </p>
 

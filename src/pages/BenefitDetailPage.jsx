@@ -29,6 +29,7 @@ import { ResourceLoading, ResourceNotFound } from "@/components/ui/resource-stat
 import { canonicalUrl } from "@/lib/seo";
 import { RUTAS } from "@/config/rutas";
 import { PUBLIC_RESOURCE_TYPES } from "@/lib/slugResolver";
+import { tituloPagina } from "@/config/entidad";
 
 const fmt = (d) => new Date(d).toLocaleDateString('es-AR', { dateStyle: 'long' });
 
@@ -84,7 +85,7 @@ const BenefitDetailPage = () => {
   // tiene un reloj que le da sentido.
 
   if (resolving || (Boolean(resolution?.resource_id) && loading)) {
-    return <ResourceLoading title="Cargando beneficio… – Fundación Evolución Antoniana" />;
+    return <ResourceLoading title={tituloPagina('Cargando beneficio…')} />;
   }
 
   if (!benefit) {
@@ -102,7 +103,7 @@ const BenefitDetailPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-sand font-sans">
       <Helmet>
-        <title>{benefit.titulo} - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina(benefit.titulo)}</title>
         <meta name="description" content={benefit.descripcion} />
         <link
           rel="canonical"

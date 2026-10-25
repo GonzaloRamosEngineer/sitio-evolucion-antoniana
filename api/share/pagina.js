@@ -114,15 +114,15 @@ export const PAGINAS = {
   },
   [ROUTE_PATHS.ALIANZAS]: {
     imagen: "/img/og/partners-1200x630.png",
-    titulo: "Partners Evolutivos",
+    titulo: "Alianzas estratégicas",
     descripcion:
       "Conocé a nuestras marcas aliadas y los beneficios que ofrecen.",
   },
   [ROUTE_PATHS.POSTULAR_ALIANZA]: {
     imagen: "/img/og/postular-partner-1200x630.png",
-    titulo: "Postulate como partner",
+    titulo: "Proponé una alianza",
     descripcion:
-      "Sumate a nuestra red de partners y colaborá con el desarrollo social de la comunidad.",
+      "Sumá tu organización a nuestra red de alianzas y colaborá con el desarrollo social de la comunidad.",
   },
   [ROUTE_PATHS.CLUB]: {
     imagen: "/img/og/club-1200x630.png",

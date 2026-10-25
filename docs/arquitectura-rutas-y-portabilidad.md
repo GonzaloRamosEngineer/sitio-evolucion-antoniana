@@ -16,7 +16,7 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A y 7B completos | `docs/consistencia-lenguaje-etapa-7.md` |
+| 7. Consistencia transversal de lenguaje | En curso; 7A–7B completos y 7C1 preparado | `docs/consistencia-lenguaje-etapa-7.md` |
 | 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -560,6 +560,7 @@ Edge Functions se desplegaron individualmente y mantienen su frontera JWT. Los p
 reales actúan como canaries no bloqueantes y los aliases se conservan como rollback.
 
 La **Etapa 7 — Consistencia transversal de lenguaje** ya completó inventario, contrato v1 y
-auditoría ejecutable. Su evidencia está en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente
-incremento seguro es el Bloque 7C: migrar marca, SEO y vocabulario del frontend público con la
-red de seguridad ya activa.
+auditoría ejecutable. El Bloque 7C1 normalizó el vocabulario público de alianzas, alineó su SEO y
+previews, redujo la deuda institucional de 44 a 37 archivos y dejó en cero las frases públicas
+con `Partner(s)`. Su evidencia está en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente
+incremento seguro es 7C2: migrar la marca y el SEO literal restantes del frontend público.

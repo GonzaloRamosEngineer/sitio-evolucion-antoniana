@@ -11,6 +11,7 @@ import { usePartnerItem, useBeneficiosVidriera } from '@/hooks/useContentQueries
 import { cn, palabraMasLarga } from '@/lib/utils';
 import { canonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
+import { entidad, tituloPagina } from '@/config/entidad';
 
 const PartnerDetailPage = () => {
   const { slug } = useParams();
@@ -43,7 +44,7 @@ const PartnerDetailPage = () => {
   });
 
   const pageTitle = partner
-    ? `${partner.nombre} – Fundación Evolución Antoniana`
+    ? tituloPagina(partner.nombre)
     : 'Alianzas estratégicas';
 
   React.useEffect(() => {
@@ -53,7 +54,7 @@ const PartnerDetailPage = () => {
   }, [navigate, partner?.slug, slug]);
 
   if (loading) {
-    return <ResourceLoading title="Cargando alianza… – Fundación Evolución Antoniana" />;
+    return <ResourceLoading title={tituloPagina('Cargando alianza…')} />;
   }
 
   if (!partner) {
@@ -143,7 +144,7 @@ const PartnerDetailPage = () => {
                         <div className="flex items-center gap-2 mb-4">
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                             <span className="text-xs font-bold uppercase tracking-wider text-green-600">
-                                Partner verificado
+                                Organización aliada verificada
                             </span>
                         </div>
                     )}
@@ -281,7 +282,7 @@ const PartnerDetailPage = () => {
                 <div className="mt-6 bg-brand-primary rounded-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
                     <div>
                         <h3 className="font-bold font-poppins text-lg">¿Tu organización quiere sumarse?</h3>
-                        <p className="text-white/75 text-sm">Sé parte de la red de impacto de Evolución Antoniana.</p>
+                        <p className="text-white/75 text-sm">Sé parte de la red de impacto de {entidad.nombreCorto}.</p>
                     </div>
                     <Link to={RUTAS.alianzas.postularse}>
                          <Button className="bg-white text-brand-primary hover:bg-brand-sand font-bold whitespace-nowrap">

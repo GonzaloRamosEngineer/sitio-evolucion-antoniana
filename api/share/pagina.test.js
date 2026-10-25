@@ -261,6 +261,20 @@ describe('el HTML que ve el bot', () => {
     expect(res.body).not.toContain('Educación, Deporte y Tecnología');
   });
 
+  it('usa vocabulario de alianzas en las dos tarjetas institucionales', async () => {
+    const listado = await pedir({ p: 'alianzas' });
+    const postulacion = await pedir({ p: 'alianzas/postularse' });
+
+    expect(listado.body).toContain('content="Alianzas estratégicas | Evolución Antoniana"');
+    expect(postulacion.body).toContain('content="Proponé una alianza | Evolución Antoniana"');
+    expect([
+      PAGINAS['/alianzas'].titulo,
+      PAGINAS['/alianzas'].descripcion,
+      PAGINAS['/alianzas/postularse'].titulo,
+      PAGINAS['/alianzas/postularse'].descripcion,
+    ].join(' ')).not.toMatch(/\bpartners?\b/i);
+  });
+
   it('apunta el og:url y el canonical a la URL humana, nunca a /api/share/', async () => {
     const res = await pedir({ p: 'comercios/sumarse' });
     const esperada = 'https://www.evolucionantoniana.com/comercios/sumarse';

@@ -3,7 +3,6 @@ export const BRAND_LITERAL_ALLOWLIST = Object.freeze([
   'api/share/benefits/slug.js',
   'api/share/news/slug.js',
   'api/share/pagina.js',
-  'api/share/partners/slug.js',
   'api/share/preinscripcion.js',
   'index.html',
   'public/robots.txt',
@@ -13,10 +12,7 @@ export const BRAND_LITERAL_ALLOWLIST = Object.freeze([
   'src/pages/About.jsx',
   'src/pages/Activities.jsx',
   'src/pages/ActivityDetailPage.jsx',
-  'src/pages/AdminPanel.jsx',
   'src/pages/Agradecimiento.jsx',
-  'src/pages/ApplyPartnerPage.jsx',
-  'src/pages/BenefitDetailPage.jsx',
   'src/pages/BenefitsPage.jsx',
   'src/pages/CarnetPage.jsx',
   'src/pages/Collaborate.jsx',
@@ -27,14 +23,11 @@ export const BRAND_LITERAL_ALLOWLIST = Object.freeze([
   'src/pages/Dashboard.jsx',
   'src/pages/EditActivityPage.jsx',
   'src/pages/EducationAdmin.jsx',
-  'src/pages/Home.jsx',
   'src/pages/LegalDocuments.jsx',
   'src/pages/LoginPage.jsx',
   'src/pages/NewsDetailPage.jsx',
   'src/pages/NewsPage.jsx',
   'src/pages/NotFound.jsx',
-  'src/pages/PartnerDetailPage.jsx',
-  'src/pages/PartnersPage.jsx',
   'src/pages/Preinscripcion.jsx',
   'src/pages/PrivacyPolicy.jsx',
   'src/pages/RegisterPage.jsx',
@@ -45,12 +38,4 @@ export const BRAND_LITERAL_ALLOWLIST = Object.freeze([
   'supabase/functions/send-contact-email/index.ts',
 ]);
 
-export const PUBLIC_PARTNER_ALLOWLIST = Object.freeze([
-  'src/pages/AdminPanel.jsx',
-  'src/pages/ApplyPartnerPage.jsx',
-  'src/pages/BenefitDetailPage.jsx',
-  'src/pages/Home.jsx',
-  'src/pages/PartnerDetailPage.jsx',
-  'src/pages/PartnersPage.jsx',
-  'src/pages/club/PostularComercioPage.jsx',
-]);
+export const PUBLIC_PARTNER_ALLOWLIST = Object.freeze([]);

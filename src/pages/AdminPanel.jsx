@@ -27,7 +27,7 @@ import ImportarMovimientos from '@/components/Admin/ImportarMovimientos';
 import ClubAdmin from '@/components/Club/ClubAdmin';
 import AportesAdmin from '@/components/Admin/AportesAdmin';
 import GastosAdmin from '@/components/Admin/GastosAdmin';
-import { entidad } from '@/config/entidad';
+import { entidad, tituloPagina } from '@/config/entidad';
 import { RUTAS } from '@/config/rutas';
 
 const AdminPanel = () => {
@@ -95,7 +95,7 @@ const AdminPanel = () => {
       {
         label: 'Ecosistema',
         items: [
-          { value: 'partners', label: 'Partners', icon: Handshake, badge: stats.pendingPartners },
+          { value: 'partners', label: 'Alianzas', icon: Handshake, badge: stats.pendingPartners },
           { value: 'benefits', label: 'Beneficios', icon: Gift },
           { value: 'club', label: entidad.comunidadEvolucion.nombre, icon: Ticket },
         ],
@@ -175,10 +175,10 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
-        <title>Panel de Administración - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Panel de administración')}</title>
         <meta
           name="description"
-          content="Gestión de actividades, usuarios, colaboraciones, donaciones, documentos legales, partners, beneficios y novedades."
+          content="Gestión de actividades, usuarios, colaboraciones, donaciones, documentos legales, alianzas, beneficios y novedades."
         />
         <meta name="robots" content="noindex" />
       </Helmet>

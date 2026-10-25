@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A y 7B completos; Bloque 7C pendiente
+**Estado:** Bloques 7A y 7B completos; Bloque 7C1 preparado para publicación
 
 ## 1. Objetivo
 
@@ -29,7 +29,7 @@ Barrido sobre código ejecutable, excluyendo pruebas y archivos minificados:
 | Endpoints Vercel de previews | 6 | darles configuración server-side compartida |
 | Edge Functions | 4 | separar remitente, dominio y nombre institucional |
 | `index.html` y estáticos públicos | 3 | generar o sincronizar desde configuración |
-| Páginas con `Partner(s)` en fuente | 7 | clasificar texto visible frente a identificador técnico |
+| Páginas con `Partner(s)` en fuente | 7 | medición inicial amplia; clasificar texto visible frente a identificador técnico |
 | Literal público “Club de beneficios” | 0 | mantener en cero |
 
 La auditoría consolidada registra 44 archivos runtime con marca o dominio literal: los 31 del
@@ -98,6 +98,30 @@ se recorta la allowlist para que la deuda eliminada no pueda reaparecer.
 - migrar marca, contacto, SEO y textos públicos a configuración;
 - normalizar “Partner(s)” visible a “alianza”, “organización aliada” o la variante definida;
 - conservar nombres de componentes, tablas y APIs para evitar una migración técnica sin valor.
+
+#### Bloque 7C1 — vocabulario público de alianzas y SEO
+
+- [x] portada, listado, detalle, postulación y navegación administrativa expresan “alianzas” u
+  “organizaciones aliadas” en el texto visible;
+- [x] títulos de página y metadatos del frontend consumen el contrato de entidad;
+- [x] previews estáticas y dinámicas de alianzas usan el mismo vocabulario y marca;
+- [x] imágenes OG de `/alianzas` y `/alianzas/postularse` regeneradas y revisadas visualmente;
+- [x] identificadores técnicos `partners`, `partner_id` y nombres de componentes preservados;
+- [x] auditoría refinada para medir frases públicas, sin confundir rutas, archivos ni código;
+- [x] deuda de marca o dominio reducida de 44 a 37 archivos;
+- [x] términos públicos `Partner(s)` y “Club de beneficios” en cero;
+- [x] suite completa: 64 archivos y 695 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
+- [ ] deploy de Vercel y verificación de páginas y previews en producción.
+
+La cifra inicial de siete páginas con `Partner(s)` se obtuvo con una expresión deliberadamente
+amplia y también incluía identificadores o comentarios. Desde 7C1 la auditoría controla frases
+que podrían llegar a la interfaz y exige cero coincidencias. Esto permite conservar el dominio
+técnico estable sin ocultar deuda de comunicación pública.
+
+El próximo incremento, 7C2, migrará la marca y el SEO literal que todavía queda en otras páginas
+del frontend público. Contacto, servidor, Edge Functions y estáticos se mantienen para los
+bloques posteriores, evitando mezclar runtimes en un mismo despliegue.
 
 ### Bloque 7D — servidor y estáticos
 

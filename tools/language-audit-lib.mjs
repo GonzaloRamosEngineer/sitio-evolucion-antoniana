@@ -10,7 +10,21 @@ const RUNTIME_ROOTS = ['src', 'api', 'supabase/functions', 'public'];
 const SOURCE_EXTENSION = /\.(?:js|jsx|ts|tsx|html|txt)$/;
 const BRAND_LITERAL = /Fundación Evolución Antoniana|Evolución Antoniana|evolucionantoniana\.com/;
 const CLUB_DE_BENEFICIOS = /club de beneficios/i;
-const PARTNER_TERM = /\bpartners?\b/i;
+const PUBLIC_PARTNER_TERM = new RegExp(
+  [
+    'Partners que nos acompañan',
+    'Partners de la fundación',
+    'nuestros partners',
+    'Postularse como Partner',
+    'red de partners',
+    'Postular como[\\s\\S]{0,100}Partner',
+    'Partners evolutivos',
+    'Partner verificado',
+    "label:\\s*['\"]Partners['\"]",
+    'documentos legales, partners, beneficios',
+  ].join('|'),
+  'i',
+);
 
 const walk = (absolute) => {
   if (!fs.existsSync(absolute)) return [];
@@ -50,7 +64,7 @@ export const auditLanguage = (root = process.cwd()) => {
   );
   const partnerFiles = filesMatching(
     root,
-    PARTNER_TERM,
+    PUBLIC_PARTNER_TERM,
     (relative) => relative.startsWith('src/pages/'),
   );
   const clubDeBeneficiosFiles = filesMatching(root, CLUB_DE_BENEFICIOS);

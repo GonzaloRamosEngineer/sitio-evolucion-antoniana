@@ -18,6 +18,7 @@
 // -----------------------------------------------------------------------------
 
 import { resolvePublicSlug } from '../../_slug-resolver.js';
+import { entidad, tituloPagina } from '../../../src/config/entidad.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -120,8 +121,8 @@ export default async function handler(req, res) {
     // Mismo texto que el `<Helmet>` de `PartnerDetailPage`.
     const title = escapeHtml(
       item.nombre
-        ? `${item.nombre} – Fundación Evolución Antoniana`
-        : "Marca aliada – Fundación Evolución Antoniana"
+        ? tituloPagina(item.nombre)
+        : tituloPagina("Organización aliada")
     );
     const desc = escapeHtml(
       stripToOneLine(item.descripcion || "Conocé nuestras marcas aliadas y sus beneficios.").slice(
@@ -150,7 +151,7 @@ export default async function handler(req, res) {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   ${extraImageType}
-  <meta property="og:site_name" content="Fundación Evolución Antoniana" />
+  <meta property="og:site_name" content="${escapeHtml(entidad.nombre)}" />
   <meta property="og:locale" content="es_AR" />
 
   <!-- Twitter / X -->

@@ -16,6 +16,7 @@ import PartnerLogo from '@/components/PartnerLogo';
 import { useApprovedPartners } from '@/hooks/useContentQueries';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import { tituloPagina } from '@/config/entidad';
 
 const impactAreas = [
   {
@@ -112,7 +113,7 @@ const PartnersPage = () => {
   return (
     <div className="min-h-screen bg-brand-sand font-sans">
       <Helmet>
-        <title>Partners Evolutivos - Fundación Evolución Antoniana</title>
+        <title>{tituloPagina('Alianzas estratégicas')}</title>
         <meta
           name="description"
           content="Conocé a nuestras marcas aliadas y los beneficios que ofrecen"
@@ -130,7 +131,7 @@ const PartnersPage = () => {
           >
             <Eyebrow light>Alianzas estratégicas</Eyebrow>
             <h1 className="mt-6 mb-6 font-poppins text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.5rem]">
-              Partners evolutivos
+              Organizaciones aliadas
             </h1>
             <p className="mb-8 max-w-[36rem] text-lg leading-relaxed text-white/75">
               Organizaciones líderes comprometidas con el desarrollo tecnológico y social de nuestra comunidad.
