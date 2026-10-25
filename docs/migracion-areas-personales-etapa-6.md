@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 6A y 6B1 completos, publicados y verificados; Bloque 6B2 pendiente
+**Estado:** Bloques 6A, 6B1 y 6B2A completos; Bloque 6B2B pendiente
 
 ## 1. Estrategia de despliegue
 
@@ -12,8 +12,10 @@ La etapa se divide para no mezclar rutas internas con callbacks emitidos por Sup
    tablas ni Edge Functions.
 2. **Bloque 6B1 — destinos de autenticación y acciones con token.** Publica primero las
    rutas canónicas y sus aliases, sin cambiar ningún emisor externo.
-3. **Bloque 6B2 — proveedores y emisores.** Amplía la allowlist remota de Supabase y recién
-   después cambia y despliega las funciones que generan enlaces.
+3. **Bloque 6B2A — allowlist remota.** Respalda la configuración efectiva y amplía únicamente
+   los destinos admitidos, conservando los anteriores.
+4. **Bloque 6B2B — emisores.** Cambia primero el emisor web, valida una recuperación real y
+   recién después despliega las funciones que generan enlaces.
 
 Las funciones continúan generando temporalmente `/comercio`, `/update-password` y
 `/confirm-attendance`. Esos destinos siguen funcionando mediante un único 308; no se cambia
@@ -76,7 +78,7 @@ para impedir bucles desde marcadores o estados de navegación viejos.
 `www`, conservando los anteriores. Este archivo local **no se empuja en 6B1**: la CLI enlazada
 no ofrece una lectura o diff remoto previo y `config push` reemplaza la configuración completa.
 
-## 5. Emisores reservados para el Bloque 6B2
+## 5. Emisores reservados para el Bloque 6B2B
 
 | Flujo | Emisor actual | Alias todavía emitido |
 |---|---|---|
@@ -86,8 +88,8 @@ no ofrece una lectura o diff remoto previo y `config push` reemplaza la configur
 | Invitación a comercio | `club-invitar-operador` | `/comercio` |
 | Confirmación de asistencia | `send-activity-confirmation` | `/confirm-attendance` |
 
-Orden del Bloque 6B2: verificar y ampliar la allowlist, cambiar emisores, desplegar funciones,
-probar enlaces reales y conservar aliases anteriores.
+Orden del Bloque 6B2B: cambiar el emisor web, probar una recuperación real, actualizar las
+funciones una por una, desplegarlas, comprobar sus enlaces y conservar aliases anteriores.
 
 ## 6. Gate del Bloque 6A
 
@@ -126,10 +128,24 @@ El gate del Bloque 6A queda cerrado. No se modificaron Supabase, RLS ni funcione
 - [x] la acción de asistencia sirve la SPA genérica a bots y las actividades públicas
   conservan su preview dinámica.
 
-El gate del Bloque 6B1 queda cerrado. No se empujó configuración a Supabase ni se desplegaron
-Edge Functions; esos cambios permanecen reservados para el Bloque 6B2.
+Al cerrar el Bloque 6B1 no se había modificado Supabase ni desplegado Edge Functions; esas
+acciones quedaron separadas deliberadamente para los subbloques siguientes.
 
-## 8. Rollback
+## 8. Gate del Bloque 6B2A
+
+- [x] configuración remota de Auth leída mediante la Management API sin exponer secretos;
+- [x] estado previo confirmado: Site URL canónica y dos destinos `/update-password`;
+- [x] PATCH limitado a `uri_allow_list`, sin ejecutar `supabase config push`;
+- [x] URLs con y sin `www` de `/actualizar-clave` agregadas;
+- [x] URLs anteriores de `/update-password` conservadas para compatibilidad;
+- [x] lectura posterior confirmó la allowlist exacta de cuatro destinos;
+- [x] altas, confirmaciones, cambio seguro de email y MFA permanecieron sin cambios;
+- [x] frontend y Edge Functions todavía no modificados.
+
+El gate del Bloque 6B2A queda cerrado. El rollback consiste en volver a enviar únicamente el
+valor anterior de `uri_allow_list`; no se modificaron usuarios, sesiones, tablas, RLS ni emails.
+
+## 9. Rollback de rutas
 
 Revertir los valores canónicos en `src/config/rutas.js` y conservar las rutas nuevas como
 aliases temporales. No hay rollback de base de datos porque este bloque no modifica datos,
