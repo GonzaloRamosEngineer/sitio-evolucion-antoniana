@@ -86,6 +86,8 @@ contacto, sitio, marca y nombre del programa deben tener una fuente identificabl
 - [x] “Club de beneficios” tratado como error sin excepciones;
 - [x] suite completa: 64 archivos y 694 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y auditoría de rutas correctos.
+- [x] deploy de Vercel completado (`98a98b1f`);
+- [x] portada, sitemap y `/mi/beneficios` responden 200 en producción.
 
 La línea base es decreciente: una migración puede eliminar archivos de las listas sin fallar,
 pero cualquier archivo nuevo con deuda institucional rompe la auditoría. Después de cada bloque
