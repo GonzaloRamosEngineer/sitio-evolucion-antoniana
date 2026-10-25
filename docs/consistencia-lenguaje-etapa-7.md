@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7C2 completos; Bloque 7C3 preparado para publicación
+**Estado:** Bloques 7A–7C3 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -159,7 +159,9 @@ explícita y una prueba de regresión protege esa precedencia.
 - [x] términos visibles `Partner(s)` y “Club de beneficios” en cero;
 - [x] suite completa: 64 archivos y 696 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
-- [ ] deploy de Vercel y verificación de autenticación y accesos protegidos en producción.
+- [x] deploy de Vercel completado (`82200b3f`);
+- [x] login y registro renderizan los títulos configurados en producción;
+- [x] `/mi/carnet` y `/admin` sin sesión conservan la redirección segura a `/ingresar`.
 
 Los 12 archivos restantes pertenecen exclusivamente a los otros runtimes: cinco endpoints de
 previews, tres estáticos y cuatro Edge Functions. Con 7C3 se cierra el frontend del Bloque 7C. El
