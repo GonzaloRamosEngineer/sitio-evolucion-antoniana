@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import EducationForm from '@/components/Forms/EducationForm';
 import { RUTAS } from '@/config/rutas';
+import WhatsAppCTA from '@/components/WhatsAppCTA';
 import { canonicalUrl } from '@/lib/seo';
 import { entidad, tituloPagina } from '@/config/entidad';
 
@@ -108,6 +109,10 @@ const Preinscription = () => {
             </p>
           </div>
         </motion.div>
+      </section>
+
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 lg:pb-24">
+        <WhatsAppCTA mensaje="educacion" titulo="¿No sabés qué nivel te corresponde?" />
       </section>
     </div>
   );

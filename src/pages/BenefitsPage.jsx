@@ -13,6 +13,7 @@ import { beneficioBloqueado, estadoAcceso, diasHasta, SIN_ACCESO } from '@/lib/a
 import { entidad, tituloPagina } from '@/config/entidad';
 import { canonicalUrl } from '@/lib/seo';
 import { RUTAS } from '@/config/rutas';
+import WhatsAppCTA from '@/components/WhatsAppCTA';
 
 const categories = [
   { value: 'todos', label: 'Todos' },
@@ -230,6 +231,10 @@ const BenefitsPage = () => {
               ))}
             </div>
           )}
+
+          <div className="mx-auto mt-16 max-w-5xl">
+            <WhatsAppCTA mensaje="beneficios" titulo="¿Dudas sobre cómo usar un beneficio?" />
+          </div>
 
           {/* §12.10.5 — por dónde pide entrar un comercio.
               Va al final del catálogo y no arriba a propósito: quien lee esto
