@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7C3 completos; Bloque 7D1 preparado para publicación
+**Estado:** Bloques 7A–7D1 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -185,7 +185,11 @@ modificar estáticos o correo.
 - [x] deuda de marca o dominio reducida de 12 a 7 archivos;
 - [x] suite completa: 65 archivos y 698 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
-- [ ] deploy de Vercel y verificación de previews estáticos y dinámicos en producción.
+- [x] deploy de Vercel completado (`c3565b7c`);
+- [x] preview estático de contacto y previews dinámicos de actividad, novedad y beneficio
+  responden 200 con User-Agent de WhatsApp;
+- [x] endpoint heredado de preinscripción responde 200 y publica la URL canónica actual;
+- [x] títulos, descripciones, `og:site_name`, `og:url` y canonicals verificados en producción.
 
 Los siete archivos restantes son tres estáticos y cuatro Edge Functions. El siguiente incremento
 seguro es 7D2, dedicado a sincronizar `index.html`, `robots.txt` y la plantilla estática sin tocar
