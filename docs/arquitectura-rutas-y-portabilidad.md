@@ -16,7 +16,7 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; 7A–7D1 completos y 7D2 preparado | `docs/consistencia-lenguaje-etapa-7.md` |
+| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A–7D2 publicados y verificados | `docs/consistencia-lenguaje-etapa-7.md` |
 | 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,

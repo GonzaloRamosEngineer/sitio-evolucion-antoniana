@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7D1 completos; Bloque 7D2 preparado para publicación
+**Estado:** Bloques 7A–7D2 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -202,7 +202,10 @@ modificar estáticos o correo.
 - [x] deuda de marca o dominio reducida de 7 a 4 archivos;
 - [x] suite completa: 66 archivos y 701 pruebas aprobadas;
 - [x] lint sin errores (37 advertencias preexistentes), build sincronizado y auditorías correctas;
-- [ ] deploy de Vercel y verificación de HTML inicial, robots y plantilla en producción.
+- [x] deploy de Vercel completado (`58da3268`);
+- [x] portada, `robots.txt` y plantilla social responden 200 en producción;
+- [x] título, descripción, sitio, imagen social y `og:site_name` sincronizados en el HTML crudo;
+- [x] robots anuncia el sitemap canónico y la plantilla conserva sus placeholders editoriales.
 
 Los cuatro archivos restantes son exclusivamente Edge Functions. El siguiente incremento seguro
 es 7D3, para parametrizar identidad, remitentes y URLs sin modificar sus fronteras JWT.
