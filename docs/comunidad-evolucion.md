@@ -30,10 +30,12 @@ local con propósito.
 ### Comercios aliados
 
 - Llegan a una comunidad local comprometida.
-- Obtienen difusión dentro del sitio y las comunicaciones de la Fundación.
+- Obtienen presencia dentro del sitio y una presentación institucional de la alianza.
 - Validan códigos desde un teléfono, sin instalar un sistema propio.
 - Acceden a métricas de canjes, personas alcanzadas y consumo declarado cuando el
   comercio carga el monto de la operación.
+- Pueden coordinar activaciones especiales que generen visibilidad, conversación e
+  impacto compartido.
 
 ### Fundación Evolución Antoniana
 
@@ -57,6 +59,47 @@ Evolución Antoniana.
 
 Ofrecé un beneficio, acercate a una comunidad comprometida y conocé con datos
 claros cuántas personas llegaron a tu comercio a través de la red.
+
+## Reciprocidad: qué brinda la Fundación
+
+La propuesta debe presentarse como una relación de cooperación y no como un pedido
+unilateral de descuentos. La Fundación también aporta activos, acompañamiento y
+capacidad de comunicación.
+
+### Base de toda alianza
+
+- Ficha pública del comercio con marca, beneficio, condiciones y contacto.
+- Presentación institucional de bienvenida a la red.
+- Acompañamiento para lanzar, explicar y ajustar la propuesta.
+- Reporte de uso con la información disponible en el sistema.
+
+### Activaciones que pueden coordinarse
+
+- **Comercio aliado del mes:** perfil destacado sobre el comercio, su historia y el
+  compromiso que sostiene la alianza.
+- **Contenido conjunto:** historias, reels, testimonios o piezas colaborativas.
+- **Sorteos con propósito:** una propuesta aportada o construida entre ambas partes,
+  con reglas y objetivos claros.
+- **Campañas temáticas:** acciones vinculadas con fechas especiales, educación,
+  deporte, salud o comunidad.
+- **Experiencias y encuentros:** talleres, visitas, demostraciones o actividades que
+  acerquen la marca y la misión a las personas.
+- **Aportes en especie o conocimiento:** productos, servicios o experiencia
+  profesional aplicada a una iniciativa concreta.
+
+Las acciones especiales no se prometen de forma automática. Se acuerdan por escrito
+según el objetivo, la disponibilidad editorial, el calendario institucional y la
+capacidad de ambas partes. No se prometen cantidades de alcance, seguidores, ventas
+ni publicaciones permanentes.
+
+## Principios de comunicación de las alianzas
+
+- Mostrar primero el valor compartido y luego el descuento.
+- Contar historias reales, evitando piezas puramente publicitarias.
+- Dar claridad sobre vigencia, condiciones, canales y responsabilidades.
+- Pedir autorización de uso de marca, imágenes y testimonios.
+- Medir para aprender y optimizar, no para inflar resultados.
+- Priorizar acciones sostenibles y repetibles por encima de campañas aisladas.
 
 ### Para personas aportantes
 
@@ -97,11 +140,31 @@ migraciones y Edge Functions. Son implementación interna, no marca visible.
 1. Portada: Comunidad Evolución — Beneficios con propósito.
 2. Qué es: una explicación breve de la red y su vínculo con la Fundación.
 3. Por qué sumarse: comunidad, difusión, impacto local y métricas.
-4. Cómo funciona: propuesta, acuerdo del beneficio, publicación y validación.
-5. Qué recibe el comercio: presencia de marca, nuevos vínculos y reporte.
-6. Qué se espera del comercio: un beneficio claro, cumplible y bien comunicado.
-7. Ejemplos de beneficios: descuento, 2x1, precio especial o regalo.
-8. Cierre y contacto: formulario de postulación y canales institucionales.
+4. Qué brinda la Fundación: base de la alianza y activaciones a coordinar.
+5. Ideas de activación: aliado del mes, contenidos, sorteos, campañas y encuentros.
+6. Cómo funciona: propuesta, acuerdo del beneficio, publicación y validación.
+7. Qué se espera del comercio: un beneficio claro, cumplible y bien comunicado.
+8. Medición: canjes, personas, consumo declarado y aprendizaje.
+9. Cierre y contacto: formulario de postulación y canales institucionales.
+
+## Arquitectura de materiales para alianzas
+
+No conviene que una persona directiva reciba como primer contacto el documento
+comercial detallado. La comunicación se organiza en dos niveles:
+
+1. **Propuesta ejecutiva de cooperación institucional:** pieza breve de cuatro
+   páginas para dirección, empresas e instituciones. Presenta capacidad instalada,
+   frentes de trabajo, necesidad, propuesta de valor mutua y una invitación a
+   conversar. Comunidad Evolución aparece como una vía de colaboración, no como la
+   totalidad de la propuesta.
+2. **Brochure operativo de Comunidad Evolución:** documento de profundidad para la
+   segunda conversación. Explica activaciones, funcionamiento, beneficios posibles,
+   medición y adhesión de comercios.
+
+La propuesta ejecutiva utiliza una voz deliberadamente franca: la Fundación necesita
+recursos, conocimiento y alcance para ampliar y visibilizar su trabajo; a cambio,
+ofrece programas en marcha, capacidad digital, presencia territorial, comunicación,
+activaciones y rendición verificable.
 
 ## Activos de comunicación
 

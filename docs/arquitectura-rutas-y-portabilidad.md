@@ -1,6 +1,6 @@
 # Arquitectura de rutas y evolución a producto reutilizable
 
-**Estado:** ejecución por etapas; Etapas 0–6 completas y Etapa 7 en curso
+**Estado:** ejecución por etapas; Etapas 0–7 completas
 **Última actualización:** 2026-10-25
 **Alcance de esta versión:** plan maestro y seguimiento transversal de las Etapas 0–9
 **No modifica por sí mismo:** rutas, base de datos, permisos ni comportamiento de producción
@@ -16,8 +16,8 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A–7D3 publicados y verificados | `docs/consistencia-lenguaje-etapa-7.md` |
-| 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
+| 7. Consistencia transversal de lenguaje | Completa; Bloques 7A–7E verificados | `docs/consistencia-lenguaje-etapa-7.md` |
+| 8–9 | Pendientes | Próximo incremento: Etapa 8 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
 la navegación global, los guards, el sitemap, las previews estáticas, las herramientas de
@@ -570,6 +570,8 @@ previews de Vercel al contrato y redujo la línea base a siete archivos. El Bloq
 sincronización verificable para los tres estáticos y dejó solo cuatro Edge Functions pendientes.
 El Bloque 7D3 generó para esas funciones una identidad compartida desde el mismo contrato,
 parametrizó sitio y remitentes, preservó cada frontera JWT y redujo a cero los literales
-institucionales pendientes en runtime. Su evidencia está en
-`docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento seguro es 7E: auditar documentos,
-generadores, semillas y textos persistidos antes del gate transversal de cierre.
+institucionales pendientes en runtime. El Bloque 7E conectó los brochures a identidad y rutas,
+normalizó el contenido persistido, documentó las excepciones de semillas y migraciones y completó
+el gate transversal. Su evidencia está en `docs/consistencia-lenguaje-etapa-7.md` y
+`docs/excepciones-portabilidad-etapa-7.md`. La Etapa 7 está completa; el siguiente incremento
+seguro es la Etapa 8 — instalación configurable.

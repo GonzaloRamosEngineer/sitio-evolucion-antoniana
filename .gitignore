@@ -4,6 +4,8 @@ node_modules/
 # Build / cache
 dist/
 .vite/
+tmp/
+__pycache__/
 *.local
 
 # Variables de entorno (NO subir secretos)

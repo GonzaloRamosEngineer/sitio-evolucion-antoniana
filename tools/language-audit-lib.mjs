@@ -7,6 +7,7 @@ import {
 } from './language-baseline.mjs';
 import { auditStaticIdentity, STATIC_IDENTITY_FILES } from './static-identity-lib.mjs';
 import { auditEdgeIdentity, EDGE_IDENTITY_FILE } from './edge-identity-lib.mjs';
+import { auditArtifactIdentity } from './artifact-identity-lib.mjs';
 
 const RUNTIME_ROOTS = ['src', 'api', 'supabase/functions', 'public'];
 const SOURCE_EXTENSION = /\.(?:js|jsx|ts|tsx|html|txt)$/;
@@ -74,6 +75,7 @@ const filesMatching = (root, regex, filter = () => true) => {
 export const auditLanguage = (root = process.cwd()) => {
   const staticIdentityErrors = auditStaticIdentity(root);
   const edgeIdentityErrors = auditEdgeIdentity(root);
+  const artifactIdentityErrors = auditArtifactIdentity(root);
   const staticIdentitySet = new Set(STATIC_IDENTITY_FILES);
   const brandFiles = filesMatching(
     root,
@@ -95,6 +97,7 @@ export const auditLanguage = (root = process.cwd()) => {
     clubDeBeneficiosFiles,
     staticIdentityErrors,
     edgeIdentityErrors,
+    artifactIdentityErrors,
     unexpectedBrandFiles: brandFiles.filter((file) => !brandAllowlist.has(file)),
     unexpectedPartnerFiles: partnerFiles.filter((file) => !partnerAllowlist.has(file)),
   };

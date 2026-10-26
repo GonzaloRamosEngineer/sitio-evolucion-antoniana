@@ -16,6 +16,8 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 
+from artifact_identity import ENTITY, display_url, site_url
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output" / "pdf" / "brochure-comunidad-evolucion.pdf"
@@ -77,20 +79,20 @@ def page_number(c, number, dark=False):
     color = Color(1, 1, 1, alpha=0.65) if dark else MUTED
     c.setFillColor(color)
     c.setFont("Helvetica", 8)
-    c.drawRightString(W - MARGIN, 24, f"COMUNIDAD EVOLUCIÓN  ·  {number:02d}")
+    c.drawRightString(W - MARGIN, 24, f"{ENTITY['comunidad']['nombre'].upper()}  ·  {number:02d}")
 
 
 def top_brand(c, dark=False):
-    logo = ROOT / "public" / "img" / "transparente.png"
+    logo = ROOT / "public" / ENTITY["logo"].lstrip("/")
     c.setFillColor(white)
     c.setStrokeColor(LINE)
     c.roundRect(MARGIN, H - 92, 46, 46, 11, fill=1, stroke=0 if dark else 1)
     c.drawImage(str(logo), MARGIN + 5, H - 87, 36, 36, mask="auto")
     c.setFillColor(white if dark else PRIMARY)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(MARGIN + 58, H - 64, "FUNDACIÓN")
+    c.drawString(MARGIN + 58, H - 64, ENTITY["tipoDisplay"].upper())
     c.setFont("Helvetica-Bold", 15)
-    c.drawString(MARGIN + 58, H - 83, "Evolución Antoniana")
+    c.drawString(MARGIN + 58, H - 83, ENTITY["nombreCorto"])
 
 
 def section_header(c, kicker, title, intro=None):
@@ -141,8 +143,8 @@ def build():
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     prepare_images()
     c = canvas.Canvas(str(OUTPUT), pagesize=A4, pageCompression=1)
-    c.setTitle("Comunidad Evolución - Beneficios con propósito")
-    c.setAuthor("Fundación Evolución Antoniana")
+    c.setTitle(f"{ENTITY['comunidad']['nombre']} - {ENTITY['comunidad']['propuesta']}")
+    c.setAuthor(ENTITY["nombre"])
     c.setSubject("Brochure para comercios aliados")
 
     # 01. Portada
@@ -151,10 +153,10 @@ def build():
     c.setFillColor(GOLD)
     c.rect(0, H - 8, W, 8, fill=1, stroke=0)
     top_brand(c, dark=True)
-    label(c, "Beneficios con propósito", MARGIN, H - 146, GOLD)
-    para(c, "Comunidad<br/>Evolución", MARGIN, H - 186, W - 2 * MARGIN,
+    label(c, ENTITY["comunidad"]["propuesta"], MARGIN, H - 146, GOLD)
+    para(c, ENTITY["comunidad"]["nombre"].replace(" ", "<br/>", 1), MARGIN, H - 186, W - 2 * MARGIN,
          style(40, 42, white, "Helvetica-Bold"), 120)
-    para(c, "Una red que conecta a quienes sostienen la Fundación con comercios comprometidos.",
+    para(c, ENTITY["comunidad"]["descripcion"],
          MARGIN, H - 288, W - 2 * MARGIN, style(16, 22, Color(1, 1, 1, alpha=0.84)), 90)
     c.drawImage(str(TMP / "cover.jpg"), 0, 0, W, 292, preserveAspectRatio=False, mask="auto")
     c.setFillColor(Color(0.06, 0.16, 0.29, alpha=0.28))
@@ -173,14 +175,14 @@ def build():
         c,
         "Una comunidad que genera valor",
         "Cuando una alianza comercial también impulsa una misión social",
-        "Comunidad Evolución articula tres actores con un objetivo común: transformar apoyo en oportunidades concretas.",
+        f"{ENTITY['comunidad']['nombre']} articula tres actores con un objetivo común: transformar apoyo en oportunidades concretas.",
     )
     y = 430
     gap = 12
     cw = (W - 2 * MARGIN - gap * 2) / 3
-    card(c, MARGIN, y, cw, 180, "01", "Personas", "Sostienen la Fundación y acceden a ventajas cotidianas en comercios aliados.")
+    card(c, MARGIN, y, cw, 180, "01", "Personas", f"Sostienen la {ENTITY['tipoDisplay']} y acceden a ventajas cotidianas en comercios aliados.")
     card(c, MARGIN + cw + gap, y, cw, 180, "02", "Comercios", "Se conectan con una comunidad local, ganan visibilidad y reciben información útil.")
-    card(c, MARGIN + (cw + gap) * 2, y, cw, 180, "03", "Fundación", "Fortalece la continuidad de sus acciones sin perder el foco en el impacto social.")
+    card(c, MARGIN + (cw + gap) * 2, y, cw, 180, "03", ENTITY["tipoDisplay"], "Fortalece la continuidad de sus acciones sin perder el foco en el impacto social.")
     c.setFillColor(PRIMARY)
     c.roundRect(MARGIN, 120, W - 2 * MARGIN, 250, 14, fill=1, stroke=0)
     c.setFillColor(GOLD)
@@ -200,7 +202,7 @@ def build():
         c,
         "Por qué sumarse",
         "Una alianza simple, visible y medible",
-        "El comercio ofrece un beneficio claro. La Fundación se ocupa de comunicarlo y sostener el circuito.",
+        f"El comercio ofrece un beneficio claro. La {ENTITY['tipoDisplay']} se ocupa de comunicarlo y sostener el circuito.",
     )
     cards = [
         ("01", "Comunidad local", "Acercate a personas vinculadas con una organización de Salta y su misión."),
@@ -219,14 +221,124 @@ def build():
     page_number(c, 3)
     c.showPage()
 
-    # 04. Funcionamiento
+    # 04. Lo que brinda la Fundación
+    c.setFillColor(SAND)
+    c.rect(0, 0, W, H, fill=1, stroke=0)
+    section_header(
+        c,
+        "Reciprocidad que se nota",
+        f"La {ENTITY['tipoDisplay']} también pone valor sobre la mesa",
+        "La alianza no termina cuando el comercio ofrece un beneficio. Construimos visibilidad, contenido y oportunidades de conexión.",
+    )
+
+    panel_w = (W - 2 * MARGIN - 14) / 2
+    panel_y = 152
+    panel_h = 430
+    panels = [
+        (
+            MARGIN,
+            "BASE DE LA ALIANZA",
+            "Presencia sostenida",
+            [
+                ("Ficha digital", "Marca, propuesta, condiciones y contacto en el catálogo."),
+                ("Bienvenida a la red", "Presentación institucional del nuevo comercio aliado."),
+                ("Acompañamiento", "Apoyo para lanzar, comunicar y ajustar el beneficio."),
+                ("Reporte", "Datos de uso para evaluar y mejorar la propuesta."),
+            ],
+            PRIMARY,
+        ),
+        (
+            MARGIN + panel_w + 14,
+            "ACTIVACIONES A COORDINAR",
+            "Más alcance y conversación",
+            [
+                ("Aliado del mes", "Una historia destacada sobre el comercio y su compromiso."),
+                ("Contenido conjunto", "Historias, reels, testimonios o piezas colaborativas."),
+                ("Sorteos con propósito", "Acciones simples para movilizar y ampliar la comunidad."),
+                ("Campañas y eventos", "Participación en fechas, actividades o iniciativas especiales."),
+            ],
+            ACTION,
+        ),
+    ]
+    for x, kicker, title, items, accent in panels:
+        c.setFillColor(white)
+        c.setStrokeColor(LINE)
+        c.roundRect(x, panel_y, panel_w, panel_h, 14, fill=1, stroke=1)
+        c.setFillColor(accent)
+        c.roundRect(x, panel_y + panel_h - 74, panel_w, 74, 14, fill=1, stroke=0)
+        c.rect(x, panel_y + panel_h - 74, panel_w, 14, fill=1, stroke=0)
+        c.setFillColor(Color(1, 1, 1, alpha=0.72))
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(x + 18, panel_y + panel_h - 24, kicker)
+        para(c, title, x + 18, panel_y + panel_h - 36, panel_w - 36,
+             style(15, 18, white, "Helvetica-Bold"), 40)
+        item_y = panel_y + panel_h - 102
+        for idx, (item_title, item_body) in enumerate(items):
+            c.setFillColor(GOLD)
+            c.circle(x + 24, item_y - 2, 9, fill=1, stroke=0)
+            c.setFillColor(white)
+            c.setFont("Helvetica-Bold", 7.5)
+            c.drawCentredString(x + 24, item_y - 5, str(idx + 1))
+            para(c, item_title, x + 42, item_y + 8, panel_w - 58,
+                 style(10.5, 13, DARK, "Helvetica-Bold"), 28)
+            para(c, item_body, x + 42, item_y - 15, panel_w - 58,
+                 style(8.7, 12, MUTED), 40)
+            item_y -= 76
+    para(c, "Cada acción se acuerda según objetivos, calendario y disponibilidad editorial.",
+         MARGIN, 112, W - 2 * MARGIN,
+         style(9.5, 14, MUTED, "Helvetica-Bold", TA_CENTER), 30)
+    page_number(c, 4)
+    c.showPage()
+
+    # 05. Ideas de activación
+    c.setFillColor(PRIMARY)
+    c.rect(0, 0, W, H, fill=1, stroke=0)
+    c.setFillColor(GOLD)
+    c.rect(0, H - 8, W, 8, fill=1, stroke=0)
+    label(c, "Ideas que activan la comunidad", MARGIN, H - 70, GOLD)
+    para(c, "Una alianza que se ve,\nse vive y se comparte", MARGIN, H - 105, W - 2 * MARGIN,
+         style(30, 34, white, "Helvetica-Bold"), 90)
+    para(c, "Elegimos juntos la combinación que mejor representa al comercio y aporta valor real a las personas.",
+         MARGIN, H - 190, W - 2 * MARGIN,
+         style(11.5, 17, Color(1, 1, 1, alpha=0.76)), 60)
+    activation_cards = [
+        ("01", "Aliado del mes", "Perfil del comercio, historia, propósito y beneficio destacado en canales institucionales."),
+        ("02", "Sorteo con propósito", "Premio aportado en conjunto, dinámica clara y convocatoria que amplifica el vínculo."),
+        ("03", "Historia de impacto", f"Contenido que conecta la alianza con una acción concreta de la {ENTITY['tipoDisplay']}."),
+        ("04", "Campaña temática", "Propuestas para fechas especiales, vuelta a clases, deporte, salud o comunidad."),
+        ("05", "Experiencia o encuentro", "Taller, visita, demostración o actividad para acercar personas y marca."),
+        ("06", "Aporte en especie", "Productos, servicios o conocimiento profesional que fortalecen una iniciativa."),
+    ]
+    for i, (num, title, body) in enumerate(activation_cards):
+        col = i % 2
+        row = i // 2
+        x = MARGIN if col == 0 else W / 2 + 7
+        y = 450 - row * 135
+        box_w = (W - 2 * MARGIN - 14) / 2
+        c.setFillColor(Color(1, 1, 1, alpha=0.08))
+        c.setStrokeColor(Color(1, 1, 1, alpha=0.16))
+        c.roundRect(x, y, box_w, 116, 12, fill=1, stroke=1)
+        c.setFillColor(GOLD)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x + 17, y + 90, num)
+        para(c, title, x + 48, y + 100, box_w - 65,
+             style(12, 15, white, "Helvetica-Bold"), 35)
+        para(c, body, x + 17, y + 63, box_w - 34,
+             style(8.8, 12.5, Color(1, 1, 1, alpha=0.76)), 55)
+    para(c, "No buscamos hacer ruido por hacer ruido: buscamos historias creíbles que generen confianza y participación.",
+         MARGIN, 113, W - 2 * MARGIN,
+         style(12, 17, Color(1, 1, 1, alpha=0.92), "Helvetica-Bold", TA_CENTER), 55)
+    page_number(c, 5, dark=True)
+    c.showPage()
+
+    # 06. Funcionamiento
     c.setFillColor(SAND)
     c.rect(0, 0, W, H, fill=1, stroke=0)
     section_header(
         c,
         "Cómo funciona",
         "De la propuesta al primer canje en cuatro pasos",
-        "La Fundación acompaña la definición y deja por escrito las condiciones para evitar confusiones en el mostrador.",
+        f"La {ENTITY['tipoDisplay']} acompaña la definición y deja por escrito las condiciones para evitar confusiones en el mostrador.",
     )
     steps = [
         ("1", "Proponés", "Nos contás qué beneficio querés ofrecer y a quiénes aplica."),
@@ -248,10 +360,10 @@ def build():
             c.line(MARGIN + 28, y + 4, MARGIN + 28, y - 68)
         para(c, title, MARGIN + 78, y + 52, 180, style(18, 22, DARK, "Helvetica-Bold"), 45)
         para(c, body, MARGIN + 78, y + 20, W - MARGIN - (MARGIN + 78), style(10.5, 15, MUTED), 60)
-    page_number(c, 4)
+    page_number(c, 6)
     c.showPage()
 
-    # 05. Beneficios posibles
+    # 07. Beneficios posibles
     c.setFillColor(white)
     c.rect(0, 0, W, H, fill=1, stroke=0)
     section_header(
@@ -282,10 +394,10 @@ def build():
     para(c, "Tres claves", MARGIN + 22, 216, 120, style(9, 12, PRIMARY, "Helvetica-Bold"), 30)
     para(c, "Claro para la persona. Fácil para el mostrador. Sostenible para el comercio.",
          MARGIN + 22, 190, W - 2 * MARGIN - 44, style(16, 21, PRIMARY, "Helvetica-Bold"), 70)
-    page_number(c, 5)
+    page_number(c, 7)
     c.showPage()
 
-    # 06. Medición
+    # 08. Medición
     c.setFillColor(PRIMARY)
     c.rect(0, 0, W, H, fill=1, stroke=0)
     c.setFillColor(GOLD)
@@ -313,22 +425,22 @@ def build():
         para(c, body, x + 18, y + 88, 190, style(11, 16, white, "Helvetica-Bold"), 65)
     para(c, "Datos claros para mejorar la propuesta, no para complicar la operación.",
          MARGIN, 160, W - 2 * MARGIN, style(17, 22, Color(1, 1, 1, alpha=0.9), "Helvetica-Bold", TA_CENTER), 60)
-    page_number(c, 6, dark=True)
+    page_number(c, 8, dark=True)
     c.showPage()
 
-    # 07. Cierre y CTA
+    # 09. Cierre y CTA
     c.setFillColor(SAND)
     c.rect(0, 0, W, H, fill=1, stroke=0)
     top_brand(c, dark=False)
     label(c, "La próxima alianza puede ser la tuya", MARGIN, H - 148, GOLD)
-    para(c, "Sumá tu comercio<br/>a Comunidad Evolución", MARGIN, H - 188, W - 2 * MARGIN,
+    para(c, f"Sumá tu comercio<br/>a {ENTITY['comunidad']['nombre']}", MARGIN, H - 188, W - 2 * MARGIN,
          style(32, 36, DARK, "Helvetica-Bold"), 100)
     para(c, "Ofrecé un beneficio, conectate con una comunidad comprometida y transformemos juntos el valor cotidiano en impacto social.",
          MARGIN, H - 300, W - 2 * MARGIN, style(13, 19, MUTED), 90)
     c.setFillColor(white)
     c.setStrokeColor(LINE)
     c.roundRect(MARGIN, 250, W - 2 * MARGIN, 250, 14, fill=1, stroke=1)
-    qr_url = "https://www.evolucionantoniana.com/club/postular"
+    qr_url = site_url(ENTITY["rutas"]["postularComercio"])
     qr(c, qr_url, MARGIN + 28, 292, 150)
     c.linkURL(qr_url, (MARGIN + 28, 292, MARGIN + 178, 442), relative=0)
     para(c, "Escaneá para postular tu comercio", MARGIN + 205, 438, 240,
@@ -337,13 +449,13 @@ def build():
          MARGIN + 205, 385, 240, style(10.5, 15, MUTED), 80)
     c.setFont("Helvetica-Bold", 9.5)
     c.setFillColor(ACTION)
-    c.drawString(MARGIN + 205, 305, "evolucionantoniana.com/club/postular")
+    c.drawString(MARGIN + 205, 305, display_url(ENTITY["rutas"]["postularComercio"]))
     c.linkURL(qr_url, (MARGIN + 205, 295, W - MARGIN - 20, 325), relative=0)
     c.setFillColor(PRIMARY)
     c.roundRect(MARGIN, 128, W - 2 * MARGIN, 84, 12, fill=1, stroke=0)
-    para(c, "info@evolucionantoniana.com   ·   +54 387 213-1916   ·   Salta, Argentina",
+    para(c, f"{ENTITY['contacto']['email']}   ·   {ENTITY['contacto']['telefono']}   ·   {ENTITY['ubicacion']}",
          MARGIN + 20, 180, W - 2 * MARGIN - 40, style(10.5, 15, white, "Helvetica-Bold", TA_CENTER), 40)
-    page_number(c, 7)
+    page_number(c, 9)
     c.save()
 
 

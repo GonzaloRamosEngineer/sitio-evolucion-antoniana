@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7D3 completos, publicados y verificados
+**Estado:** Completa; Bloques 7A–7E implementados y verificados
 
 ## 1. Objetivo
 
@@ -235,12 +235,35 @@ excepciones editoriales deliberadas y ejecutar el gate transversal de cierre.
 
 ### Bloque 7E — documentos, datos y cierre
 
-- auditar PDFs, generadores, semillas, textos persistidos y eventos;
-- documentar excepciones editoriales deliberadas;
-- ejecutar el gate transversal y verificar producción.
+- [x] identidad de artefactos generada desde `entidad.js` y el registro central de rutas;
+- [x] dos generadores de brochure sin marca, contacto, dominio ni CTA hardcodeados;
+- [x] propuesta ejecutiva de cuatro páginas y brochure operativo de nueve páginas regenerados;
+- [x] QR, enlaces y textos visibles migrados de aliases a `/alianzas/postularse` y
+  `/comercios/sumarse`;
+- [x] revisión visual completa de las trece páginas, sin cortes, solapamientos ni problemas de
+  legibilidad;
+- [x] metadatos, cantidad de páginas, anotaciones de enlace y ausencia de URLs heredadas
+  verificados con lectura estructural de ambos PDFs;
+- [x] semillas y migraciones históricas clasificadas como datos tenant o contratos técnicos;
+- [x] excepciones editoriales y de portabilidad documentadas en
+  `docs/excepciones-portabilidad-etapa-7.md`;
+- [x] migración idempotente aplicada sobre el vocabulario heredado de beneficios y una URL
+  editorial de preinscripción;
+- [x] check remoto de contenido público con cero filas para “Club de beneficios”, `Partner(s)`
+  visible y aliases retirados;
+- [x] auditoría ejecutable ampliada para impedir que generadores o su configuración vuelvan a
+  divergir;
+- [x] suite completa: 68 archivos y 708 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y auditorías de rutas y lenguaje
+  correctos.
+
+El cierre distingue configuración, contenido editorial e identificadores técnicos. Los nombres de
+tablas, migraciones aplicadas y archivos de datos específicos no se maquillaron con reemplazos
+mecánicos; quedaron clasificados con una regla explícita para una futura instalación.
 
 ## 5. Gate de la etapa
 
-La Etapa 7 se cerrará cuando ninguna cadena específica de la Fundación aparezca fuera del
-contrato de configuración o de una excepción editorial documentada, y cuando el vocabulario
-público sea coherente en web, emails, previews y documentos.
+La Etapa 7 cumple su gate: ninguna cadena específica de la Fundación permanece fuera del contrato
+de configuración salvo contenido editorial o datos operativos deliberados y documentados. El
+vocabulario público es coherente en web, áreas internas, emails, previews, PDFs y contenido
+persistido. El siguiente incremento es la Etapa 8 — instalación configurable.

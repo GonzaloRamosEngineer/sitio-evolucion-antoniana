@@ -1,0 +1,21 @@
+{
+  "nombre": "Fundación Evolución Antoniana",
+  "nombreCorto": "Evolución Antoniana",
+  "tipoDisplay": "Fundación",
+  "sitio": "https://www.evolucionantoniana.com",
+  "logo": "/img/transparente.png",
+  "ubicacion": "Salta, Argentina",
+  "contacto": {
+    "email": "info@evolucionantoniana.com",
+    "telefono": "+54 387 213-1916"
+  },
+  "comunidad": {
+    "nombre": "Comunidad Evolución",
+    "propuesta": "Beneficios con propósito",
+    "descripcion": "Una red que conecta a quienes sostienen la Fundación con comercios comprometidos."
+  },
+  "rutas": {
+    "postularAlianza": "/alianzas/postularse",
+    "postularComercio": "/comercios/sumarse"
+  }
+}

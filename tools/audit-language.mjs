@@ -7,6 +7,7 @@ console.log(`Páginas con término Partner(s) pendiente de clasificar: ${report.
 console.log(`Apariciones runtime de “Club de beneficios”: ${report.clubDeBeneficiosFiles.length}`);
 console.log(`Estáticos institucionales desincronizados: ${report.staticIdentityErrors.length}`);
 console.log(`Identidad Edge desincronizada: ${report.edgeIdentityErrors.length}`);
+console.log(`Artefactos institucionales desincronizados: ${report.artifactIdentityErrors.length}`);
 
 const errors = [
   ...report.unexpectedBrandFiles.map((file) => `Marca literal nueva fuera de línea base: ${file}`),
@@ -14,6 +15,7 @@ const errors = [
   ...report.clubDeBeneficiosFiles.map((file) => `“Club de beneficios” reapareció en: ${file}`),
   ...report.staticIdentityErrors,
   ...report.edgeIdentityErrors,
+  ...report.artifactIdentityErrors,
 ];
 
 if (errors.length > 0) {

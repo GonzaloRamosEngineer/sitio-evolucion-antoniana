@@ -97,6 +97,11 @@ la base.
   crear a la persona de la comisión.** El trigger pisa el cambio de rol **en silencio** —0
   errores, 1 fila afectada, y la persona sigue siendo `'user'`— y el `FALLA` resultante
   culpa a la policy en vez de al andamio.
+- **`audit-lenguaje-publico.sql`** — control de solo lectura para contenido editorial publicado.
+  Debe devolver cero filas: detecta “Club de beneficios”, `Partner(s)` visible y aliases de rutas
+  retiradas sin confundirlos con tablas `partners`, columnas `partner_id`, tablas `club_*` ni con
+  la palabra “club” cuando una noticia habla del Centro Juventud Antoniana. Puede ejecutarse
+  directamente contra la base vinculada con `supabase db query --linked --output json --file`.
 
 ## Por qué no usa `supabase start`
 
