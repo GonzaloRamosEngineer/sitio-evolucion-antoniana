@@ -154,6 +154,19 @@ export const entidad = {
     telefono: '+54 387 213-1916',
     telefonoE164: '+543872131916',
     whatsappMensaje: 'Hola, quiero sumarme a la red solidaria',
+    // Mensaje precargado según desde qué página se abre el chat. ⚠️ Están
+    // escritos para que el menú del bot los entienda: cada uno contiene la
+    // palabra clave de SU opción y ninguno lleva dígitos (el bot compara por
+    // subcadena, y un "5" suelto en el texto dispara la opción 5). Si cambian
+    // las opciones del menú del bot, se revisan acá.
+    whatsappMensajes: {
+      colaborar: 'Hola, quiero donar o sumarme con un aporte mensual',
+      beneficios: 'Hola, quiero consultar por los beneficios de Comunidad Evolución',
+      educacion: 'Hola, quiero info para terminar la primaria o la secundaria',
+      actividades: 'Hola, quiero info sobre las actividades y cursos',
+    },
+    // Horario de la atención humana (el bot responde a cualquier hora).
+    horarioAtencion: 'Lunes a viernes, de 9 a 18',
   },
 
   // --- Vocabulario -----------------------------------------------------------
@@ -265,6 +278,16 @@ export const whatsappUrl = `https://wa.me/${entidad.contacto.telefonoE164.replac
   /\D/g,
   ''
 )}?text=${encodeURIComponent(entidad.contacto.whatsappMensaje)}`;
+
+/**
+ * Link de WhatsApp con el mensaje de una página concreta (`colaborar`,
+ * `beneficios`, `educacion`, `actividades`). Una clave desconocida cae al
+ * mensaje general en vez de abrir un chat vacío.
+ */
+export const whatsappUrlPara = (clave) => {
+  const mensaje = entidad.contacto.whatsappMensajes?.[clave] ?? entidad.contacto.whatsappMensaje;
+  return `https://wa.me/${entidad.contacto.telefonoE164.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`;
+};
 
 /**
  * Redes declaradas, en orden estable y sin las vacías.

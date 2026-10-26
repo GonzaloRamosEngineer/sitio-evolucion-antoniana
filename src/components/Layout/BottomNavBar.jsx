@@ -6,6 +6,7 @@ import { CalendarDays, User, Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { RUTAS } from '@/config/rutas';
+import { whatsappUrl } from '@/config/entidad';
 
 const BottomNavBar = () => {
   const { isAuthenticated } = useAuth();
@@ -14,7 +15,7 @@ const BottomNavBar = () => {
   const navItems = [
     {
       name: 'WhatsApp',
-      href: 'https://wa.me/543872131916?text=Hola%2C%20quiero%20sumarme%20a%20la%20red%20solidaria',
+      href: whatsappUrl,
       icon: MessageCircle, // Usamos MessageCircle para un look más moderno
       isExternal: true,
       color: 'text-green-500'

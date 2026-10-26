@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { RUTAS } from '@/config/rutas';
 import { entidad, tituloPagina } from '@/config/entidad';
 import { canonicalUrl } from '@/lib/seo';
+import WhatsAppCTA from '@/components/WhatsAppCTA';
 import {
   Calendar,
   MapPin,
@@ -647,6 +648,12 @@ const getCleanTitle = (title) => {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="px-4 pb-12 md:pb-16">
+        <div className="mx-auto max-w-5xl">
+          <WhatsAppCTA mensaje="actividades" titulo="¿Querés saber más sobre las actividades?" />
         </div>
       </section>
     </motion.div>

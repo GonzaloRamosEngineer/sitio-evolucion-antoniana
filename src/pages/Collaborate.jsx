@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { entidad, tituloPagina } from '@/config/entidad';
 import { RUTAS } from '@/config/rutas';
 import { canonicalUrl } from '@/lib/seo';
+import WhatsAppCTA from '@/components/WhatsAppCTA';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 // ⬇️ usamos el microservicio en Render vía membershipApi
@@ -562,6 +563,13 @@ const Collaborate = () => {
                 />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Consulta por WhatsApp: el bot responde el menú a cualquier hora. */}
+        <section className="bg-white px-4 pb-10 md:pb-16">
+          <div className="mx-auto max-w-5xl">
+            <WhatsAppCTA mensaje="colaborar" titulo="¿Tenés dudas antes de aportar?" />
           </div>
         </section>
       </div>
