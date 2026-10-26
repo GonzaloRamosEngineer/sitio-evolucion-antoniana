@@ -5,6 +5,7 @@ import {
   BRAND_LITERAL_ALLOWLIST,
   PUBLIC_PARTNER_ALLOWLIST,
 } from './language-baseline.mjs';
+import { auditStaticIdentity, STATIC_IDENTITY_FILES } from './static-identity-lib.mjs';
 
 const RUNTIME_ROOTS = ['src', 'api', 'supabase/functions', 'public'];
 const SOURCE_EXTENSION = /\.(?:js|jsx|ts|tsx|html|txt)$/;
@@ -70,11 +71,13 @@ const filesMatching = (root, regex, filter = () => true) => {
 };
 
 export const auditLanguage = (root = process.cwd()) => {
+  const staticIdentityErrors = auditStaticIdentity(root);
+  const staticIdentitySet = new Set(STATIC_IDENTITY_FILES);
   const brandFiles = filesMatching(
     root,
     BRAND_LITERAL,
     (relative) => relative !== 'src/config/entidad.js',
-  );
+  ).filter((relative) => !staticIdentitySet.has(relative));
   const partnerFiles = filesMatching(
     root,
     PUBLIC_PARTNER_TERM,
@@ -88,6 +91,7 @@ export const auditLanguage = (root = process.cwd()) => {
     brandFiles,
     partnerFiles,
     clubDeBeneficiosFiles,
+    staticIdentityErrors,
     unexpectedBrandFiles: brandFiles.filter((file) => !brandAllowlist.has(file)),
     unexpectedPartnerFiles: partnerFiles.filter((file) => !partnerAllowlist.has(file)),
   };

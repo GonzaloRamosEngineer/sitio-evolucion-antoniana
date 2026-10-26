@@ -17,4 +17,8 @@ describe('línea base ejecutable de lenguaje', () => {
   it('mantiene “Club de beneficios” fuera de todo runtime', () => {
     expect(report.clubDeBeneficiosFiles).toEqual([]);
   });
+
+  it('mantiene los estáticos sincronizados con el contrato de entidad', () => {
+    expect(report.staticIdentityErrors).toEqual([]);
+  });
 });

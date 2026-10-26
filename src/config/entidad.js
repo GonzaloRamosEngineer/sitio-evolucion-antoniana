@@ -34,6 +34,10 @@ export const CAMPOS_ENTIDAD_REQUERIDOS = Object.freeze([
   'tipo',
   'tipoDisplay',
   'descripcionCorta',
+  'seo.tituloInicio',
+  'seo.descripcionInicio',
+  'seo.descripcionSocial',
+  'seo.imagenSocial',
   'comunidadEvolucion.nombre',
   'comunidadEvolucion.propuesta',
   'comunidadEvolucion.descripcion',
@@ -104,6 +108,18 @@ export const entidad = {
   descripcionCorta:
     'Organización sin fines de lucro legalmente constituida en Salta, Argentina. ' +
     'Impulsamos oportunidades y transformamos vidas a través de la tecnología y el deporte.',
+
+  // --- SEO institucional -----------------------------------------------------
+  // El HTML de entrada, los previews genéricos y las tarjetas sociales se
+  // sincronizan desde estos valores antes de ejecutar Vite.
+  seo: {
+    tituloInicio: 'Educación, Deporte y Tecnología para Transformar Realidades',
+    descripcionInicio:
+      'Impulsamos oportunidades reales a través de la educación, el deporte, la inclusión y la tecnología, desarrollando proyectos formativos y sociales que transforman realidades y construyen futuro con impacto verdadero.',
+    descripcionSocial:
+      'Educación, deporte, inclusión y tecnología para transformar realidades y construir futuro con impacto social.',
+    imagenSocial: '/img/og-image-1200x630.png?v=2',
+  },
 
   // --- Programa de beneficios ------------------------------------------------
   // El nombre público vive acá. `club` y `club_*` siguen siendo nombres

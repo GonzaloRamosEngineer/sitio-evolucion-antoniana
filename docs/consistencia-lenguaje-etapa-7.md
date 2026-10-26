@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7D1 completos, publicados y verificados
+**Estado:** Bloques 7A–7D1 completos; Bloque 7D2 preparado para publicación
 
 ## 1. Objetivo
 
@@ -76,7 +76,7 @@ contacto, sitio, marca y nombre del programa deben tener una fuente identificabl
 
 ### Bloque 7B — contrato y red de seguridad
 
-- [x] contrato v1 con 23 campos requeridos de identidad, programa, contacto y vocabulario;
+- [x] contrato v1 con 27 campos requeridos de identidad, SEO, programa, contacto y vocabulario;
 - [x] validación inmediata de URL, email, logo y campos obligatorios;
 - [x] prueba de configuración incompleta con mensajes accionables;
 - [x] línea base explícita de archivos con marca o dominio literal;
@@ -191,9 +191,21 @@ modificar estáticos o correo.
 - [x] endpoint heredado de preinscripción responde 200 y publica la URL canónica actual;
 - [x] títulos, descripciones, `og:site_name`, `og:url` y canonicals verificados en producción.
 
-Los siete archivos restantes son tres estáticos y cuatro Edge Functions. El siguiente incremento
-seguro es 7D2, dedicado a sincronizar `index.html`, `robots.txt` y la plantilla estática sin tocar
-todavía los emisores de correo.
+#### Bloque 7D2 — estáticos sincronizados
+
+- [x] SEO institucional de portada incorporado al contrato de entidad;
+- [x] `index.html`, `robots.txt` y la plantilla social marcados como salidas sincronizadas;
+- [x] sincronizador determinista incorporado antes de `dev` y `build`;
+- [x] auditoría capaz de detectar cualquier identidad estática desactualizada;
+- [x] prueba de regresión que desincroniza, detecta y repara un estático temporal;
+- [x] frontend y HTML inicial comparten título, descripción e imagen social;
+- [x] deuda de marca o dominio reducida de 7 a 4 archivos;
+- [x] suite completa: 66 archivos y 701 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build sincronizado y auditorías correctas;
+- [ ] deploy de Vercel y verificación de HTML inicial, robots y plantilla en producción.
+
+Los cuatro archivos restantes son exclusivamente Edge Functions. El siguiente incremento seguro
+es 7D3, para parametrizar identidad, remitentes y URLs sin modificar sus fronteras JWT.
 
 ### Bloque 7E — documentos, datos y cierre
 

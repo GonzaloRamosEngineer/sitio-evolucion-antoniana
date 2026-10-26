@@ -205,8 +205,8 @@ const Home = () => {
   return (
     <div className="bg-brand-sand">
       <Helmet>
-        <title>{entidad.nombre} | Educación, Deporte y Tecnología para Transformar Realidades</title>
-        <meta name="description" content="Impulsamos oportunidades reales a través de la educación, el deporte, la inclusión y la tecnología, desarrollando proyectos que transforman realidades." />
+        <title>{`${entidad.nombre} | ${entidad.seo.tituloInicio}`}</title>
+        <meta name="description" content={entidad.seo.descripcionInicio} />
         <link rel="canonical" href={canonicalUrl(RUTAS.inicio)} />
       </Helmet>
 
