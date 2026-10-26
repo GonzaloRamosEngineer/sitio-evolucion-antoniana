@@ -1,13 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from './cors.ts';
+import { remitenteEntidad, sitioEntidad } from '../_shared/entidad.generated.ts';
 import { RUTAS_EXTERNAS, urlDelSitio } from '../_shared/rutas.ts';
 // Cambiamos el nombre de la variable para que sea coherente, 
 // pero en Supabase podés seguir usando la misma KEY o crear una nueva RESEND_API_KEY
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || Deno.env.get('SENDGRID_API_KEY');
-const SITE_URL = Deno.env.get('SITE_URL');
+const SITE_URL = sitioEntidad(Deno.env.get('SITE_URL'));
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const FROM_EMAIL = 'Fundación Evolución Antoniana <info@evolucionantoniana.com>';
+const FROM_EMAIL = remitenteEntidad(Deno.env.get('FROM_EMAIL'));
 async function logEmailAttempt(supabaseAdmin, logEntry) {
   if (!supabaseAdmin) return;
   try {

@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "node tools/sync-static-identity.mjs && vite",
-    "build": "node tools/sync-static-identity.mjs && vite build",
+    "dev": "node tools/sync-identity.mjs && vite",
+    "build": "node tools/sync-identity.mjs && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
@@ -13,6 +13,7 @@
     "audit:routes": "node tools/audit-routes.mjs",
     "audit:language": "node tools/audit-language.mjs",
     "sync:static": "node tools/sync-static-identity.mjs",
+    "sync:identity": "node tools/sync-identity.mjs",
     "audit:slugs": "node tools/audit-slugs.mjs",
     "test:integration": "node tools/run-integration-tests.mjs",
     "supabase:start": "supabase start",

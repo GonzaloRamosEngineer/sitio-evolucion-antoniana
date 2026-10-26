@@ -1,8 +1,9 @@
 // supabase/functions/send-contact-email/index.ts
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { Resend } from "npm:resend@3";
+import { remitenteEntidad } from "../_shared/entidad.generated.ts";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "info@evolucionantoniana.com";
+const FROM_EMAIL = remitenteEntidad(Deno.env.get("FROM_EMAIL"));
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -32,7 +33,7 @@ serve(async (req)=>{
     }
     const resend = new Resend(RESEND_API_KEY);
     const sendRes = await resend.emails.send({
-      from: `Fundación Evolución Antoniana <${FROM_EMAIL}>`,
+      from: FROM_EMAIL,
       to: [
         recipient_email
       ],

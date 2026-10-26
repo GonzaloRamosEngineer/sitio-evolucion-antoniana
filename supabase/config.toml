@@ -41,6 +41,15 @@ otp_expiry = 3600
 [functions.create-user]
 verify_jwt = true
 
+[functions.resend-verification]
+verify_jwt = true
+
+[functions.send-activity-confirmation]
+verify_jwt = true
+
+[functions.send-contact-email]
+verify_jwt = true
+
 [functions.activate-account]
 verify_jwt = true
 

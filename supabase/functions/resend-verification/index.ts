@@ -7,18 +7,19 @@
 //
 // Setup de Resend (una sola vez):
 //  1. Crear cuenta en resend.com (gratis hasta 3000 mails/mes).
-//  2. Agregar y verificar el dominio evolucionantoniana.com (o usar el email
-//     de tu cuenta Resend para pruebas iniciales).
+//  2. Agregar y verificar el dominio de la entidad (o usar el email de tu
+//     cuenta Resend para pruebas iniciales).
 //  3. Crear una API key en resend.com/api-keys.
 //  4. Setear los secrets en Supabase:
 //       supabase secrets set RESEND_API_KEY=re_xxxx
-//       supabase secrets set RESEND_FROM_EMAIL="Evolución Antoniana <noreply@evolucionantoniana.com>"
+//       supabase secrets set RESEND_FROM_EMAIL="Nombre <noreply@dominio.org>"
 //
 // Deploy:  supabase functions deploy resend-verification
 // Invocar: supabase.functions.invoke('resend-verification', { body: { userId } })
 // =============================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { sitioEntidad } from "../_shared/entidad.generated.ts";
 import { RUTAS_EXTERNAS, urlDelSitio } from "../_shared/rutas.ts";
 
 Deno.serve(async (req) => {
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://www.evolucionantoniana.com";
+    const SITE_URL = sitioEntidad(Deno.env.get("SITE_URL"));
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {

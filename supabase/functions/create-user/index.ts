@@ -16,6 +16,7 @@
 // =============================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { sitioEntidad } from "../_shared/entidad.generated.ts";
 import { RUTAS_EXTERNAS, urlDelSitio } from "../_shared/rutas.ts";
 
 const VALID_ROLES = [
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://www.evolucionantoniana.com";
+    const SITE_URL = sitioEntidad(Deno.env.get("SITE_URL"));
 
     // 2) Validar que viene un JWT de usuario
     const authHeader = req.headers.get("Authorization");

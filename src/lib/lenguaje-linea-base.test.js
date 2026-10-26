@@ -21,4 +21,8 @@ describe('línea base ejecutable de lenguaje', () => {
   it('mantiene los estáticos sincronizados con el contrato de entidad', () => {
     expect(report.staticIdentityErrors).toEqual([]);
   });
+
+  it('mantiene la identidad Edge sincronizada con el contrato de entidad', () => {
+    expect(report.edgeIdentityErrors).toEqual([]);
+  });
 });
