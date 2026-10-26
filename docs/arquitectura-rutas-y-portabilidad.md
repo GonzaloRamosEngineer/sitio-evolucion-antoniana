@@ -16,7 +16,7 @@
 | 4. Migración de rutas públicas estáticas | Completa, publicada y verificada | `docs/migracion-rutas-publicas-etapa-4.md` |
 | 5. Slugs y aliases dinámicos | Completa, publicada y verificada | `docs/migracion-slugs-etapa-5.md` |
 | 6. Áreas personales, comercio y autenticación | Completa, publicada y verificada | `docs/migracion-areas-personales-etapa-6.md` |
-| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A–7D2 publicados y verificados | `docs/consistencia-lenguaje-etapa-7.md` |
+| 7. Consistencia transversal de lenguaje | En curso; Bloques 7A–7D3 publicados y verificados | `docs/consistencia-lenguaje-etapa-7.md` |
 | 8–9 | Pendientes | Requieren cerrar la Etapa 7 |
 
 La Etapa 3 comenzó centralizando los 38 patrones actuales, sin renombrar URLs. El router,
@@ -568,5 +568,8 @@ contrato de entidad, reduciendo la línea base a 21 archivos. El Bloque 7C3 comp
 línea base en 12 archivos, todos fuera del frontend. El Bloque 7D1 conectó los cinco endpoints de
 previews de Vercel al contrato y redujo la línea base a siete archivos. El Bloque 7D2 agregó una
 sincronización verificable para los tres estáticos y dejó solo cuatro Edge Functions pendientes.
-Su evidencia está en `docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento seguro es
-7D3: parametrizar las funciones remotas sin alterar su frontera JWT.
+El Bloque 7D3 generó para esas funciones una identidad compartida desde el mismo contrato,
+parametrizó sitio y remitentes, preservó cada frontera JWT y redujo a cero los literales
+institucionales pendientes en runtime. Su evidencia está en
+`docs/consistencia-lenguaje-etapa-7.md`. El siguiente incremento seguro es 7E: auditar documentos,
+generadores, semillas y textos persistidos antes del gate transversal de cierre.

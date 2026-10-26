@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7D2 completos, publicados y verificados
+**Estado:** Bloques 7A–7D3 completos, publicados y verificados
 
 ## 1. Objetivo
 
@@ -209,6 +209,29 @@ modificar estáticos o correo.
 
 Los cuatro archivos restantes son exclusivamente Edge Functions. El siguiente incremento seguro
 es 7D3, para parametrizar identidad, remitentes y URLs sin modificar sus fronteras JWT.
+
+#### Bloque 7D3 — identidad compartida con Edge Functions
+
+- [x] módulo de identidad Edge generado desde `src/config/entidad.js`;
+- [x] `create-user` y `resend-verification` consumen el sitio configurado para sus redirects;
+- [x] confirmación de asistencia y contacto consumen nombre y email institucionales para el
+  remitente;
+- [x] `SITE_URL` y `FROM_EMAIL` preservados como overrides operativos;
+- [x] sincronización Edge incorporada antes de `dev` y `build` junto con los estáticos;
+- [x] auditoría y pruebas capaces de detectar y reparar un módulo Edge desactualizado;
+- [x] deuda de marca o dominio reducida de 4 a 0 archivos runtime;
+- [x] suite completa: 67 archivos y 704 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
+- [x] funciones activas: `create-user` v8, `resend-verification` v7,
+  `send-activity-confirmation` v18 y `send-contact-email` v13;
+- [x] fronteras preservadas: las tres funciones privadas mantienen `verify_jwt = true` y contacto
+  público mantiene `verify_jwt = false`;
+- [x] preflight CORS 200 en las cuatro funciones; POST anónimo 401 en las privadas y validación
+  400 del body vacío en contacto, sin crear usuarios ni enviar correos.
+
+Con 7D3 no quedan literales institucionales pendientes en código runtime. El siguiente incremento
+seguro es 7E: auditar documentos, generadores, semillas y textos persistidos, documentar las
+excepciones editoriales deliberadas y ejecutar el gate transversal de cierre.
 
 ### Bloque 7E — documentos, datos y cierre
 
