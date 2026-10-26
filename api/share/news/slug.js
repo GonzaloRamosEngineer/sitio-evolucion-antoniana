@@ -5,6 +5,7 @@
 // - Redirige a humanos a /novedades/:slug
 
 import { resolvePublicSlug } from '../../_slug-resolver.js';
+import { entidad, tituloPagina } from '../../../src/config/entidad.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const title = escapeHtml(item.title || "Novedad");
+    const title = escapeHtml(tituloPagina(item.title || "Novedad"));
     const desc = escapeHtml(stripToOneLine(item.content).slice(0, 180));
     const publishedIso = item.created_at
       ? new Date(item.created_at).toISOString()
@@ -128,7 +129,7 @@ export default async function handler(req, res) {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   ${extraImageType}
-  <meta property="og:site_name" content="Fundación Evolución Antoniana" />
+  <meta property="og:site_name" content="${escapeHtml(entidad.nombre)}" />
   <meta property="og:locale" content="es_AR" />
   <meta property="article:published_time" content="${publishedIso}" />
 

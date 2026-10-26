@@ -22,16 +22,12 @@
 // primera edición. Acá la ruta llega por `?p=` y lo único que cambia por página
 // es la fila de PAGINAS.
 //
-// ⚠️ POR QUÉ LA MARCA SIGUE HARDCODEADA. `src/config/entidad.js` incluye
-// recursos y configuración pensados para el cliente. En cambio, el registro de
-// rutas es un módulo puro y se comparte con esta función para evitar duplicar
-// URLs. La migración de marca queda como una decisión separada.
+// La identidad y el contacto salen del mismo contrato puro que consume el
+// frontend. Vercel puede importarlo porque no depende del navegador.
 // -----------------------------------------------------------------------------
 
 import { ROUTE_PATHS } from '../../src/config/rutas.js';
-
-const SITIO = "Fundación Evolución Antoniana";
-const MARCA_CORTA = "Evolución Antoniana";
+import { entidad, tituloPagina } from '../../src/config/entidad.js';
 
 // Imagen institucional (el logo sobre blanco). Es el fallback de las filas que
 // no declaran `imagen`: hoy, las utilitarias y legales.
@@ -75,42 +71,42 @@ export const PAGINAS = {
     imagen: "/img/og/about-1200x630.png",
     titulo: "Quiénes somos",
     descripcion:
-      "Conocé la misión, los valores y el equipo de la Fundación Evolución Antoniana.",
+      `Conocé la misión, los valores y el equipo de ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.ACTIVIDADES]: {
     imagen: "/img/og/activities-1200x630.png",
     titulo: "Actividades",
     descripcion:
-      "Explorá las actividades, talleres y eventos de la Fundación Evolución Antoniana e inscribite.",
+      `Explorá las actividades, talleres y eventos de ${entidad.nombre} e inscribite.`,
   },
   [ROUTE_PATHS.COLABORAR]: {
     imagen: "/img/og/collaborate-1200x630.png",
     titulo: "Colaborá",
     descripcion:
-      "Sumate como voluntario, aliado o donante y ayudá a transformar realidades con la Fundación Evolución Antoniana.",
+      `Sumate como voluntario, aliado o donante y ayudá a transformar realidades con ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.RENDICION]: {
     imagen: "/img/og/rendicion-1200x630.png",
     titulo: "Rendición de cuentas",
     descripcion:
-      "En qué se usó cada aporte recibido por la Fundación Evolución Antoniana: lo recaudado, lo gastado y el respaldo de cada gasto.",
+      `En qué se usó cada aporte recibido por ${entidad.nombre}: lo recaudado, lo gastado y el respaldo de cada gasto.`,
   },
   [ROUTE_PATHS.CONTACTO]: {
     titulo: "Contacto",
     descripcion:
-      "Comunicate con la Fundación Evolución Antoniana. Escribinos a info@evolucionantoniana.com.",
+      `Comunicate con ${entidad.nombre}. Escribinos a ${entidad.contacto.email}.`,
   },
   [ROUTE_PATHS.NOVEDADES]: {
     imagen: "/img/og/novedades-1200x630.png",
     titulo: "Novedades",
     descripcion:
-      "Mantenete al día con las últimas noticias y actividades de la Fundación.",
+      `Mantenete al día con las últimas noticias y actividades de ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.BENEFICIOS]: {
     imagen: "/img/og/beneficios-1200x630.png",
     titulo: "Beneficios con propósito",
     descripcion:
-      "Descubrí los beneficios exclusivos de los comercios adheridos para quienes sostienen la Fundación.",
+      `Descubrí los beneficios exclusivos de los comercios adheridos para quienes sostienen ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.ALIANZAS]: {
     imagen: "/img/og/partners-1200x630.png",
@@ -128,7 +124,7 @@ export const PAGINAS = {
     imagen: "/img/og/club-1200x630.png",
     titulo: "Comunidad Evolución",
     descripcion:
-      "Canjeá beneficios de comercios aliados con tu aporte vigente a la Fundación.",
+      `Canjeá beneficios de comercios aliados con tu aporte vigente a ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.POSTULAR_COMERCIO]: {
     imagen: "/img/og/club-postular-1200x630.png",
@@ -147,17 +143,17 @@ export const PAGINAS = {
   [ROUTE_PATHS.DOCUMENTACION_LEGAL]: {
     titulo: "Documentación oficial",
     descripcion:
-      "Accedé a los estatutos, balances y reportes de gestión de la Fundación Evolución Antoniana.",
+      `Accedé a los estatutos, balances y reportes de gestión de ${entidad.nombre}.`,
   },
   [ROUTE_PATHS.PRIVACIDAD]: {
     titulo: "Política de privacidad",
     descripcion:
-      "Política de Privacidad de la Fundación Evolución Antoniana. Conocé cómo protegemos tus datos personales.",
+      `Política de privacidad de ${entidad.nombre}. Conocé cómo protegemos tus datos personales.`,
   },
   [ROUTE_PATHS.TERMINOS]: {
     titulo: "Términos de uso",
     descripcion:
-      "Términos y Condiciones de uso del sitio web de la Fundación Evolución Antoniana.",
+      `Términos y condiciones de uso del sitio web de ${entidad.nombre}.`,
   },
 };
 
@@ -226,7 +222,7 @@ export default async function handler(req, res) {
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const title = escapeHtml(`${pagina.titulo} | ${MARCA_CORTA}`);
+    const title = escapeHtml(tituloPagina(pagina.titulo));
     const desc = escapeHtml(String(pagina.descripcion || "").slice(0, 180));
 
     const extraImageType = imageMime
@@ -252,7 +248,7 @@ export default async function handler(req, res) {
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="es_AR" />
-  <meta property="og:site_name" content="${escapeHtml(SITIO)}" />
+  <meta property="og:site_name" content="${escapeHtml(entidad.nombre)}" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
   <meta property="og:url" content="${humanUrl}" />

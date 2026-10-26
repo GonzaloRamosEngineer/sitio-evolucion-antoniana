@@ -2,7 +2,7 @@
 
 **Inicio:** 2026-10-25
 
-**Estado:** Bloques 7A–7C3 completos, publicados y verificados
+**Estado:** Bloques 7A–7C3 completos; Bloque 7D1 preparado para publicación
 
 ## 1. Objetivo
 
@@ -173,6 +173,23 @@ modificar estáticos o correo.
 - compartir identidad con `api/share/*` y Edge Functions;
 - parametrizar remitentes y URLs públicas;
 - sincronizar `index.html`, plantillas estáticas y metadatos sin perder previews.
+
+#### Bloque 7D1 — previews de Vercel
+
+- [x] previews dinámicos de actividades, beneficios y novedades conectados a `entidad` y
+  `tituloPagina`;
+- [x] registro de páginas estáticas conectado a identidad y contacto configurados;
+- [x] endpoint heredado de preinscripción alineado con `/educacion/preinscripcion`;
+- [x] `og:site_name`, títulos, descripciones y canonicals derivados del contrato;
+- [x] prueba de regresión para identidad, canonical y respuesta `HEAD` de preinscripción;
+- [x] deuda de marca o dominio reducida de 12 a 7 archivos;
+- [x] suite completa: 65 archivos y 698 pruebas aprobadas;
+- [x] lint sin errores (37 advertencias preexistentes), build y ambas auditorías correctos;
+- [ ] deploy de Vercel y verificación de previews estáticos y dinámicos en producción.
+
+Los siete archivos restantes son tres estáticos y cuatro Edge Functions. El siguiente incremento
+seguro es 7D2, dedicado a sincronizar `index.html`, `robots.txt` y la plantilla estática sin tocar
+todavía los emisores de correo.
 
 ### Bloque 7E — documentos, datos y cierre
 

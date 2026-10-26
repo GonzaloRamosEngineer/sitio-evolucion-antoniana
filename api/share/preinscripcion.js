@@ -1,4 +1,7 @@
 // api/share/preinscripcion.js
+import { ROUTE_PATHS } from '../../src/config/rutas.js';
+import { entidad, tituloPagina } from '../../src/config/entidad.js';
+
 export default async function handler(req, res) {
   try {
     const method = String(req.method || "GET").toUpperCase();
@@ -10,16 +13,13 @@ export default async function handler(req, res) {
         .trim() || "https";
 
     // a dónde va el humano
-    const humanUrl = `${proto}://${host}/preinscripcion`;
-
-    // la URL pública del share (esta misma)
-    const shareUrl = `${proto}://${host}/api/share/preinscripcion`;
+    const humanUrl = `${proto}://${host}${ROUTE_PATHS.PREINSCRIPCION}`;
 
     // Elegí una imagen OG específica (ideal 1200x630)
     // Podés crear /public/img/og-preinscripcion-1200x630.png
-    const image = `${proto}://${host}/img/og-image-1200x630.png`;
+    const image = `${proto}://${host}/img/og/preinscripcion-1200x630.png`;
 
-    const title = "Preinscripción | Educación Permanente (EPJA) – Fundación Evolución Antoniana";
+    const title = tituloPagina("Preinscripción — Educación Permanente (EPJA)");
     const desc =
       "Iniciá o finalizá tus estudios en el Centro Juventud Antoniana. Preinscribite en el programa de Educación Permanente para Jóvenes y Adultos.";
 
@@ -33,12 +33,12 @@ export default async function handler(req, res) {
   <meta property="og:type" content="website" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
-  <meta property="og:url" content="${shareUrl}" />
+  <meta property="og:url" content="${humanUrl}" />
   <meta property="og:image" content="${image}" />
   <meta property="og:image:secure_url" content="${image}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:site_name" content="Fundación Evolución Antoniana" />
+  <meta property="og:site_name" content="${entidad.nombre}" />
   <meta property="og:locale" content="es_AR" />
 
   <!-- Twitter -->
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   <meta name="twitter:description" content="${desc}" />
   <meta name="twitter:image" content="${image}" />
 
-  <link rel="canonical" href="${shareUrl}" />
+  <link rel="canonical" href="${humanUrl}" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>

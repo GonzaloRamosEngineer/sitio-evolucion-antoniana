@@ -7,6 +7,7 @@
 // Mismo patrón que api/share/news/slug.js (mantener en sincronía).
 
 import { resolvePublicSlug } from '../../_slug-resolver.js';
+import { entidad, tituloPagina } from '../../../src/config/entidad.js';
 
 const escapeHtml = (s = "") =>
   String(s || "")
@@ -117,7 +118,7 @@ export default async function handler(req, res) {
     }
     const imageMime = guessMimeFromUrl(image);
 
-    const title = escapeHtml(cleanTitle(item.title) || "Actividad");
+    const title = escapeHtml(tituloPagina(cleanTitle(item.title) || "Actividad"));
     const desc = escapeHtml(stripToOneLine(cleanDescription(item.description)).slice(0, 180));
 
     const extraImageType = imageMime
@@ -140,7 +141,7 @@ export default async function handler(req, res) {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   ${extraImageType}
-  <meta property="og:site_name" content="Fundación Evolución Antoniana" />
+  <meta property="og:site_name" content="${escapeHtml(entidad.nombre)}" />
   <meta property="og:locale" content="es_AR" />
 
   <!-- Twitter / X -->
