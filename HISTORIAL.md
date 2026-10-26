@@ -7366,3 +7366,44 @@ tienen fines de línea CRLF) y se corrigió `foto_logica_aportes.sql`, cuya cons
 policies fallaba y era la causa de las fallas intermitentes del ensayo. Réplica: 10
 corridas consecutivas, 36/36 cada una.
 
+## §18 — La regla de cuotas en producción, el arreglo de la carrera y su validación (2026-10-16 → 2026-10-26)
+
+**Aplicación (2026-10-16, ~11:54–11:59 UTC).** Orden del runbook: base atómica
+(`tools/cuotas-2026-10.sh aplicar`, COMMIT, 8 reclasificaciones) → frontend (`master`
+`196f355f`, Vercel *success*, bundle nuevo verificado) → webhook (`main` `69cfac0`, `/health`
+`2026-10-16.reintegros-auth`) → Edge Function `club-generar-canje` v6 (sólo textos).
+
+**La carrera cobro/preapproval (2026-10-21).** El pago de una suscripción nueva puede llegar
+al webhook *antes* que la notificación que registra la suscripción; en ese caso el cobro
+quedaba sin vincular a su membresía. Arreglo: el webhook guarda `preapproval_id` en
+`donations` para los pagos de suscripciones y, al registrar una suscripción sin cobro
+asociado, busca si ya entró un pago para ese `preapproval_id` y lo enlaza (`ceb931f`, versión
+`2026-10-21.carrera-suscripcion`, capacidad `enlaza_carrera_suscripcion` en `/health`).
+Migración `20261021120000`: columna e índice `donations.preapproval_id`, y
+`reclamar_donaciones()` ahora también transfiere la titularidad de las membresías a quien
+reclama sus aportes con email verificado.
+
+**Validación (2026-10-26, sólo lectura).** Todo con `controles-release-2026-10.sh`:
+
+| | Resultado |
+|---|---|
+| P0 cerrada / el webhook conserva su escritura | PASA / PASA |
+| Cobros aprobados sin aporte | 0 |
+| Cinco contadores de cuotas | 0 |
+| Webhook | `2026-10-21.carrera-suscripcion`, firma «rechaza» |
+| Cobros automáticos posteriores al release | 1 (2026-10-20): primer pago de una suscripción nueva, 1 cuota mensual, 31 días, vinculada |
+| Pagos de suscripción sin aporte | 0 |
+| Membresías activas | 2, ambas con aporte (2 y 1 aportes) |
+
+**Qué quedó sin probar, y por qué importa.** Todavía no hubo una *renovación* posterior al
+release: el único cobro real fue un primer pago. Es el caso en que el id del preapproval
+tiene que salir del `payment` de una renovación; el arreglo del 21/10 resuelve el orden de
+llegada en el alta, pero no verifica esa lectura. Primera candidata: la suscripción del
+2026-09-02, ≈ 2/11.
+
+**Dos cosas que se corrigieron de paso.** (1) El ROADMAP siguió diciendo «LISTO EN RAMA, SIN
+DESPLEGAR» diez días después del despliegue, y el HISTORIAL no tenía este trabajo: otra
+afirmación que se pudrió porque nadie la releyó. (2) El modo `cobro` del script rotulaba
+«renovación» a un primer pago, así que un PASA podía leerse como más de lo que probaba; ahora
+distingue por `aportes_previos` y existe el modo `renovacion`, que sale con 3 (PENDIENTE)
+mientras no haya una renovación posterior al release.
