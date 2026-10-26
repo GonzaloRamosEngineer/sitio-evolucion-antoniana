@@ -48,7 +48,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-contact-email]
-verify_jwt = true
+verify_jwt = false
 
 [functions.activate-account]
 verify_jwt = true
