@@ -47,39 +47,54 @@
 
 ---
 
-## 🚦 Por dónde arrancar (actualizado 2026-09-08, con §10 revalidada y archivada)
+## 🚦 Por dónde arrancar (actualizado 2026-09-08; el bloque de cuotas y P0, 2026-10-26)
 
 > **Leé esto primero, y verificá lo que dice antes de actuar.** Esta sección se
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
-### 🔴 2026-10-16 — Cuotas, donaciones, adelantos y webhook: LISTO EN RAMA, SIN DESPLEGAR
+### ✅ 2026-10-16 — Cuotas, donaciones, adelantos y webhook: EN PRODUCCIÓN (verificado 2026-10-26)
 
-Rama local `feat/cuotas-concepto` (sitio, rebasada sobre la P0) + `feat/seguridad-reintegros-idempotencia`
-(repo `mp-supabase-webhook`). Nada aplicado ni desplegado. Crónica y razones en
-`HISTORIAL.md` §15. **Bloquea sumar los 5–10 socios nuevos**: con lo que hay en
-producción, una donación compra meses y empuja las cuotas (período de UN día). El
-agujero de escritura de pagos ya lo cerró la P0 (abajo, y §16).
+Aplicado el 2026-10-16 (~11:54–11:59 UTC) en el orden del runbook: base (una sola
+transacción, 8 reclasificaciones) → frontend (`master`, `196f355f`, Vercel *success*) →
+webhook (`mp-supabase-webhook`) → Edge Function `club-generar-canje`. Crónica y razones en
+`HISTORIAL.md` §15–§18. **Ya no bloquea sumar socios nuevos.**
 
-**Runbook:** [`docs/operacion-cuotas-2026-10.md`](docs/operacion-cuotas-2026-10.md). La base
-se aplica **en una sola transacción** (`bash tools/cuotas-2026-10.sh aplicar`: esquema +
-funciones + reclasificación; sin ventana sin acceso), con simulación previa en producción
-(`simular`, ROLLBACK) y **reversión completa** de datos y lógica (`revertir`, generada desde
-producción). Orden fijo: **base → frontend → webhook → Edge Function**; para revertir, al
-revés. Ensayado sobre réplica: 30/30.
+El 2026-10-21 se sumó el arreglo de la carrera cobro/preapproval: el pago de una suscripción
+nueva podía llegar antes que el registro de la suscripción y quedar sin vincular. Webhook
+`ceb931f` (versión `2026-10-21.carrera-suscripcion`) + migración
+`20261021120000_donations_preapproval_y_reclamo_membresia.sql` (**aplicada**: la columna
+existe en producción).
 
-**Pendiente de verificar con datos reales:** de qué campo de un `payment` de renovación
-sale el id del preapproval (el webhook prueba `metadata.preapproval_id`,
-`point_of_interaction.transaction_data.subscription_id` y `subscription_id`; si no viene
-en ninguno, cae a `external_reference` filtrando suscripciones vivas). Mirar el log
-`🔍 Respuesta MP (payment)` del próximo cobro (≈ 2/11).
+**Verificado el 2026-10-26** con `controles-release-2026-10.sh` (de sólo lectura; vive en
+`~/Documents/dev/BACKUPS/evolucion-antoniana/`): 5/5 PASA, 0 fallas (P0 cerrada, el webhook
+conserva su escritura, 0 cobros aprobados sin aporte, los cinco contadores de cuotas en 0,
+webhook en versión autorizada con firma activa). Los controles de +24 h/+72 h no se corrieron
+a esas horas sino el 21/10 (cinco veces) y de nuevo hoy. Desde el release entró **un** cobro
+automático real, el 2026-10-20: el **primer pago de una suscripción nueva** (1 cuota mensual,
+31 días, vinculada a su membresía). 0 pagos de suscripción sin aporte; 2 membresías activas,
+las dos con aporte.
+
+**Lo único que sigue abierto: una RENOVACIÓN real** (2ª cuota o más de una suscripción) para
+ver de qué campo de un `payment` de renovación sale el id del preapproval (el webhook prueba
+`metadata.preapproval_id`, `point_of_interaction.transaction_data.subscription_id` y
+`subscription_id`; si no viene en ninguno, cae a `external_reference` filtrando suscripciones
+vivas). La primera candidata es la suscripción del 2026-09-02, ≈ 2/11. Correr
+`bash ~/Documents/dev/BACKUPS/evolucion-antoniana/controles-release-2026-10.sh renovacion`:
+sale con **3** (PENDIENTE) mientras no haya una renovación posterior al release, y con 0 si
+entró bien. Además, mirar en Render el log `🔍 Respuesta MP (payment)` de ese cobro. El modo
+`cobro` distingue ahora un primer pago de una renovación (antes rotulaba "renovación" a ambos).
+
+**Runbook:** [`docs/operacion-cuotas-2026-10.md`](docs/operacion-cuotas-2026-10.md). Quedó como
+referencia de cómo se aplicó y de cómo se revierte (`revertir`, generada desde producción).
 
 ### ✅ P0 (2026-10-16) — APLICADA en producción (2026-10-16 03:21:42 UTC aprox.)
 
 Aplicada con el runbook completo: pre chequeo OK, `POST CHEQUEO OK`, post chequeo funcional
 19/19 PASA (`residuo 0`), huellas de datos idénticas antes/después, webhook en pie. Ver
-`HISTORIAL.md` §16. **Pendiente:** monitoreo a +24 h y +72 h y en el próximo cobro real
-(`p0_4_monitoreo.sql`); revisión aparte del SELECT de `anon` sobre `donations`.
+`HISTORIAL.md` §16. Monitoreo (`p0_4_monitoreo.sql`) hecho el 21/10 y el 26/10, sin fallas.
+**Pendiente:** verlo en una renovación real (arriba) y la revisión aparte del SELECT de `anon`
+sobre `donations`.
 
 El texto de abajo es el que motivó el cambio:
 
