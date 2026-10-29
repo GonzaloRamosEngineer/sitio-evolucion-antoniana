@@ -34,6 +34,14 @@ la base.
   respeta el concepto, **una cuenta que solo donó** (donante, con historial, sin
   membresía ni padrón) y **la seguridad**: ninguna sesión se inserta un cobro aprobado.
   Todo en una transacción con ROLLBACK.
+- **`estado-cuenta-whatsapp-check.sql`** — `account_status_for_phone()` (`20261029100000`), el estado de
+  cuenta que MatchBot consulta por el número que le escribe («Mi aporte» por WhatsApp). El vínculo es
+  `users.phone`, que es texto libre y sin `UNIQUE`: lo que protege a la gente no es el formato sino que la
+  función **rechace lo no verificado y lo ambiguo**. Trae el par de cada negativo (email sin verificar ↔
+  verificado, dos cuentas con el mismo número ↔ una, acceso cortado ↔ sin corte, `anon`/`authenticated` ↔
+  `service_role`), las cuatro formas del celular argentino en las dos direcciones, al día / en gracia /
+  vencida / sólo donó / sin aportes, el reintegro, y que **no salga ni DNI ni email ni nombre ajeno**.
+  60 PASA. Se **sabotea a propósito** de cinco maneras y falla cada vez. Documento: `docs/mi-aporte-whatsapp.md`.
 - **`reclasificacion-replica.sh`** — no es un `.sql`: levanta su PROPIO Postgres 15
   (`pgreplica15`, puerto 55464) con el esquema de producción (hasta la P0) y una foto de
   datos con ids SINTÉTICOS, y recorre el runbook de `docs/operacion-cuotas-2026-10.md`:

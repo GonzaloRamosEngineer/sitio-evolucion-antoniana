@@ -65,3 +65,8 @@ verify_jwt = true
 
 [functions.club-anular-canje]
 verify_jwt = true
+
+# Servicio a servicio (MatchBot → esta función): no hay usuario ni JWT. La autenticación
+# es la firma HMAC con ESTADO_CUENTA_SECRET; sin el secreto responde 503, nunca datos.
+[functions.estado-de-cuenta]
+verify_jwt = false
