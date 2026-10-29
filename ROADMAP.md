@@ -53,6 +53,17 @@
 > reescribe al cierre de cada jornada. Si la fecha de arriba está vieja, desconfiá:
 > en este archivo, la parte que nadie relee es donde se pudren las afirmaciones.
 
+### 🟡 2026-10-29 — «Mi aporte» por WhatsApp: EN RAMA, SIN APLICAR NI DESPLEGAR
+
+Rama `feat/mi-aporte-whatsapp`. El bot de la Fundación (MatchBot) va a poder contestarle a un padrino «¿estoy al día?» con datos
+reales, sólo por WhatsApp y sólo para el número que escribe: función SQL `account_status_for_phone` + Edge Function
+`estado-de-cuenta` (HMAC) + el teléfono del perfil guardado sólo con dígitos. Probado en Postgres 15 (check de 60 casos, saboteado de
+cinco maneras), 28 tests de la función y un contrato de punta a punta con el código real de MatchBot. **Falta la revisión conjunta**, y
+después: migración → secreto → deploy → alta apagada en MatchBot → ajustes de reglas y contexto del tenant → encender. Detalle, riesgos y
+reversión en [`docs/mi-aporte-whatsapp.md`](docs/mi-aporte-whatsapp.md); el lado de MatchBot, en su repo (`docs/MI_APORTE_FUNDACION.md`).
+**Decisión abierta que no es de código:** sin el arreglo del motor de reglas de MatchBot (coincidencia exacta para saludos y dígitos),
+la mayoría de las preguntas reales («Hola, ¿estoy al día?») las atrapa el menú antes de llegar a la IA.
+
 ### ✅ 2026-10-16 — Cuotas, donaciones, adelantos y webhook: EN PRODUCCIÓN (verificado 2026-10-26)
 
 Aplicado el 2026-10-16 (~11:54–11:59 UTC) en el orden del runbook: base (una sola

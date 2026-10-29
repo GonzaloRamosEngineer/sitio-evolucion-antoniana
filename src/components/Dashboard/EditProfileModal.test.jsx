@@ -8,10 +8,11 @@
 // sean alcanzables por su nombre accesible, que es lo que un test puede sostener.
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 vi.mock('@/api/userApi', () => ({ updateUserProfile: vi.fn() }));
+const { updateUserProfile } = await import('@/api/userApi');
 // El recortador abre la cámara y toca Storage; acá estorba.
 vi.mock('./AvatarUpload', () => ({ default: () => <div>AvatarUpload</div> }));
 const toast = vi.fn();
@@ -25,7 +26,11 @@ const abrir = () => {
   fireEvent.click(screen.getByRole('button', { name: /Editar Perfil/i }));
 };
 
-beforeEach(() => { toast.mockReset(); });
+beforeEach(() => {
+  toast.mockReset();
+  updateUserProfile.mockReset();
+  updateUserProfile.mockResolvedValue({ data: {}, error: null });
+});
 
 describe('EditProfileModal', () => {
   it('🔒 abierto ofrece DOS salidas: la X y un «Cerrar» con la palabra escrita', () => {
@@ -61,5 +66,39 @@ describe('EditProfileModal', () => {
     expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Cancelar/i }));
     expect(screen.getByRole('button', { name: /^Cerrar$/i })).toBeInTheDocument();
+  });
+
+  describe('teléfono / WhatsApp', () => {
+    // De este campo depende que el bot de WhatsApp reconozca a quien escribe: guardado
+    // con guiones o espacios, la coincidencia por número fallaba en silencio.
+    const guardarConTelefono = async (valor) => {
+      abrir();
+      fireEvent.click(screen.getByRole('button', { name: /Habilitar Edición/i }));
+      fireEvent.change(screen.getByLabelText(/Teléfono \/ WhatsApp/i), { target: { id: 'phone', value: valor } });
+      fireEvent.click(screen.getByRole('button', { name: /Guardar Cambios/i }));
+      await waitFor(() => expect(updateUserProfile).toHaveBeenCalled());
+      return updateUserProfile.mock.calls[0][1];
+    };
+
+    it('explica para qué sirve el número y lo llama «Teléfono / WhatsApp»', () => {
+      abrir();
+      expect(screen.getByLabelText(/Teléfono \/ WhatsApp/i)).toBeInTheDocument();
+      expect(screen.getByText(/consultar el estado de tu aporte escribiéndonos por WhatsApp/i)).toBeInTheDocument();
+    });
+
+    it('guarda SOLO dígitos: sin +, espacios, guiones ni paréntesis', async () => {
+      const payload = await guardarConTelefono('+54 9 (387) 412-3456');
+      expect(payload.phone).toBe('5493874123456');
+    });
+
+    it('un número ya limpio se guarda igual (par del anterior)', async () => {
+      const payload = await guardarConTelefono('3874123456');
+      expect(payload.phone).toBe('3874123456');
+    });
+
+    it('vacío o sin dígitos se guarda como null, no como cadena vacía', async () => {
+      const payload = await guardarConTelefono('   ');
+      expect(payload.phone).toBeNull();
+    });
   });
 });

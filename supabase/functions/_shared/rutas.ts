@@ -5,6 +5,8 @@ export const RUTAS_EXTERNAS = Object.freeze({
   ACTUALIZAR_CLAVE: "/actualizar-clave",
   PANEL_COMERCIO: "/comercios/panel",
   CONFIRMAR_ASISTENCIA: "/actividades/confirmar-asistencia",
+  COLABORAR: "/colaborar",
+  CUENTA: "/mi/cuenta",
 });
 
 export const urlDelSitio = (origen: string, ruta: string) =>

@@ -64,8 +64,13 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
   const handleSave = async () => {
     setIsLoading(true);
     // Postgres rechaza '' en columnas date; los campos opcionales van como null.
+    //
+    // El teléfono se guarda SOLO con dígitos (como en el registro): con ese número el
+    // bot de WhatsApp reconoce a quien escribe y le contesta el estado de su aporte, y
+    // un guion o un espacio guardados rompían la coincidencia en silencio.
     const payload = {
       ...formData,
+      phone: (formData.phone || '').replace(/\D/g, '') || null,
       dni: formData.dni || null,
       birth_date: formData.birth_date || null,
       gender: formData.gender || null,
@@ -208,14 +213,22 @@ const EditProfileModal = ({ user, onUpdateSuccess, children }) => {
             <SectionLabel icon={Phone} text="Contacto y Personal" />
             <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
               <div className="min-w-0 space-y-2">
-                <Label htmlFor="phone" className="text-xs font-bold text-brand-dark ml-1">Teléfono</Label>
+                <Label htmlFor="phone" className="text-xs font-bold text-brand-dark ml-1">Teléfono / WhatsApp</Label>
                 <Input 
                   id="phone" 
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  aria-describedby="phone-ayuda"
                   value={formData.phone} 
                   onChange={handleChange} 
                   disabled={!isEditing}
                   className={`h-11 rounded-xl transition-all ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/5 bg-white' : 'bg-gray-50 border-gray-100'}`}
                 />
+                <p id="phone-ayuda" className="ml-1 text-[11px] leading-snug text-gray-500">
+                  Con este número podés consultar el estado de tu aporte escribiéndonos por WhatsApp.
+                  Cargalo con el código de área, por ejemplo 387 412 3456.
+                </p>
               </div>
               <div className="min-w-0 space-y-2">
                 <Label htmlFor="birth_date" className="text-xs font-bold text-brand-dark ml-1">Fecha de Nacimiento</Label>
